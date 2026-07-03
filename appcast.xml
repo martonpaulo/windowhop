@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>WindowHop</title>
+    <link>https://github.com/martonpaulo/windowhop</link>
+    <description>Most recent updates to WindowHop</description>
+    <language>en</language>
+    <item>
+      <title>1.0.0</title>
+      <pubDate>Fri, 03 Jul 2026 21:13:07 +0000</pubDate>
+      <sparkle:version>10000</sparkle:version>
+      <sparkle:shortVersionString>1.0.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:releaseNotesLink>https://github.com/martonpaulo/windowhop/releases/tag/v1.0.0</sparkle:releaseNotesLink>
+      <enclosure url="https://github.com/martonpaulo/windowhop/releases/download/v1.0.0/WindowHop-1.0.0.zip" sparkle:edSignature="etoUPQuvC8IrvUNTUVAd2VIey9UZWkd0FVqfr6HU0z27syB1seETBiDMuJNMHpTebVhmgdT3z4PQBaI92aOcDA==" length="1404527" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>

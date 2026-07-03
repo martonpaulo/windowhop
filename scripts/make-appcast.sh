@@ -12,7 +12,10 @@ SIGNATURE_ATTRS="$4"
 URL="https://github.com/martonpaulo/windowhop/releases/download/v$VERSION/$(basename "$ZIP_PATH")"
 DATE=$(LC_ALL=en_US.UTF-8 date -u "+%a, %d %b %Y %H:%M:%S +0000")
 
-ITEM=$(cat <<EOF
+# BSD awk rejects newlines in -v values, so the item travels via a temp file
+ITEM_FILE=$(mktemp)
+trap 'rm -f "$ITEM_FILE"' EXIT
+cat > "$ITEM_FILE" <<EOF
     <item>
       <title>$VERSION</title>
       <pubDate>$DATE</pubDate>
@@ -23,7 +26,6 @@ ITEM=$(cat <<EOF
       <enclosure url="$URL" $SIGNATURE_ATTRS type="application/octet-stream"/>
     </item>
 EOF
-)
 
 if [ ! -f appcast.xml ]; then
     cat > appcast.xml <<EOF
@@ -45,9 +47,12 @@ if grep -q "<sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>" a
 fi
 
 # insert the new item right after <language> (newest first)
-awk -v item="$ITEM" '
+awk -v itemfile="$ITEM_FILE" '
     { print }
-    /<language>en<\/language>/ { print item }
+    /<language>en<\/language>/ {
+        while ((getline line < itemfile) > 0) print line
+        close(itemfile)
+    }
 ' appcast.xml > appcast.xml.new
 mv appcast.xml.new appcast.xml
 echo "appcast.xml updated with $VERSION (build $BUILD_NUMBER)"
