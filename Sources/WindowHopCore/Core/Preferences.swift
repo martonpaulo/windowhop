@@ -8,6 +8,7 @@ public final class Preferences {
         case switcherEnabled
         case launchAtLogin
         case shortcut
+        case persistentShortcut
         case includeOtherSpaces
         case includeOtherDisplays
         case showTabCounts
@@ -20,6 +21,8 @@ public final class Preferences {
         Key.switcherEnabled.rawValue: true,
         Key.launchAtLogin.rawValue: true,
         Key.shortcut.rawValue: ShortcutSpec.commandTab.rawValue,
+        // unassigned by default: assigning a global chord must be a deliberate choice
+        Key.persistentShortcut.rawValue: "",
         Key.includeOtherSpaces.rawValue: true,
         Key.includeOtherDisplays.rawValue: true,
         Key.showTabCounts.rawValue: true,
@@ -48,6 +51,12 @@ public final class Preferences {
     public var shortcut: ShortcutSpec {
         get { ShortcutSpec(rawValue: defaults.string(forKey: Key.shortcut.rawValue) ?? "") ?? .commandTab }
         set { defaults.set(newValue.rawValue, forKey: Key.shortcut.rawValue) }
+    }
+
+    /// nil when unassigned (the default).
+    public var persistentShortcut: PersistentShortcut? {
+        get { PersistentShortcut(encoded: defaults.string(forKey: Key.persistentShortcut.rawValue) ?? "") }
+        set { defaults.set(newValue?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
     }
 
     public var includeOtherSpaces: Bool {

@@ -20,6 +20,10 @@ enum DebugHarness {
             renderUI(to: arguments[flagIndex + 1])
             return true
         }
+        if let flagIndex = arguments.firstIndex(of: "--updater-e2e"), arguments.count > flagIndex + 1 {
+            UpdaterE2EHarness.run(feedURL: arguments[flagIndex + 1])
+            return true
+        }
         return false
     }
 
@@ -38,6 +42,22 @@ enum DebugHarness {
                 try? png.write(to: outputURL.appendingPathComponent("\(name).png"))
                 print("wrote \(name).png (\(Int(view.bounds.width))x\(Int(view.bounds.height)))")
             }
+        }
+
+        // overflow check: 120 synthetic windows in a horizontally scrolling strip
+        let overflowPanel = SwitcherPanel()
+        overflowPanel.appearance = NSAppearance(named: .aqua)
+        let overflowItems = manyDemoItems()
+        let overflowStart = CFAbsoluteTimeGetCurrent()
+        overflowPanel.show(items: overflowItems, selectedIndex: 60)
+        print("overflow panel: 120 tiles in "
+            + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
+            + "frame \(overflowPanel.frame)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            if let contentView = overflowPanel.contentView {
+                write(contentView, "switcher-overflow")
+            }
+            overflowPanel.hide()
         }
 
         var pending = 0
@@ -69,23 +89,46 @@ enum DebugHarness {
         app.run()
     }
 
+    private static func icon(_ bundleID: String) -> NSImage {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
+            .map { NSWorkspace.shared.icon(forFile: $0.path) }
+            ?? NSWorkspace.shared.icon(for: .applicationBundle)
+    }
+
+    /// Covers the review checklist: several windows of the same app, duplicate and
+    /// long titles, entries with and without tab counts, and the Settings entry.
     private static func demoItems() -> [SwitcherItem] {
-        let icon = { (bundleID: String) -> NSImage? in
-            NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)
-                .map { NSWorkspace.shared.icon(forFile: $0.path) }
-        }
         let rows: [(String, String, String, Int?)] = [
-            ("UserResourceMapper.java — windowhop", "IntelliJ IDEA", "com.jetbrains.intellij", nil),
-            ("Apple Human Interface Guidelines", "Safari", "com.apple.Safari", 7),
-            ("release-notes.md — Notes", "Notes", "com.apple.Notes", nil),
+            ("UserResourceMapper.java", "IntelliJ IDEA", "com.jetbrains.intellij", nil),
+            ("Apple Human Interface Guidelines — Materials and Vibrancy", "Safari", "com.apple.Safari", 7),
+            ("GitHub — Safari", "Safari", "com.apple.Safari", 12),
             ("Downloads", "Finder", "com.apple.finder", 3),
-            ("weekly-sync — 12 members", "Messages", "com.apple.MobileSMS", nil),
+            ("untitled", "TextEdit", "com.apple.TextEdit", nil),
+            ("untitled", "TextEdit", "com.apple.TextEdit", nil),
             ("main.swift — windowhop — zsh — 118×34", "Terminal", "com.apple.Terminal", 2),
+            ("WindowHop Settings", "WindowHop", "com.perso.windowhop", nil),
         ]
         return rows.enumerated().map { index, row in
-            SwitcherItem(id: index, window: nil, title: row.0, appName: row.1,
-                         icon: icon(row.2) ?? NSWorkspace.shared.icon(for: .applicationBundle),
-                         tabCount: row.3)
+            let tileIcon = row.2 == "com.perso.windowhop"
+                ? (NSImage(contentsOfFile: "Support/AppIcon.icns")
+                    ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.2))
+                : icon(row.2)
+            return SwitcherItem(id: index, window: nil, title: row.0, appName: row.1,
+                                icon: tileIcon, tabCount: row.3)
+        }
+    }
+
+    /// Synthetic 120-window list for overflow and responsiveness checks.
+    private static func manyDemoItems() -> [SwitcherItem] {
+        let apps = [("Safari", "com.apple.Safari"), ("Finder", "com.apple.finder"),
+                    ("Terminal", "com.apple.Terminal"), ("Notes", "com.apple.Notes"),
+                    ("TextEdit", "com.apple.TextEdit"), ("Mail", "com.apple.mail")]
+        return (0..<120).map { index in
+            let app = apps[index % apps.count]
+            return SwitcherItem(id: index, window: nil,
+                                title: "Window \(index + 1) — \(app.0)",
+                                appName: app.0, icon: icon(app.1),
+                                tabCount: index % 7 == 0 ? (index % 9) + 2 : nil)
         }
     }
 
@@ -95,8 +138,11 @@ enum DebugHarness {
         app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         let panel = SwitcherPanel()
         DispatchQueue.main.async {
-            panel.show(items: demoItems(), selectedIndex: 1)
-            print("demo panel visible at \(panel.frame)")
+            let items = CommandLine.arguments.contains("--many") ? manyDemoItems() : demoItems()
+            let showStart = CFAbsoluteTimeGetCurrent()
+            panel.show(items: items, selectedIndex: 1)
+            let showMs = (CFAbsoluteTimeGetCurrent() - showStart) * 1000
+            print("demo panel: \(items.count) tiles in \(String(format: "%.1f", showMs))ms, frame \(panel.frame)")
         }
         app.run()
     }

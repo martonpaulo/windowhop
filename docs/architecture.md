@@ -4,25 +4,26 @@ Four layers, one direction of knowledge: UI and Input know the Core; the Core kn
 about AppKit or AX.
 
 ```
-┌──────────── UI ────────────┐  SwitcherPanel (AppKit), Settings/Onboarding (SwiftUI),
+┌──────────── UI ────────────┐  SwitcherPanel + SwitcherTileView (AppKit),
+│                            │  Settings/Onboarding (SwiftUI), ShortcutRecorderControl,
 │                            │  StatusItemController
 ├────────── Input ───────────┤  EventTap (tap thread) → SwitcherController (main)
 ├────────── Engine ──────────┤  WindowStore ← AXNotificationRouter ← TrackedApp observers
 │                            │  WindowActions, AccessibilityPermission, LoginItem
-└─────────── Core ───────────┘  SwitcherState, WindowEligibility, MRUOrder,
-                                TitleResolver, Preferences, ShortcutSpec   (pure, tested)
+├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
+└─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
+                                MRUOrder, TitleResolver, PersistentShortcut, Preferences
+                                (pure, unit-tested)
 ```
 
-## Event flow
-
-**Window model (event-driven, no polling):**
+## Window model (event-driven, no polling)
 
 1. `WindowStore.start()` KVO-observes `NSWorkspace.runningApplications`; each app gets a
    `TrackedApp` with one `AXObserver` (run-loop source on the dedicated AX events thread).
    Subscription retries handle apps that are still launching (ported from AltTab).
 2. AX notifications land in `AXNotificationRouter` on the AX thread, hop to the serial
-   AX reads queue for one batched `AXUIElementCopyMultipleAttributeValues` call (plus tab
-   group counting), then hand plain values to `WindowStore` on the main thread.
+   AX reads queue for one batched attribute call (plus tab-group titles), then hand plain
+   values to `WindowStore` on the main thread.
 3. `WindowStore` keeps `[TrackedWindow]` in window-level MRU order (index 0 = focused).
    Identity is the `AXUIElement` itself (CFEqual-stable), so duplicate titles cannot
    collide. `snapshot()` applies eligibility + display rules and returns value items.
@@ -30,19 +31,60 @@ about AppKit or AX.
    public AX API hides until their Space is visited and refreshes each window's
    current-Space flag.
 
-**Input (Cmd-Tab session):**
+### Tabs are never entries
 
-1. `EventTap` owns a consuming CGEvent tap (keyDown/keyUp/flagsChanged) on its own thread.
-   The callback reads a lock-protected mode (`off` / `watching` / `session` /
-   `passthrough`) and decides synchronously whether to consume; semantic events are posted
-   to the main thread. `flagsChanged` is never consumed.
-2. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
-   (phases: inactive → held → sticky/confirming) and executes the returned commands:
+Native NSWindow tabs (Finder, Terminal, …) are real AX windows; only the visible tab
+exposes the `AXTabGroup` child. `TabGroupResolver` (pure, ported from AltTab's
+TabGroup.updateState) matches the reported tab titles against same-app windows and marks
+inactive tabs `isTabbed`, which excludes them from display while keeping them tracked.
+Safari-style browsers expose one AX window per browser window, so nothing matches and
+each window simply carries its own tab count. Counts come only from counting
+`AXTabButton` children — never guessed, never parsed from titles.
+
+### The own-window exception
+
+WindowHop's own pid is never tracked through AX, which keeps the panel, alerts,
+onboarding, and helper surfaces out by construction. The single sanctioned exception is
+the Settings window: `SettingsWindowController` registers its `NSWindow` with the store,
+which creates a native-backed `TrackedWindow` (no AX). It participates in MRU via
+`didBecomeKey`, hides while miniaturized, disappears on `willClose`, and activates/closes
+through plain AppKit.
+
+## Input
+
+1. `EventTap` owns a consuming CGEvent tap (keyDown/keyUp/flagsChanged) on its own
+   thread. The callback reads a lock-protected mode — `off`, `watching`, `sessionHeld`,
+   `sessionSticky`, `passthrough` — and decides synchronously whether to consume;
+   semantic events are posted to the main thread. `flagsChanged` is never consumed.
+2. In `watching` it matches two chords: the switcher shortcut (modifier+Tab, Shift
+   reverses) opening a **held** session, and the optional persistent shortcut
+   (`PersistentShortcut`, exact modifier match) opening a **sticky** session.
+3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
+   (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
-3. The switcher list is **frozen at session start**; store changes while open only remove
+4. The switcher list is **frozen at session start**; store changes while open only remove
    or refresh entries (nearby selection preserved), never reorder or add.
-4. While a session is held, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to recover
-   from missed key-up events (session-scoped; never runs while idle).
+5. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
+   recover from missed key-up events. Sticky sessions have no such timer — modifier
+   release means nothing there; only Return/Space/click/Escape end them.
+
+## Presentation
+
+One horizontal strip of fixed-size tiles (large 76 pt app icon, 11 pt title, 9.5 pt tab
+count line — always reserved so tiles align). Selection is a neutral rounded rectangle
+like the native switcher. When the strip exceeds ~88 % of the screen width it scrolls
+horizontally; tiles never shrink. Tile views are pooled and reconfigured, so repeated
+opens and live updates are single-digit milliseconds even with 100+ windows (the pool is
+pre-warmed off the latency path). System materials and semantic colors handle Light/Dark,
+Increase Contrast, and Reduce Transparency; there are no animations to reduce.
+
+## Updates
+
+`UpdateManager` wraps Sparkle 2's `SPUStandardUpdaterController` and only starts from a
+real bundle (`com.perso.windowhop` with `SUFeedURL` present). The appcast lives at
+`https://raw.githubusercontent.com/martonpaulo/windowhop/main/appcast.xml`; archives are
+EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI secret).
+Update checks are the app's only network activity.
 
 ## Public-API replacements for AltTab's private calls
 
@@ -52,13 +94,13 @@ about AppKit or AX.
 | Focus a window | `_SLPSSetFrontProcessWithOptions` + `SLPSPostEventRecordTo` | `kAXMainAttribute` + `kAXRaiseAction` + settable `kAXFrontmostAttribute`, then `NSRunningApplication.activate()` |
 | Window identity | `_AXUIElementGetWindow` (CGWindowID) | the `AXUIElement` itself (CFEqual/CFHash) |
 | Other-Space windows | `_AXUIElementCreateWithRemoteToken` brute force + `CGSCopySpaces*` | persistent store + re-enumeration on Space change (see limitation in README) |
+| Tab-group siblings | CGWindowID matching | object-identity matching in pure `TabGroupResolver` |
 
 ## Fail-safe properties
 
 - The native macOS switcher is never modified. Interception exists only while the tap is
   alive and consuming; disabled/quit/crash/permission-revoked ⇒ native behavior.
-- Missing permission stops the tap entirely (`applyConfiguration`) — the shortcut is never
-  partially intercepted.
+- Missing permission stops the tap entirely — the shortcut is never partially intercepted.
 - `tapDisabledByTimeout/UserInput` events re-enable the tap in the callback; sleep/wake and
   session-switch notifications re-arm it from the app delegate.
 - Modifier release is detected from event flags (covers left/right and both-held cases);
@@ -70,3 +112,4 @@ about AppKit or AX.
   mutates state and draws.
 - The tap callback does no allocation or IPC on the hot path.
 - Idle = zero timers, zero polling; the app only reacts to OS events.
+- View work is bounded: pooled tiles, no per-frame layout, no animations.

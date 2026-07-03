@@ -125,19 +125,21 @@ extension AXUIElement {
         try throwIfNotSuccess(AXUIElementPerformAction(self, action as CFString))
     }
 
-    /// OS-level tab count, from the window's AXTabGroup child (Safari, Finder, Terminal, …).
-    /// Returns the number of AXTabButton children when the window shows a tab bar with
-    /// 2 or more tabs, nil otherwise. Never guessed, never parsed from titles.
-    public static func tabCount(fromWindowChildren children: [AXUIElement]?) -> Int? {
+    /// OS-level tab titles, from the window's AXTabGroup child (Safari, Finder,
+    /// Terminal, …). Returns one title per AXTabButton when the window shows a tab
+    /// bar with 2 or more tabs, nil otherwise. Never guessed, never parsed from the
+    /// window title. Only the group's visible tab exposes this.
+    public static func tabTitles(fromWindowChildren children: [AXUIElement]?) -> [String]? {
         guard let children else { return nil }
         for child in children {
             let attributes = try? child.attributes([kAXRoleAttribute, kAXChildrenAttribute])
             guard attributes?.role == "AXTabGroup", let tabChildren = attributes?.children else { continue }
-            let count = tabChildren.reduce(0) { partial, tab in
-                let subrole = (try? tab.attributes([kAXSubroleAttribute]))?.subrole
-                return partial + (subrole == "AXTabButton" ? 1 : 0)
+            let titles = tabChildren.compactMap { tab -> String? in
+                let tabAttributes = try? tab.attributes([kAXSubroleAttribute, kAXTitleAttribute])
+                guard tabAttributes?.subrole == "AXTabButton" else { return nil }
+                return tabAttributes?.title ?? ""
             }
-            return count >= 2 ? count : nil
+            return titles.count >= 2 ? titles : nil
         }
         return nil
     }

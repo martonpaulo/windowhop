@@ -29,14 +29,22 @@ public struct WindowDisplayState {
     public var isMinimized: Bool
     public var isAppHidden: Bool
     public var isOwnWindow: Bool
+    /// The single sanctioned own-window exception: WindowHop's Settings window.
+    public var isOwnSettingsWindow: Bool
+    /// An inactive tab of a native tab group (see TabGroupResolver): never an entry.
+    public var isTabbed: Bool
     public var isOnCurrentSpace: Bool
     public var isOnActiveDisplay: Bool
 
     public init(isMinimized: Bool, isAppHidden: Bool, isOwnWindow: Bool,
+                isOwnSettingsWindow: Bool = false,
+                isTabbed: Bool = false,
                 isOnCurrentSpace: Bool, isOnActiveDisplay: Bool) {
         self.isMinimized = isMinimized
         self.isAppHidden = isAppHidden
         self.isOwnWindow = isOwnWindow
+        self.isOwnSettingsWindow = isOwnSettingsWindow
+        self.isTabbed = isTabbed
         self.isOnCurrentSpace = isOnCurrentSpace
         self.isOnActiveDisplay = isOnActiveDisplay
     }
@@ -71,7 +79,8 @@ public enum WindowEligibility {
     public static func shouldDisplay(_ state: WindowDisplayState,
                                      includeOtherSpaces: Bool,
                                      includeOtherDisplays: Bool) -> Bool {
-        if state.isOwnWindow || state.isMinimized || state.isAppHidden { return false }
+        if state.isOwnWindow && !state.isOwnSettingsWindow { return false }
+        if state.isMinimized || state.isAppHidden || state.isTabbed { return false }
         if !includeOtherSpaces && !state.isOnCurrentSpace { return false }
         if !includeOtherDisplays && !state.isOnActiveDisplay { return false }
         return true

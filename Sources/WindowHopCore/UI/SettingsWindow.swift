@@ -23,6 +23,11 @@ public final class SettingsWindowController {
         }
         NSApp.activate()
         window?.makeKeyAndOrderFront(nil)
+        // the Settings window is a normal switcher entry while open (the one
+        // sanctioned exception to the own-window exclusion)
+        if let window {
+            WindowStore.shared.registerOwnWindow(window)
+        }
     }
 }
 
@@ -36,6 +41,9 @@ struct SettingsView: View {
     @AppStorage(Preferences.Key.showDockIcon.rawValue) private var showDockIcon = false
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var launchAtLoginFailed = false
+    @State private var persistentShortcut = Preferences.shared.persistentShortcut
+    @State private var shortcutValidationMessage: String?
+    @State private var automaticUpdates = UpdateManager.shared.automaticallyChecksForUpdates
 
     var body: some View {
         Form {
@@ -56,14 +64,37 @@ struct SettingsView: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+            }
+            Section {
                 Picker("Switcher shortcut", selection: $shortcut) {
                     ForEach(ShortcutSpec.allCases) { spec in
                         Text(spec.displayName).tag(spec.rawValue)
                     }
                 }
                 .pickerStyle(.menu)
+                .onChange(of: shortcut) { _, newValue in
+                    // a switcher-shortcut change can invalidate the persistent chord
+                    let spec = ShortcutSpec(rawValue: newValue) ?? .commandTab
+                    if let current = persistentShortcut, let error = current.validate(against: spec) {
+                        persistentShortcut = nil
+                        shortcutValidationMessage = error.explanation
+                    }
+                }
+                LabeledContent("Open WindowHop") {
+                    ShortcutRecorderField(shortcut: $persistentShortcut,
+                                          validationMessage: $shortcutValidationMessage,
+                                          switcherShortcut: ShortcutSpec(rawValue: shortcut) ?? .commandTab)
+                }
+                .onChange(of: persistentShortcut) { _, newValue in
+                    Preferences.shared.persistentShortcut = newValue
+                }
+                if let shortcutValidationMessage {
+                    Text(shortcutValidationMessage)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             } footer: {
-                Text("Hold the modifier and press Tab to cycle forward; add Shift to cycle backward. Releasing the modifier switches to the selected window.")
+                Text("The switcher shortcut cycles while you hold the modifier; releasing it switches windows. Open WindowHop keeps the switcher open without holding anything: Tab or arrows navigate, Return or Space switches, Escape cancels.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -75,6 +106,25 @@ struct SettingsView: View {
             Section("Appearance") {
                 Toggle("Show menu bar item", isOn: $showMenuBarItem)
                 Toggle("Show Dock icon", isOn: $showDockIcon)
+            }
+            Section {
+                Toggle("Automatically check for updates", isOn: $automaticUpdates)
+                    .onChange(of: automaticUpdates) { _, newValue in
+                        UpdateManager.shared.automaticallyChecksForUpdates = newValue
+                    }
+                    .disabled(!UpdateManager.shared.isAvailable)
+                LabeledContent("Version \(UpdateManager.shared.currentVersion)") {
+                    Button("Check for Updates…") {
+                        UpdateManager.shared.checkForUpdates()
+                    }
+                    .disabled(!UpdateManager.shared.isAvailable)
+                }
+            } header: {
+                Text("Updates")
+            } footer: {
+                Text("Update checks against GitHub are WindowHop's only network activity. No telemetry, no accounts.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)

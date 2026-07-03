@@ -26,7 +26,7 @@ The full upstream history up to that commit is preserved in this repository
 | `src/logic/Application.swift` | `Engine/TrackedApp.swift` | per-app AXObserver, launch-readiness retry pattern |
 | `src/logic/events/AccessibilityEvents.swift` | `Engine/AXNotificationRouter.swift` | notification routing, batched attribute reads |
 | `src/api-wrappers/AXUIElement.swift` | `Engine/AXHelpers.swift` | batched attributes, safe casting, subscription semantics, tab-group counting |
-| `src/logic/TabGroup.swift` | `Engine/AXHelpers.swift` (`tabCount`) | AXTabGroup/AXTabButton tab detection |
+| `src/logic/TabGroup.swift` | `Core/TabGroupResolver.swift` + `Engine/AXHelpers.swift` (`tabTitles`) | AXTabGroup/AXTabButton detection; tab-sibling resolution so tabs never become entries |
 | `src/logic/events/KeyboardEvents.swift` | `Input/EventTap.swift` | tap re-enable on `tapDisabledBy*`, dedicated input thread |
 | `src/logic/BackgroundWork.swift` | `Engine/BackgroundWork.swift` | dedicated run-loop threads, AX off the main thread |
 | `src/logic/events/RunningApplicationsEvents.swift` | `Engine/WindowStore.swift` | KVO on `NSWorkspace.runningApplications` |
@@ -39,8 +39,10 @@ The full upstream history up to that commit is preserved in this repository
 - Window previews, thumbnails, ScreenCaptureKit/screen capture, Screen Recording permission.
 - Search/typing filter, trackpad/scrollwheel gestures, drag-and-drop onto tiles,
   window tiling hooks, app launching, Dock/context-menu integrations.
-- Sparkle (updates), AppCenter (crash telemetry), SwiftyBeaver (logging), LetsMove,
-  ShortcutRecorder — all third-party dependencies. WindowHop has zero dependencies.
+- AppCenter (crash telemetry), SwiftyBeaver (logging), LetsMove, ShortcutRecorder —
+  third-party dependencies. Sparkle was initially removed too, then reintroduced
+  cleanly via Swift Package Manager as WindowHop's only dependency (updates only;
+  WindowHop's shortcut recorder is its own small AppKit control).
 - All private API usage:
   - `CGSSetSymbolicHotKeyEnabled` (disabling native Cmd-Tab) → replaced by a consuming
     CGEvent tap, which is fail-safe by construction.

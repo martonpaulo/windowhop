@@ -1,0 +1,39 @@
+name: Bug report
+description: Something doesn't work the way it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS version
+      placeholder: e.g. macOS 26.5
+    validations:
+      required: true
+  - type: input
+    id: windowhop-version
+    attributes:
+      label: WindowHop version
+      description: Shown in Settings under Updates.
+      placeholder: e.g. 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: app
+    attributes:
+      label: Affected application (if any)
+      description: Some apps expose unusual window metadata; naming the app helps a lot.
+      placeholder: e.g. Firefox, IntelliJ IDEA
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: Accessibility permission is granted to WindowHop
+        - label: The problem still happens after quitting and reopening WindowHop

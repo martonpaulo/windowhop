@@ -1,125 +1,141 @@
 # WindowHop
 
-A fast, native, keyboard-first window switcher for macOS. **Icons and window titles — no previews.**
+**A fast, native window switcher for macOS — Command-Tab, but for windows.**
 
-WindowHop replaces Command-Tab with a window switcher instead of an app switcher: every
-window is one row, you always see its title, and releasing Command lands you on the exact
-window you picked. It is completely free, open source (GPL-3.0), and works entirely offline —
-no accounts, no license keys, no telemetry, no updates that phone home.
+[![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop)](https://github.com/martonpaulo/windowhop/releases/latest)
+[![CI](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 
-| Light | Dark |
-|---|---|
-| ![Switcher, Light Mode](docs/screenshots/switcher-light.png) | ![Switcher, Dark Mode](docs/screenshots/switcher-dark.png) |
+macOS's Command-Tab switches between *apps*. WindowHop switches between *windows*:
+every window gets its own large icon and title, and releasing Command lands you on the
+exact window you picked — even if it's on another Space or display. No previews, no
+thumbnails, nothing to configure into shape. It looks and feels like a system component.
 
-## What it does
+![The WindowHop switcher](docs/screenshots/switcher-light.png)
 
-- **Cmd-Tab** opens the switcher and selects your previously focused window; keep holding
-  Command and press Tab to cycle. **Cmd-Shift-Tab** cycles backward (always available).
-- **Release Command** to switch to the selected window. **Escape** cancels. **Return**
-  activates. **Arrow keys** navigate. **Click** an entry to switch; click outside to cancel.
-- **Delete/Backspace** asks to close the selected window — always with a confirmation
-  dialog (`Close "UserResourceMapper.java" in IntelliJ IDEA?`) where Cancel is the default.
-  The target app's own unsaved-changes flow is preserved.
-- Shows **individual windows only**: never appears for minimized windows, windows of
-  Command-H-hidden apps, or apps without windows. Menus, tooltips, and other non-window
-  surfaces are filtered with rules inherited from AltTab.
-- Shows a **tab count** (e.g. `7 tabs`) when a window exposes native macOS tabs through
-  the Accessibility API (Safari, Finder, Terminal, …). Never guessed, never parsed from titles.
-- Window-level **most-recently-used ordering**; windows from **other Spaces and displays**
-  included by default.
-- Full-screen friendly, Light/Dark Mode, Reduce Transparency/Motion, Increase Contrast,
-  and VoiceOver announcements.
+## Download
 
-## What it deliberately does not do
+**[⬇ Download the latest release](https://github.com/martonpaulo/windowhop/releases/latest)** — free and open source.
 
-No window previews or thumbnails, no screen capture, no search, no tiling or layout
-management, no app launching, no themes. One job: switch to the exact window you want.
+## Features
+
+- **One entry per window**, with its app icon and title. Tabs never clutter the list —
+  a Safari window with 5 tabs is one entry with a quiet "5 tabs" hint.
+- **Real most-recently-used order** at the window level; the first Tab press always
+  selects the window you used before this one.
+- **Everything included by default**: windows from other Spaces, other displays, and
+  full-screen windows. Minimized windows and hidden apps stay out of the way.
+- **Two ways to switch**: hold-based ⌘Tab (release to switch), or the optional
+  **Open WindowHop** shortcut that keeps the switcher open hands-free.
+- **Close windows from the switcher** (Delete), always with a confirmation.
+- **Native to the bone**: system materials and colors, Light/Dark Mode, Reduce
+  Transparency, Increase Contrast, Reduce Motion, VoiceOver announcements.
+- **Private by design**: no telemetry, no accounts, no previews, never asks for
+  Screen Recording. Automatic update checks are the only network activity.
 
 ## Install
 
-WindowHop is free to build and use. There is no notarized download (that would require a
-paid Apple Developer account); build it from source:
+1. Download `WindowHop-x.y.z.dmg` (or the ZIP) from the
+   [latest release](https://github.com/martonpaulo/windowhop/releases/latest).
+2. Open the DMG and drag **WindowHop** into **Applications**.
+3. **First launch:** right-click WindowHop.app and choose **Open**, then confirm.
+   (Releases are not notarized by Apple — see [Known limitations](#known-limitations) —
+   so macOS asks once. If macOS still refuses, allow it under
+   System Settings → Privacy & Security.)
 
-```sh
-git clone https://github.com/martonpaulo/windowhop && cd windowhop
-scripts/package-app.sh          # builds build/WindowHop.app (ad-hoc signed)
-cp -R build/WindowHop.app /Applications/
-open /Applications/WindowHop.app
-```
+### The one permission it needs
 
-Because the app is ad-hoc signed, the first launch may require right-click → Open, or
-approval under System Settings → Privacy & Security.
+WindowHop needs **Accessibility** access — that's how macOS lets it list windows and
+switch to them:
 
-### Permission
+> System Settings → Privacy & Security → **Accessibility** → enable **WindowHop**
 
-WindowHop needs exactly one permission: **Accessibility** (System Settings → Privacy &
-Security → Accessibility). macOS requires it for listing windows and switching to them.
-WindowHop never requests Screen Recording — it has nothing to record.
+WindowHop shows a welcome window that takes you there on first launch. It never asks
+for Screen Recording or anything else.
 
-### Settings
+## Keyboard controls
+
+| Keys | Action |
+|---|---|
+| **⌘ Tab** | Open the switcher and select your previous window |
+| **⌘ Tab Tab…** (keep holding ⌘) | Cycle forward |
+| **⌘ ⇧ Tab** | Cycle backward |
+| **Release ⌘** | Switch to the selected window |
+| **← → ↑ ↓** | Navigate |
+| **Return** | Switch to the selected window |
+| **Escape** | Cancel, stay where you were |
+| **Delete (⌫)** | Close the selected window (asks first) |
+| **Click** | Switch to a window; click outside cancels |
+
+The switcher chord can be changed to ⌥Tab or ⌃Tab in Settings.
+
+### The "Open WindowHop" shortcut
+
+Prefer not to hold a modifier? Assign a second shortcut (for example ⌥Space) in
+Settings. Pressing it opens the switcher and *keeps it open*: navigate with Tab,
+Shift-Tab, or arrows; switch with Return, Space, or a click; cancel with Escape.
+Releasing modifiers does nothing in this mode. It is unassigned by default.
+
+## Settings
 
 ![Settings](docs/screenshots/settings-light.png)
 
-Launching WindowHop again (Finder, Spotlight, Dock) opens Settings even when the menu bar
-item and Dock icon are hidden (both are hidden by default).
+Launching WindowHop again (from Finder, Spotlight, or the Dock) opens Settings even
+when the menu bar item and Dock icon are hidden — both are hidden by default.
 
-## Fail-safe by design
+## Automatic updates and privacy
 
-WindowHop never touches the native macOS app switcher: it intercepts Command-Tab with a
-consuming event tap while enabled. If WindowHop is disabled, quits, crashes, or loses its
-permission, the event tap disappears and native Command-Tab keeps working — there is
-nothing to restore.
+WindowHop updates itself through [Sparkle](https://sparkle-project.org): it checks a
+feed on GitHub, and updates are cryptographically signed (EdDSA) and verified before
+installing. You can turn automatic checks off, or check manually, in Settings.
+**Update checks are WindowHop's only network activity.** There is no telemetry, no
+analytics, and no account. Everything works offline except updating.
 
-## Build and test
+## Build from source
 
-Requires Xcode 26+ (Swift 5.10+ toolchain), macOS 14+.
-
-```sh
-swift build                      # debug build
-swift test                       # unit tests
-swift build -c release           # release build
-scripts/package-app.sh           # release .app + artifacts/WindowHop-release.zip
-```
-
-Development harness (see [docs/testing.md](docs/testing.md)):
+Requires macOS 14+ and Xcode 16+ (free). No paid Apple account needed.
 
 ```sh
-.build/debug/WindowHop --dump-windows          # print the live switcher list (needs Accessibility)
-.build/debug/WindowHop --demo-switcher [--dark] # show the panel with sample rows (no permission needed)
-.build/debug/WindowHop --render-ui <dir>        # render UI screenshots to PNGs
-WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # run with input/session diagnostics
+git clone https://github.com/martonpaulo/windowhop && cd windowhop
+swift test                # run the test suite
+scripts/package-app.sh    # build build/WindowHop.app (ad-hoc signed)
+cp -R build/WindowHop.app /Applications/
 ```
 
-## Measured performance
+Development docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
+[contributing](CONTRIBUTING.md) · [upstream attribution](UPSTREAM.md)
 
-On an Apple Silicon Mac (macOS 26.5), Release-equivalent runs measured during development:
+## Troubleshooting
 
-- Trigger to visible panel: **3–22 ms** (first open is the slow end; subsequent opens ~10 ms)
-- Event-tap callback to main-thread hand-off: **< 0.4 ms**
-- Idle CPU: **0.0 %** (event-driven only; no polling, no timers while idle)
-- Memory: **~63 MB RSS** with the engine running
+- **⌘Tab shows the old macOS switcher** — WindowHop is not running, is disabled in
+  Settings, or lost its Accessibility permission. That's by design: whenever WindowHop
+  can't do its job, native switching keeps working.
+- **Nothing happens after an update or macOS upgrade** — re-grant Accessibility in
+  System Settings (remove WindowHop from the list and add it again), then relaunch.
+- **A window is missing from the switcher** — minimized windows and hidden apps are
+  excluded on purpose. A window that lives on another Space appears after you visit
+  that Space once (a macOS API limitation, below).
+- **Typing a password and ⌘Tab behaves natively** — secure input temporarily blocks
+  all keyboard interception; WindowHop resumes automatically.
 
 ## Known limitations
 
-WindowHop uses only supported public Apple APIs (AltTab uses private SkyLight/CGS calls
-for some of this). The honest consequences:
-
-- **Windows on other Spaces** are listed once discovered. macOS's public Accessibility API
-  does not enumerate other-Space windows, so a window that existed on another Space before
-  WindowHop launched appears after that Space is visited once. Windows stay tracked when
-  you move between Spaces.
-- **Secure input** (password fields) suspends keyboard event taps system-wide; while a
-  password field is focused, Command-Tab falls back to the native switcher.
-- Windows of apps that render no standard Accessibility metadata may be missing or
-  untitled; app-specific rules cover the common offenders (JetBrains, Steam, Firefox, …).
-- Ad-hoc signing only; no notarization (requires a paid Apple Developer account).
+- **Not notarized.** Notarization requires a paid Apple Developer account, so macOS
+  shows a one-time warning on first launch. The release workflow signs and notarizes
+  automatically as soon as Developer ID credentials are configured.
+- **Windows on unvisited Spaces** appear only after that Space is visited once while
+  WindowHop runs. macOS's public Accessibility API doesn't enumerate them earlier
+  (AltTab works around this with private APIs; WindowHop deliberately uses none).
+- **Tab counts** appear only for apps that expose native tab groups to Accessibility
+  (Safari, Finder, Terminal, TextEdit, …). Chrome and other custom-tab apps show
+  no count — WindowHop never guesses.
+- English-only interface in this release.
 
 ## License and attribution
 
-GPL-3.0 — see [LICENSE](LICENSE).
-
-WindowHop is derived from [AltTab](https://github.com/lwouis/alt-tab-macos) by Louis
-Pontoise (lwouis) and contributors, base tag `v10.12.0`
-(`317a485bcb090bf2b29e3f78872218f0099e1d62`). The full upstream Git history is preserved
-in this repository. See [UPSTREAM.md](UPSTREAM.md) for what was retained, rewritten, and
-removed.
+[GPL-3.0](LICENSE). WindowHop is derived from
+[AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise (lwouis) and
+contributors — base tag `v10.12.0` (`317a485b`), with the full upstream history
+preserved in this repository. See [UPSTREAM.md](UPSTREAM.md) for exactly what was
+retained, rewritten, and removed. Thank you, AltTab.

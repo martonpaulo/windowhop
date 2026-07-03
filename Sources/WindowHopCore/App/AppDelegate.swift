@@ -16,6 +16,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         BackgroundWork.start()
         SwitcherController.shared.wire()
         StatusItemController.shared.apply()
+        UpdateManager.shared.startIfBundled()
         observeSystemEvents()
 
         if AccessibilityPermission.isGranted {

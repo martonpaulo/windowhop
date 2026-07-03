@@ -8,10 +8,16 @@ import ApplicationServices
 /// rules because the caller holds Accessibility permission.
 public enum WindowActions {
     public static func activate(_ window: TrackedWindow) {
-        let app = window.app
+        // own Settings window: plain AppKit, no AX involved
+        if let native = window.nativeWindow {
+            NSApp.activate()
+            native.makeKeyAndOrderFront(nil)
+            return
+        }
+        guard let ax = window.ax, let app = window.app else { return }
         BackgroundWork.axActionsQueue.async {
-            try? window.ax.setAttribute(kAXMainAttribute, true)
-            try? window.ax.performAction(kAXRaiseAction)
+            try? ax.setAttribute(kAXMainAttribute, true)
+            try? ax.performAction(kAXRaiseAction)
             try? app.axElement.setAttribute(kAXFrontmostAttribute, true)
             DispatchQueue.main.async {
                 // reinforcement so menu bar and key state follow; harmless if already front
@@ -24,14 +30,19 @@ public enum WindowActions {
     /// unsaved-changes workflow. Fullscreen windows are taken out of fullscreen first
     /// (closing is ignored during the fullscreen animation).
     public static func close(_ window: TrackedWindow) {
+        if let native = window.nativeWindow {
+            native.performClose(nil)
+            return
+        }
+        guard let ax = window.ax else { return }
         BackgroundWork.axActionsQueue.async {
             if window.isFullscreen {
-                try? window.ax.setAttribute(kAXFullscreenAttribute, false)
+                try? ax.setAttribute(kAXFullscreenAttribute, false)
                 BackgroundWork.axActionsQueue.asyncAfter(deadline: .now() + 1) {
-                    pressCloseButton(window.ax)
+                    pressCloseButton(ax)
                 }
             } else {
-                pressCloseButton(window.ax)
+                pressCloseButton(ax)
             }
         }
     }

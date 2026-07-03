@@ -4,15 +4,18 @@
 
 ```sh
 swift build && swift test        # must pass, zero warnings
-swift build -c release
-scripts/package-app.sh           # release .app + artifacts/WindowHop-release.zip
+scripts/validate.sh              # repository invariants (must pass)
+scripts/package-app.sh [ver] [build]  # release .app with Sparkle embedded + zip
+scripts/make-dmg.sh [ver]        # DMG (expects build/WindowHop.app)
 ```
 
 Runtime checks (Accessibility permission is inherited when run from a trusted terminal):
 
 ```sh
 .build/debug/WindowHop --dump-windows           # real discovery works?
-.build/debug/WindowHop --render-ui /tmp/shots   # UI renders correctly?
+.build/debug/WindowHop --render-ui /tmp/shots   # switcher + settings renders, light/dark/overflow
+.build/debug/WindowHop --demo-switcher [--dark] [--many]  # on-screen panel demo
+.build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end (see docs/testing.md)
 WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
 ```
 
@@ -29,21 +32,37 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   consume/pass with plain comparisons, post to main, return. Never do AX/IO there.
 - **Never consume `flagsChanged` events**, and never disable the native Cmd-Tab symbolic
   hotkey. Fail-safe = if WindowHop dies, native switching works untouched.
-- **No new dependencies, no telemetry, no network code, no Pro/license/update code.**
+- **One entry per top-level window; tabs are never entries** (see TabGroupResolver).
+  The own-process exclusion has exactly one exception: the registered Settings window.
+- **Sparkle is the only runtime dependency**, and update checks are the only permitted
+  network activity. No telemetry, no analytics, no accounts, no Pro/license code.
+- The bundle identifier is `com.perso.windowhop` — everywhere, always.
 - Closing a window always goes through the confirmation dialog (Cancel is default).
+- Icon size is fixed Large; appearance always follows the system. No settings for either.
 
 ## Architecture (see docs/architecture.md)
 
 - `Core/` — pure logic, no AppKit/AX imports beyond value types. All business rules live
-  here (eligibility, MRU, title fallback, session state machine, settings defaults).
-  New behavior rules go here **with unit tests**.
+  here (eligibility, MRU, title fallback, tab-group resolution, session state machine,
+  shortcut model, settings defaults). New behavior rules go here **with unit tests**.
 - `Engine/` — AX integration: `TrackedApp`/`TrackedWindow`, `WindowStore` (main-thread
   source of truth), `AXNotificationRouter` (AX thread → reads queue → main).
-- `Input/` — `EventTap` (tap thread) and `SwitcherController` (main-thread orchestration).
-- `UI/` — AppKit switcher panel; SwiftUI Settings/onboarding.
+- `Input/` — `EventTap` (tap thread; modes off/watching/sessionHeld/sessionSticky/
+  passthrough) and `SwitcherController` (main-thread orchestration).
+- `UI/` — AppKit switcher panel (horizontal large-icon tiles, pooled); SwiftUI
+  Settings/onboarding; native shortcut recorder.
+- `App/` — lifecycle and `UpdateManager` (Sparkle; only starts from a real bundle).
 
 Threading: AX reads/actions on `BackgroundWork` queues, never the main thread; state
 mutation and UI on main only.
+
+## Sessions
+
+Two explicit session modes share one pure state machine (`SwitcherState`):
+- **held** (`⌘Tab`): modifier release activates; guarded by a session-scoped timer.
+- **sticky** (`Open WindowHop` shortcut, or after a close confirmation): modifier
+  release is meaningless; Return/Space/click/Escape end it.
+Fixing one mode must not silently change the other — both are covered by tests.
 
 ## Conventions
 
@@ -51,3 +70,6 @@ mutation and UI on main only.
 - Comments state constraints the code can't show (ported-rule provenance, macOS quirks).
 - GPL-3.0 with AltTab attribution is non-negotiable; update UPSTREAM.md when porting
   upstream rules (include the upstream commit hash).
+- Release flow: tag `vX.Y.Z` → `.github/workflows/release.yml` (or local scripts);
+  the Sparkle private key lives in the Keychain and the `SPARKLE_PRIVATE_KEY` GitHub
+  secret — never in the repository or logs.

@@ -52,6 +52,25 @@ public struct SwitcherState {
         }
     }
 
+    /// The "Open WindowHop" shortcut: opens a session that survives modifier release.
+    /// Selection starts on the previously focused window, like a normal trigger.
+    /// Invoking it while a session is already open keeps the current session as-is.
+    public mutating func openPersistent(itemCount count: Int) -> Command {
+        guard phase == .inactive else { return .none }
+        guard count > 0 else { return .none }
+        itemCount = count
+        phase = .sticky
+        selectedIndex = min(1, count - 1)
+        return .show(selectedIndex: selectedIndex)
+    }
+
+    /// Space activates the selection, but only in a persistent session; during a
+    /// held session Space is not a WindowHop key (⌘Space must stay Spotlight's).
+    public mutating func spaceKey() -> Command {
+        guard phase == .sticky else { return .none }
+        return finish(.activate(index: selectedIndex))
+    }
+
     public mutating func step(backward: Bool) -> Command {
         guard phase == .held || phase == .sticky, itemCount > 0 else { return .none }
         selectedIndex = backward

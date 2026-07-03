@@ -33,6 +33,7 @@ public final class SwitcherController {
     /// and native Cmd-Tab behaves exactly as without WindowHop.
     public func applyConfiguration(enabled: Bool, granted: Bool) {
         EventTap.shared.holdModifier = Preferences.shared.shortcut.holdModifier
+        EventTap.shared.persistentShortcut = Preferences.shared.persistentShortcut
         configuredEnabled = enabled && granted
         if configuredEnabled {
             if EventTap.shared.start(), !state.isActive {
@@ -60,6 +61,17 @@ public final class SwitcherController {
                 // the tap flipped to .session optimistically; nothing to show after all
                 EventTap.shared.mode = configuredEnabled ? .watching : .off
             }
+        case .openPersistent:
+            let openStart = CFAbsoluteTimeGetCurrent()
+            if !state.isActive {
+                items = WindowStore.shared.snapshot()
+            }
+            perform(state.openPersistent(itemCount: items.count))
+            DebugLog.log("persistent open handled: \(items.count) items, phase \(state.phase), "
+                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - openStart) * 1000))ms")
+            if !state.isActive {
+                EventTap.shared.mode = configuredEnabled ? .watching : .off
+            }
         case .step(let backward):
             perform(state.step(backward: backward))
         case .modifierReleased:
@@ -68,6 +80,8 @@ public final class SwitcherController {
             perform(state.escape())
         case .returnKey:
             perform(state.returnKey())
+        case .spaceKey:
+            perform(state.spaceKey())
         case .arrow(let direction):
             perform(state.arrow(direction))
         case .deleteKey:
@@ -84,6 +98,7 @@ public final class SwitcherController {
             didShowConfirmation = false
             originWindow = items.first?.window
             panel.show(items: items, selectedIndex: selectedIndex)
+            EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
         case .select(let index):
             panel.select(index)
@@ -126,14 +141,14 @@ public final class SwitcherController {
         closeButton.hasDestructiveAction = true
         NSApp.activate()
         let response = alert.runModal()
+        _ = state.confirmationFinished()
         if configuredEnabled {
-            EventTap.shared.mode = state.isActive ? .session : .watching
+            EventTap.shared.mode = state.isActive ? sessionTapMode() : .watching
         }
         if response == .alertSecondButtonReturn, let window = item.window,
            WindowStore.shared.windows.contains(where: { $0 === window }) {
             WindowActions.close(window)
         }
-        _ = state.confirmationFinished()
         refreshDuringSession()
     }
 
@@ -178,7 +193,8 @@ public final class SwitcherController {
         }
         // fail-safe for missed flagsChanged events (unusual event order, sleep, secure
         // input): while held, verify the modifier is really still down. Session-scoped;
-        // never runs while idle.
+        // never runs while idle, and not at all for persistent sessions.
+        guard state.phase == .held, heldModifierGuard == nil else { return }
         heldModifierGuard = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             guard let self, self.state.phase == .held else { return }
             let flags = NSEvent.modifierFlags
@@ -186,6 +202,10 @@ public final class SwitcherController {
                 self.perform(self.state.modifierReleased())
             }
         }
+    }
+
+    private func sessionTapMode() -> TapMode {
+        state.phase == .held ? .sessionHeld : .sessionSticky
     }
 
     private func endSession() {

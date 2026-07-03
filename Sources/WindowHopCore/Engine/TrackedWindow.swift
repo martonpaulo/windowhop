@@ -1,12 +1,17 @@
 import AppKit
 import ApplicationServices
 
-/// One real window we track. Identity is the AXUIElement itself (CFEqual-stable
-/// for the lifetime of the process that owns the window), so duplicate titles
-/// can never collide.
+/// One real window we track. For other apps' windows the identity is the
+/// AXUIElement itself (CFEqual-stable for the lifetime of the owning process), so
+/// duplicate titles can never collide. WindowHop's own Settings window is the one
+/// deliberate exception to the own-process exclusion: it is backed directly by its
+/// NSWindow instead of AX, keeping every other internal surface out by construction.
 public final class TrackedWindow {
-    public let ax: AXUIElement
-    public unowned let app: TrackedApp
+    public let ax: AXUIElement?
+    public let app: TrackedApp?
+    public private(set) weak var nativeWindow: NSWindow?
+    /// True only for the registered WindowHop Settings window entry.
+    public let isOwnSettingsEntry: Bool
     public private(set) var title: String
     public private(set) var tabCount: Int?
     public internal(set) var isMinimized: Bool
@@ -15,29 +20,60 @@ public final class TrackedWindow {
     public internal(set) var frame: CGRect?
     /// Result of WindowEligibility.isActualWindow at the latest attribute refresh.
     public internal(set) var isActual: Bool
+    /// True when this window is really an inactive tab of a native tab group;
+    /// tabbed windows are never shown as switcher entries (see TabGroupResolver).
+    public internal(set) var isTabbed = false
+    /// Identities of this window's tab group members (including itself), when known.
+    public internal(set) var tabGroupIds: [ObjectIdentifier]?
 
-    init(ax: AXUIElement, app: TrackedApp, attributes: AXAttributes, tabCount: Int?) {
+    init(ax: AXUIElement, app: TrackedApp, attributes: AXAttributes, tabTitles: [String]?) {
         self.ax = ax
         self.app = app
+        nativeWindow = nil
+        isOwnSettingsEntry = false
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)
-        self.tabCount = tabCount
+        tabCount = tabTitles?.count
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)
         isActual = WindowEligibility.isActualWindow(app.windowFacts(from: attributes))
     }
 
-    func update(from attributes: AXAttributes, tabCount: Int?) {
+    /// The own-Settings-window exception: a native entry with the WindowHop icon.
+    init(settingsWindow: NSWindow) {
+        ax = nil
+        app = nil
+        nativeWindow = settingsWindow
+        isOwnSettingsEntry = true
+        title = settingsWindow.title
+        tabCount = nil
+        isMinimized = settingsWindow.isMiniaturized
+        isFullscreen = false
+        frame = settingsWindow.frame
+        isActual = true
+    }
+
+    func update(from attributes: AXAttributes, tabTitles: [String]?) {
+        guard let app else { return }
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)
-        self.tabCount = tabCount
+        tabCount = tabTitles?.count
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)
         isActual = WindowEligibility.isActualWindow(app.windowFacts(from: attributes))
+    }
+
+    /// Display values for the switcher entry.
+    public var appName: String {
+        isOwnSettingsEntry ? "WindowHop" : (app?.name ?? "")
+    }
+
+    public var appIcon: NSImage? {
+        isOwnSettingsEntry ? NSApp.applicationIconImage : app?.icon
     }
 
     private static func frame(from attributes: AXAttributes) -> CGRect? {

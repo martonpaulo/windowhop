@@ -120,12 +120,12 @@ public final class WindowStore {
     }
 
     func windowEvent(_ notification: String, element: AXUIElement, pid: pid_t,
-                     attributes: AXAttributes, tabCount: Int?) {
+                     attributes: AXAttributes, tabTitles: [String]?) {
         guard started, let app = apps[pid] else { return }
         let existing = windows.first { $0.ax == element }
         let window: TrackedWindow
         if let existing {
-            existing.update(from: attributes, tabCount: tabCount)
+            existing.update(from: attributes, tabTitles: tabTitles)
             window = existing
         } else {
             let facts = app.windowFacts(from: attributes)
@@ -134,12 +134,13 @@ public final class WindowStore {
             // unknown non-windows (menus, tooltips, …) are ignored entirely, but a window
             // that just got focused is real even if its subrole looks wrong mid-animation
             guard WindowEligibility.isActualWindow(facts) || isFocusEvent else { return }
-            window = TrackedWindow(ax: element, app: app, attributes: attributes, tabCount: tabCount)
+            window = TrackedWindow(ax: element, app: app, attributes: attributes, tabTitles: tabTitles)
             windows.append(window)
             BackgroundWork.axReadsQueue.async {
                 app.subscribeToWindowNotifications(element)
             }
         }
+        updateTabGroup(for: window, tabTitles: tabTitles)
         switch notification {
         case kAXFocusedWindowChangedNotification, kAXMainWindowChangedNotification:
             // Photoshop focuses a window after you focus another app; ignore those
@@ -166,8 +167,96 @@ public final class WindowStore {
 
     func removeWindow(_ element: AXUIElement) {
         guard let index = windows.firstIndex(where: { $0.ax == element }) else { return }
-        windows.remove(at: index)
+        let removed = windows.remove(at: index)
+        if let groupIds = removed.tabGroupIds {
+            let remaining = windows.filter { $0.app === removed.app }
+            applyTabStates(TabGroupResolver.resolveRemoval(
+                removedId: ObjectIdentifier(removed),
+                groupIds: groupIds,
+                remainingWindows: remaining.map(tabDescriptor)))
+        }
         onChange?()
+    }
+
+    // MARK: - Own Settings window (the one own-process inclusion exception)
+
+    /// Registers WindowHop's own Settings window as a normal switcher entry.
+    /// It participates in MRU, is excluded while minimized, disappears on close,
+    /// and can never be duplicated. All other own windows stay excluded because
+    /// nothing else is ever registered (own AX windows are not tracked at all).
+    public func registerOwnWindow(_ window: NSWindow) {
+        if let existing = ownEntry(for: window) {
+            windowFocused(existing)
+            onChange?()
+            return
+        }
+        let entry = TrackedWindow(settingsWindow: window)
+        windows.insert(entry, at: 0)
+        let center = NotificationCenter.default
+        center.addObserver(self, selector: #selector(ownWindowClosed(_:)),
+                           name: NSWindow.willCloseNotification, object: window)
+        center.addObserver(self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
+                           name: NSWindow.didMiniaturizeNotification, object: window)
+        center.addObserver(self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
+                           name: NSWindow.didDeminiaturizeNotification, object: window)
+        center.addObserver(self, selector: #selector(ownWindowFocused(_:)),
+                           name: NSWindow.didBecomeKeyNotification, object: window)
+        onChange?()
+    }
+
+    private func ownEntry(for window: NSWindow) -> TrackedWindow? {
+        windows.first { $0.isOwnSettingsEntry && $0.nativeWindow === window }
+    }
+
+    @objc private func ownWindowClosed(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              let entry = ownEntry(for: window) else { return }
+        NotificationCenter.default.removeObserver(self, name: nil, object: window)
+        windows.removeAll { $0 === entry }
+        onChange?()
+    }
+
+    @objc private func ownWindowMiniaturizedChanged(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              let entry = ownEntry(for: window) else { return }
+        entry.isMinimized = notification.name == NSWindow.didMiniaturizeNotification
+        onChange?()
+    }
+
+    @objc private func ownWindowFocused(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              let entry = ownEntry(for: window) else { return }
+        windowFocused(entry)
+        onChange?()
+    }
+
+    // MARK: - Tab groups (tabs are never independent entries)
+
+    private func tabDescriptor(_ window: TrackedWindow)
+        -> TabGroupResolver.WindowDescriptor<ObjectIdentifier> {
+        TabGroupResolver.WindowDescriptor(id: ObjectIdentifier(window),
+                                          title: window.title,
+                                          isTabbed: window.isTabbed,
+                                          groupIds: window.tabGroupIds)
+    }
+
+    private func updateTabGroup(for window: TrackedWindow, tabTitles: [String]?) {
+        // cheap fast path: nothing reported and no group membership to maintain
+        guard tabTitles != nil || window.tabGroupIds != nil else { return }
+        let sameApp = windows.filter { $0.app === window.app && $0 !== window }
+        applyTabStates(TabGroupResolver.resolve(active: tabDescriptor(window),
+                                                tabTitles: tabTitles,
+                                                sameAppWindows: sameApp.map(tabDescriptor)))
+    }
+
+    private func applyTabStates(_ changes: [ObjectIdentifier: TabGroupResolver.WindowTabState<ObjectIdentifier>]) {
+        guard !changes.isEmpty else { return }
+        for window in windows {
+            if let change = changes[ObjectIdentifier(window)] {
+                window.isTabbed = change.isTabbed
+                window.tabGroupIds = change.groupIds
+            }
+        }
     }
 
     /// Re-enumerate every app on Space change: discovers windows we could not see
@@ -185,7 +274,8 @@ public final class WindowStore {
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
                     for window in self.windows where window.app === app {
-                        window.isOnCurrentSpace = currentElements.contains(window.ax)
+                        guard let ax = window.ax else { continue }
+                        window.isOnCurrentSpace = currentElements.contains(ax)
                     }
                     self.onChange?()
                 }
@@ -205,8 +295,12 @@ public final class WindowStore {
             guard window.isActual else { return nil }
             let state = WindowDisplayState(
                 isMinimized: window.isMinimized,
-                isAppHidden: window.app.isHidden,
-                isOwnWindow: false, // own windows are never tracked (own pid is excluded)
+                isAppHidden: window.app?.isHidden ?? false,
+                // own AX windows are never tracked (own pid is excluded); the only
+                // own entry that exists is the registered Settings window
+                isOwnWindow: window.isOwnSettingsEntry,
+                isOwnSettingsWindow: window.isOwnSettingsEntry,
+                isTabbed: window.isTabbed,
                 isOnCurrentSpace: window.isOnCurrentSpace,
                 isOnActiveDisplay: activeScreen.map { window.isOn(screen: $0) } ?? true)
             guard WindowEligibility.shouldDisplay(state,
@@ -215,8 +309,8 @@ public final class WindowStore {
             return SwitcherItem(id: ObjectIdentifier(window),
                                 window: window,
                                 title: window.title,
-                                appName: window.app.name ?? "",
-                                icon: window.app.icon,
+                                appName: window.appName,
+                                icon: window.appIcon,
                                 tabCount: showTabCounts ? window.tabCount : nil)
         }
     }

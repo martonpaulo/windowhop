@@ -32,6 +32,7 @@ public enum ShortcutSpec: String, CaseIterable, Identifiable {
 /// Virtual key codes used by the event tap (from Carbon's Events.h, stable since classic Mac OS).
 public enum KeyCode {
     public static let tab: Int64 = 48
+    public static let space: Int64 = 49
     public static let returnKey: Int64 = 36
     public static let keypadEnter: Int64 = 76
     public static let escape: Int64 = 53

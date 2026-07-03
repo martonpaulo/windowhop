@@ -31,6 +31,12 @@ public final class StatusItemController: NSObject {
         let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: "")
         settingsItem.target = self
         menu.addItem(settingsItem)
+        if UpdateManager.shared.isAvailable {
+            let updatesItem = NSMenuItem(title: "Check for Updates…",
+                                         action: #selector(checkForUpdates), keyEquivalent: "")
+            updatesItem.target = self
+            menu.addItem(updatesItem)
+        }
         menu.addItem(.separator())
         let quitItem = NSMenuItem(title: "Quit WindowHop", action: #selector(quit), keyEquivalent: "")
         quitItem.target = self
@@ -50,6 +56,10 @@ public final class StatusItemController: NSObject {
 
     @objc private func openSettings() {
         SettingsWindowController.shared.show()
+    }
+
+    @objc private func checkForUpdates() {
+        UpdateManager.shared.checkForUpdates()
     }
 
     @objc private func quit() {

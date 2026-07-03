@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+env:
+  SPARKLE_VERSION: 2.9.4
+  SPARKLE_SHA256: ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Tests and validation
+        run: |
+          swift test
+          scripts/validate.sh
+
+      - name: Derive version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          IFS=. read -r MAJOR MINOR PATCH <<< "$VERSION"
+          BUILD=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+
+      # Developer ID signing + notarization run only when credentials exist;
+      # otherwise the build stays ad-hoc signed and remains fully functional.
+      - name: Import Developer ID certificate (optional)
+        if: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' }}
+        env:
+          CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+        run: |
+          KEYCHAIN=build.keychain
+          security create-keychain -p ci "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security unlock-keychain -p ci "$KEYCHAIN"
+          echo "$CERT" | base64 --decode > cert.p12
+          security import cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          rm cert.p12
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$KEYCHAIN"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+          echo "DEVELOPER_ID_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Build and package
+        run: scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
+
+      - name: Notarize and staple (optional)
+        if: ${{ env.DEVELOPER_ID_IDENTITY != '' && secrets.NOTARIZATION_APPLE_ID != '' }}
+        env:
+          APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          xcrun notarytool submit "artifacts/WindowHop-$VERSION.zip" \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          xcrun stapler staple build/WindowHop.app
+          rm "artifacts/WindowHop-$VERSION.zip"
+          ditto -c -k --keepParent build/WindowHop.app "artifacts/WindowHop-$VERSION.zip"
+
+      - name: Sign update for Sparkle
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          curl -sL -o sparkle.tar.xz \
+            "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz"
+          echo "$SPARKLE_SHA256  sparkle.tar.xz" | shasum -a 256 -c -
+          mkdir -p sparkle-tools && tar -xf sparkle.tar.xz -C sparkle-tools
+          SIG=$(echo "$SPARKLE_PRIVATE_KEY" | sparkle-tools/bin/sign_update --ed-key-file - "artifacts/WindowHop-$VERSION.zip")
+          echo "SPARKLE_SIG_ATTRS=$SIG" >> "$GITHUB_ENV"
+
+      - name: DMG and checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          scripts/make-dmg.sh "$VERSION"
+          (cd artifacts && shasum -a 256 "WindowHop-$VERSION.zip" "WindowHop-$VERSION.dmg" > checksums.txt)
+
+      - name: Update appcast on main
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout main
+          scripts/make-appcast.sh "$VERSION" "${{ steps.version.outputs.build }}" \
+            "artifacts/WindowHop-$VERSION.zip" "$SPARKLE_SIG_ATTRS"
+          if ! git diff --quiet appcast.xml; then
+            git add appcast.xml
+            git commit -m "chore(release): appcast entry for $VERSION"
+            git push origin main
+          fi
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "release $GITHUB_REF_NAME already exists; skipping creation"
+            exit 0
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            "artifacts/WindowHop-$VERSION.zip" \
+            "artifacts/WindowHop-$VERSION.dmg" \
+            artifacts/checksums.txt \
+            --title "WindowHop $VERSION" \
+            --generate-notes

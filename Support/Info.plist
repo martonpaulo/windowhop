@@ -11,7 +11,7 @@
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.martonpss.WindowHop</string>
+	<string>com.perso.windowhop</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -32,5 +32,11 @@
 	<string>GPL-3.0. Derived from AltTab, © lwouis and contributors.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/martonpaulo/windowhop/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>6uivEfA8KeH2gsJHxX/ryov0kIjluroMuj0NyZ9OuLw=</string>
 </dict>
 </plist>
