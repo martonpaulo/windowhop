@@ -31,6 +31,10 @@ public final class TrackedApp {
     public let bundleIdentifier: String?
     let executablePath: String?
     public internal(set) var isHidden: Bool
+    /// A graceful Quit was already requested from the close dialog; the next quit
+    /// offer escalates to a confirmed Force Quit (ported from AltTab's
+    /// alreadyRequestedToQuit, with an explicit confirmation added).
+    public internal(set) var quitRequested = false
     private var axObserver: AXObserver?
     private var isReallyFinishedLaunching = false
     private var kvObservers: [NSKeyValueObservation] = []

@@ -26,6 +26,16 @@ public final class SwitcherController {
             guard let self else { return }
             self.perform(self.state.itemClicked(index: index))
         }
+        panel.onItemCloseRequested = { [weak self] index in
+            guard let self else { return }
+            self.perform(self.state.closeRequested(index: index))
+        }
+        panel.onSettingsRequested = { [weak self] in
+            self?.openSettingsFromSession()
+        }
+        PreviewProvider.shared.onPreview = { [weak self] id, image in
+            self?.panel.updatePreview(id: id, image: image)
+        }
     }
 
     /// Applies the enabled/permission state: the tap only exists while the switcher
@@ -86,7 +96,17 @@ public final class SwitcherController {
             perform(state.arrow(direction))
         case .deleteKey:
             perform(state.deleteKey())
+        case .openSettings:
+            openSettingsFromSession()
         }
+    }
+
+    /// Ends the session cleanly, then opens Settings visible and focused.
+    private func openSettingsFromSession() {
+        if state.isActive {
+            perform(state.escape())
+        }
+        SettingsWindowController.shared.show()
     }
 
     private func perform(_ command: SwitcherState.Command) {
@@ -100,6 +120,11 @@ public final class SwitcherController {
             panel.show(items: items, selectedIndex: selectedIndex)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
+            // previews load asynchronously and never gate panel presentation
+            PreviewProvider.shared.beginSession(
+                items: items,
+                targetSize: SwitcherPanel.previewContentSize,
+                scale: NSScreen.main?.backingScaleFactor ?? 2)
         case .select(let index):
             panel.select(index)
         case .activate(let index):
@@ -128,28 +153,80 @@ public final class SwitcherController {
 
     /// Closing always requires explicit native confirmation; Cancel is the default.
     /// While the dialog is up the tap consumes nothing, so Return/Escape and a
-    /// released Command key go to the dialog instead of the session.
+    /// released Command key go to the dialog instead of the session. The panel is
+    /// hidden for the duration so the dialog is unquestionably on top, and is
+    /// restored afterwards with the previous selection.
     private func runCloseConfirmation(for item: SwitcherItem) {
         didShowConfirmation = true
         EventTap.shared.mode = .passthrough
+        panel.hide()
+        let app = item.window?.app
+        let isOwnEntry = item.window?.isOwnSettingsEntry ?? false
+        let offersQuit = !isOwnEntry && app != nil
+        let quitEscalatesToForce = app?.quitRequested ?? false
+
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = "Close “\(item.title)” in \(item.appName)?"
-        alert.informativeText = "If the window has unsaved changes, \(item.appName) will ask about them."
+        alert.informativeText = quitEscalatesToForce
+            ? "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path."
+            : "If the window has unsaved changes, \(item.appName) will ask about them."
         alert.addButton(withTitle: "Cancel")
         let closeButton = alert.addButton(withTitle: "Close Window")
         closeButton.hasDestructiveAction = true
+        if offersQuit {
+            let quitTitle = quitEscalatesToForce
+                ? "Force Quit \(item.appName)…"
+                : "Quit \(item.appName)"
+            let quitButton = alert.addButton(withTitle: quitTitle)
+            quitButton.hasDestructiveAction = true
+        }
         NSApp.activate()
         let response = alert.runModal()
+
+        switch response {
+        case .alertSecondButtonReturn:
+            if let window = item.window,
+               WindowStore.shared.windows.contains(where: { $0 === window }) {
+                WindowActions.close(window)
+            }
+        case .alertThirdButtonReturn:
+            // the target may have vanished while the dialog was up; then do nothing
+            if let app, !app.runningApplication.isTerminated {
+                if quitEscalatesToForce {
+                    runForceQuitConfirmation(app)
+                } else {
+                    WindowActions.quit(app)
+                }
+            }
+        default:
+            break
+        }
+
         _ = state.confirmationFinished()
         if configuredEnabled {
             EventTap.shared.mode = state.isActive ? sessionTapMode() : .watching
         }
-        if response == .alertSecondButtonReturn, let window = item.window,
-           WindowStore.shared.windows.contains(where: { $0 === window }) {
-            WindowActions.close(window)
-        }
         refreshDuringSession()
+        if state.isActive {
+            panel.presentAgain()
+        }
+    }
+
+    /// Force Quit is never the default, never silent, and always a second,
+    /// explicitly destructive confirmation after a failed graceful Quit.
+    private func runForceQuitConfirmation(_ app: TrackedApp) {
+        let name = app.name ?? "the application"
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Force Quit \(name)?"
+        alert.informativeText = "\(name) didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost."
+        alert.addButton(withTitle: "Cancel")
+        let forceButton = alert.addButton(withTitle: "Force Quit")
+        forceButton.hasDestructiveAction = true
+        if alert.runModal() == .alertSecondButtonReturn {
+            WindowActions.forceQuit(app)
+        }
     }
 
     // MARK: - Store changes while the session is open
@@ -210,6 +287,9 @@ public final class SwitcherController {
 
     private func endSession() {
         panel.hide()
+        // previews are session-scoped: pending captures become stale and the
+        // in-memory cache is released now
+        PreviewProvider.shared.endSession()
         if let mouseMonitor {
             NSEvent.removeMonitor(mouseMonitor)
             self.mouseMonitor = nil

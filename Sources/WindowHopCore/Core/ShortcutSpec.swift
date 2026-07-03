@@ -21,11 +21,7 @@ public enum ShortcutSpec: String, CaseIterable, Identifiable {
     }
 
     public var displayName: String {
-        switch self {
-        case .commandTab: return "⌘ Tab"
-        case .optionTab: return "⌥ Tab"
-        case .controlTab: return "⌃ Tab"
-        }
+        ShortcutFormatter.chord(modifiers: holdModifier, keyCode: KeyCode.tab)
     }
 }
 
@@ -42,4 +38,5 @@ public enum KeyCode {
     public static let rightArrow: Int64 = 124
     public static let downArrow: Int64 = 125
     public static let upArrow: Int64 = 126
+    public static let comma: Int64 = 43
 }

@@ -25,7 +25,10 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 
 - **Public Apple APIs only.** No private frameworks, no `_`-prefixed SPI, no
   `@_silgen_name`. AX attribute *strings* not in headers (e.g. `AXFullScreen`) are fine.
-- **Never request Screen Recording.** No screenshots, thumbnails, or previews — ever.
+- **Screen Recording is opt-in only**: ScreenCaptureKit may be used exclusively in
+  `Engine/PreviewProvider.swift` (validate.sh enforces this), only during an open
+  session in Window Previews mode, never idle-capturing, never persisting images.
+  App Icons mode (the default) must always work without the permission.
 - **No polling while idle.** Observe events (AXObserver, KVO, notifications). Bounded
   timers are allowed only while a session or the onboarding window is open.
 - **The event-tap callback must stay tiny and synchronous** (`EventTap.handle`): decide
@@ -37,8 +40,12 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 - **Sparkle is the only runtime dependency**, and update checks are the only permitted
   network activity. No telemetry, no analytics, no accounts, no Pro/license code.
 - The bundle identifier is `com.perso.windowhop` — everywhere, always.
-- Closing a window always goes through the confirmation dialog (Cancel is default).
-- Icon size is fixed Large; appearance always follows the system. No settings for either.
+- Closing a window always goes through the confirmation dialog (Cancel is default);
+  Quit is graceful termination only; Force Quit requires its own second confirmation.
+- Icon size is fixed Large; the only appearance options are App Icons (default) and
+  Window Previews; system Light/Dark only. No other presentation settings.
+- All shortcut strings render through `Core/ShortcutFormatter` — never hardcode a
+  second representation of the same key.
 
 ## Architecture (see docs/architecture.md)
 

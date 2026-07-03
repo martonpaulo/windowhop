@@ -22,16 +22,24 @@ else
     fail "Support/Info.plist bundle identifier is not com.perso.windowhop"
 fi
 
-# --- no private API, no capture, no telemetry -------------------------------
+# --- no private API, no capture outside the preview subsystem ----------------
 if grep -rn "_silgen_name\|SLPSPostEvent\|_SLPSSetFront\|CGSSetSymbolicHotKey\|_AXUIElementGetWindow\|_AXUIElementCreateWithRemoteToken" Sources/ 2>/dev/null | grep -v "^\S*:[0-9]*: *///" | grep -v "^\S*:[0-9]*: *//"; then
     fail "private API reference found in Sources/"
 else
     pass "no private APIs"
 fi
-if grep -rn "SCShareableContent\|CGWindowListCreateImage\|CGDisplayStream\|ScreenCaptureKit" Sources/ 2>/dev/null; then
-    fail "screen-capture API found in Sources/"
+# legacy capture APIs are banned everywhere; ScreenCaptureKit is sanctioned only
+# inside the session-scoped preview subsystem
+if grep -rn "CGWindowListCreateImage\|CGDisplayStream" Sources/ 2>/dev/null; then
+    fail "legacy screen-capture API found in Sources/"
 else
-    pass "no screen capture"
+    pass "no legacy screen capture"
+fi
+if grep -rln "ScreenCaptureKit\|SCShareableContent\|SCScreenshotManager" Sources/ 2>/dev/null \
+    | grep -v "Sources/WindowHopCore/Engine/PreviewProvider.swift"; then
+    fail "ScreenCaptureKit used outside Engine/PreviewProvider.swift"
+else
+    pass "ScreenCaptureKit confined to the preview provider"
 fi
 if grep -rn "AppCenter\|analytics\|telemetry" Sources/ --include="*.swift" 2>/dev/null | grep -iv "no telemetry\|telemetry, no\|no analytics"; then
     fail "telemetry reference found in Sources/"

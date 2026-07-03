@@ -70,13 +70,46 @@ through plain AppKit.
 
 ## Presentation
 
-One horizontal strip of fixed-size tiles (large 76 pt app icon, 11 pt title, 9.5 pt tab
-count line — always reserved so tiles align). Selection is a neutral rounded rectangle
-like the native switcher. When the strip exceeds ~88 % of the screen width it scrolls
-horizontally; tiles never shrink. Tile views are pooled and reconfigured, so repeated
-opens and live updates are single-digit milliseconds even with 100+ windows (the pool is
-pre-warmed off the latency path). System materials and semantic colors handle Light/Dark,
-Increase Contrast, and Reduce Transparency; there are no animations to reduce.
+One horizontal strip of fixed-size tiles in one of two appearances (Settings →
+Appearance; changing it applies on the next session, no restart):
+
+- **App Icons** (default): a 96 pt application icon dominates a 132×168 tile.
+- **Window Previews**: an aspect-fit window snapshot in a 248×200 tile with the app
+  icon as a corner badge on the fitted image; until a preview arrives (or when one
+  is unavailable) the large icon shows instead — never a blank tile.
+
+Every tile keeps an 11 pt title and the reserved 9.5 pt tab-count line so nothing
+shifts as data arrives. Selection is a neutral rounded rectangle like the native
+switcher. Hovering a tile reveals an overlay close control (routed through the same
+confirmation as ⌫; also a VoiceOver custom action); hovering the panel reveals a
+Settings control (⌘, works without a pointer). When the strip exceeds ~88 % of the
+screen width it scrolls horizontally; tiles never shrink. Tile views are pooled and
+reconfigured, so repeated opens and live updates are single-digit milliseconds even
+with 100+ windows. System materials and semantic colors handle Light/Dark, Increase
+Contrast, and Reduce Transparency; there are no animations to reduce.
+
+## Window previews
+
+`PreviewProvider` (the only file allowed to touch ScreenCaptureKit — enforced by
+`scripts/validate.sh`) captures one tile-sized snapshot per window via
+`SCScreenshotManager`, but only while a session is open, only in Window Previews
+mode, and only with Screen Recording granted (requested the first time the user
+selects previews; App Icons never needs it). AX windows are matched to `SCWindow`s
+by pid + frame (+ title tiebreak); a failed match or capture simply leaves the icon
+fallback. Images are requested pre-scaled (no full-resolution retention), cached in
+memory per session, and released the moment the session ends. Preview failure can
+never remove an entry or block activation.
+
+## Close, Quit, Force Quit
+
+The confirmation dialog hides the switcher panel while it runs (so it is always on
+top and keyboard-focused) and restores it afterwards with the previous selection.
+Buttons: Cancel (default), Close Window (AX close button; the app's own
+unsaved-changes flow runs), and Quit <App> (`NSRunningApplication.terminate()` —
+never injected keystrokes). If a quit was already requested and the app still runs,
+the offer escalates to "Force Quit <App>…", which opens a second, explicitly
+destructive confirmation before `forceTerminate()`. WindowHop's own Settings entry
+offers Cancel/Close only.
 
 ## Updates
 

@@ -173,3 +173,43 @@ final class SwitcherStateTests: XCTestCase {
         XCTAssertEqual(state.modifierReleased(), .none)
     }
 }
+
+extension SwitcherStateTests {
+    // MARK: - Hover close routing and appearance preference
+
+    func testHoverCloseRequestTargetsExplicitIndexWithoutMovingSelection() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 4) // selection 1
+        XCTAssertEqual(state.closeRequested(index: 3), .requestClose(index: 3))
+        XCTAssertEqual(state.phase, .confirming)
+        // cancelling restores the exact previous selection
+        _ = state.confirmationFinished()
+        XCTAssertEqual(state.selectedIndex, 1)
+    }
+
+    func testHoverCloseRequestOutOfRangeIsIgnored() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 2)
+        XCTAssertEqual(state.closeRequested(index: 5), .none)
+        XCTAssertEqual(state.phase, .held)
+    }
+
+    func testDeleteRoutesThroughTheSameCloseRequestFlow() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        XCTAssertEqual(state.deleteKey(), .requestClose(index: 1))
+        XCTAssertEqual(state.phase, .confirming)
+    }
+
+    func testAppearanceModeDefaultsToAppIcons() {
+        let suite = "windowhop-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let preferences = Preferences(defaults: defaults)
+        XCTAssertEqual(preferences.appearanceMode, .appIcons)
+        preferences.appearanceMode = .windowPreviews
+        XCTAssertEqual(preferences.appearanceMode, .windowPreviews)
+        defaults.set("garbage", forKey: Preferences.Key.appearanceMode.rawValue)
+        XCTAssertEqual(preferences.appearanceMode, .appIcons)
+    }
+}

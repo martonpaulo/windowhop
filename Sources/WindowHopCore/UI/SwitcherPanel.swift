@@ -1,22 +1,36 @@
 import AppKit
 
 /// The switcher: a compact, non-activating panel centered on the active display.
-/// A single horizontal strip of large application icons — one tile per window,
-/// each with its title. No previews, no animation, no search. System materials
-/// and semantic colors keep it correct in Light/Dark Mode, Increase Contrast,
-/// and Reduce Transparency; there is no theme or icon-size setting.
+/// A single horizontal strip of tiles — one per window — in either App Icons or
+/// Window Previews appearance. No animation, no search, no theme options. System
+/// materials and semantic colors keep it correct in Light/Dark Mode, Increase
+/// Contrast, and Reduce Transparency.
 public final class SwitcherPanel: NSPanel {
     public var onItemClicked: ((Int) -> Void)?
+    /// Hover close control on a tile; routes through the same confirmation as Delete.
+    public var onItemCloseRequested: ((Int) -> Void)?
+    /// The panel-chrome gear control (and ⌘, while a session is open).
+    public var onSettingsRequested: (() -> Void)?
 
     private let effectView = NSVisualEffectView()
     private let scrollView = NSScrollView()
     private let tilesContainer = NSView()
+    private let settingsButton = NSButton()
+    private var panelTrackingArea: NSTrackingArea?
     /// Pooled tiles, reconfigured in place; index i shows item i.
     private var tilePool: [SwitcherTileView] = []
     private var visibleTileCount = 0
     private var selectedIndex = 0
+    private var mode = AppearanceMode.appIcons
+    private var itemIds: [AnyHashable] = []
 
     private static let contentPadding: CGFloat = 12
+
+    /// The preview area a tile offers in Window Previews mode, for capture sizing.
+    public static var previewContentSize: NSSize {
+        let metrics = SwitcherTileView.Metrics.windowPreviews
+        return NSSize(width: metrics.tileSize.width - 20, height: metrics.contentHeight)
+    }
 
     public init() {
         super.init(contentRect: .zero,
@@ -53,6 +67,21 @@ public final class SwitcherPanel: NSPanel {
         scrollView.documentView = tilesContainer
         effectView.addSubview(scrollView)
 
+        // panel-chrome settings control: revealed while the pointer is inside the
+        // panel; always present for accessibility, and ⌘, works without a pointer
+        settingsButton.image = NSImage(systemSymbolName: "gearshape.fill",
+                                       accessibilityDescription: "WindowHop Settings")?
+            .withSymbolConfiguration(.init(pointSize: 12, weight: .regular))
+        settingsButton.isBordered = false
+        settingsButton.imagePosition = .imageOnly
+        settingsButton.contentTintColor = .tertiaryLabelColor
+        settingsButton.target = self
+        settingsButton.action = #selector(settingsClicked)
+        settingsButton.toolTip = "WindowHop Settings (⌘,)"
+        settingsButton.setAccessibilityLabel("WindowHop Settings")
+        settingsButton.alphaValue = 0
+        effectView.addSubview(settingsButton)
+
         effectView.setAccessibilityElement(true)
         effectView.setAccessibilityRole(.list)
         effectView.setAccessibilityLabel("WindowHop window switcher")
@@ -74,26 +103,33 @@ public final class SwitcherPanel: NSPanel {
         update(items: items, selectedIndex: selectedIndex)
         orderFrontRegardless()
         announceSelection()
-        DebugLog.log("panel shown: \(items.count) tiles, frame \(frame)")
+        DebugLog.log("panel shown: \(items.count) tiles (\(mode.rawValue)), frame \(frame)")
+    }
+
+    /// Re-presents the panel after a confirmation dialog hid it.
+    public func presentAgain() {
+        orderFrontRegardless()
     }
 
     public func update(items: [SwitcherItem], selectedIndex index: Int) {
+        mode = Preferences.shared.appearanceMode
         selectedIndex = index
-        let rebuildStart = CFAbsoluteTimeGetCurrent()
+        itemIds = items.map { $0.id }
         rebuildTiles(items: items)
-        let layoutStart = CFAbsoluteTimeGetCurrent()
         layoutOnActiveScreen(tileCount: items.count)
-        let selectStart = CFAbsoluteTimeGetCurrent()
         applySelection()
-        DebugLog.log("panel update: rebuild \(String(format: "%.1f", (layoutStart - rebuildStart) * 1000))ms, "
-            + "layout \(String(format: "%.1f", (selectStart - layoutStart) * 1000))ms, "
-            + "select \(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - selectStart) * 1000))ms")
     }
 
     public func select(_ index: Int) {
         selectedIndex = index
         applySelection()
         announceSelection()
+    }
+
+    /// A preview arrived for a window in the current session.
+    public func updatePreview(id: AnyHashable, image: NSImage) {
+        guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
+        tilePool[index].setPreview(image)
     }
 
     public func hide() {
@@ -110,10 +146,15 @@ public final class SwitcherPanel: NSPanel {
         }
         for (index, tile) in tilePool.enumerated() {
             if index < items.count {
-                tile.configure(item: items[index])
+                let item = items[index]
+                tile.configure(item: item, mode: mode,
+                               preview: PreviewProvider.shared.cachedPreview(for: item.id))
                 tile.onClick = { [weak self] in self?.onItemClicked?(index) }
+                tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
+                tile.resetHoverState()
                 tile.isHidden = false
             } else {
+                tile.resetHoverState()
                 tile.isHidden = true
             }
         }
@@ -124,7 +165,7 @@ public final class SwitcherPanel: NSPanel {
         // the active display is the one with keyboard focus
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         let padding = SwitcherPanel.contentPadding
-        let tileSize = SwitcherTileView.tileSize
+        let tileSize = SwitcherTileView.Metrics.metrics(for: mode).tileSize
 
         tilesContainer.frame = NSRect(x: 0, y: 0,
                                       width: CGFloat(tileCount) * tileSize.width,
@@ -144,9 +185,12 @@ public final class SwitcherPanel: NSPanel {
 
         let panelSize = NSSize(width: stripWidth + padding * 2,
                                height: tileSize.height + padding * 2)
+        settingsButton.frame = NSRect(x: panelSize.width - 24, y: panelSize.height - 24,
+                                      width: 18, height: 18)
         let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
                              y: visibleFrame.midY - panelSize.height / 2)
         setFrame(NSRect(origin: origin, size: panelSize), display: true)
+        refreshPanelTrackingArea()
     }
 
     private func applySelection() {
@@ -164,5 +208,30 @@ public final class SwitcherPanel: NSPanel {
                              notification: .announcementRequested,
                              userInfo: [.announcement: tilePool[selectedIndex].accessibilityText,
                                         .priority: NSAccessibilityPriorityLevel.high.rawValue])
+    }
+
+    // MARK: - Panel hover (settings control visibility)
+
+    private func refreshPanelTrackingArea() {
+        if let panelTrackingArea {
+            effectView.removeTrackingArea(panelTrackingArea)
+        }
+        let area = NSTrackingArea(rect: effectView.bounds,
+                                  options: [.mouseEnteredAndExited, .activeAlways],
+                                  owner: self, userInfo: nil)
+        effectView.addTrackingArea(area)
+        panelTrackingArea = area
+    }
+
+    override public func mouseEntered(with event: NSEvent) {
+        settingsButton.alphaValue = 1
+    }
+
+    override public func mouseExited(with event: NSEvent) {
+        settingsButton.alphaValue = 0
+    }
+
+    @objc private func settingsClicked() {
+        onSettingsRequested?()
     }
 }

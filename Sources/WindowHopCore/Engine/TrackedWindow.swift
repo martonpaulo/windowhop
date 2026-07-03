@@ -42,12 +42,14 @@ public final class TrackedWindow {
     }
 
     /// The own-Settings-window exception: a native entry with the WindowHop icon.
+    /// The entry title is fixed — the window's visible title follows the selected
+    /// settings pane, which would make a confusing switcher label.
     init(settingsWindow: NSWindow) {
         ax = nil
         app = nil
         nativeWindow = settingsWindow
         isOwnSettingsEntry = true
-        title = settingsWindow.title
+        title = SettingsWindowController.switcherEntryTitle
         tabCount = nil
         isMinimized = settingsWindow.isMiniaturized
         isFullscreen = false

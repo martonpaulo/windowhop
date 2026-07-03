@@ -60,33 +60,91 @@ enum DebugHarness {
             overflowPanel.hide()
         }
 
+        // preview appearance, populated with synthetic window images (real
+        // captures need Screen Recording; the layout under test is identical)
+        let savedMode = Preferences.shared.appearanceMode
+        Preferences.shared.appearanceMode = .windowPreviews
+        let previewPanel = SwitcherPanel()
+        previewPanel.appearance = NSAppearance(named: .aqua)
+        let previewItems = demoItems()
+        previewPanel.show(items: previewItems, selectedIndex: 1)
+        for (index, item) in previewItems.enumerated() where index != 4 {
+            // one tile (index 4) is deliberately left without a preview to show
+            // the icon fallback; the rest get varied aspect ratios
+            let wide = index % 3 != 2
+            let size = wide ? NSSize(width: 456, height: 286) : NSSize(width: 240, height: 380)
+            previewPanel.updatePreview(id: item.id, image: syntheticWindowImage(size: size, seed: index))
+        }
+        Preferences.shared.appearanceMode = savedMode
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            if let contentView = previewPanel.contentView {
+                write(contentView, "switcher-previews-light")
+            }
+            previewPanel.hide()
+        }
+
         var pending = 0
+        let finishOne = {
+            pending -= 1
+            if pending == 0 {
+                exit(0)
+            }
+        }
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let panel = SwitcherPanel()
             panel.appearance = NSAppearance(named: appearance)
             panel.show(items: demoItems(), selectedIndex: 1)
-            let settings = NSWindow(contentViewController: SettingsWindowController.makeContentViewController())
-            settings.appearance = NSAppearance(named: appearance)
-            settings.title = "WindowHop Settings"
-            settings.orderBack(nil)
             pending += 1
             // give SwiftUI a few runloop turns to lay out before rasterizing
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 if let contentView = panel.contentView {
                     write(contentView, "switcher-\(suffix)")
                 }
-                if let contentView = settings.contentView {
-                    write(contentView, "settings-\(suffix)")
-                }
                 panel.hide()
-                settings.orderOut(nil)
-                pending -= 1
-                if pending == 0 {
-                    exit(0)
+                finishOne()
+            }
+        }
+        for (name, viewController) in SettingsWindowController.makePaneViewControllers() {
+            let window = NSWindow(contentViewController: viewController)
+            window.appearance = NSAppearance(named: .aqua)
+            window.orderBack(nil)
+            pending += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if let contentView = window.contentView {
+                    write(contentView, "settings-\(name)")
                 }
+                window.orderOut(nil)
+                finishOne()
             }
         }
         app.run()
+    }
+
+    /// A plausible fake window (title bar + content blocks) for layout renders.
+    private static func syntheticWindowImage(size: NSSize, seed: Int) -> NSImage {
+        let image = NSImage(size: size)
+        image.lockFocus()
+        NSColor.windowBackgroundColor.setFill()
+        NSRect(origin: .zero, size: size).fill()
+        NSColor.quaternaryLabelColor.setFill()
+        NSRect(x: 0, y: size.height - 24, width: size.width, height: 24).fill()
+        for (offset, color) in [NSColor.systemRed, .systemYellow, .systemGreen].enumerated() {
+            color.setFill()
+            NSBezierPath(ovalIn: NSRect(x: 8 + CGFloat(offset) * 14, y: size.height - 17,
+                                        width: 9, height: 9)).fill()
+        }
+        NSColor.tertiaryLabelColor.withAlphaComponent(0.25).setFill()
+        var y = size.height - 48
+        var lineSeed = seed
+        while y > 12 {
+            let width = size.width * (0.35 + CGFloat((lineSeed * 37) % 50) / 100)
+            NSBezierPath(roundedRect: NSRect(x: 14, y: y, width: min(width, size.width - 28), height: 9),
+                         xRadius: 4, yRadius: 4).fill()
+            y -= 18
+            lineSeed += 1
+        }
+        image.unlockFocus()
+        return image
     }
 
     private static func icon(_ bundleID: String) -> NSImage {

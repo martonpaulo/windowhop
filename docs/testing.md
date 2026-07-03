@@ -3,8 +3,9 @@
 ## Automated
 
 ```sh
-swift test           # 88 unit tests
-scripts/validate.sh  # repository invariants (identifiers, no private APIs, updater config)
+swift test           # 95 unit tests
+scripts/validate.sh  # repository invariants (identifiers, no private APIs,
+                     # ScreenCaptureKit confinement, updater config)
 ```
 
 Coverage: session state machine (held and persistent modes: open/cycle/wrap/reverse,
@@ -80,10 +81,27 @@ Window model
       WindowHop icon; activating it focuses Settings; closing it removes the entry;
       minimizing it hides the entry; the switcher panel itself never appears
 
-Closing
+Appearance & previews
+- [ ] Settings → Appearance offers exactly App Icons (default) and Window Previews
+- [ ] Selecting Window Previews without permission prompts once, explains the state
+      inline, and the switcher falls back to icons (verified 2026-07-03: preview-mode
+      session with permission denied rendered icon tiles, no crash, activation worked)
+- [ ] With permission granted: snapshots aspect-fit without distortion, tall/wide
+      windows letterbox, the icon badge hugs the snapshot, a window closed mid-capture
+      leaves its icon tile, and switching back to App Icons applies on the next session
+- [ ] No capture activity while the switcher is closed; previews gone after the session
+
+Closing and quitting
+- [ ] The confirmation always appears above the switcher (the panel hides while the
+      dialog runs and returns afterwards with the same selection)
 - [ ] Delete shows `Close "…" in …?` with Cancel as default; Return cancels, Escape cancels
-- [ ] Confirming closes only that window; unsaved-changes dialogs come from the target app;
-      the switcher stays open with a sensible selection
+- [ ] The hover close button on a tile opens exactly the same dialog for that window
+- [ ] Confirming closes only that window; unsaved-changes dialogs come from the target app
+- [ ] Quit <App> gracefully quits (unsaved-changes flow intact); all its entries vanish
+      and selection stays sensible
+- [ ] A second Quit attempt on a still-running app offers "Force Quit …", which requires
+      its own destructive confirmation and is never the default
+- [ ] The WindowHop Settings entry offers Cancel/Close Window only
 - [ ] Releasing ⌘ while the dialog is open does not activate anything
 
 Lifecycle, permissions, updates

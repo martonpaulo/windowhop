@@ -47,6 +47,19 @@ public enum WindowActions {
         }
     }
 
+    /// Graceful termination: the app runs its own unsaved-changes flow. Never
+    /// emulated with injected keystrokes.
+    public static func quit(_ app: TrackedApp) {
+        app.quitRequested = true
+        app.runningApplication.terminate()
+    }
+
+    /// Immediate termination; only reachable through the explicit, destructive,
+    /// twice-confirmed Force Quit path.
+    public static func forceQuit(_ app: TrackedApp) {
+        app.runningApplication.forceTerminate()
+    }
+
     private static func pressCloseButton(_ element: AXUIElement) {
         if let closeButton = (try? element.attributes([kAXCloseButtonAttribute]))?.closeButton {
             try? closeButton.performAction(kAXPressAction)

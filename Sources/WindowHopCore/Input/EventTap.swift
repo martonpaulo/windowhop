@@ -12,6 +12,7 @@ public enum SwitcherInputEvent {
     case spaceKey
     case arrow(SwitcherState.ArrowDirection)
     case deleteKey
+    case openSettings
 }
 
 /// What the tap callback is allowed to consume right now. Kept in a tiny
@@ -223,6 +224,9 @@ public final class EventTap {
             return .arrow(.right)
         case KeyCode.delete, KeyCode.forwardDelete:
             return .deleteKey
+        case KeyCode.comma where flags.contains(.maskCommand):
+            // the standard ⌘, affordance while the switcher is open
+            return .openSettings
         default:
             return nil
         }

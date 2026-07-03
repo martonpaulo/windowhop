@@ -1,5 +1,22 @@
 import Foundation
 
+/// The two switcher presentations. App Icons is the default and never needs
+/// Screen Recording permission; Window Previews shows live window snapshots.
+/// There are deliberately no further themes, styles, or size options.
+public enum AppearanceMode: String, CaseIterable, Identifiable {
+    case appIcons
+    case windowPreviews
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .appIcons: return "App Icons"
+        case .windowPreviews: return "Window Previews"
+        }
+    }
+}
+
 /// All WindowHop settings with their defaults. UserDefaults-backed; the store is injectable for tests.
 public final class Preferences {
     public static let shared = Preferences()
@@ -9,6 +26,7 @@ public final class Preferences {
         case launchAtLogin
         case shortcut
         case persistentShortcut
+        case appearanceMode
         case includeOtherSpaces
         case includeOtherDisplays
         case showTabCounts
@@ -23,6 +41,7 @@ public final class Preferences {
         Key.shortcut.rawValue: ShortcutSpec.commandTab.rawValue,
         // unassigned by default: assigning a global chord must be a deliberate choice
         Key.persistentShortcut.rawValue: "",
+        Key.appearanceMode.rawValue: AppearanceMode.appIcons.rawValue,
         Key.includeOtherSpaces.rawValue: true,
         Key.includeOtherDisplays.rawValue: true,
         Key.showTabCounts.rawValue: true,
@@ -57,6 +76,11 @@ public final class Preferences {
     public var persistentShortcut: PersistentShortcut? {
         get { PersistentShortcut(encoded: defaults.string(forKey: Key.persistentShortcut.rawValue) ?? "") }
         set { defaults.set(newValue?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
+    }
+
+    public var appearanceMode: AppearanceMode {
+        get { AppearanceMode(rawValue: defaults.string(forKey: Key.appearanceMode.rawValue) ?? "") ?? .appIcons }
+        set { defaults.set(newValue.rawValue, forKey: Key.appearanceMode.rawValue) }
     }
 
     public var includeOtherSpaces: Bool {

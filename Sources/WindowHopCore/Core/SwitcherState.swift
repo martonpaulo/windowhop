@@ -107,9 +107,17 @@ public struct SwitcherState {
     }
 
     public mutating func deleteKey() -> Command {
-        guard phase == .held || phase == .sticky, itemCount > 0 else { return .none }
+        closeRequested(index: selectedIndex)
+    }
+
+    /// Close request for an explicit item (the hover close control); Delete is the
+    /// same flow aimed at the current selection. The selection is left untouched so
+    /// a cancelled confirmation restores exactly the previous state.
+    public mutating func closeRequested(index: Int) -> Command {
+        guard phase == .held || phase == .sticky,
+              index >= 0, index < itemCount else { return .none }
         phase = .confirming
-        return .requestClose(index: selectedIndex)
+        return .requestClose(index: index)
     }
 
     /// The close-confirmation dialog was dismissed (either way); the session continues

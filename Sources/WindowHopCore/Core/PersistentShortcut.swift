@@ -68,12 +68,11 @@ public struct PersistentShortcut: Equatable {
     // MARK: - Display
 
     public var displayString: String {
-        var symbols = ""
-        if modifiers.contains(.maskControl) { symbols += "⌃" }
-        if modifiers.contains(.maskAlternate) { symbols += "⌥" }
-        if modifiers.contains(.maskShift) { symbols += "⇧" }
-        if modifiers.contains(.maskCommand) { symbols += "⌘" }
-        return symbols + KeyCodeNames.name(for: keyCode)
+        ShortcutFormatter.chord(modifiers: modifiers, keyCode: keyCode)
+    }
+
+    public var spokenString: String {
+        ShortcutFormatter.spokenChord(modifiers: modifiers, keyCode: keyCode)
     }
 }
 
