@@ -14,6 +14,10 @@ env:
 jobs:
   release:
     runs-on: macos-latest
+    env:
+      # the secrets context is not usable in step-level `if`; hoist presence flags
+      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' }}
+      HAS_NOTARY_CREDENTIALS: ${{ secrets.NOTARIZATION_APPLE_ID != '' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -36,7 +40,7 @@ jobs:
       # Developer ID signing + notarization run only when credentials exist;
       # otherwise the build stays ad-hoc signed and remains fully functional.
       - name: Import Developer ID certificate (optional)
-        if: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' }}
+        if: ${{ env.HAS_DEVELOPER_ID == 'true' }}
         env:
           CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
@@ -56,7 +60,7 @@ jobs:
         run: scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
 
       - name: Notarize and staple (optional)
-        if: ${{ env.DEVELOPER_ID_IDENTITY != '' && secrets.NOTARIZATION_APPLE_ID != '' }}
+        if: ${{ env.DEVELOPER_ID_IDENTITY != '' && env.HAS_NOTARY_CREDENTIALS == 'true' }}
         env:
           APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
