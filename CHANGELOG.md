@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.0.1 — 2026-07-06
+
+- **Instant previews**: window snapshots are cached in memory (AltTab-style) so
+  the switcher opens instantly with the last known preview, while fresh captures
+  load in parallel and crossfade in when the content changed. Nothing is captured
+  while the switcher is closed; snapshots stay in memory only and are evicted
+  with their window.
+- **Every window gets its own preview**: snapshot-to-window matching is now a
+  unique assignment — two windows of the same app can no longer show the same
+  preview; an uncertain match falls back to the app icon instead of guessing.
+- **Grid instead of horizontal scrolling**: many windows now wrap into multiple
+  rows (arrow keys navigate the grid spatially); icons never shrink.
+- Bigger window titles (13 pt), slightly smaller preview tiles, and much more
+  visible close and Settings controls.
+- Fixed duplicate entries after a missed window-close notification (the
+  "WhatsApp appeared twice" bug): stale Accessibility elements are now detected
+  and pruned on Space changes and when the switcher opens.
+- Fixed the WindowHop Settings window sometimes not coming to the front when
+  activated from the switcher.
+- Added a confirmed "Quit WindowHop…" button in Settings → General.
+- New tagline everywhere: "Switch between windows, not just apps."
+
 ## 1.0.0 — 2026-07-03
 
 First release.

@@ -12,10 +12,10 @@ final class SwitcherTileView: NSView {
         let tileSize: NSSize
         let contentHeight: CGFloat // icon or preview area height
 
-        static let appIcons = Metrics(tileSize: NSSize(width: 132, height: 168),
+        static let appIcons = Metrics(tileSize: NSSize(width: 136, height: 176),
                                       contentHeight: 104)
-        static let windowPreviews = Metrics(tileSize: NSSize(width: 248, height: 200),
-                                            contentHeight: 136)
+        static let windowPreviews = Metrics(tileSize: NSSize(width: 220, height: 186),
+                                            contentHeight: 114)
 
         static func metrics(for mode: AppearanceMode) -> Metrics {
             mode == .appIcons ? .appIcons : .windowPreviews
@@ -27,7 +27,7 @@ final class SwitcherTileView: NSView {
     private static let badgeSize: CGFloat = 30
     private static let selectionInset: CGFloat = 5
     private static let labelInset: CGFloat = 10
-    private static let closeButtonSize: CGFloat = 20
+    private static let closeButtonSize: CGFloat = 28
 
     var onClick: (() -> Void)?
     var onCloseRequest: (() -> Void)?
@@ -68,12 +68,13 @@ final class SwitcherTileView: NSView {
         addSubview(previewView)
 
         iconView.imageScaling = .scaleProportionallyUpOrDown
+        iconView.wantsLayer = true
         addSubview(iconView)
 
         badgeIconView.imageScaling = .scaleProportionallyUpOrDown
         addSubview(badgeIconView)
 
-        titleLabel.font = .systemFont(ofSize: 11)
+        titleLabel.font = .systemFont(ofSize: 13)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -81,7 +82,7 @@ final class SwitcherTileView: NSView {
         addSubview(titleLabel)
 
         // the line is always reserved so tiles with and without counts align
-        tabsLabel.font = .systemFont(ofSize: 9.5)
+        tabsLabel.font = .systemFont(ofSize: 11)
         tabsLabel.textColor = .secondaryLabelColor
         tabsLabel.alignment = .center
         tabsLabel.lineBreakMode = .byTruncatingTail
@@ -89,7 +90,7 @@ final class SwitcherTileView: NSView {
 
         closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill",
                                     accessibilityDescription: "Close Window")?
-            .withSymbolConfiguration(.init(pointSize: 16, weight: .regular))
+            .withSymbolConfiguration(.init(pointSize: 22, weight: .regular))
         closeButton.isBordered = false
         closeButton.bezelStyle = .regularSquare
         closeButton.imagePosition = .imageOnly
@@ -127,13 +128,23 @@ final class SwitcherTileView: NSView {
         titleLabel.stringValue = item.title
         tabsLabel.stringValue = tabsText
         setAccessibilityLabel(accessibilityText)
-        setPreview(preview)
+        setPreview(preview, animated: false)
     }
 
     /// Applies (or clears) the window preview. Missing previews leave the large
-    /// icon in place — never a blank tile.
-    func setPreview(_ image: NSImage?) {
+    /// icon in place — never a blank tile. Live refreshes crossfade briefly so a
+    /// changed snapshot is noticeable; identical content makes the fade invisible.
+    /// Reduce Motion disables the transition entirely.
+    func setPreview(_ image: NSImage?, animated: Bool) {
         hasPreview = mode == .windowPreviews && image != nil
+        if animated, hasPreview, window != nil, !isHidden,
+           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            let transition = CATransition()
+            transition.duration = 0.18
+            transition.type = .fade
+            previewView.layer?.add(transition, forKey: "previewSwap")
+            iconView.layer?.add(transition, forKey: "previewSwap")
+        }
         previewView.image = hasPreview ? image : nil
         previewView.isHidden = !hasPreview
         badgeIconView.isHidden = !hasPreview
@@ -173,12 +184,12 @@ final class SwitcherTileView: NSView {
         }
         iconView.isHidden = hasPreview
         let labelWidth = size.width - SwitcherTileView.labelInset * 2
-        titleLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 24,
-                                  width: labelWidth, height: 15)
-        tabsLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 10,
-                                 width: labelWidth, height: 13)
+        titleLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 25,
+                                  width: labelWidth, height: 18)
+        tabsLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 7,
+                                 width: labelWidth, height: 16)
         let button = SwitcherTileView.closeButtonSize
-        closeButton.frame = NSRect(x: 9, y: size.height - button - 9,
+        closeButton.frame = NSRect(x: 8, y: size.height - button - 8,
                                    width: button, height: button)
     }
 

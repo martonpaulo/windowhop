@@ -99,6 +99,7 @@ struct GeneralPane: View {
     @State private var launchAtLoginFailed = false
     @State private var persistentShortcut = Preferences.shared.persistentShortcut
     @State private var shortcutValidationMessage: String?
+    @State private var quitConfirmationShown = false
 
     var body: some View {
         Form {
@@ -161,6 +162,20 @@ struct GeneralPane: View {
                 Toggle("Show menu bar item", isOn: $showMenuBarItem)
                 Toggle("Show Dock icon", isOn: $showDockIcon)
             }
+            Section {
+                Button("Quit WindowHop…", role: .destructive) {
+                    quitConfirmationShown = true
+                }
+                .confirmationDialog("Quit WindowHop?",
+                                    isPresented: $quitConfirmationShown) {
+                    Button("Quit WindowHop", role: .destructive) {
+                        NSApp.terminate(nil)
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("The native ⌘⇥ app switcher takes over until you open WindowHop again.")
+                }
+            }
         }
         .formStyle(.grouped)
         .frame(width: paneWidth)
@@ -191,6 +206,10 @@ struct AppearancePane: View {
                     if newValue == AppearanceMode.windowPreviews.rawValue,
                        !ScreenRecordingPermission.isGranted {
                         screenRecordingGranted = ScreenRecordingPermission.request()
+                    }
+                    if newValue == AppearanceMode.appIcons.rawValue {
+                        // back to icons: no reason to retain any snapshot
+                        PreviewProvider.shared.evictAll()
                     }
                 }
                 Toggle("Show tab counts", isOn: $showTabCounts)
@@ -295,7 +314,7 @@ struct AboutPane: View {
                     VStack(alignment: .leading, spacing: 3) {
                         Text("WindowHop")
                             .font(.title2.weight(.semibold))
-                        Text("⌘⇥, but for windows.")
+                        Text("Switch between windows, not just apps.")
                             .foregroundStyle(.secondary)
                     }
                 }

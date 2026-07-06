@@ -1,22 +1,26 @@
 import AppKit
 import ScreenCaptureKit
 
-/// Session-scoped window previews for the optional Window Previews appearance.
+/// Window previews for the optional Window Previews appearance, tuned for an
+/// instant-open feel (the AltTab model, public APIs only):
 ///
-/// Design constraints (see docs/architecture.md):
-/// - Captures happen only while a switcher session is open — never while idle.
+/// - The cache lives in memory for the app's lifetime, so opening the switcher
+///   shows the last known preview of every window IMMEDIATELY.
+/// - Each session then recaptures all visible windows in parallel; a fresh
+///   snapshot replaces the stale one live (the tile crossfades unless Reduce
+///   Motion is on). Nothing is captured while the switcher is closed.
 /// - Images are requested already scaled to tile size (no full-resolution
-///   retention), kept only in memory, cleared when the session ends, and never
-///   written to disk or transmitted.
-/// - Capture is asynchronous and never blocks panel presentation or input; a
-///   missing preview simply leaves the app-icon fallback in place.
+///   retention), never written to disk, never transmitted, and evicted the
+///   moment their window disappears.
 /// - Public ScreenCaptureKit only. AX windows are matched to SCWindows by
-///   process id + frame (+ title as tiebreaker) because public AX exposes no
-///   CGWindowID bridge; an unmatched window keeps its icon fallback.
+///   pid + frame (+ title), and every request receives a DISTINCT window —
+///   two windows of the same app can never share a preview. When no confident
+///   match exists the tile keeps its icon fallback; a wrong preview is worse
+///   than none.
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
-    /// Delivered on the main thread as previews arrive for the current session.
+    /// Delivered on the main thread as fresh captures arrive for the current session.
     public var onPreview: ((AnyHashable, NSImage) -> Void)?
 
     private var generation = 0
@@ -31,12 +35,24 @@ public final class PreviewProvider {
 
     private init() {}
 
-    /// The preview already captured this session, if any (main thread).
+    // MARK: - Cache (memory-only, app lifetime, evicted with the window)
+
     public func cachedPreview(for id: AnyHashable) -> NSImage? {
         cache[id]
     }
 
-    /// Starts capturing previews for the session's items. No-op unless Window
+    public func evict(_ id: AnyHashable) {
+        cache[id] = nil
+    }
+
+    /// Used when the user switches back to App Icons: nothing to retain.
+    public func evictAll() {
+        cache.removeAll()
+    }
+
+    // MARK: - Session lifecycle
+
+    /// Starts recapturing previews for the session's items. No-op unless Window
     /// Previews mode is active and Screen Recording is granted.
     public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
         guard Preferences.shared.appearanceMode == .windowPreviews,
@@ -54,11 +70,11 @@ public final class PreviewProvider {
         }
     }
 
-    /// Ends the session: stale captures are dropped on arrival and the memory
-    /// cache is released immediately.
+    /// Stops live delivery; the cache stays warm for an instant next open.
+    /// In-flight captures may still finish into the cache (free freshness),
+    /// but no further capture work starts while the switcher is closed.
     public func endSession() {
         generation += 1
-        cache.removeAll()
     }
 
     // MARK: - Capture
@@ -67,52 +83,111 @@ public final class PreviewProvider {
                          pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
-        for request in requests {
-            // a newer session (or none) makes the remaining work stale
+        let candidates = content.windows.enumerated().map { index, window in
+            MatchCandidate(index: index,
+                           pid: window.owningApplication?.processID ?? -1,
+                           title: window.title ?? "",
+                           frame: window.frame)
+        }
+        let assignments = PreviewProvider.assign(
+            requests: requests.map {
+                MatchRequest(id: $0.id, pid: $0.pid, title: $0.title, frame: $0.frame)
+            },
+            candidates: candidates)
+        // parallel capture in small waves: fast without saturating WindowServer
+        let assigned = requests.compactMap { request in
+            assignments[request.id].map { (request, content.windows[$0]) }
+        }
+        for wave in stride(from: 0, to: assigned.count, by: 4).map({ Array(assigned[$0..<min($0 + 4, assigned.count)]) }) {
             let stale = await MainActor.run { self.generation != sessionGeneration }
+            await withTaskGroup(of: Void.self) { group in
+                for (request, scWindow) in wave {
+                    group.addTask { [weak self] in
+                        await self?.captureOne(request, scWindow, generation: sessionGeneration,
+                                               pixelTarget: pixelTarget, deliver: !stale)
+                    }
+                }
+            }
+            // once the session ended, finish the current wave into the cache but
+            // start no further capture work
             if stale { return }
-            guard let scWindow = match(request, in: content.windows) else { continue }
-            let configuration = SCStreamConfiguration()
-            let windowSize = scWindow.frame.size
-            guard windowSize.width > 1, windowSize.height > 1 else { continue }
-            // ask ScreenCaptureKit for a tile-sized image directly: the full-
-            // resolution window content is never held by WindowHop
-            let fit = min(pixelTarget.width / windowSize.width,
-                          pixelTarget.height / windowSize.height, 2)
-            configuration.width = max(1, Int(windowSize.width * fit))
-            configuration.height = max(1, Int(windowSize.height * fit))
-            configuration.showsCursor = false
-            let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-            guard let cgImage = try? await SCScreenshotManager.captureImage(
-                contentFilter: filter, configuration: configuration) else { continue }
-            let image = NSImage(cgImage: cgImage,
-                                size: NSSize(width: CGFloat(cgImage.width) / 2,
-                                             height: CGFloat(cgImage.height) / 2))
-            await MainActor.run {
-                guard self.generation == sessionGeneration else { return }
-                self.cache[request.id] = image
+        }
+    }
+
+    private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
+                            generation sessionGeneration: Int,
+                            pixelTarget: CGSize, deliver: Bool) async {
+        let windowSize = scWindow.frame.size
+        guard windowSize.width > 1, windowSize.height > 1 else { return }
+        let configuration = SCStreamConfiguration()
+        // ask ScreenCaptureKit for a tile-sized image directly: the full-
+        // resolution window content is never held by WindowHop
+        let fit = min(pixelTarget.width / windowSize.width,
+                      pixelTarget.height / windowSize.height, 2)
+        configuration.width = max(1, Int(windowSize.width * fit))
+        configuration.height = max(1, Int(windowSize.height * fit))
+        configuration.showsCursor = false
+        let filter = SCContentFilter(desktopIndependentWindow: scWindow)
+        guard let cgImage = try? await SCScreenshotManager.captureImage(
+            contentFilter: filter, configuration: configuration) else { return }
+        let image = NSImage(cgImage: cgImage,
+                            size: NSSize(width: CGFloat(cgImage.width) / 2,
+                                         height: CGFloat(cgImage.height) / 2))
+        await MainActor.run {
+            self.cache[request.id] = image
+            if deliver, self.generation == sessionGeneration {
                 self.onPreview?(request.id, image)
             }
         }
     }
 
-    /// pid + frame proximity, then title. Public AX has no CGWindowID bridge, so
-    /// this heuristic is the honest option; failure means icon fallback, never a
-    /// missing or broken entry.
-    func match(_ request: CaptureRequest, in windows: [SCWindow]) -> SCWindow? {
-        let candidates = windows.filter { $0.owningApplication?.processID == request.pid }
-        if let frame = request.frame {
-            let byFrame = candidates.filter { window in
-                abs(window.frame.origin.x - frame.origin.x) < 4
-                    && abs(window.frame.origin.y - frame.origin.y) < 4
-                    && abs(window.frame.width - frame.width) < 4
-                    && abs(window.frame.height - frame.height) < 4
-            }
-            if byFrame.count == 1 { return byFrame.first }
-            if byFrame.count > 1 {
-                return byFrame.first { $0.title == request.title } ?? byFrame.first
-            }
+    // MARK: - Matching (pure, unit-tested)
+
+    struct MatchRequest {
+        let id: AnyHashable
+        let pid: pid_t
+        let title: String
+        let frame: CGRect?
+    }
+
+    struct MatchCandidate {
+        let index: Int
+        let pid: pid_t
+        let title: String
+        let frame: CGRect
+    }
+
+    /// Unique assignment of SCWindows to requests: frame proximity first (title
+    /// breaks ties), then exact title. Every candidate is consumed at most once,
+    /// so two same-app windows can never receive the same preview. Requests with
+    /// no confident match stay unassigned (icon fallback) — never guessed.
+    static func assign(requests: [MatchRequest],
+                       candidates: [MatchCandidate]) -> [AnyHashable: Int] {
+        var available = Set(candidates.map { $0.index })
+        var result = [AnyHashable: Int]()
+        func frameClose(_ a: CGRect, _ b: CGRect) -> Bool {
+            abs(a.origin.x - b.origin.x) < 5 && abs(a.origin.y - b.origin.y) < 5
+                && abs(a.width - b.width) < 5 && abs(a.height - b.height) < 5
         }
-        return candidates.first { $0.title == request.title }
+        // pass 1: frame match, preferring an equal title among frame-close candidates
+        for request in requests {
+            guard let frame = request.frame else { continue }
+            let frameMatches = candidates.filter {
+                available.contains($0.index) && $0.pid == request.pid && frameClose($0.frame, frame)
+            }
+            guard !frameMatches.isEmpty else { continue }
+            let chosen = frameMatches.first { $0.title == request.title } ?? frameMatches[0]
+            result[request.id] = chosen.index
+            available.remove(chosen.index)
+        }
+        // pass 2: exact title for whatever is left
+        for request in requests where result[request.id] == nil {
+            guard let chosen = candidates.first(where: {
+                available.contains($0.index) && $0.pid == request.pid && $0.title == request.title
+            }) else { continue }
+            result[request.id] = chosen.index
+            available.remove(chosen.index)
+        }
+        return result
     }
 }

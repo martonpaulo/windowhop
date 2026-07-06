@@ -80,9 +80,10 @@ public final class WindowStore {
         guard let app = apps[pid], app.runningApplication.isTerminated else { return }
         app.stopObserving()
         apps[pid] = nil
-        let hadWindows = windows.contains { $0.app === app }
+        let removed = windows.filter { $0.app === app }
         windows.removeAll { $0.app === app }
-        if hadWindows {
+        if !removed.isEmpty {
+            removed.forEach { PreviewProvider.shared.evict($0.stableId) }
             onChange?()
         }
     }
@@ -168,10 +169,11 @@ public final class WindowStore {
     func removeWindow(_ element: AXUIElement) {
         guard let index = windows.firstIndex(where: { $0.ax == element }) else { return }
         let removed = windows.remove(at: index)
+        PreviewProvider.shared.evict(removed.stableId)
         if let groupIds = removed.tabGroupIds {
             let remaining = windows.filter { $0.app === removed.app }
             applyTabStates(TabGroupResolver.resolveRemoval(
-                removedId: ObjectIdentifier(removed),
+                removedId: removed.stableId,
                 groupIds: groupIds,
                 remainingWindows: remaining.map(tabDescriptor)))
         }
@@ -233,8 +235,8 @@ public final class WindowStore {
     // MARK: - Tab groups (tabs are never independent entries)
 
     private func tabDescriptor(_ window: TrackedWindow)
-        -> TabGroupResolver.WindowDescriptor<ObjectIdentifier> {
-        TabGroupResolver.WindowDescriptor(id: ObjectIdentifier(window),
+        -> TabGroupResolver.WindowDescriptor<UUID> {
+        TabGroupResolver.WindowDescriptor(id: window.stableId,
                                           title: window.title,
                                           isTabbed: window.isTabbed,
                                           groupIds: window.tabGroupIds)
@@ -249,10 +251,10 @@ public final class WindowStore {
                                                 sameAppWindows: sameApp.map(tabDescriptor)))
     }
 
-    private func applyTabStates(_ changes: [ObjectIdentifier: TabGroupResolver.WindowTabState<ObjectIdentifier>]) {
+    private func applyTabStates(_ changes: [UUID: TabGroupResolver.WindowTabState<UUID>]) {
         guard !changes.isEmpty else { return }
         for window in windows {
-            if let change = changes[ObjectIdentifier(window)] {
+            if let change = changes[window.stableId] {
                 window.isTabbed = change.isTabbed
                 window.tabGroupIds = change.groupIds
             }
@@ -273,12 +275,34 @@ public final class WindowStore {
                 let currentElements = Set(elements)
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
+                    var missing = [AXUIElement]()
                     for window in self.windows where window.app === app {
                         guard let ax = window.ax else { continue }
                         window.isOnCurrentSpace = currentElements.contains(ax)
+                        if !window.isOnCurrentSpace {
+                            missing.append(ax)
+                        }
                     }
                     self.onChange?()
+                    // a window absent from kAXWindows is either on another Space
+                    // (keep it) or silently dead — a missed destroy notification
+                    // once produced duplicate entries. Validate and prune.
+                    self.pruneIfDead(missing)
                 }
+            }
+        }
+    }
+
+    /// Validates possibly-stale AX elements off the main thread and removes the
+    /// dead ones. Cheap (one attribute read per suspect) and strictly event-driven.
+    func pruneIfDead(_ elements: [AXUIElement]) {
+        guard !elements.isEmpty else { return }
+        BackgroundWork.axReadsQueue.async {
+            let dead = elements.filter { !$0.isStillValid() }
+            guard !dead.isEmpty else { return }
+            DispatchQueue.main.async { [weak self] in
+                DebugLog.log("pruning \(dead.count) dead window element(s)")
+                dead.forEach { self?.removeWindow($0) }
             }
         }
     }
@@ -306,7 +330,7 @@ public final class WindowStore {
             guard WindowEligibility.shouldDisplay(state,
                                                   includeOtherSpaces: includeOtherSpaces,
                                                   includeOtherDisplays: includeOtherDisplays) else { return nil }
-            return SwitcherItem(id: ObjectIdentifier(window),
+            return SwitcherItem(id: window.stableId,
                                 window: window,
                                 title: window.title,
                                 appName: window.appName,

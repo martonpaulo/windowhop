@@ -29,6 +29,9 @@ public struct SwitcherState {
     public private(set) var phase: Phase = .inactive
     public private(set) var selectedIndex = 0
     public private(set) var itemCount = 0
+    /// Grid geometry (set by the panel after layout): items wrap into rows,
+    /// so ↑/↓ move by one row while ⇥ and ←/→ stay linear.
+    public private(set) var columns = 1
 
     public init() {}
 
@@ -99,11 +102,31 @@ public struct SwitcherState {
         case up, down, left, right
     }
 
+    public mutating func updateColumns(_ value: Int) {
+        columns = max(1, value)
+    }
+
+    /// ←/→ step linearly with wrap-around; in a multi-row grid ↑/↓ move by one
+    /// row (clamped — no vertical wrap, matching spatial expectations). With a
+    /// single row ↑/↓ behave like ←/→.
     public mutating func arrow(_ direction: ArrowDirection) -> Command {
         switch direction {
-        case .down, .right: return step(backward: false)
-        case .up, .left: return step(backward: true)
+        case .right: return step(backward: false)
+        case .left: return step(backward: true)
+        case .up:
+            guard columns > 1 else { return step(backward: true) }
+            return moveSelection(to: selectedIndex - columns)
+        case .down:
+            guard columns > 1 else { return step(backward: false) }
+            return moveSelection(to: selectedIndex + columns)
         }
+    }
+
+    private mutating func moveSelection(to index: Int) -> Command {
+        guard phase == .held || phase == .sticky,
+              index >= 0, index < itemCount else { return .none }
+        selectedIndex = index
+        return .select(index: index)
     }
 
     public mutating func deleteKey() -> Command {

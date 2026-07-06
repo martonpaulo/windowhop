@@ -80,3 +80,5 @@ Fixing one mode must not silently change the other — both are covered by tests
 - Release flow: tag `vX.Y.Z` → `.github/workflows/release.yml` (or local scripts);
   the Sparkle private key lives in the Keychain and the `SPARKLE_PRIVATE_KEY` GitHub
   secret — never in the repository or logs.
+
+## Imported Claude Cowork project instructions

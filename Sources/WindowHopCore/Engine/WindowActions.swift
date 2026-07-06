@@ -8,10 +8,19 @@ import ApplicationServices
 /// rules because the caller holds Accessibility permission.
 public enum WindowActions {
     public static func activate(_ window: TrackedWindow) {
-        // own Settings window: plain AppKit, no AX involved
+        // own Settings window: cooperative NSApp.activate() is sometimes DENIED
+        // (macOS 14+ never saw "real" user input reach WindowHop — the tap
+        // consumed it), leaving the window ordered but behind. The AX frontmost
+        // attribute on our own process is permission-backed and always works —
+        // the same mechanism used for every other app.
         if let native = window.nativeWindow {
             NSApp.activate()
             native.makeKeyAndOrderFront(nil)
+            native.orderFrontRegardless()
+            BackgroundWork.axActionsQueue.async {
+                let ownElement = AXUIElementCreateApplication(ProcessInfo.processInfo.processIdentifier)
+                try? ownElement.setAttribute(kAXFrontmostAttribute, true)
+            }
             return
         }
         guard let ax = window.ax, let app = window.app else { return }

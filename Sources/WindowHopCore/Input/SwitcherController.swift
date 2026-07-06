@@ -118,13 +118,18 @@ public final class SwitcherController {
             didShowConfirmation = false
             originWindow = items.first?.window
             panel.show(items: items, selectedIndex: selectedIndex)
+            state.updateColumns(panel.columnsPerRow)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
-            // previews load asynchronously and never gate panel presentation
+            // previews (cached ones already showed instantly) refresh live,
+            // asynchronously, never gating panel presentation
             PreviewProvider.shared.beginSession(
                 items: items,
                 targetSize: SwitcherPanel.previewContentSize,
                 scale: NSScreen.main?.backingScaleFactor ?? 2)
+            // a missed destroy notification once produced a duplicate entry;
+            // validate the visible windows in the background and prune the dead
+            WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
         case .select(let index):
             panel.select(index)
         case .activate(let index):
@@ -248,6 +253,7 @@ public final class SwitcherController {
         let command = state.listChanged(itemCount: items.count, preferredIndex: preferredIndex)
         if state.isActive {
             panel.update(items: items, selectedIndex: state.selectedIndex)
+            state.updateColumns(panel.columnsPerRow)
         }
         if case .cancel = command {
             perform(command)

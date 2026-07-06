@@ -23,6 +23,8 @@ public final class SwitcherPanel: NSPanel {
     private var selectedIndex = 0
     private var mode = AppearanceMode.appIcons
     private var itemIds: [AnyHashable] = []
+    /// Grid geometry of the current layout, for 2D arrow-key navigation.
+    public private(set) var columnsPerRow = 1
 
     private static let contentPadding: CGFloat = 12
 
@@ -58,8 +60,8 @@ public final class SwitcherPanel: NSPanel {
         contentView = effectView
 
         scrollView.drawsBackground = false
-        scrollView.hasHorizontalScroller = true
-        scrollView.hasVerticalScroller = false
+        scrollView.hasHorizontalScroller = false
+        scrollView.hasVerticalScroller = true
         scrollView.autohidesScrollers = true
         scrollView.scrollerStyle = .overlay
         scrollView.horizontalScrollElasticity = .none
@@ -71,10 +73,10 @@ public final class SwitcherPanel: NSPanel {
         // panel; always present for accessibility, and ⌘, works without a pointer
         settingsButton.image = NSImage(systemSymbolName: "gearshape.fill",
                                        accessibilityDescription: "WindowHop Settings")?
-            .withSymbolConfiguration(.init(pointSize: 12, weight: .regular))
+            .withSymbolConfiguration(.init(pointSize: 17, weight: .regular))
         settingsButton.isBordered = false
         settingsButton.imagePosition = .imageOnly
-        settingsButton.contentTintColor = .tertiaryLabelColor
+        settingsButton.contentTintColor = .secondaryLabelColor
         settingsButton.target = self
         settingsButton.action = #selector(settingsClicked)
         settingsButton.toolTip = "WindowHop Settings (⌘,)"
@@ -126,10 +128,11 @@ public final class SwitcherPanel: NSPanel {
         announceSelection()
     }
 
-    /// A preview arrived for a window in the current session.
+    /// A fresh preview arrived for a window in the current session; the tile
+    /// crossfades to it (imperceptible when the content is unchanged).
     public func updatePreview(id: AnyHashable, image: NSImage) {
         guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
-        tilePool[index].setPreview(image)
+        tilePool[index].setPreview(image, animated: true)
     }
 
     public func hide() {
@@ -166,27 +169,39 @@ public final class SwitcherPanel: NSPanel {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         let padding = SwitcherPanel.contentPadding
         let tileSize = SwitcherTileView.Metrics.metrics(for: mode).tileSize
+        let visibleFrame = screen.visibleFrame
 
-        tilesContainer.frame = NSRect(x: 0, y: 0,
-                                      width: CGFloat(tileCount) * tileSize.width,
-                                      height: tileSize.height)
+        // tiles wrap into rows instead of scrolling horizontally (the AltTab
+        // layout model); tiles never shrink. Only an extreme window count
+        // exceeds the height budget and falls back to vertical scrolling.
+        let maxGridWidth = visibleFrame.width * 0.88 - padding * 2
+        let columns = max(1, min(tileCount, Int(maxGridWidth / tileSize.width)))
+        let rows = tileCount == 0 ? 1 : Int(ceil(Double(tileCount) / Double(columns)))
+        columnsPerRow = columns
+
+        let gridWidth = CGFloat(min(tileCount, columns)) * tileSize.width
+        let gridHeight = CGFloat(rows) * tileSize.height
+        tilesContainer.frame = NSRect(x: 0, y: 0, width: gridWidth, height: gridHeight)
         for (index, tile) in tilePool.prefix(tileCount).enumerated() {
-            tile.frame = NSRect(x: CGFloat(index) * tileSize.width, y: 0,
+            let column = index % columns
+            let row = index / columns
+            tile.frame = NSRect(x: CGFloat(column) * tileSize.width,
+                                y: CGFloat(rows - 1 - row) * tileSize.height,
                                 width: tileSize.width, height: tileSize.height)
         }
 
-        // the strip stays a single row; when it can't fit, it scrolls horizontally
-        // and tiles keep their large size (never shrunk into thumbnails)
-        let visibleFrame = screen.visibleFrame
-        let maxStripWidth = visibleFrame.width * 0.88 - padding * 2
-        let stripWidth = min(CGFloat(tileCount) * tileSize.width, maxStripWidth)
+        let maxVisibleRows = max(1, Int((visibleFrame.height * 0.85 - padding * 2) / tileSize.height))
+        let visibleRows = min(rows, maxVisibleRows)
         scrollView.frame = NSRect(x: padding, y: padding,
-                                  width: stripWidth, height: tileSize.height)
+                                  width: gridWidth,
+                                  height: CGFloat(visibleRows) * tileSize.height)
+        // start reading from the first row (top of the grid)
+        tilesContainer.scroll(NSPoint(x: 0, y: max(0, gridHeight - scrollView.frame.height)))
 
-        let panelSize = NSSize(width: stripWidth + padding * 2,
-                               height: tileSize.height + padding * 2)
-        settingsButton.frame = NSRect(x: panelSize.width - 24, y: panelSize.height - 24,
-                                      width: 18, height: 18)
+        let panelSize = NSSize(width: gridWidth + padding * 2,
+                               height: scrollView.frame.height + padding * 2)
+        settingsButton.frame = NSRect(x: panelSize.width - 32, y: panelSize.height - 32,
+                                      width: 24, height: 24)
         let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
                              y: visibleFrame.midY - panelSize.height / 2)
         setFrame(NSRect(origin: origin, size: panelSize), display: true)

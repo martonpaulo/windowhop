@@ -117,6 +117,17 @@ extension AXUIElement {
         return Array(Set(windows))
     }
 
+    /// Detects dead elements: a window that was destroyed while its
+    /// kAXUIElementDestroyed notification was missed answers .invalidUIElement
+    /// to any attribute read. Busy apps answer .cannotComplete and count as
+    /// alive. Concept ported from AltTab's missing-window checks on trigger
+    /// (upstream 39070383); without CGWindowIDs this is the public-API version.
+    public func isStillValid() -> Bool {
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(self, kAXRoleAttribute as CFString, &value)
+        return result != .invalidUIElement
+    }
+
     public func setAttribute(_ key: String, _ value: Any) throws {
         try throwIfNotSuccess(AXUIElementSetAttributeValue(self, key as CFString, value as CFTypeRef))
     }

@@ -70,35 +70,54 @@ through plain AppKit.
 
 ## Presentation
 
-One horizontal strip of fixed-size tiles in one of two appearances (Settings →
-Appearance; changing it applies on the next session, no restart):
+Fixed-size tiles in one of two appearances (Settings → Appearance; changing it
+applies on the next session, no restart):
 
-- **App Icons** (default): a 96 pt application icon dominates a 132×168 tile.
-- **Window Previews**: an aspect-fit window snapshot in a 248×200 tile with the app
+- **App Icons** (default): a 96 pt application icon dominates a 136×176 tile.
+- **Window Previews**: an aspect-fit window snapshot in a 220×186 tile with the app
   icon as a corner badge on the fitted image; until a preview arrives (or when one
   is unavailable) the large icon shows instead — never a blank tile.
 
-Every tile keeps an 11 pt title and the reserved 9.5 pt tab-count line so nothing
+Every tile keeps a 13 pt title and the reserved 11 pt tab-count line so nothing
 shifts as data arrives. Selection is a neutral rounded rectangle like the native
 switcher. Hovering a tile reveals an overlay close control (routed through the same
 confirmation as ⌫; also a VoiceOver custom action); hovering the panel reveals a
-Settings control (⌘, works without a pointer). When the strip exceeds ~88 % of the
-screen width it scrolls horizontally; tiles never shrink. Tile views are pooled and
-reconfigured, so repeated opens and live updates are single-digit milliseconds even
-with 100+ windows. System materials and semantic colors handle Light/Dark, Increase
-Contrast, and Reduce Transparency; there are no animations to reduce.
+Settings control (⌘, works without a pointer). Tiles wrap into **rows** when one
+row can't fit ~88 % of the screen width (the AltTab layout model) — there is no
+horizontal scrolling and tiles never shrink; ←/→ step linearly while ↑/↓ move by
+one row. Only an extreme window count exceeds the ~85 % height budget and falls
+back to vertical scrolling with the selection kept visible. Tile views are pooled
+and reconfigured, so repeated opens and live updates are single-digit milliseconds
+even with 100+ windows. System materials and semantic colors handle Light/Dark,
+Increase Contrast, and Reduce Transparency.
 
 ## Window previews
 
 `PreviewProvider` (the only file allowed to touch ScreenCaptureKit — enforced by
-`scripts/validate.sh`) captures one tile-sized snapshot per window via
-`SCScreenshotManager`, but only while a session is open, only in Window Previews
-mode, and only with Screen Recording granted (requested the first time the user
-selects previews; App Icons never needs it). AX windows are matched to `SCWindow`s
-by pid + frame (+ title tiebreak); a failed match or capture simply leaves the icon
-fallback. Images are requested pre-scaled (no full-resolution retention), cached in
-memory per session, and released the moment the session ends. Preview failure can
-never remove an entry or block activation.
+`scripts/validate.sh`) captures tile-sized snapshots via `SCScreenshotManager`,
+but only while a session is open, only in Window Previews mode, and only with
+Screen Recording granted (requested the first time the user selects previews;
+App Icons never needs it). The cache is memory-only and app-lifetime (the AltTab
+model): opening the switcher shows the last known snapshot of every window
+instantly, while the session recaptures in parallel waves of four and crossfades
+in any changed snapshot (Reduce Motion disables the fade). Entries are evicted
+the moment their window disappears and when the user switches back to App Icons.
+
+Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
+title as tiebreak, then exact title), so two windows of the same app can never
+share a snapshot; a request with no confident match keeps the icon fallback —
+a wrong preview is worse than none. Images are requested pre-scaled (no
+full-resolution retention). Preview failure can never remove an entry or block
+activation.
+
+## Stale-window pruning
+
+A missed `kAXUIElementDestroyed` notification can leave a dead element tracked as
+a phantom "other-Space window" (visible symptom: a duplicate entry). Dead elements
+answer `.invalidUIElement` to any attribute read, so the store validates suspects
+off the main thread — on Space changes (elements missing from `kAXWindows`) and on
+every switcher open (the visible entries) — and removes the dead ones. Ported in
+spirit from AltTab's missing-window checks on trigger (upstream `39070383`).
 
 ## Close, Quit, Force Quit
 

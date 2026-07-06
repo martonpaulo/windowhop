@@ -7,6 +7,11 @@ import ApplicationServices
 /// deliberate exception to the own-process exclusion: it is backed directly by its
 /// NSWindow instead of AX, keeping every other internal surface out by construction.
 public final class TrackedWindow {
+    /// Stable identity for snapshots, tab groups, and the preview cache.
+    /// ObjectIdentifier is deliberately NOT used: the runtime reuses object
+    /// addresses, which once let a dead window's cached preview leak onto a
+    /// newly created one.
+    public let stableId = UUID()
     public let ax: AXUIElement?
     public let app: TrackedApp?
     public private(set) weak var nativeWindow: NSWindow?
@@ -24,7 +29,7 @@ public final class TrackedWindow {
     /// tabbed windows are never shown as switcher entries (see TabGroupResolver).
     public internal(set) var isTabbed = false
     /// Identities of this window's tab group members (including itself), when known.
-    public internal(set) var tabGroupIds: [ObjectIdentifier]?
+    public internal(set) var tabGroupIds: [UUID]?
 
     init(ax: AXUIElement, app: TrackedApp, attributes: AXAttributes, tabTitles: [String]?) {
         self.ax = ax

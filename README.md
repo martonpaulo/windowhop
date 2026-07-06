@@ -1,6 +1,6 @@
 # WindowHop
 
-**⌘⇥, but for windows.**
+**Switch between windows, not just apps.**
 
 [![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop)](https://github.com/martonpaulo/windowhop/releases/latest)
 [![CI](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml)
