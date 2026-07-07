@@ -223,37 +223,46 @@ struct AppearancePane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            if previewsSelected {
-                Section {
-                    if screenRecordingGranted {
-                        Label("Screen Recording access is granted.", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
-                    } else {
-                        Label("Window Previews needs Screen Recording access.", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
-                        Text("macOS requires this permission to show window snapshots. Until it's granted, the switcher automatically falls back to App Icons.")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                        Button("Open System Settings") {
-                            ScreenRecordingPermission.openSystemSettings()
-                        }
-                        // bounded polling: only while this pane shows the pending state
-                        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
-                            screenRecordingGranted = ScreenRecordingPermission.isGranted
-                        }
-                    }
-                } header: {
-                    Text("Screen Recording")
-                } footer: {
-                    Text("Previews are generated on your Mac only while the switcher is open, kept temporarily in memory, never written to disk, and never transmitted.")
+            // this section is always present so the window height never jumps
+            // when the appearance mode changes
+            Section {
+                if !previewsSelected {
+                    Label("App Icons never needs any extra permission.", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                    Text("Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                } else if screenRecordingGranted {
+                    Label("Screen Recording access is granted.", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Snapshots are captured only while the switcher is open.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Label("Window Previews needs Screen Recording access.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text("Until it's granted, the switcher automatically falls back to App Icons.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Button("Open System Settings") {
+                        ScreenRecordingPermission.openSystemSettings()
+                    }
+                    // bounded polling: only while this pane shows the pending state
+                    .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+                        screenRecordingGranted = ScreenRecordingPermission.isGranted
+                    }
                 }
+            } header: {
+                Text("Screen Recording")
+            } footer: {
+                Text("Previews are generated on your Mac only while the switcher is open, kept temporarily in memory, never written to disk, and never transmitted.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .frame(width: paneWidth)
-        .fixedSize()
+        // fixed pane height: swapping modes must not resize the Settings window
+        .frame(width: paneWidth, height: 360)
     }
 }
 

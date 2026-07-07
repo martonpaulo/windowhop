@@ -20,6 +20,26 @@ public enum AccessibilityPermission {
         NSWorkspace.shared.open(url)
     }
 
+    /// Gatekeeper App Translocation runs quarantined apps from a randomized
+    /// read-only path — the TCC grant then never matches across launches, which
+    /// looks like an endless permission loop. Moving the app to /Applications
+    /// with Finder clears it.
+    public static var isTranslocated: Bool {
+        Bundle.main.bundlePath.contains("/AppTranslocation/")
+    }
+
+    /// Clears WindowHop's own (possibly stale) Accessibility entry via Apple's
+    /// tccutil, so the next grant binds to the current binary. An app may reset
+    /// its own bundle id without privileges; this exists because pre-1.0.2
+    /// ad-hoc builds left entries that can never match again.
+    public static func resetStaleGrant() {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        process.arguments = ["reset", "Accessibility", Bundle.main.bundleIdentifier ?? "com.perso.windowhop"]
+        try? process.run()
+        process.waitUntilExit()
+    }
+
     /// Calls the handler on the main thread whenever the system's accessibility trust
     /// table changes (grant or revocation), plus once shortly after subscription.
     /// Event-driven: no polling while the app idles.

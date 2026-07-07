@@ -106,6 +106,10 @@ are filled in as captures land. WindowHop's own Settings window is captured too
 (own pid + converted frame). Entries are evicted the moment their window
 disappears and when the user switches back to App Icons.
 
+While a window has no snapshot, the tile shows a quiet placeholder card
+(quaternary system fill) with the app icon, and the first capture fades in over
+it (Reduce Motion disables the fade) — constant geometry, no flash.
+
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never
 share a snapshot; a request with no confident match keeps the icon fallback —

@@ -50,7 +50,7 @@ public final class SwitcherPanel: NSPanel {
         becomesKeyOnlyIfNeeded = true
         isReleasedWhenClosed = false
 
-        effectView.material = .menu
+        effectView.material = DesignTokens.panelMaterial
         effectView.blendingMode = .behindWindow
         effectView.state = .active
         effectView.wantsLayer = true
@@ -73,10 +73,11 @@ public final class SwitcherPanel: NSPanel {
         // panel; always present for accessibility, and ⌘, works without a pointer
         settingsButton.image = NSImage(systemSymbolName: "gearshape.fill",
                                        accessibilityDescription: "WindowHop Settings")?
-            .withSymbolConfiguration(.init(pointSize: DesignTokens.chromeButtonSymbolSize, weight: .regular))
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: DesignTokens.chromeButtonSymbolSize,
+                                                                  weight: .medium)
+                .applying(.init(hierarchicalColor: DesignTokens.overlayControlColor)))
         settingsButton.isBordered = false
         settingsButton.imagePosition = .imageOnly
-        settingsButton.contentTintColor = .secondaryLabelColor
         settingsButton.target = self
         settingsButton.action = #selector(settingsClicked)
         settingsButton.toolTip = "WindowHop Settings (⌘,)"
@@ -132,7 +133,7 @@ public final class SwitcherPanel: NSPanel {
     /// (fill-in only; existing snapshots are never swapped mid-session).
     public func updatePreview(id: AnyHashable, image: NSImage) {
         guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
-        tilePool[index].setPreview(image)
+        tilePool[index].setPreview(image, fadeIn: true)
     }
 
     public func hide() {

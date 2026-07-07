@@ -33,6 +33,9 @@ final class SwitcherTileView: NSView {
     private let selectionView = NSView()
     private let iconView = NSImageView()
     private let previewView = NSImageView()
+    /// Rounded card shown while a window has no snapshot yet, so the tile's
+    /// geometry never jumps when the first capture fades in.
+    private let placeholderView = NSView()
     private let badgeIconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
     private let tabsLabel = NSTextField(labelWithString: "")
@@ -52,6 +55,11 @@ final class SwitcherTileView: NSView {
         selectionView.layer?.cornerRadius = DesignTokens.tileSelectionCornerRadius
         selectionView.layer?.cornerCurve = .continuous
         addSubview(selectionView)
+
+        placeholderView.wantsLayer = true
+        placeholderView.layer?.cornerRadius = DesignTokens.previewCornerRadius
+        placeholderView.layer?.cornerCurve = .continuous
+        addSubview(placeholderView)
 
         previewView.imageScaling = .scaleProportionallyDown
         previewView.wantsLayer = true
@@ -81,13 +89,16 @@ final class SwitcherTileView: NSView {
         tabsLabel.lineBreakMode = .byTruncatingTail
         addSubview(tabsLabel)
 
+        // hierarchical fill: the standard Apple overlay-close look
+        let closeConfiguration = NSImage.SymbolConfiguration(pointSize: DesignTokens.closeButtonSymbolSize,
+                                                             weight: .medium)
+            .applying(.init(hierarchicalColor: DesignTokens.overlayControlColor))
         closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill",
                                     accessibilityDescription: "Close Window")?
-            .withSymbolConfiguration(.init(pointSize: DesignTokens.closeButtonSymbolSize, weight: .regular))
+            .withSymbolConfiguration(closeConfiguration)
         closeButton.isBordered = false
         closeButton.bezelStyle = .regularSquare
         closeButton.imagePosition = .imageOnly
-        closeButton.contentTintColor = .secondaryLabelColor
         closeButton.target = self
         closeButton.action = #selector(closeClicked)
         closeButton.toolTip = "Close Window"
@@ -124,14 +135,25 @@ final class SwitcherTileView: NSView {
         setPreview(preview)
     }
 
-    /// Applies (or clears) the window preview. Missing previews leave the large
-    /// icon in place — never a blank tile. Snapshots are never swapped mid-session
-    /// (the AltTab model): what you open with is what you see.
-    func setPreview(_ image: NSImage?) {
+    /// Applies (or clears) the window preview. While a window has no snapshot
+    /// the tile shows a quiet placeholder card with the app icon, and the first
+    /// capture fades in over it (no flash; Reduce Motion disables the fade).
+    /// Snapshots are never swapped mid-session (the AltTab model).
+    func setPreview(_ image: NSImage?, fadeIn: Bool = false) {
         hasPreview = mode == .windowPreviews && image != nil
         previewView.image = hasPreview ? image : nil
         previewView.isHidden = !hasPreview
         badgeIconView.isHidden = !hasPreview
+        if fadeIn, hasPreview, window != nil, !isHidden,
+           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            previewView.alphaValue = 0
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = DesignTokens.previewFillInFadeDuration
+                previewView.animator().alphaValue = 1
+            }
+        } else {
+            previewView.alphaValue = 1
+        }
         needsLayout = true
     }
 
@@ -145,36 +167,50 @@ final class SwitcherTileView: NSView {
         let contentTop = size.height - DesignTokens.contentTopInset
         selectionView.frame = bounds.insetBy(dx: DesignTokens.tileSelectionInset,
                                              dy: DesignTokens.tileSelectionInset)
+        let contentBox = NSRect(x: DesignTokens.tileLabelInset,
+                                y: contentTop - contentHeight,
+                                width: size.width - DesignTokens.tileLabelInset * 2,
+                                height: contentHeight)
+        var closeAnchor = contentBox
         if hasPreview {
             // aspect-fit box; NSImageView letterboxes without distortion
-            previewView.frame = NSRect(x: DesignTokens.tileLabelInset,
-                                       y: contentTop - contentHeight,
-                                       width: size.width - DesignTokens.tileLabelInset * 2,
-                                       height: contentHeight)
+            previewView.frame = contentBox
             // badge the fitted image, not the letterbox frame, so it hugs the
             // visible snapshot even for very tall or very narrow windows
             let fitted = fittedImageRect(in: previewView.frame, imageSize: previewView.image?.size)
+            closeAnchor = fitted
             let badge = DesignTokens.previewBadgeSize
             badgeIconView.frame = NSRect(x: min(fitted.maxX - badge + DesignTokens.previewBadgeOutset, bounds.maxX - badge - 4),
                                          y: max(fitted.minY - DesignTokens.previewBadgeOutset, 2),
                                          width: badge, height: badge)
+        } else if mode == .windowPreviews {
+            // placeholder card keeps the geometry stable until a snapshot fades in
+            placeholderView.frame = contentBox
+            closeAnchor = contentBox
+            let iconSize = DesignTokens.previewPlaceholderIconSize
+            iconView.frame = NSRect(x: contentBox.midX - iconSize / 2,
+                                    y: contentBox.midY - iconSize / 2,
+                                    width: iconSize, height: iconSize)
         } else {
-            let iconSize = mode == .appIcons
-                ? DesignTokens.largeIconSize
-                : DesignTokens.previewFallbackIconSize
+            let iconSize = DesignTokens.largeIconSize
             iconView.frame = NSRect(x: (size.width - iconSize) / 2,
                                     y: contentTop - contentHeight + (contentHeight - iconSize) / 2,
                                     width: iconSize, height: iconSize)
+            closeAnchor = iconView.frame
         }
         iconView.isHidden = hasPreview
+        placeholderView.isHidden = hasPreview || mode == .appIcons
         let labelWidth = size.width - DesignTokens.tileLabelInset * 2
         titleLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
                                   width: labelWidth, height: DesignTokens.titleHeight)
         tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
                                  width: labelWidth, height: DesignTokens.tabsHeight)
+        // badge-style over the content's top-left corner (Mission Control idiom),
+        // clamped inside the tile
         let button = DesignTokens.closeButtonSize
-        closeButton.frame = NSRect(x: DesignTokens.overlayInset,
-                                   y: size.height - button - DesignTokens.overlayInset,
+        let overlap = DesignTokens.closeButtonCornerOverlap
+        closeButton.frame = NSRect(x: max(closeAnchor.minX - overlap, 2),
+                                   y: min(closeAnchor.maxY - button + overlap, size.height - button - 2),
                                    width: button, height: button)
     }
 
@@ -193,8 +229,9 @@ final class SwitcherTileView: NSView {
         // under this view's effective appearance, whatever thread state says.
         effectiveAppearance.performAsCurrentDrawingAppearance {
             selectionView.layer?.backgroundColor = isSelected
-                ? NSColor.labelColor.withAlphaComponent(0.12).cgColor
+                ? DesignTokens.selectionFill.cgColor
                 : NSColor.clear.cgColor
+            placeholderView.layer?.backgroundColor = DesignTokens.previewPlaceholderFill.cgColor
         }
         needsLayout = true
     }

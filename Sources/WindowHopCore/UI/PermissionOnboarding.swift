@@ -52,6 +52,8 @@ public final class PermissionOnboardingController {
 }
 
 struct PermissionOnboardingView: View {
+    @State private var didResetGrant = false
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "rectangle.on.rectangle")
@@ -59,6 +61,17 @@ struct PermissionOnboardingView: View {
                 .foregroundStyle(.tint)
             Text("WindowHop needs Accessibility access")
                 .font(.title3.weight(.semibold))
+            if AccessibilityPermission.isTranslocated {
+                // quarantined apps run from a randomized path; no grant can stick
+                Label {
+                    Text("WindowHop is running from a temporary macOS location, so this permission can't be saved. Move WindowHop.app into Applications with Finder, then open it again.")
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                .font(.callout)
+            }
             Text("macOS requires this permission to list your windows and to switch between them with the keyboard. WindowHop uses no other permission — it never records your screen and never connects to the network.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -71,10 +84,19 @@ struct PermissionOnboardingView: View {
             Text("System Settings → Privacy & Security → Accessibility → enable WindowHop")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
-            Text("Just updated WindowHop and the toggle doesn't stick? Remove WindowHop from the list with − and add it again with +.")
+            Divider()
+            Text("Enabled it but the toggle doesn't stick? An update can leave a stale entry behind — reset it and grant again:")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
+            Button(didResetGrant ? "Permission reset — enable WindowHop in the list" : "Reset Stuck Permission…") {
+                // clears our own stale TCC entry so the next grant binds cleanly
+                AccessibilityPermission.resetStaleGrant()
+                didResetGrant = true
+                AccessibilityPermission.prompt()
+                AccessibilityPermission.openSystemSettings()
+            }
+            .disabled(didResetGrant)
         }
         .padding(28)
         .frame(width: 460)

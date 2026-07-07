@@ -90,11 +90,10 @@ jobs:
           SIG=$(echo "$SPARKLE_PRIVATE_KEY" | sparkle-tools/bin/sign_update --ed-key-file - "artifacts/WindowHop-$VERSION.zip")
           echo "SPARKLE_SIG_ATTRS=$SIG" >> "$GITHUB_ENV"
 
-      - name: DMG and checksums
+      - name: DMG
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           scripts/make-dmg.sh "$VERSION"
-          (cd artifacts && shasum -a 256 "WindowHop-$VERSION.zip" "WindowHop-$VERSION.dmg" > checksums.txt)
 
       - name: Update appcast on main
         run: |
@@ -120,9 +119,10 @@ jobs:
             echo "release $GITHUB_REF_NAME already exists; skipping creation"
             exit 0
           fi
+          # standard macOS app release assets only: the DMG (human download)
+          # and the ZIP (Sparkle update archive)
           gh release create "$GITHUB_REF_NAME" \
-            "artifacts/WindowHop-$VERSION.zip" \
             "artifacts/WindowHop-$VERSION.dmg" \
-            artifacts/checksums.txt \
+            "artifacts/WindowHop-$VERSION.zip" \
             --title "WindowHop $VERSION" \
             --generate-notes

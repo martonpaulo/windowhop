@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.3 — 2026-07-07
+
+- **Permission loop, part 2**: the welcome window now detects macOS App
+  Translocation (running from a quarantined temporary path — a grant can never
+  stick there) and offers a one-click "Reset Stuck Permission…" that clears a
+  stale Accessibility entry via Apple's tccutil so the next grant binds cleanly.
+- **Standard keyboard shortcuts everywhere**: WindowHop now has a proper main
+  menu, so ⌘W closes the Settings window, ⌘Q quits, ⌘, opens Settings, and text
+  editing shortcuts work.
+- **Native-switcher colors**: selection and placeholder surfaces now use the
+  system semantic fills (secondary/quaternary system fill) and the panel uses
+  the standard popover material — the same palette family as Apple's switcher.
+- **No more preview flash**: windows without a snapshot show a quiet rounded
+  placeholder card with the app icon, and the first capture fades in over it
+  (Reduce Motion disables the fade). Geometry never jumps.
+- Close and Settings overlay controls redesigned to the Apple badge idiom:
+  hierarchical SF Symbols anchored to the content corner (Mission Control
+  style), on one shared inset grid.
+- The Appearance pane keeps a fixed height — switching App Icons/Window
+  Previews no longer resizes the Settings window mid-animation.
+- The DMG is now built with sindresorhus/create-dmg (pinned): the familiar
+  polished drag-to-Applications layout, reproducible on CI.
+- Releases now ship exactly two assets: the DMG (for people) and the ZIP
+  (for Sparkle updates).
+
+
 ## 1.0.2 — 2026-07-06
 
 - **Fixed the endless Accessibility permission loop after updates**: releases are

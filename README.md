@@ -92,11 +92,13 @@ System Settings → Privacy & Security → Accessibility (and Screen Recording).
 - **⌘⇥ shows the old macOS switcher** — WindowHop isn't running, is disabled, or
   lost Accessibility permission. That's the fail-safe: native switching always keeps
   working.
-- **After updating to 1.0.2 the Accessibility toggle doesn't stick** — one-time
-  step: remove WindowHop from the Accessibility list with −, add it back with +,
-  relaunch. From 1.0.2 on, releases carry a stable signing identity, so the grant
-  survives future updates (earlier ad-hoc builds looked like a new app on every
-  update).
+- **The Accessibility toggle doesn't stick** — the welcome window has a
+  "Reset Stuck Permission…" button that clears the stale entry so you can grant
+  it fresh. Also make sure WindowHop was dragged into Applications with Finder
+  (running it straight from the DMG or Downloads triggers macOS App
+  Translocation, where no grant can persist — WindowHop warns about this).
+  Since 1.0.2, releases carry a stable signing identity, so the grant survives
+  updates.
 - **Previews are icons instead of snapshots** — grant Screen Recording in
   System Settings → Privacy & Security, then relaunch WindowHop.
 - **A window is missing** — minimized windows and hidden apps are excluded by

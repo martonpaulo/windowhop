@@ -45,4 +45,21 @@ enum DesignTokens {
     // MARK: Overlay close control
     static let closeButtonSize: CGFloat = 26
     static let closeButtonSymbolSize: CGFloat = 20
+    /// Overlay controls hang half over the content corner, badge-style
+    /// (the Mission Control / Safari tab-close idiom).
+    static let closeButtonCornerOverlap: CGFloat = 10
+
+    // MARK: Preview placeholder (while a first snapshot loads)
+    static let previewPlaceholderIconSize: CGFloat = 48
+    static let previewFillInFadeDuration: TimeInterval = 0.15
+
+    // MARK: Colors (semantic only — adapt to appearance and Increase Contrast)
+    /// Selection fill matching the native switcher's neutral rounded rectangle.
+    static var selectionFill: NSColor { .secondarySystemFill }
+    /// Placeholder card behind a not-yet-captured preview.
+    static var previewPlaceholderFill: NSColor { .quaternarySystemFill }
+    /// Panel background material (native floating-panel look).
+    static let panelMaterial: NSVisualEffectView.Material = .popover
+    /// Hierarchical tint for the overlay controls (close, settings).
+    static var overlayControlColor: NSColor { .secondaryLabelColor }
 }
