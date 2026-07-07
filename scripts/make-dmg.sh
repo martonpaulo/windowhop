@@ -14,9 +14,13 @@ DMG="artifacts/WindowHop-$VERSION.dmg"
 
 mkdir -p artifacts
 rm -f "$DMG" "artifacts/WindowHop $VERSION.dmg"
-# create-dmg signs the DMG with the first available identity, or skips with a
-# warning when none exists — both fine (the app inside carries its own signature)
-(cd artifacts && npx --yes "create-dmg@$CREATE_DMG_VERSION" ../build/WindowHop.app .)
+# create-dmg only auto-detects Apple-issued identities and hard-fails otherwise;
+# point it at the stable WindowHop identity when that's what the keychain has
+IDENTITY_ARGS=()
+if security find-identity -v -p codesigning 2>/dev/null | grep -q '"WindowHop Code Signing"'; then
+    IDENTITY_ARGS=("--identity=WindowHop Code Signing")
+fi
+(cd artifacts && npx --yes "create-dmg@$CREATE_DMG_VERSION" "${IDENTITY_ARGS[@]}" ../build/WindowHop.app .)
 mv "artifacts/WindowHop $VERSION.dmg" "$DMG"
 hdiutil verify "$DMG" -quiet && echo "hdiutil verify: ok"
 echo "created $DMG"
