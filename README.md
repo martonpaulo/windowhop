@@ -77,7 +77,7 @@ item and Dock icon hidden (both hidden by default).
 
 WindowHop updates itself with [Sparkle](https://sparkle-project.org): it checks a
 feed on GitHub and cryptographically verifies (EdDSA) every update before
-installing. Control it in Settings → Updates. **Update checks are WindowHop's only
+installing — a plain native dialog, no embedded web pages. Control it in Settings → Updates. **Update checks are WindowHop's only
 network activity** — no telemetry, no analytics, no accounts.
 
 ## Uninstall
@@ -92,8 +92,11 @@ System Settings → Privacy & Security → Accessibility (and Screen Recording).
 - **⌘⇥ shows the old macOS switcher** — WindowHop isn't running, is disabled, or
   lost Accessibility permission. That's the fail-safe: native switching always keeps
   working.
-- **After an update or macOS upgrade nothing happens** — re-grant Accessibility
-  (remove WindowHop from the list, add it back), then relaunch.
+- **After updating to 1.0.2 the Accessibility toggle doesn't stick** — one-time
+  step: remove WindowHop from the Accessibility list with −, add it back with +,
+  relaunch. From 1.0.2 on, releases carry a stable signing identity, so the grant
+  survives future updates (earlier ad-hoc builds looked like a new app on every
+  update).
 - **Previews are icons instead of snapshots** — grant Screen Recording in
   System Settings → Privacy & Security, then relaunch WindowHop.
 - **A window is missing** — minimized windows and hidden apps are excluded by

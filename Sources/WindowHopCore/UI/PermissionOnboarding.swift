@@ -71,6 +71,10 @@ struct PermissionOnboardingView: View {
             Text("System Settings → Privacy & Security → Accessibility → enable WindowHop")
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
+            Text("Just updated WindowHop and the toggle doesn't stick? Remove WindowHop from the list with − and add it again with +.")
+                .font(.footnote)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
         }
         .padding(28)
         .frame(width: 460)

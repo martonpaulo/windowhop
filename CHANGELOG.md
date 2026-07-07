@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.2 — 2026-07-06
+
+- **Fixed the endless Accessibility permission loop after updates**: releases are
+  now signed with a stable certificate, so macOS keeps the grant across updates.
+  One last re-grant is needed when installing this version (remove WindowHop from
+  the Accessibility list with −, add it again with +); after that, updates keep
+  working without asking again.
+- **Native update dialog**: checking for updates now shows the plain macOS alert —
+  no embedded web view. Full release notes stay on GitHub.
+- Previews follow the AltTab model strictly: what the switcher opens with is what
+  you see (snapshots are never swapped mid-session); captures only refresh the
+  in-memory cache for the next open, and tiles that had no snapshot fill in.
+- The WindowHop Settings window now shows its own preview in Window Previews mode.
+- Multi-row layouts center every row (no more left-ragged last row).
+- Bigger app-icon badge on previews (40 pt), close/Settings controls aligned on
+  one 8 pt inset grid, and all UI dimensions moved into a single design-tokens
+  file (`UI/DesignTokens.swift`).
+- "Quit WindowHop…" in Settings is visibly destructive (red), with confirmation.
+
 ## 1.0.1 — 2026-07-06
 
 - **Instant previews**: window snapshots are cached in memory (AltTab-style) so

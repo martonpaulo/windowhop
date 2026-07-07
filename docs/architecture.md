@@ -99,9 +99,12 @@ but only while a session is open, only in Window Previews mode, and only with
 Screen Recording granted (requested the first time the user selects previews;
 App Icons never needs it). The cache is memory-only and app-lifetime (the AltTab
 model): opening the switcher shows the last known snapshot of every window
-instantly, while the session recaptures in parallel waves of four and crossfades
-in any changed snapshot (Reduce Motion disables the fade). Entries are evicted
-the moment their window disappears and when the user switches back to App Icons.
+instantly. The session recaptures in parallel waves of four, but strictly to
+refresh the cache for the NEXT open — a snapshot on screen is never swapped
+mid-session (the AltTab model); only tiles that opened with no snapshot at all
+are filled in as captures land. WindowHop's own Settings window is captured too
+(own pid + converted frame). Entries are evicted the moment their window
+disappears and when the user switches back to App Icons.
 
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never

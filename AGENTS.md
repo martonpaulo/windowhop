@@ -46,6 +46,11 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   Window Previews; system Light/Dark only. No other presentation settings.
 - All shortcut strings render through `Core/ShortcutFormatter` — never hardcode a
   second representation of the same key.
+- All UI dimensions come from `UI/DesignTokens.swift` — no hardcoded sizes,
+  insets, radii, or font sizes in views.
+- Releases are signed with the stable "WindowHop Code Signing" identity
+  (CI secret DEVELOPER_ID_CERT_P12; public cert in Support/) so the TCC
+  Accessibility grant survives updates — never ship ad-hoc-only releases.
 
 ## Architecture (see docs/architecture.md)
 

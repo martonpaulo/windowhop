@@ -163,8 +163,13 @@ struct GeneralPane: View {
                 Toggle("Show Dock icon", isOn: $showDockIcon)
             }
             Section {
-                Button("Quit WindowHop…", role: .destructive) {
+                // macOS Form buttons ignore the destructive role's tint; make the
+                // destructive intent visible explicitly
+                Button(role: .destructive) {
                     quitConfirmationShown = true
+                } label: {
+                    Text("Quit WindowHop…")
+                        .foregroundStyle(.red)
                 }
                 .confirmationDialog("Quit WindowHop?",
                                     isPresented: $quitConfirmationShown) {

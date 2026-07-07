@@ -12,22 +12,15 @@ final class SwitcherTileView: NSView {
         let tileSize: NSSize
         let contentHeight: CGFloat // icon or preview area height
 
-        static let appIcons = Metrics(tileSize: NSSize(width: 136, height: 176),
-                                      contentHeight: 104)
-        static let windowPreviews = Metrics(tileSize: NSSize(width: 220, height: 186),
-                                            contentHeight: 114)
+        static let appIcons = Metrics(tileSize: DesignTokens.appIconsTileSize,
+                                      contentHeight: DesignTokens.appIconsContentHeight)
+        static let windowPreviews = Metrics(tileSize: DesignTokens.previewsTileSize,
+                                            contentHeight: DesignTokens.previewsContentHeight)
 
         static func metrics(for mode: AppearanceMode) -> Metrics {
             mode == .appIcons ? .appIcons : .windowPreviews
         }
     }
-
-    private static let iconSize: CGFloat = 96
-    private static let previewFallbackIconSize: CGFloat = 72
-    private static let badgeSize: CGFloat = 30
-    private static let selectionInset: CGFloat = 5
-    private static let labelInset: CGFloat = 10
-    private static let closeButtonSize: CGFloat = 28
 
     var onClick: (() -> Void)?
     var onCloseRequest: (() -> Void)?
@@ -56,13 +49,13 @@ final class SwitcherTileView: NSView {
         super.init(frame: NSRect(origin: .zero, size: Metrics.appIcons.tileSize))
 
         selectionView.wantsLayer = true
-        selectionView.layer?.cornerRadius = 14
+        selectionView.layer?.cornerRadius = DesignTokens.tileSelectionCornerRadius
         selectionView.layer?.cornerCurve = .continuous
         addSubview(selectionView)
 
         previewView.imageScaling = .scaleProportionallyDown
         previewView.wantsLayer = true
-        previewView.layer?.cornerRadius = 8
+        previewView.layer?.cornerRadius = DesignTokens.previewCornerRadius
         previewView.layer?.cornerCurve = .continuous
         previewView.layer?.masksToBounds = true
         addSubview(previewView)
@@ -74,7 +67,7 @@ final class SwitcherTileView: NSView {
         badgeIconView.imageScaling = .scaleProportionallyUpOrDown
         addSubview(badgeIconView)
 
-        titleLabel.font = .systemFont(ofSize: 13)
+        titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -82,7 +75,7 @@ final class SwitcherTileView: NSView {
         addSubview(titleLabel)
 
         // the line is always reserved so tiles with and without counts align
-        tabsLabel.font = .systemFont(ofSize: 11)
+        tabsLabel.font = .systemFont(ofSize: DesignTokens.tabsFontSize)
         tabsLabel.textColor = .secondaryLabelColor
         tabsLabel.alignment = .center
         tabsLabel.lineBreakMode = .byTruncatingTail
@@ -90,7 +83,7 @@ final class SwitcherTileView: NSView {
 
         closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill",
                                     accessibilityDescription: "Close Window")?
-            .withSymbolConfiguration(.init(pointSize: 22, weight: .regular))
+            .withSymbolConfiguration(.init(pointSize: DesignTokens.closeButtonSymbolSize, weight: .regular))
         closeButton.isBordered = false
         closeButton.bezelStyle = .regularSquare
         closeButton.imagePosition = .imageOnly
@@ -128,23 +121,14 @@ final class SwitcherTileView: NSView {
         titleLabel.stringValue = item.title
         tabsLabel.stringValue = tabsText
         setAccessibilityLabel(accessibilityText)
-        setPreview(preview, animated: false)
+        setPreview(preview)
     }
 
     /// Applies (or clears) the window preview. Missing previews leave the large
-    /// icon in place — never a blank tile. Live refreshes crossfade briefly so a
-    /// changed snapshot is noticeable; identical content makes the fade invisible.
-    /// Reduce Motion disables the transition entirely.
-    func setPreview(_ image: NSImage?, animated: Bool) {
+    /// icon in place — never a blank tile. Snapshots are never swapped mid-session
+    /// (the AltTab model): what you open with is what you see.
+    func setPreview(_ image: NSImage?) {
         hasPreview = mode == .windowPreviews && image != nil
-        if animated, hasPreview, window != nil, !isHidden,
-           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            let transition = CATransition()
-            transition.duration = 0.18
-            transition.type = .fade
-            previewView.layer?.add(transition, forKey: "previewSwap")
-            iconView.layer?.add(transition, forKey: "previewSwap")
-        }
         previewView.image = hasPreview ? image : nil
         previewView.isHidden = !hasPreview
         badgeIconView.isHidden = !hasPreview
@@ -158,38 +142,39 @@ final class SwitcherTileView: NSView {
         super.layout()
         let size = metrics.tileSize
         let contentHeight = metrics.contentHeight
-        let contentTop = size.height - 10
-        selectionView.frame = bounds.insetBy(dx: SwitcherTileView.selectionInset,
-                                             dy: SwitcherTileView.selectionInset)
+        let contentTop = size.height - DesignTokens.contentTopInset
+        selectionView.frame = bounds.insetBy(dx: DesignTokens.tileSelectionInset,
+                                             dy: DesignTokens.tileSelectionInset)
         if hasPreview {
             // aspect-fit box; NSImageView letterboxes without distortion
-            previewView.frame = NSRect(x: SwitcherTileView.labelInset,
+            previewView.frame = NSRect(x: DesignTokens.tileLabelInset,
                                        y: contentTop - contentHeight,
-                                       width: size.width - SwitcherTileView.labelInset * 2,
+                                       width: size.width - DesignTokens.tileLabelInset * 2,
                                        height: contentHeight)
             // badge the fitted image, not the letterbox frame, so it hugs the
             // visible snapshot even for very tall or very narrow windows
             let fitted = fittedImageRect(in: previewView.frame, imageSize: previewView.image?.size)
-            let badge = SwitcherTileView.badgeSize
-            badgeIconView.frame = NSRect(x: min(fitted.maxX - badge + 8, bounds.maxX - badge - 4),
-                                         y: max(fitted.minY - 8, 2),
+            let badge = DesignTokens.previewBadgeSize
+            badgeIconView.frame = NSRect(x: min(fitted.maxX - badge + DesignTokens.previewBadgeOutset, bounds.maxX - badge - 4),
+                                         y: max(fitted.minY - DesignTokens.previewBadgeOutset, 2),
                                          width: badge, height: badge)
         } else {
             let iconSize = mode == .appIcons
-                ? SwitcherTileView.iconSize
-                : SwitcherTileView.previewFallbackIconSize
+                ? DesignTokens.largeIconSize
+                : DesignTokens.previewFallbackIconSize
             iconView.frame = NSRect(x: (size.width - iconSize) / 2,
                                     y: contentTop - contentHeight + (contentHeight - iconSize) / 2,
                                     width: iconSize, height: iconSize)
         }
         iconView.isHidden = hasPreview
-        let labelWidth = size.width - SwitcherTileView.labelInset * 2
-        titleLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 25,
-                                  width: labelWidth, height: 18)
-        tabsLabel.frame = NSRect(x: SwitcherTileView.labelInset, y: 7,
-                                 width: labelWidth, height: 16)
-        let button = SwitcherTileView.closeButtonSize
-        closeButton.frame = NSRect(x: 8, y: size.height - button - 8,
+        let labelWidth = size.width - DesignTokens.tileLabelInset * 2
+        titleLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
+                                  width: labelWidth, height: DesignTokens.titleHeight)
+        tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
+                                 width: labelWidth, height: DesignTokens.tabsHeight)
+        let button = DesignTokens.closeButtonSize
+        closeButton.frame = NSRect(x: DesignTokens.overlayInset,
+                                   y: size.height - button - DesignTokens.overlayInset,
                                    width: button, height: button)
     }
 

@@ -32,7 +32,13 @@ ditto .build/release/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framewo
 # sign nested code first (Sparkle's helpers), then the framework, then the app
 SIGN_FLAGS=(--force --sign "$IDENTITY")
 if [ "$IDENTITY" != "-" ]; then
-    SIGN_FLAGS+=(--options runtime --timestamp)
+    SIGN_FLAGS+=(--timestamp)
+    case "$IDENTITY" in
+        *"Developer ID"*)
+            # hardened runtime needs a team identifier for library validation;
+            # the stable self-signed identity has none, so it signs without it
+            SIGN_FLAGS+=(--options runtime) ;;
+    esac
 fi
 codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
 codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"

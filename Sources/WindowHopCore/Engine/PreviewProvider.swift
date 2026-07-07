@@ -6,9 +6,10 @@ import ScreenCaptureKit
 ///
 /// - The cache lives in memory for the app's lifetime, so opening the switcher
 ///   shows the last known preview of every window IMMEDIATELY.
-/// - Each session then recaptures all visible windows in parallel; a fresh
-///   snapshot replaces the stale one live (the tile crossfades unless Reduce
-///   Motion is on). Nothing is captured while the switcher is closed.
+/// - Each session recaptures in parallel to refresh the cache for the NEXT
+///   open; snapshots on screen are never swapped mid-session. Only tiles that
+///   had no snapshot at all are filled in as captures land. Nothing is
+///   captured while the switcher is closed.
 /// - Images are requested already scaled to tile size (no full-resolution
 ///   retention), never written to disk, never transmitted, and evicted the
 ///   moment their window disappears.
@@ -20,7 +21,8 @@ import ScreenCaptureKit
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
-    /// Delivered on the main thread as fresh captures arrive for the current session.
+    /// Delivered on the main thread, only for windows that had no cached
+    /// snapshot when the session opened (fill-in; never a mid-session swap).
     public var onPreview: ((AnyHashable, NSImage) -> Void)?
 
     private var generation = 0
@@ -59,14 +61,28 @@ public final class PreviewProvider {
               ScreenRecordingPermission.isGranted else { return }
         generation += 1
         let sessionGeneration = generation
+        let ownPid = ProcessInfo.processInfo.processIdentifier
         let requests: [CaptureRequest] = items.compactMap { item in
-            guard let window = item.window, let app = window.app else { return nil }
+            guard let window = item.window else { return nil }
+            if let native = window.nativeWindow, let primary = NSScreen.screens.first {
+                // the own Settings window previews too: convert its Cocoa frame
+                // (bottom-left origin) to the global top-left space SCWindow uses
+                let frame = native.frame
+                return CaptureRequest(id: item.id, pid: ownPid, title: item.title,
+                                      frame: CGRect(x: frame.origin.x,
+                                                    y: primary.frame.maxY - frame.maxY,
+                                                    width: frame.width, height: frame.height))
+            }
+            guard let app = window.app else { return nil }
             return CaptureRequest(id: item.id, pid: app.pid,
                                   title: item.title, frame: window.frame)
         }
+        // fill-in set: tiles that opened without any snapshot may receive one
+        let fillIds = Set(requests.map { $0.id }).filter { cache[$0] == nil }
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
-            await self?.capture(requests, generation: sessionGeneration, pixelTarget: pixelTarget)
+            await self?.capture(requests, generation: sessionGeneration,
+                                pixelTarget: pixelTarget, fillIds: fillIds)
         }
     }
 
@@ -80,7 +96,7 @@ public final class PreviewProvider {
     // MARK: - Capture
 
     private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
-                         pixelTarget: CGSize) async {
+                         pixelTarget: CGSize, fillIds: Set<AnyHashable>) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
         let candidates = content.windows.enumerated().map { index, window in
@@ -104,7 +120,8 @@ public final class PreviewProvider {
                 for (request, scWindow) in wave {
                     group.addTask { [weak self] in
                         await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                               pixelTarget: pixelTarget, deliver: !stale)
+                                               pixelTarget: pixelTarget,
+                                               deliver: !stale && fillIds.contains(request.id))
                     }
                 }
             }

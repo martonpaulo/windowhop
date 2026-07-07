@@ -22,7 +22,6 @@ cat > "$ITEM_FILE" <<EOF
       <sparkle:version>$BUILD_NUMBER</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-      <sparkle:releaseNotesLink>https://github.com/martonpaulo/windowhop/releases/tag/v$VERSION</sparkle:releaseNotesLink>
       <enclosure url="$URL" $SIGNATURE_ATTRS type="application/octet-stream"/>
     </item>
 EOF

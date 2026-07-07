@@ -26,7 +26,7 @@ public final class SwitcherPanel: NSPanel {
     /// Grid geometry of the current layout, for 2D arrow-key navigation.
     public private(set) var columnsPerRow = 1
 
-    private static let contentPadding: CGFloat = 12
+    
 
     /// The preview area a tile offers in Window Previews mode, for capture sizing.
     public static var previewContentSize: NSSize {
@@ -54,7 +54,7 @@ public final class SwitcherPanel: NSPanel {
         effectView.blendingMode = .behindWindow
         effectView.state = .active
         effectView.wantsLayer = true
-        effectView.layer?.cornerRadius = 20
+        effectView.layer?.cornerRadius = DesignTokens.panelCornerRadius
         effectView.layer?.cornerCurve = .continuous
         effectView.layer?.masksToBounds = true
         contentView = effectView
@@ -73,7 +73,7 @@ public final class SwitcherPanel: NSPanel {
         // panel; always present for accessibility, and ⌘, works without a pointer
         settingsButton.image = NSImage(systemSymbolName: "gearshape.fill",
                                        accessibilityDescription: "WindowHop Settings")?
-            .withSymbolConfiguration(.init(pointSize: 17, weight: .regular))
+            .withSymbolConfiguration(.init(pointSize: DesignTokens.chromeButtonSymbolSize, weight: .regular))
         settingsButton.isBordered = false
         settingsButton.imagePosition = .imageOnly
         settingsButton.contentTintColor = .secondaryLabelColor
@@ -128,11 +128,11 @@ public final class SwitcherPanel: NSPanel {
         announceSelection()
     }
 
-    /// A fresh preview arrived for a window in the current session; the tile
-    /// crossfades to it (imperceptible when the content is unchanged).
+    /// A preview arrived for a window that had none when the session opened
+    /// (fill-in only; existing snapshots are never swapped mid-session).
     public func updatePreview(id: AnyHashable, image: NSImage) {
         guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
-        tilePool[index].setPreview(image, animated: true)
+        tilePool[index].setPreview(image)
     }
 
     public func hide() {
@@ -167,14 +167,14 @@ public final class SwitcherPanel: NSPanel {
     private func layoutOnActiveScreen(tileCount: Int) {
         // the active display is the one with keyboard focus
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
-        let padding = SwitcherPanel.contentPadding
+        let padding = DesignTokens.panelPadding
         let tileSize = SwitcherTileView.Metrics.metrics(for: mode).tileSize
         let visibleFrame = screen.visibleFrame
 
         // tiles wrap into rows instead of scrolling horizontally (the AltTab
         // layout model); tiles never shrink. Only an extreme window count
         // exceeds the height budget and falls back to vertical scrolling.
-        let maxGridWidth = visibleFrame.width * 0.88 - padding * 2
+        let maxGridWidth = visibleFrame.width * DesignTokens.panelMaxWidthFraction - padding * 2
         let columns = max(1, min(tileCount, Int(maxGridWidth / tileSize.width)))
         let rows = tileCount == 0 ? 1 : Int(ceil(Double(tileCount) / Double(columns)))
         columnsPerRow = columns
@@ -185,12 +185,15 @@ public final class SwitcherPanel: NSPanel {
         for (index, tile) in tilePool.prefix(tileCount).enumerated() {
             let column = index % columns
             let row = index / columns
-            tile.frame = NSRect(x: CGFloat(column) * tileSize.width,
+            // a partial row is centered, like the native switcher — never left-ragged
+            let tilesInRow = min(columns, tileCount - row * columns)
+            let rowOffset = (gridWidth - CGFloat(tilesInRow) * tileSize.width) / 2
+            tile.frame = NSRect(x: rowOffset + CGFloat(column) * tileSize.width,
                                 y: CGFloat(rows - 1 - row) * tileSize.height,
                                 width: tileSize.width, height: tileSize.height)
         }
 
-        let maxVisibleRows = max(1, Int((visibleFrame.height * 0.85 - padding * 2) / tileSize.height))
+        let maxVisibleRows = max(1, Int((visibleFrame.height * DesignTokens.panelMaxHeightFraction - padding * 2) / tileSize.height))
         let visibleRows = min(rows, maxVisibleRows)
         scrollView.frame = NSRect(x: padding, y: padding,
                                   width: gridWidth,
@@ -200,8 +203,10 @@ public final class SwitcherPanel: NSPanel {
 
         let panelSize = NSSize(width: gridWidth + padding * 2,
                                height: scrollView.frame.height + padding * 2)
-        settingsButton.frame = NSRect(x: panelSize.width - 32, y: panelSize.height - 32,
-                                      width: 24, height: 24)
+        let chrome = DesignTokens.chromeButtonSize
+        settingsButton.frame = NSRect(x: panelSize.width - chrome - DesignTokens.overlayInset,
+                                      y: panelSize.height - chrome - DesignTokens.overlayInset,
+                                      width: chrome, height: chrome)
         let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
                              y: visibleFrame.midY - panelSize.height / 2)
         setFrame(NSRect(origin: origin, size: panelSize), display: true)

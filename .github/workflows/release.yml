@@ -37,14 +37,18 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
 
-      # Developer ID signing + notarization run only when credentials exist;
-      # otherwise the build stays ad-hoc signed and remains fully functional.
-      - name: Import Developer ID certificate (optional)
+      # A stable signing identity keeps the app's TCC (Accessibility) grant valid
+      # across updates — ad-hoc signatures change every build and macOS treats
+      # each update as a brand-new app. The same slot accepts a real Developer ID
+      # certificate later; the self-signed public cert lives in Support/.
+      - name: Import code-signing certificate (optional)
         if: ${{ env.HAS_DEVELOPER_ID == 'true' }}
         env:
           CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
         run: |
+          sudo security add-trusted-cert -d -r trustRoot \
+            -k /Library/Keychains/System.keychain Support/windowhop-signing.crt || true
           KEYCHAIN=build.keychain
           security create-keychain -p ci "$KEYCHAIN"
           security default-keychain -s "$KEYCHAIN"
@@ -53,8 +57,9 @@ jobs:
           security import cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
           rm cert.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k ci "$KEYCHAIN"
-          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | awk -F'"' '/Developer ID Application/ {print $2; exit}')
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | awk -F'"' 'NR==1 {print $2}')
           echo "DEVELOPER_ID_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "signing as: ${IDENTITY:-'(none found; will fall back to ad-hoc)'}"
 
       - name: Build and package
         run: scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
