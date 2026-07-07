@@ -20,7 +20,9 @@ IDENTITY_ARGS=()
 if security find-identity -v -p codesigning 2>/dev/null | grep -q '"WindowHop Code Signing"'; then
     IDENTITY_ARGS=("--identity=WindowHop Code Signing")
 fi
-(cd artifacts && npx --yes "create-dmg@$CREATE_DMG_VERSION" "${IDENTITY_ARGS[@]}" ../build/WindowHop.app .)
+# ${arr[@]+...} keeps macOS bash 3.2 happy about empty arrays under set -u
+(cd artifacts && npx --yes "create-dmg@$CREATE_DMG_VERSION" \
+    ${IDENTITY_ARGS[@]+"${IDENTITY_ARGS[@]}"} ../build/WindowHop.app .)
 mv "artifacts/WindowHop $VERSION.dmg" "$DMG"
 hdiutil verify "$DMG" -quiet && echo "hdiutil verify: ok"
 echo "created $DMG"
