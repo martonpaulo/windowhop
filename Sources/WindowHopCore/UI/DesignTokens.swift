@@ -5,8 +5,8 @@ import AppKit
 /// dimensions — change a token here and every surface follows.
 enum DesignTokens {
     // MARK: Panel chrome
-    static let panelPadding: CGFloat = 14
-    static let panelCornerRadius: CGFloat = 22
+    static let panelPadding: CGFloat = 16
+    static let panelCornerRadius: CGFloat = 28
     /// The grid may use up to this fraction of the screen's width/height.
     static let panelMaxWidthFraction: CGFloat = 0.88
     static let panelMaxHeightFraction: CGFloat = 0.85
@@ -17,9 +17,9 @@ enum DesignTokens {
     static let overlayInset: CGFloat = 8
 
     // MARK: Tiles (both appearances)
-    static let tileSelectionCornerRadius: CGFloat = 16
-    static let tileSelectionInset: CGFloat = 5
-    static let tileLabelInset: CGFloat = 10
+    static let tileSelectionCornerRadius: CGFloat = 18
+    static let tileSelectionInset: CGFloat = 4
+    static let tileLabelInset: CGFloat = 8
     static let titleFontSize: CGFloat = 13
     static let tabsFontSize: CGFloat = 11
     static let titleHeight: CGFloat = 18
@@ -28,14 +28,14 @@ enum DesignTokens {
     static let tabsY: CGFloat = 7
     static let contentTopInset: CGFloat = 10
 
-    // MARK: App Icons appearance
-    static let appIconsTileSize = NSSize(width: 136, height: 176)
-    static let appIconsContentHeight: CGFloat = 104
-    static let largeIconSize: CGFloat = 96
+    // MARK: App Icons appearance (density matched to the native switcher)
+    static let appIconsTileSize = NSSize(width: 124, height: 158)
+    static let appIconsContentHeight: CGFloat = 92
+    static let largeIconSize: CGFloat = 88
 
     // MARK: Window Previews appearance
-    static let previewsTileSize = NSSize(width: 220, height: 186)
-    static let previewsContentHeight: CGFloat = 114
+    static let previewsTileSize = NSSize(width: 204, height: 170)
+    static let previewsContentHeight: CGFloat = 100
     static let previewFallbackIconSize: CGFloat = 72
     static let previewCornerRadius: CGFloat = 8
     /// The app icon badged onto a snapshot — large enough to identify at a glance.
@@ -53,13 +53,19 @@ enum DesignTokens {
     static let previewPlaceholderIconSize: CGFloat = 48
     static let previewFillInFadeDuration: TimeInterval = 0.15
 
-    // MARK: Colors (semantic only — adapt to appearance and Increase Contrast)
-    /// Selection fill matching the native switcher's neutral rounded rectangle.
-    static var selectionFill: NSColor { .secondarySystemFill }
-    /// Placeholder card behind a not-yet-captured preview.
-    static var previewPlaceholderFill: NSColor { .quaternarySystemFill }
-    /// Panel background material (native floating-panel look).
-    static let panelMaterial: NSVisualEffectView.Material = .popover
-    /// Hierarchical tint for the overlay controls (close, settings).
-    static var overlayControlColor: NSColor { .secondaryLabelColor }
+    // MARK: Colors
+    /// Selection: the native switcher's rounded rectangle is LIGHTER than the
+    /// panel in Dark Mode and darker in Light Mode — labelColor with low alpha
+    /// gives exactly that in both, resolved under the panel's appearance.
+    static var selectionFill: NSColor { .labelColor.withAlphaComponent(0.16) }
+    /// Placeholder card behind a not-yet-captured preview (a quieter step of
+    /// the same ramp so it never competes with the selection).
+    static var previewPlaceholderFill: NSColor { .labelColor.withAlphaComponent(0.07) }
+    /// The native switcher's stable dark-glass panel (adaptive HUD material —
+    /// far less see-through than a popover, so bright desktops can't wash it out).
+    static let panelMaterial: NSVisualEffectView.Material = .hudWindow
+    /// Overlay controls use the Apple badge idiom (notification/Safari-tab
+    /// close): a filled gray circle with a white glyph — legible on any content.
+    static var overlayGlyphColor: NSColor { .white }
+    static var overlayCircleColor: NSColor { NSColor(white: 0.3, alpha: 0.85) }
 }

@@ -71,11 +71,12 @@ public final class SwitcherPanel: NSPanel {
 
         // panel-chrome settings control: revealed while the pointer is inside the
         // panel; always present for accessibility, and ⌘, works without a pointer
-        settingsButton.image = NSImage(systemSymbolName: "gearshape.fill",
+        settingsButton.image = NSImage(systemSymbolName: "gearshape.circle.fill",
                                        accessibilityDescription: "WindowHop Settings")?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: DesignTokens.chromeButtonSymbolSize,
-                                                                  weight: .medium)
-                .applying(.init(hierarchicalColor: DesignTokens.overlayControlColor)))
+                                                                  weight: .semibold)
+                .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
+                                                DesignTokens.overlayCircleColor])))
         settingsButton.isBordered = false
         settingsButton.imagePosition = .imageOnly
         settingsButton.target = self

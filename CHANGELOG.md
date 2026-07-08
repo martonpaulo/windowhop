@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.4 — 2026-07-08
+
+Visual pass to match the native macOS switcher, reviewed primarily in Dark Mode:
+
+- The panel now uses the stable dark-glass HUD material — bright desktops can no
+  longer wash it out (the popover material was too transparent).
+- Selection is the native idiom: a rounded rectangle *lighter* than the panel in
+  Dark Mode (white ~16%), darker in Light Mode — no more near-black selection.
+- Close and Settings controls use the Apple badge style: white glyph on a filled
+  gray circle (like notification and Safari-tab close buttons) — high contrast on
+  any snapshot.
+- Density matched to the native switcher: tighter tiles (124×158 icons, 204×170
+  previews), larger panel corner radius, quieter placeholder fill.
+
+
 ## 1.0.3 — 2026-07-07
 
 - **Permission loop, part 2**: the welcome window now detects macOS App

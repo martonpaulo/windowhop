@@ -89,10 +89,12 @@ final class SwitcherTileView: NSView {
         tabsLabel.lineBreakMode = .byTruncatingTail
         addSubview(tabsLabel)
 
-        // hierarchical fill: the standard Apple overlay-close look
+        // palette fill: white glyph on a gray circle — the Apple overlay-close
+        // badge (notifications, Safari tabs); legible over any snapshot
         let closeConfiguration = NSImage.SymbolConfiguration(pointSize: DesignTokens.closeButtonSymbolSize,
-                                                             weight: .medium)
-            .applying(.init(hierarchicalColor: DesignTokens.overlayControlColor))
+                                                             weight: .semibold)
+            .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
+                                            DesignTokens.overlayCircleColor]))
         closeButton.image = NSImage(systemSymbolName: "xmark.circle.fill",
                                     accessibilityDescription: "Close Window")?
             .withSymbolConfiguration(closeConfiguration)
