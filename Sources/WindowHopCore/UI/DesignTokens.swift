@@ -22,14 +22,17 @@ enum DesignTokens {
     static let tileLabelInset: CGFloat = 8
     static let titleFontSize: CGFloat = 13
     static let tabsFontSize: CGFloat = 11
-    static let titleHeight: CGFloat = 18
-    static let tabsHeight: CGFloat = 16
-    static let titleY: CGFloat = 25
-    static let tabsY: CGFloat = 7
+    /// Titles wrap to two lines before truncating; the zone is always two lines
+    /// tall so tiles never resize between one- and two-line titles.
+    static let titleZoneHeight: CGFloat = 34
+    static let titleMaxLines = 2
+    static let titleY: CGFloat = 22
+    static let tabsHeight: CGFloat = 15
+    static let tabsY: CGFloat = 6
     static let contentTopInset: CGFloat = 10
 
     // MARK: App Icons appearance (density matched to the native switcher)
-    static let appIconsTileSize = NSSize(width: 124, height: 158)
+    static let appIconsTileSize = NSSize(width: 124, height: 162)
     static let appIconsContentHeight: CGFloat = 92
     static let largeIconSize: CGFloat = 88
 
@@ -37,7 +40,7 @@ enum DesignTokens {
     static let previewsTileSize = NSSize(width: 204, height: 170)
     static let previewsContentHeight: CGFloat = 100
     static let previewFallbackIconSize: CGFloat = 72
-    static let previewCornerRadius: CGFloat = 8
+    static let previewCornerRadius: CGFloat = 10
     /// The app icon badged onto a snapshot — large enough to identify at a glance.
     static let previewBadgeSize: CGFloat = 40
     static let previewBadgeOutset: CGFloat = 8

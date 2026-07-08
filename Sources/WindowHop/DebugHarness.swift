@@ -64,24 +64,26 @@ enum DebugHarness {
         // captures need Screen Recording; the layout under test is identical)
         let savedMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
-        let previewPanel = SwitcherPanel()
-        previewPanel.appearance = NSAppearance(named: .aqua)
-        let previewItems = demoItems()
-        previewPanel.show(items: previewItems, selectedIndex: 1)
-        for (index, item) in previewItems.enumerated() where index != 4 {
-            // one tile (index 4) is deliberately left without a preview to show
-            // the icon fallback; the rest get varied aspect ratios
-            let wide = index % 3 != 2
-            let size = wide ? NSSize(width: 456, height: 286) : NSSize(width: 240, height: 380)
-            previewPanel.updatePreview(id: item.id, image: syntheticWindowImage(size: size, seed: index))
+        for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            let previewPanel = SwitcherPanel()
+            previewPanel.appearance = NSAppearance(named: appearanceName)
+            let previewItems = demoItems()
+            previewPanel.show(items: previewItems, selectedIndex: 1)
+            for (index, item) in previewItems.enumerated() where index != 4 {
+                // one tile (index 4) is deliberately left without a preview to show
+                // the placeholder fallback; the rest get varied aspect ratios
+                let wide = index % 3 != 2
+                let size = wide ? NSSize(width: 456, height: 286) : NSSize(width: 240, height: 380)
+                previewPanel.updatePreview(id: item.id, image: syntheticWindowImage(size: size, seed: index))
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                if let contentView = previewPanel.contentView {
+                    write(contentView, "switcher-previews-\(suffix)")
+                }
+                previewPanel.hide()
+            }
         }
         Preferences.shared.appearanceMode = savedMode
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            if let contentView = previewPanel.contentView {
-                write(contentView, "switcher-previews-light")
-            }
-            previewPanel.hide()
-        }
 
         var pending = 0
         let finishOne = {

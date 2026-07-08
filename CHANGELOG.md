@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.5 — 2026-07-08
+
+- Window titles now wrap to **two lines** before truncating — no more premature
+  "…" on titles that would fit. The title zone has a fixed two-line height, so
+  tiles never resize between short and long titles and the tab-count line stays
+  aligned across every tile.
+- The native-switcher visual pass is fully unified across both appearances
+  (App Icons and Window Previews share the same panel material, selection ramp,
+  vertical rhythm, and badge controls), verified in Light and Dark Mode.
+- Snapshot corners rounded slightly more (10 pt) to sit naturally inside the
+  larger selection radius.
+
+
 ## 1.0.4 — 2026-07-08
 
 Visual pass to match the native macOS switcher, reviewed primarily in Dark Mode:

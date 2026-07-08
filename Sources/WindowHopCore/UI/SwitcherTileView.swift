@@ -78,7 +78,15 @@ final class SwitcherTileView: NSView {
         titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
-        titleLabel.lineBreakMode = .byTruncatingTail
+        // wrap to two lines, then truncate — never an ellipsis a line early.
+        // word-wrap + truncatesLastVisibleLine is the frame-based recipe;
+        // .byTruncatingTail alone keeps the field single-line
+        titleLabel.usesSingleLineMode = false
+        titleLabel.lineBreakMode = .byWordWrapping
+        titleLabel.cell?.wraps = true
+        titleLabel.cell?.isScrollable = false
+        titleLabel.cell?.truncatesLastVisibleLine = true
+        titleLabel.maximumNumberOfLines = DesignTokens.titleMaxLines
         titleLabel.allowsDefaultTighteningForTruncation = false
         addSubview(titleLabel)
 
@@ -204,7 +212,7 @@ final class SwitcherTileView: NSView {
         placeholderView.isHidden = hasPreview || mode == .appIcons
         let labelWidth = size.width - DesignTokens.tileLabelInset * 2
         titleLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
-                                  width: labelWidth, height: DesignTokens.titleHeight)
+                                  width: labelWidth, height: DesignTokens.titleZoneHeight)
         tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
                                  width: labelWidth, height: DesignTokens.tabsHeight)
         // badge-style over the content's top-left corner (Mission Control idiom),
