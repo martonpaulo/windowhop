@@ -95,7 +95,7 @@ jobs:
           COMPAT_PASSWORD=windowhop-ephemeral-ci-import
           export COMPAT_PASSWORD
           trap 'rm -f cert.p12 cert-extracted.pem cert-compatible.p12' EXIT
-          openssl pkcs12 -in cert.p12 -passin env:CERT_PASSWORD \
+          openssl pkcs12 -legacy -in cert.p12 -passin env:CERT_PASSWORD \
             -nodes -out cert-extracted.pem
           openssl pkcs12 -export -legacy -in cert-extracted.pem \
             -passout env:COMPAT_PASSWORD -out cert-compatible.p12
