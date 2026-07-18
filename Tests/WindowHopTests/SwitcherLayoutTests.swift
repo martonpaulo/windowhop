@@ -43,11 +43,11 @@ final class SwitcherLayoutTests: XCTestCase {
         let unavailable = configuredTile(imageSize: nil)
         unavailable.setPreviewUnavailable()
         unavailable.layoutSubtreeIfNeeded()
-        let permissionRequired = configuredTile(imageSize: nil)
-        permissionRequired.setPreviewPermissionRequired()
-        permissionRequired.layoutSubtreeIfNeeded()
+        let permissionUnavailable = configuredTile(imageSize: nil)
+        permissionUnavailable.setPreviewPermissionUnavailable()
+        permissionUnavailable.layoutSubtreeIfNeeded()
 
-        for tile in [loaded, loading, unavailable, permissionRequired] {
+        for tile in [loaded, loading, unavailable, permissionUnavailable] {
             tile.isSelected = true
             tile.layoutSubtreeIfNeeded()
             XCTAssertFalse(tile.showsCardOutlineForTesting)
@@ -58,10 +58,10 @@ final class SwitcherLayoutTests: XCTestCase {
                            accuracy: 0.001)
         }
         XCTAssertEqual(try rgba(try XCTUnwrap(loaded.selectionBackgroundColorForTesting)).3,
-                       try rgba(try XCTUnwrap(permissionRequired.selectionBackgroundColorForTesting)).3,
+                       try rgba(try XCTUnwrap(permissionUnavailable.selectionBackgroundColorForTesting)).3,
                        accuracy: 0.001)
         XCTAssertTrue(unavailable.showsUnavailableStateForTesting)
-        XCTAssertTrue(permissionRequired.showsPermissionRequiredStateForTesting)
+        XCTAssertTrue(permissionUnavailable.showsPermissionUnavailableStateForTesting)
     }
 
     func testIconOnlyCardsUseBackgroundSelectionWithoutAnyOutline() {
@@ -159,6 +159,72 @@ final class SwitcherLayoutTests: XCTestCase {
                            + DesignTokens.chromeButtonOutsideOverlap)
     }
 
+    func testSettingsButtonIsContextualInCyclingAndPersistentModes() {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        let items = [item("a")]
+
+        panel.show(items: items, selectedIndex: 0, presentationMode: .cycling)
+        XCTAssertFalse(panel.settingsButtonIsVisibleForTesting)
+        panel.setPanelHoverForTesting(true)
+        XCTAssertTrue(panel.settingsButtonIsVisibleForTesting)
+        panel.setPanelHoverForTesting(false)
+        XCTAssertFalse(panel.settingsButtonIsVisibleForTesting)
+
+        panel.show(items: items, selectedIndex: 0, presentationMode: .persistent)
+        XCTAssertTrue(panel.settingsButtonIsVisibleForTesting)
+        panel.setPanelHoverForTesting(false)
+        XCTAssertTrue(panel.settingsButtonIsVisibleForTesting)
+    }
+
+    func testHidingMetadataCompactsCardAndPanelWithoutChangingPreviewWidth() throws {
+        let saved = Preferences.shared.showTabCounts
+        defer { Preferences.shared.showTabCounts = saved }
+        Preferences.shared.showTabCounts = true
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a")], selectedIndex: 0)
+        let visibleFrame = try XCTUnwrap(panel.tileFrameForTesting(at: 0))
+        let visibleCanvas = try XCTUnwrap(panel.tileForTesting(at: 0))
+            .previewCanvasFrameForTesting
+        let visiblePanelHeight = panel.panelBackgroundFrameForTesting.height
+
+        Preferences.shared.showTabCounts = false
+        panel.update(items: [item("a")], selectedIndex: 0)
+        let hiddenFrame = try XCTUnwrap(panel.tileFrameForTesting(at: 0))
+        let hiddenTile = try XCTUnwrap(panel.tileForTesting(at: 0))
+
+        XCTAssertEqual(hiddenFrame.width, visibleFrame.width)
+        XCTAssertLessThan(hiddenFrame.height, visibleFrame.height)
+        XCTAssertEqual(hiddenTile.previewCanvasFrameForTesting.width, visibleCanvas.width)
+        XCTAssertTrue(hiddenTile.metadataIsHiddenForTesting)
+        XCTAssertLessThan(panel.panelBackgroundFrameForTesting.height, visiblePanelHeight)
+    }
+
+    func testSkeletonStatesAreExplicitAndUnavailableNeverAnimates() {
+        let loading = configuredTile(imageSize: nil)
+        XCTAssertTrue(loading.showsLoadingStateForTesting)
+
+        loading.setPreviewPermissionUnavailable()
+        XCTAssertTrue(loading.showsPermissionUnavailableStateForTesting)
+        XCTAssertFalse(loading.skeletonIsAnimatingForTesting)
+
+        loading.setPreviewLoading()
+        loading.setPreviewUnavailable()
+        XCTAssertTrue(loading.showsUnavailableStateForTesting)
+        XCTAssertFalse(loading.skeletonIsAnimatingForTesting)
+    }
+
+    func testSharedTypographyUsesNativeSystemHierarchy() throws {
+        let tile = configuredTile(imageSize: NSSize(width: 300, height: 200))
+        let title = try XCTUnwrap(tile.titleFontForTesting)
+        let metadata = try XCTUnwrap(tile.metadataFontForTesting)
+
+        XCTAssertEqual(title.familyName, NSFont.systemFont(ofSize: 14).familyName)
+        XCTAssertEqual(metadata.familyName, NSFont.systemFont(ofSize: 12).familyName)
+        XCTAssertGreaterThan(title.pointSize, metadata.pointSize)
+        XCTAssertEqual(title.pointSize, DesignTokens.titleFontSize)
+        XCTAssertEqual(metadata.pointSize, DesignTokens.metadataFontSize)
+    }
+
     func testWrappedRowsUseOneFullCardSpacing() throws {
         let panel = SwitcherPanel(rasterizableBackground: true)
         panel.update(items: (0..<100).map { item("\($0)") }, selectedIndex: 0)
@@ -174,10 +240,11 @@ final class SwitcherLayoutTests: XCTestCase {
     private func configuredTile(imageSize: NSSize?,
                                 mode: AppearanceMode = .windowPreviews) -> SwitcherTileView {
         let tile = SwitcherTileView()
-        tile.configure(item: item("tile"), mode: mode,
+        tile.configure(item: item("tile"), mode: mode, showTabCounts: false,
                        preview: imageSize.map(NSImage.init(size:)))
         tile.frame = NSRect(origin: .zero,
-                            size: SwitcherTileView.Metrics.metrics(for: mode).tileSize)
+                            size: SwitcherTileView.Metrics.metrics(
+                                for: mode, showTabCounts: false).tileSize)
         tile.layoutSubtreeIfNeeded()
         return tile
     }

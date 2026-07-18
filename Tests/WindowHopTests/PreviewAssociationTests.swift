@@ -29,11 +29,13 @@ final class PreviewAssociationTests: XCTestCase {
 
     func testReusedTileResetsStaleImageState() {
         let tile = SwitcherTileView()
-        tile.configure(item: item("a"), mode: .windowPreviews, preview: image)
+        tile.configure(item: item("a"), mode: .windowPreviews,
+                       showTabCounts: false, preview: image)
         XCTAssertTrue(tile.showsPreviewImage)
         // the pooled tile now represents a window with no snapshot: nothing of
         // the previous occupant may remain visible
-        tile.configure(item: item("b"), mode: .windowPreviews, preview: nil)
+        tile.configure(item: item("b"), mode: .windowPreviews,
+                       showTabCounts: false, preview: nil)
         XCTAssertFalse(tile.showsPreviewImage)
     }
 

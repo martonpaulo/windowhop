@@ -10,6 +10,7 @@ public enum LoginItem {
 
     @discardableResult
     public static func set(_ enabled: Bool) -> Bool {
+        guard isEnabled != enabled else { return true }
         do {
             if enabled {
                 try SMAppService.mainApp.register()

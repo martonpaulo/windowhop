@@ -68,7 +68,6 @@ public final class SwitcherController {
             state.reset()
             EventTap.shared.stop()
         }
-        pushEligibleCount()
     }
 
     private func handle(_ event: SwitcherInputEvent) {
@@ -153,7 +152,10 @@ public final class SwitcherController {
             break
         case .show(let selectedIndex):
             let request = expandedPreview.begin(targetedWindowID: itemID(at: selectedIndex))
-            panel.show(items: items, selectedIndex: selectedIndex)
+            panel.show(
+                items: items,
+                selectedIndex: selectedIndex,
+                presentationMode: state.phase == .sticky ? .persistent : .cycling)
             state.updateColumns(panel.columnsPerRow)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
@@ -263,7 +265,7 @@ public final class SwitcherController {
         }
         refreshDuringSession()
         if state.isActive {
-            panel.presentAgain()
+            panel.presentAgain(presentationMode: .persistent)
         }
     }
 
@@ -286,7 +288,6 @@ public final class SwitcherController {
     // MARK: - Store changes while the session is open
 
     private func storeChanged() {
-        pushEligibleCount()
         guard state.isActive else { return }
         refreshDuringSession()
     }
@@ -335,10 +336,6 @@ public final class SwitcherController {
             isOnActiveDisplay: true)
         return WindowEligibility.shouldDisplay(
             state, policy: Preferences.shared.windowInclusionPolicy)
-    }
-
-    private func pushEligibleCount() {
-        EventTap.shared.eligibleCount = WindowStore.shared.snapshot().count
     }
 
     // MARK: - Session support

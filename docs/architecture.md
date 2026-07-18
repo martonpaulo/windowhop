@@ -151,12 +151,13 @@ Source images aspect-fit and center inside a display-ratio canvas over the seman
 preview surface. The app badge, Close control, selection plate, shadow, hit testing, and
 title position all anchor to that canvas rather than the fitted source-image bounds.
 
-While an authorized window has no snapshot, the tile shows “Loading preview…” and the
-first capture fades in (Reduce Motion disables the fade). Missing or revoked permission
-uses a lock symbol, “Permission required,” and “Screen Recording.” If acquisition,
-matching, or capture fails while permission exists, it shows “Preview unavailable.” A
-cached snapshot is never replaced by an ordinary capture failure. All paths keep constant
-geometry and selection, with no badge, surface, or title movement.
+While an authorized window has no snapshot, the tile shows a simplified macOS-window
+skeleton with a quiet pulse; Reduce Motion makes it static. Missing or revoked permission
+uses the same geometry as a subdued, non-animating fallback while the single panel-level
+recovery action remains available. Acquisition, matching, or capture failure also uses a
+static skeleton, without exposing technical copy. A cached snapshot is never replaced by
+an ordinary capture or permission failure. All paths keep constant geometry and selection,
+with no badge, surface, or title movement.
 
 After the configured dwell, `SwitcherController` asks the provider for a current snapshot
 of the selected id and presents it in `ExpandedPreviewView`. Both the dwell request and

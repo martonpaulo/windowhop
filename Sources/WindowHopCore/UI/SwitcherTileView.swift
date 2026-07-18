@@ -23,44 +23,162 @@ private final class OverlayCloseButton: NSButton {
     }
 }
 
+/// A native, dependency-free placeholder that reads as a simplified macOS
+/// window. Loading pulses gently; unavailable and permission-blocked states
+/// use the same geometry without animation or card-level error copy.
+private final class PreviewSkeletonView: NSView {
+    enum Variant: Equatable {
+        case loading
+        case unavailable
+    }
+
+    var variant: Variant = .loading {
+        didSet {
+            needsDisplay = true
+            refreshAnimation()
+        }
+    }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        setAccessibilityElement(false)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            DesignTokens.previewSkeletonChromeFill.setFill()
+            NSRect(x: bounds.minX,
+                   y: bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight,
+                   width: bounds.width,
+                   height: DesignTokens.previewSkeletonTitleBarHeight).fill()
+
+            DesignTokens.previewSkeletonDotFill.setFill()
+            let dot = DesignTokens.previewSkeletonDotSize
+            for index in 0..<3 {
+                let x = DesignTokens.previewSkeletonInset
+                    + CGFloat(index) * (dot + DesignTokens.previewSkeletonDotSpacing)
+                let y = bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight / 2 - dot / 2
+                NSBezierPath(ovalIn: NSRect(x: x, y: y, width: dot, height: dot)).fill()
+            }
+
+            let fractions: [CGFloat]
+            switch variant {
+            case .loading:
+                DesignTokens.previewSkeletonLineFill.setFill()
+                fractions = DesignTokens.previewSkeletonLoadingLineFractions
+            case .unavailable:
+                DesignTokens.previewSkeletonUnavailableLineFill.setFill()
+                fractions = DesignTokens.previewSkeletonUnavailableLineFractions
+            }
+            let availableWidth = bounds.width - DesignTokens.previewSkeletonInset * 2
+            var y = bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight
+                - DesignTokens.previewSkeletonInset - DesignTokens.previewSkeletonLineHeight
+            for fraction in fractions where y >= DesignTokens.previewSkeletonInset {
+                let line = NSRect(x: DesignTokens.previewSkeletonInset,
+                                  y: y,
+                                  width: availableWidth * fraction,
+                                  height: DesignTokens.previewSkeletonLineHeight)
+                NSBezierPath(roundedRect: line,
+                             xRadius: DesignTokens.previewSkeletonLineRadius,
+                             yRadius: DesignTokens.previewSkeletonLineRadius).fill()
+                y -= DesignTokens.previewSkeletonLineHeight
+                    + DesignTokens.previewSkeletonLineSpacing
+            }
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        refreshAnimation()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        needsDisplay = true
+    }
+
+    func refreshAnimation() {
+        layer?.removeAnimation(forKey: "previewSkeletonPulse")
+        layer?.opacity = 1
+        guard variant == .loading,
+              window != nil,
+              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+        let pulse = CABasicAnimation(keyPath: "opacity")
+        pulse.fromValue = DesignTokens.previewSkeletonMinimumOpacity
+        pulse.toValue = 1
+        pulse.duration = DesignTokens.previewSkeletonPulseDuration
+        pulse.autoreverses = true
+        pulse.repeatCount = .infinity
+        pulse.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+        layer?.add(pulse, forKey: "previewSkeletonPulse")
+    }
+
+    func stopAnimation() {
+        layer?.removeAnimation(forKey: "previewSkeletonPulse")
+        layer?.opacity = 1
+    }
+
+    var isAnimatingForTesting: Bool {
+        layer?.animation(forKey: "previewSkeletonPulse") != nil
+    }
+}
+
+enum PreviewPresentationState: Equatable {
+    case loading
+    case permissionUnavailable
+    case captureUnavailable
+    case loaded
+}
+
 /// One switcher entry in either appearance:
 /// - App Icons: a genuinely large application icon dominates the tile.
 /// - Window Previews: an aspect-fit window snapshot with the app icon as a
 ///   corner badge; until (or unless) a preview arrives, a quiet fixed-size
-///   placeholder remains behind that same corner-aligned badge.
-/// Every tile keeps a compact title and the reserved tab-count line, so tiles
-/// never shift as data arrives. Hovering reveals an overlay close control that
+///   skeleton remains behind that same corner-aligned badge.
+/// Titles and optional metadata use one shared native typography hierarchy.
+/// Hovering reveals an overlay close control that
 /// routes through the same confirmation flow as Delete.
 final class SwitcherTileView: NSView {
-    private enum PreviewState {
-        case loading
-        case permissionRequired
-        case unavailable
-        case loaded
-    }
     struct Metrics {
         let tileSize: NSSize
         let contentHeight: CGFloat // icon or preview area height
 
-        static let appIcons = Metrics(
-            tileSize: NSSize(width: DesignTokens.appIconsTileWidth,
-                             height: DesignTokens.tileHeight(contentHeight: DesignTokens.appIconsContentHeight)),
-            contentHeight: DesignTokens.appIconsContentHeight)
+        static func appIcons(showTabCounts: Bool) -> Metrics {
+            Metrics(
+                tileSize: NSSize(
+                    width: DesignTokens.appIconsTileWidth,
+                    height: DesignTokens.tileHeight(
+                        contentHeight: DesignTokens.appIconsContentHeight,
+                        showMetadata: showTabCounts)),
+                contentHeight: DesignTokens.appIconsContentHeight)
+        }
 
         /// Preview containers share the presenting display's aspect ratio, so
         /// every card is identical and any window aspect-fits without cropping.
-        static func windowPreviews(displayAspect: CGFloat) -> Metrics {
+        static func windowPreviews(displayAspect: CGFloat,
+                                   showTabCounts: Bool) -> Metrics {
             let contentHeight = DesignTokens.previewContentHeight(
                 width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2,
                 displayAspect: displayAspect)
             return Metrics(
                 tileSize: NSSize(width: DesignTokens.previewsTileWidth,
-                                 height: DesignTokens.tileHeight(contentHeight: contentHeight)),
+                                 height: DesignTokens.tileHeight(
+                                    contentHeight: contentHeight,
+                                    showMetadata: showTabCounts)),
                 contentHeight: contentHeight)
         }
 
-        static func metrics(for mode: AppearanceMode) -> Metrics {
-            mode == .appIcons ? .appIcons : .windowPreviews(displayAspect: mainDisplayAspect)
+        static func metrics(for mode: AppearanceMode,
+                            showTabCounts: Bool) -> Metrics {
+            mode == .appIcons
+                ? .appIcons(showTabCounts: showTabCounts)
+                : .windowPreviews(displayAspect: mainDisplayAspect,
+                                  showTabCounts: showTabCounts)
         }
 
         /// Aspect ratio of the display the switcher is presented on.
@@ -75,9 +193,10 @@ final class SwitcherTileView: NSView {
     var onCloseRequest: (() -> Void)?
     private(set) var accessibilityText = ""
 
-    private var metrics = Metrics.appIcons
+    private var metrics = Metrics.appIcons(showTabCounts: false)
     private var mode = AppearanceMode.appIcons
-    private var previewState = PreviewState.loading
+    private var previewState = PreviewPresentationState.loading
+    private var showTabCounts = false
     private var hasPreview: Bool { previewState == .loaded }
 
     private let selectionBackgroundView = NSView()
@@ -90,9 +209,7 @@ final class SwitcherTileView: NSView {
     /// Semantic canvas surface behind loaded, letterboxed, loading, blocked,
     /// and unavailable content. It is always the same fixed geometry.
     private let previewSurfaceView = NSView()
-    private let unavailableSymbolView = NSImageView()
-    private let unavailableLabel = NSTextField(labelWithString: "Preview unavailable")
-    private let unavailableExplanationLabel = NSTextField(labelWithString: "")
+    private let skeletonView = PreviewSkeletonView()
     private let badgeIconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
     private let tabsLabel = NSTextField(labelWithString: "")
@@ -130,19 +247,27 @@ final class SwitcherTileView: NSView {
         selectionBackgroundView.layer?.backgroundColor?.alpha ?? 0
     }
     var showsUnavailableStateForTesting: Bool {
-        previewState == .unavailable && !unavailableLabel.isHidden
+        previewState == .captureUnavailable && !skeletonView.isHidden
     }
     var showsLoadingStateForTesting: Bool {
-        previewState == .loading && !unavailableLabel.isHidden
+        previewState == .loading && !skeletonView.isHidden
     }
-    var showsPermissionRequiredStateForTesting: Bool {
-        previewState == .permissionRequired && !unavailableLabel.isHidden
+    var showsPermissionUnavailableStateForTesting: Bool {
+        previewState == .permissionUnavailable && !skeletonView.isHidden
     }
+    var skeletonIsAnimatingForTesting: Bool { skeletonView.isAnimatingForTesting }
+    var metadataIsHiddenForTesting: Bool { tabsLabel.isHidden }
+    var titleFrameForTesting: NSRect { titleLabel.frame }
+    var metadataFrameForTesting: NSRect { tabsLabel.frame }
+    var titleFontForTesting: NSFont? { titleLabel.font }
+    var metadataFontForTesting: NSFont? { tabsLabel.font }
 
     /// Tiles are pooled and reconfigured (never recreated per session) so the
     /// panel opens fast even with 100+ windows.
     init() {
-        super.init(frame: NSRect(origin: .zero, size: Metrics.appIcons.tileSize))
+        super.init(frame: NSRect(
+            origin: .zero,
+            size: Metrics.appIcons(showTabCounts: false).tileSize))
 
         selectionBackgroundView.wantsLayer = true
         selectionBackgroundView.layer?.cornerRadius = DesignTokens.iconSelectionCornerRadius
@@ -168,26 +293,7 @@ final class SwitcherTileView: NSView {
         previewView.layer?.masksToBounds = true
         addSubview(previewView)
 
-        unavailableSymbolView.image = NSImage(
-            systemSymbolName: "rectangle.slash",
-            accessibilityDescription: "Preview unavailable")?
-            .withSymbolConfiguration(.init(
-                pointSize: DesignTokens.previewUnavailableSymbolSize,
-                weight: .regular))
-        unavailableSymbolView.contentTintColor = DesignTokens.previewUnavailableSymbolColor
-        unavailableSymbolView.imageScaling = .scaleProportionallyDown
-        addSubview(unavailableSymbolView)
-
-        unavailableLabel.font = .systemFont(ofSize: DesignTokens.previewUnavailableFontSize)
-        unavailableLabel.textColor = .secondaryLabelColor
-        unavailableLabel.alignment = .center
-        addSubview(unavailableLabel)
-
-        unavailableExplanationLabel.font = .systemFont(
-            ofSize: DesignTokens.previewExplanationFontSize)
-        unavailableExplanationLabel.textColor = .tertiaryLabelColor
-        unavailableExplanationLabel.alignment = .center
-        addSubview(unavailableExplanationLabel)
+        addSubview(skeletonView)
 
         iconView.imageScaling = .scaleProportionallyUpOrDown
         iconView.wantsLayer = true
@@ -196,7 +302,9 @@ final class SwitcherTileView: NSView {
         badgeIconView.imageScaling = .scaleProportionallyUpOrDown
         addSubview(badgeIconView)
 
-        titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize)
+        titleLabel.font = .systemFont(
+            ofSize: DesignTokens.titleFontSize,
+            weight: DesignTokens.titleFontWeight)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         // wrap to two lines, then truncate — never an ellipsis a line early.
@@ -211,8 +319,9 @@ final class SwitcherTileView: NSView {
         titleLabel.allowsDefaultTighteningForTruncation = false
         addSubview(titleLabel)
 
-        // the line is always reserved so tiles with and without counts align
-        tabsLabel.font = .systemFont(ofSize: DesignTokens.tabsFontSize)
+        tabsLabel.font = .systemFont(
+            ofSize: DesignTokens.metadataFontSize,
+            weight: DesignTokens.metadataFontWeight)
         tabsLabel.textColor = .secondaryLabelColor
         tabsLabel.alignment = .center
         tabsLabel.lineBreakMode = .byTruncatingTail
@@ -241,17 +350,21 @@ final class SwitcherTileView: NSView {
         applySelectionStyle()
     }
 
-    func configure(item: SwitcherItem, mode: AppearanceMode, preview: NSImage?) {
+    func configure(item: SwitcherItem,
+                   mode: AppearanceMode,
+                   showTabCounts: Bool,
+                   preview: NSImage?) {
         self.mode = mode
-        metrics = Metrics.metrics(for: mode)
+        self.showTabCounts = showTabCounts
+        metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts)
         let tabsText = item.tabCount.map { "\($0) tabs" } ?? ""
         var accessibilityParts = [item.title, item.appName]
-        if !tabsText.isEmpty { accessibilityParts.append(tabsText) }
+        if showTabCounts, !tabsText.isEmpty { accessibilityParts.append(tabsText) }
         accessibilityText = accessibilityParts.joined(separator: ", ")
         iconView.image = item.icon
         badgeIconView.image = item.icon
-        titleLabel.stringValue = item.title
-        tabsLabel.stringValue = tabsText
+        setTypography(title: item.title, metadata: tabsText)
+        tabsLabel.isHidden = !showTabCounts
         setAccessibilityLabel(accessibilityText)
         // a pooled tile may be re-representing another window: any in-flight
         // crossfade belongs to the previous occupant, never the next one
@@ -262,14 +375,14 @@ final class SwitcherTileView: NSView {
     }
 
     /// Applies (or clears) the window preview. While a window has no snapshot
-    /// the tile shows a labelled loading card under the corner badge, and the first
+    /// the tile shows a quiet loading skeleton under the corner badge, and the first
     /// capture fades in over it. When a fresh capture replaces a cached
     /// snapshot mid-session it crossfades in place — same geometry, no blank
     /// frame, no layout shift. Reduce Motion disables both animations.
     func setPreview(_ image: NSImage?, fadeIn: Bool = false) {
         let hadPreview = hasPreview
         previewState = mode == .windowPreviews && image != nil ? .loaded : .loading
-        updatePlaceholderContent()
+        updateSkeletonPresentation()
         let animatable = fadeIn && hasPreview && window != nil && !isHidden
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if animatable, hadPreview {
@@ -302,25 +415,22 @@ final class SwitcherTileView: NSView {
     /// loaded preview. The fixed canvas, badge, title, and outline never move.
     func setPreviewUnavailable() {
         guard mode == .windowPreviews, !hasPreview else { return }
-        previewState = .unavailable
-        updatePlaceholderContent()
+        previewState = .captureUnavailable
+        updateSkeletonPresentation()
         needsLayout = true
     }
 
-    func setPreviewPermissionRequired() {
-        guard mode == .windowPreviews else { return }
-        previewView.layer?.removeAllAnimations()
-        previewView.image = nil
-        previewView.isHidden = true
-        previewState = .permissionRequired
-        updatePlaceholderContent()
+    func setPreviewPermissionUnavailable() {
+        guard mode == .windowPreviews, !hasPreview else { return }
+        previewState = .permissionUnavailable
+        updateSkeletonPresentation()
         needsLayout = true
     }
 
     func setPreviewLoading() {
         guard mode == .windowPreviews, !hasPreview else { return }
         previewState = .loading
-        updatePlaceholderContent()
+        updateSkeletonPresentation()
         needsLayout = true
     }
 
@@ -375,35 +485,8 @@ final class SwitcherTileView: NSView {
         iconView.isHidden = mode == .windowPreviews
         previewSurfaceView.frame = contentBox
         previewSurfaceView.isHidden = mode == .appIcons
-        unavailableSymbolView.isHidden = mode != .windowPreviews || hasPreview
-        unavailableLabel.isHidden = unavailableSymbolView.isHidden
-        unavailableExplanationLabel.isHidden = unavailableSymbolView.isHidden
-        if !unavailableSymbolView.isHidden {
-            let symbol = DesignTokens.previewUnavailableSymbolSize
-            let labelHeight = ceil(unavailableLabel.intrinsicContentSize.height)
-            let explanationHeight = unavailableExplanationLabel.stringValue.isEmpty
-                ? 0
-                : ceil(unavailableExplanationLabel.intrinsicContentSize.height)
-            let groupHeight = symbol + DesignTokens.previewUnavailableSpacing + labelHeight
-                + (explanationHeight > 0 ? DesignTokens.previewUnavailableSpacing + explanationHeight : 0)
-            unavailableSymbolView.frame = NSRect(
-                x: contentBox.midX - symbol / 2,
-                y: contentBox.midY + groupHeight / 2 - symbol,
-                width: symbol,
-                height: symbol)
-            unavailableLabel.frame = NSRect(
-                x: contentBox.minX,
-                y: unavailableSymbolView.frame.minY
-                    - DesignTokens.previewUnavailableSpacing - labelHeight,
-                width: contentBox.width,
-                height: labelHeight)
-            unavailableExplanationLabel.frame = NSRect(
-                x: contentBox.minX,
-                y: unavailableLabel.frame.minY
-                    - DesignTokens.previewUnavailableSpacing - explanationHeight,
-                width: contentBox.width,
-                height: explanationHeight)
-        }
+        skeletonView.frame = contentBox
+        skeletonView.isHidden = mode != .windowPreviews || hasPreview
         previewShadowView.isHidden = mode == .appIcons
         previewShadowView.frame = contentBox
         previewShadowView.layer?.shadowPath = CGPath(
@@ -413,7 +496,9 @@ final class SwitcherTileView: NSView {
         let labelWidth = size.width - DesignTokens.tileLabelInset * 2
         // the zone is two lines tall; a single-line title centers within it so
         // one- and two-line cards read as the same layout
-        let zone = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
+        let zone = NSRect(
+            x: DesignTokens.tileLabelInset,
+            y: DesignTokens.titleY(showMetadata: showTabCounts),
                           width: labelWidth, height: DesignTokens.titleZoneHeight)
         let textHeight = min(titleLabel.cell?.cellSize(forBounds: zone).height
                                  ?? DesignTokens.titleZoneHeight,
@@ -421,8 +506,11 @@ final class SwitcherTileView: NSView {
         titleLabel.frame = NSRect(x: zone.minX,
                                   y: zone.minY + ((zone.height - textHeight) / 2).rounded(.down),
                                   width: labelWidth, height: textHeight)
-        tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
-                                 width: labelWidth, height: DesignTokens.tabsHeight)
+        tabsLabel.frame = NSRect(
+            x: DesignTokens.tileLabelInset,
+            y: DesignTokens.labelBottomInset,
+            width: labelWidth,
+            height: DesignTokens.metadataHeight)
         // Unlike the app badge, Close is centered exactly on the fixed
         // canvas's top-left point. Its overlay frame never participates in
         // measurement and intentionally extends beyond the canvas.
@@ -458,41 +546,53 @@ final class SwitcherTileView: NSView {
             }
             selectionBackgroundView.layer?.backgroundColor = fill.cgColor
             previewSurfaceView.layer?.backgroundColor = DesignTokens.previewSurfaceFill.cgColor
-            unavailableSymbolView.contentTintColor = DesignTokens.previewUnavailableSymbolColor
         }
         needsLayout = true
     }
 
-    private func updatePlaceholderContent() {
-        let text: String
-        let explanation: String
-        let symbol: String
+    private func updateSkeletonPresentation() {
         switch previewState {
         case .loading:
-            text = "Loading preview…"
-            explanation = ""
-            symbol = "ellipsis.rectangle"
-        case .permissionRequired:
-            text = "Permission required"
-            explanation = "Screen Recording"
-            symbol = "lock.rectangle"
-        case .unavailable:
-            text = "Preview unavailable"
-            explanation = ""
-            symbol = "rectangle.slash"
+            skeletonView.variant = .loading
+        case .permissionUnavailable, .captureUnavailable:
+            skeletonView.variant = .unavailable
         case .loaded:
-            text = ""
-            explanation = ""
-            symbol = "rectangle"
+            skeletonView.stopAnimation()
         }
-        unavailableLabel.stringValue = text
-        unavailableExplanationLabel.stringValue = explanation
-        unavailableSymbolView.image = NSImage(
-            systemSymbolName: symbol,
-            accessibilityDescription: text)?
-            .withSymbolConfiguration(.init(
-                pointSize: DesignTokens.previewUnavailableSymbolSize,
-                weight: .regular))
+    }
+
+    private func setTypography(title: String, metadata: String) {
+        let titleParagraph = NSMutableParagraphStyle()
+        titleParagraph.alignment = .center
+        titleParagraph.lineBreakMode = .byWordWrapping
+        titleLabel.attributedStringValue = NSAttributedString(
+            string: title,
+            attributes: [
+                .font: NSFont.systemFont(
+                    ofSize: DesignTokens.titleFontSize,
+                    weight: DesignTokens.titleFontWeight),
+                .foregroundColor: NSColor.labelColor,
+                .kern: DesignTokens.titleLetterSpacing,
+                .paragraphStyle: titleParagraph,
+            ])
+
+        let metadataParagraph = NSMutableParagraphStyle()
+        metadataParagraph.alignment = .center
+        metadataParagraph.lineBreakMode = .byTruncatingTail
+        tabsLabel.attributedStringValue = NSAttributedString(
+            string: metadata,
+            attributes: [
+                .font: NSFont.systemFont(
+                    ofSize: DesignTokens.metadataFontSize,
+                    weight: DesignTokens.metadataFontWeight),
+                .foregroundColor: NSColor.secondaryLabelColor,
+                .kern: DesignTokens.metadataLetterSpacing,
+                .paragraphStyle: metadataParagraph,
+            ])
+    }
+
+    func refreshMotionPreference() {
+        skeletonView.refreshAnimation()
     }
 
     /// Selection color is CGColor-backed; refresh when the appearance flips.

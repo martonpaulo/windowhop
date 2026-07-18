@@ -23,7 +23,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertTrue(preferences.switcherEnabled)
         XCTAssertTrue(preferences.launchAtLogin)
         XCTAssertEqual(preferences.shortcut, .commandTab)
-        XCTAssertNil(preferences.persistentShortcut)
+        XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
         XCTAssertEqual(preferences.expandedPreviewDelay.duration, 3)
@@ -32,9 +32,10 @@ final class PreferencesTests: XCTestCase {
         XCTAssertFalse(preferences.includeMinimizedWindows)
         XCTAssertFalse(preferences.includeHiddenApplicationWindows)
         XCTAssertFalse(preferences.includePictureInPictureWindows)
-        XCTAssertTrue(preferences.showTabCounts)
+        XCTAssertFalse(preferences.showTabCounts)
         XCTAssertFalse(preferences.showMenuBarItem)
         XCTAssertFalse(preferences.showDockIcon)
+        XCTAssertTrue(preferences.automaticUpdateChecks)
         XCTAssertFalse(preferences.firstLaunchCompleted)
     }
 
@@ -54,6 +55,7 @@ final class PreferencesTests: XCTestCase {
         preferences.showTabCounts = false
         preferences.showMenuBarItem = true
         preferences.showDockIcon = true
+        preferences.automaticUpdateChecks = false
         preferences.firstLaunchCompleted = true
 
         let restored = Preferences(defaults: defaults)
@@ -72,6 +74,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertFalse(restored.showTabCounts)
         XCTAssertTrue(restored.showMenuBarItem)
         XCTAssertTrue(restored.showDockIcon)
+        XCTAssertFalse(restored.automaticUpdateChecks)
         XCTAssertTrue(restored.firstLaunchCompleted)
     }
 
@@ -127,7 +130,7 @@ final class PreferencesTests: XCTestCase {
 
     func testCorruptPersistentShortcutRestoresUnassignedDefault() {
         defaults.set("broken-shortcut", forKey: Preferences.Key.persistentShortcut.rawValue)
-        XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
+        XCTAssertEqual(Preferences(defaults: defaults).persistentShortcut, .optionTab)
     }
 
     func testExpandedPreviewDelayPresetsAvoidRawMillisecondsInSettings() {
@@ -164,5 +167,78 @@ final class PreferencesTests: XCTestCase {
                                       object: preferences)
         preferences.includePictureInPictureWindows = true
         wait(for: [expectation], timeout: 1)
+    }
+
+    func testExplicitlyClearedPersistentShortcutSurvivesUpgrade() {
+        defaults.set("", forKey: Preferences.Key.persistentShortcut.rawValue)
+        XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
+    }
+
+    func testRestoreDefaultsResetsEveryConfigurablePreferenceAndPreservesInternalState() {
+        preferences.switcherEnabled = false
+        preferences.launchAtLogin = false
+        preferences.shortcut = .controlTab
+        preferences.persistentShortcut = nil
+        preferences.appearanceMode = .windowPreviews
+        preferences.expandedPreviewDelay = .off
+        preferences.includeOtherSpaces = false
+        preferences.includeOtherDisplays = false
+        preferences.includeMinimizedWindows = true
+        preferences.includeHiddenApplicationWindows = true
+        preferences.includePictureInPictureWindows = true
+        preferences.showTabCounts = true
+        preferences.showMenuBarItem = true
+        preferences.showDockIcon = true
+        preferences.automaticUpdateChecks = false
+        preferences.firstLaunchCompleted = true
+
+        preferences.restoreDefaults()
+
+        XCTAssertTrue(preferences.switcherEnabled)
+        XCTAssertTrue(preferences.launchAtLogin)
+        XCTAssertEqual(preferences.shortcut, .commandTab)
+        XCTAssertEqual(preferences.persistentShortcut, .optionTab)
+        XCTAssertEqual(preferences.appearanceMode, .appIcons)
+        XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
+        XCTAssertTrue(preferences.includeOtherSpaces)
+        XCTAssertTrue(preferences.includeOtherDisplays)
+        XCTAssertFalse(preferences.includeMinimizedWindows)
+        XCTAssertFalse(preferences.includeHiddenApplicationWindows)
+        XCTAssertFalse(preferences.includePictureInPictureWindows)
+        XCTAssertFalse(preferences.showTabCounts)
+        XCTAssertFalse(preferences.showMenuBarItem)
+        XCTAssertFalse(preferences.showDockIcon)
+        XCTAssertTrue(preferences.automaticUpdateChecks)
+        XCTAssertTrue(preferences.firstLaunchCompleted,
+                      "Restore Defaults must not repeat first-run state")
+    }
+
+    func testEveryNonInternalKeyParticipatesInRestoreDefaults() {
+        let internalKeys: Set<Preferences.Key> = [
+            .navigationPreviewDelay,
+            .firstLaunchCompleted,
+        ]
+        XCTAssertEqual(
+            Preferences.configurableKeys,
+            Set(Preferences.Key.allCases).subtracting(internalKeys),
+            "A new configurable preference must be considered by Restore Defaults")
+    }
+
+    func testRestoreDefaultsPublishesOneCoherentWindowFilterRefresh() {
+        preferences.includeOtherSpaces = false
+        preferences.includeOtherDisplays = false
+        preferences.includeMinimizedWindows = true
+        preferences.includeHiddenApplicationWindows = true
+        preferences.includePictureInPictureWindows = true
+        var refreshCount = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: Preferences.windowFiltersDidChange,
+            object: preferences,
+            queue: nil) { _ in refreshCount += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        preferences.restoreDefaults()
+
+        XCTAssertEqual(refreshCount, 1)
     }
 }

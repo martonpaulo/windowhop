@@ -107,6 +107,12 @@ if [ "$failures" -eq 0 ]; then
     pass "Markdown local links and tracked screenshots are synchronized"
 fi
 
+if scripts/validate-site.sh; then
+    pass "GitHub Pages static site"
+else
+    fail "GitHub Pages static site validation failed"
+fi
+
 # --- secrets must never be committed -----------------------------------------
 if git ls-files | grep -iE "private.?key|\.p12$|\.pem$"; then
     fail "potential secret file tracked in git"

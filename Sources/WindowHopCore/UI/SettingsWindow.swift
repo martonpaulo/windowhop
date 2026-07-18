@@ -93,6 +93,8 @@ struct GeneralPane: View {
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var launchAtLoginFailed = false
     @State private var shortcutValidationMessage: String?
+    @State private var restoreConfirmationShown = false
+    @State private var restoreFailed = false
     @State private var quitConfirmationShown = false
 
     var body: some View {
@@ -165,6 +167,25 @@ struct GeneralPane: View {
                 Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
             }
             Section {
+                Button("Restore Defaults…") {
+                    restoreConfirmationShown = true
+                }
+                .confirmationDialog("Restore all WindowHop settings?",
+                                    isPresented: $restoreConfirmationShown) {
+                    Button("Restore Defaults") {
+                        restoreFailed = !SettingsDefaultsRestorer.shared.restore()
+                        launchAtLogin = LoginItem.isEnabled
+                        shortcutValidationMessage = nil
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions and cached previews are unchanged.")
+                }
+                if restoreFailed {
+                    Text("Defaults could not be restored because Launch at Login is unavailable. Run WindowHop from Applications and try again.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
                 // macOS Form buttons ignore the destructive role's tint; make the
                 // destructive intent visible explicitly
                 Button(role: .destructive) {
@@ -257,7 +278,7 @@ struct AppearancePane: View {
                 } else {
                     Label("Window Previews needs Screen Recording access.", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("Until it is granted, preview cards clearly show Permission required instead of remaining in a loading state.")
+                    Text("Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Button(screenRecordingStatus == .notDetermined
@@ -292,7 +313,7 @@ struct AppearancePane: View {
 // MARK: - Updates
 
 struct UpdatesPane: View {
-    @State private var automaticUpdates = UpdateManager.shared.automaticallyChecksForUpdates
+    @ObservedObject private var preferences = Preferences.shared
     @ObservedObject private var updateManager = UpdateManager.shared
 
     var body: some View {
@@ -313,8 +334,9 @@ struct UpdatesPane: View {
                 }
             }
             Section {
-                Toggle("Automatically check for updates", isOn: $automaticUpdates)
-                    .onChange(of: automaticUpdates) { _, newValue in
+                Toggle("Automatically check for updates",
+                       isOn: $preferences.automaticUpdateChecks)
+                    .onChange(of: preferences.automaticUpdateChecks) { _, newValue in
                         UpdateManager.shared.automaticallyChecksForUpdates = newValue
                     }
                     .disabled(!UpdateManager.shared.isAvailable)
@@ -369,6 +391,10 @@ struct AboutPane: View {
                             .font(.title2.weight(.semibold))
                         Text("Switch between windows, not just apps.")
                             .foregroundStyle(.secondary)
+                        Text("Developed by Marton Paulo")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, 3)
                     }
                 }
                 .padding(.vertical, 4)
@@ -376,10 +402,11 @@ struct AboutPane: View {
                 LabeledContent("Bundle identifier", value: bundleIdentifier)
             }
             Section {
+                Link("WindowHop Website", destination: ProjectLinks.website)
                 Link("WindowHop on GitHub",
-                     destination: URL(string: "https://github.com/martonpaulo/windowhop")!)
+                     destination: ProjectLinks.repository)
                 Link("Report an issue",
-                     destination: URL(string: "https://github.com/martonpaulo/windowhop/issues")!)
+                     destination: ProjectLinks.issues)
             }
             Section {
                 LabeledContent("License", value: "GPL-3.0")
@@ -387,7 +414,7 @@ struct AboutPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Link("AltTab on GitHub",
-                     destination: URL(string: "https://github.com/lwouis/alt-tab-macos")!)
+                     destination: ProjectLinks.altTabRepository)
             } footer: {
                 Text("© 2026 WindowHop contributors. Free software under the GNU GPL-3.0.")
                     .font(.callout)

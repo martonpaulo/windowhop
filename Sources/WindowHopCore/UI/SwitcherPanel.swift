@@ -14,6 +14,52 @@ private final class SwitcherTilesContainerView: NSView {
     }
 }
 
+private final class SwitcherPanelHostView: NSView {
+    var onHoverChanged: ((Bool) -> Void)?
+    private var trackingArea: NSTrackingArea?
+    private(set) var isPointerInside = false
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackingArea { removeTrackingArea(trackingArea) }
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        setPointerInside(true)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        setPointerInside(false)
+    }
+
+    func refreshPointerLocation() {
+        guard let window else {
+            setPointerInside(false)
+            return
+        }
+        setPointerInside(bounds.contains(convert(
+            window.mouseLocationOutsideOfEventStream, from: nil)))
+    }
+
+    func setPointerInside(_ value: Bool) {
+        guard isPointerInside != value else { return }
+        isPointerInside = value
+        onHoverChanged?(value)
+    }
+}
+
+public enum SwitcherPresentationMode: Equatable {
+    case cycling
+    case persistent
+}
+
 /// The switcher: a compact, non-activating panel centered on the active display.
 /// A fixed-size grid of tiles — one per window — in either App Icons or Window
 /// Previews appearance. No search or theme options. System
@@ -31,7 +77,7 @@ public final class SwitcherPanel: NSPanel {
     /// Transparent overflow host. The visible panel occupies only
     /// `panelBackgroundView`; global controls may extend into the host without
     /// changing the panel's internal layout.
-    private let hostView = NSView()
+    private let hostView = SwitcherPanelHostView()
     private var panelBackgroundView: NSView!
     /// Everything inside the visible panel background (the preview grid).
     private let chromeView = NSView()
@@ -48,12 +94,16 @@ public final class SwitcherPanel: NSPanel {
     private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
     private var expandedPreviewID: AnyHashable?
+    private var presentationMode = SwitcherPresentationMode.cycling
+    private var accessibilityDisplayObserver: NSObjectProtocol?
     /// Grid geometry of the current layout, for 2D arrow-key navigation.
     public private(set) var columnsPerRow = 1
 
     /// The preview area a tile offers in Window Previews mode, for capture sizing.
     public static var previewContentSize: NSSize {
-        let metrics = SwitcherTileView.Metrics.metrics(for: .windowPreviews)
+        let metrics = SwitcherTileView.Metrics.metrics(
+            for: .windowPreviews,
+            showTabCounts: Preferences.shared.showTabCounts)
         return NSSize(width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
                       height: metrics.contentHeight)
     }
@@ -109,8 +159,8 @@ public final class SwitcherPanel: NSPanel {
         expandedPreviewView.isHidden = true
         chromeView.addSubview(expandedPreviewView)
 
-        // Global panel action: always visible, overlaid in the top-right, and
-        // never measured as part of the preview grid.
+        // Global panel action: contextual during held cycling, persistent for
+        // Open WindowHop sessions, and never measured as part of the grid.
         settingsButton.image = NSImage(systemSymbolName: "gearshape.circle.fill",
                                        accessibilityDescription: "WindowHop Settings")?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: DesignTokens.chromeButtonSymbolSize,
@@ -123,8 +173,13 @@ public final class SwitcherPanel: NSPanel {
         settingsButton.action = #selector(settingsClicked)
         settingsButton.toolTip = "WindowHop Settings (⌘,)"
         settingsButton.setAccessibilityLabel("WindowHop Settings")
-        settingsButton.alphaValue = 1
+        settingsButton.alphaValue = 0
+        settingsButton.isEnabled = false
+        settingsButton.setAccessibilityHidden(true)
         hostView.addSubview(settingsButton)
+        hostView.onHoverChanged = { [weak self] _ in
+            self?.updateSettingsButtonVisibility(animated: true)
+        }
 
         permissionButton.image = NSImage(
             systemSymbolName: "lock.shield.fill",
@@ -148,6 +203,17 @@ public final class SwitcherPanel: NSPanel {
         chromeView.setAccessibilityRole(.list)
         chromeView.setAccessibilityLabel("WindowHop window switcher")
 
+        accessibilityDisplayObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
+            object: nil,
+            queue: .main) { [weak self] _ in
+                guard let self else { return }
+                for tile in self.tilePool.prefix(self.visibleTileCount) {
+                    tile.refreshMotionPreference()
+                }
+                self.updateSettingsButtonVisibility(animated: false)
+            }
+
         // pre-warm the tile pool off the first-trigger latency path; tiles beyond
         // this grow the pool once and are then reused forever
         DispatchQueue.main.async { [weak self] in
@@ -158,6 +224,12 @@ public final class SwitcherPanel: NSPanel {
                 self.tilesContainer.addSubview(tile)
                 self.tilePool.append(tile)
             }
+        }
+    }
+
+    deinit {
+        if let accessibilityDisplayObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(accessibilityDisplayObserver)
         }
     }
 
@@ -186,16 +258,25 @@ public final class SwitcherPanel: NSPanel {
         return effectView
     }
 
-    public func show(items: [SwitcherItem], selectedIndex: Int) {
+    public func show(items: [SwitcherItem],
+                     selectedIndex: Int,
+                     presentationMode: SwitcherPresentationMode) {
+        self.presentationMode = presentationMode
+        hostView.setPointerInside(false)
         update(items: items, selectedIndex: selectedIndex)
         orderFrontRegardless()
+        hostView.refreshPointerLocation()
+        updateSettingsButtonVisibility(animated: false)
         announceSelection()
         DebugLog.log("panel shown: \(items.count) tiles (\(mode.rawValue)), frame \(frame)")
     }
 
     /// Re-presents the panel after a confirmation dialog hid it.
-    public func presentAgain() {
+    public func presentAgain(presentationMode: SwitcherPresentationMode) {
+        self.presentationMode = presentationMode
         orderFrontRegardless()
+        hostView.refreshPointerLocation()
+        updateSettingsButtonVisibility(animated: false)
     }
 
     public func update(items: [SwitcherItem], selectedIndex index: Int) {
@@ -248,7 +329,7 @@ public final class SwitcherPanel: NSPanel {
             if status.isAuthorized {
                 tile.setPreviewLoading()
             } else {
-                tile.setPreviewPermissionRequired()
+                tile.setPreviewPermissionUnavailable()
             }
         }
     }
@@ -280,6 +361,7 @@ public final class SwitcherPanel: NSPanel {
     }
 
     public func hide() {
+        hostView.setPointerInside(false)
         orderOut(nil)
     }
 
@@ -294,7 +376,9 @@ public final class SwitcherPanel: NSPanel {
         for (index, tile) in tilePool.enumerated() {
             if index < items.count {
                 let item = items[index]
-                tile.configure(item: item, mode: mode,
+                tile.configure(item: item,
+                               mode: mode,
+                               showTabCounts: Preferences.shared.showTabCounts,
                                preview: PreviewProvider.shared.cachedPreview(for: item.id))
                 tile.onClick = { [weak self] in self?.onItemClicked?(index) }
                 tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
@@ -314,7 +398,9 @@ public final class SwitcherPanel: NSPanel {
         let padding = DesignTokens.panelPadding
         let spacing = DesignTokens.tileSpacing
         let rowSpacing = DesignTokens.tileRowSpacing
-        let tileSize = SwitcherTileView.Metrics.metrics(for: mode).tileSize
+        let tileSize = SwitcherTileView.Metrics.metrics(
+            for: mode,
+            showTabCounts: Preferences.shared.showTabCounts).tileSize
         let visibleFrame = screen.visibleFrame
 
         // tiles wrap into rows instead of scrolling horizontally (the AltTab
@@ -464,8 +550,35 @@ public final class SwitcherPanel: NSPanel {
     }
 
     var settingsButtonFrameForTesting: NSRect { settingsButton.frame }
+    var settingsButtonIsVisibleForTesting: Bool {
+        settingsButton.isEnabled && settingsButton.alphaValue > 0
+    }
     var gridFrameForTesting: NSRect { scrollView.frame }
     var panelBackgroundFrameForTesting: NSRect { panelBackgroundView.frame }
+
+    func setPanelHoverForTesting(_ hovered: Bool) {
+        hostView.setPointerInside(hovered)
+        updateSettingsButtonVisibility(animated: false)
+    }
+
+    private func updateSettingsButtonVisibility(animated: Bool) {
+        let visible = presentationMode == .persistent || hostView.isPointerInside
+        settingsButton.isEnabled = visible
+        settingsButton.setAccessibilityHidden(!visible)
+        let target: CGFloat = visible ? 1 : 0
+        guard settingsButton.alphaValue != target else { return }
+        let shouldAnimate = animated
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        guard shouldAnimate else {
+            settingsButton.alphaValue = target
+            return
+        }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = DesignTokens.settingsVisibilityFadeDuration
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            settingsButton.animator().alphaValue = target
+        }
+    }
 
     @objc private func settingsClicked() {
         onSettingsRequested?()

@@ -7,6 +7,8 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 
+**[Visit the WindowHop website](https://martonpaulo.github.io/windowhop/)**
+
 macOS Command-Tab switches between *apps*. WindowHop gives every top-level window its
 own tile, then lands on the exact window you select — including windows on another Space
 or display. It is native, free, open source, and contains no telemetry.
@@ -19,9 +21,9 @@ Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
 
 ## Download and install
 
-1. Download **[WindowHop 1.2.0](https://github.com/martonpaulo/windowhop/releases/latest)**.
-   The `WindowHop-1.2.0-Installer.zip` asset preserves the branded Finder icon; the
-   release also provides the raw `WindowHop-1.2.0.dmg`.
+1. Download **[WindowHop 1.3.1](https://github.com/martonpaulo/windowhop/releases/latest)**.
+   The `WindowHop-1.3.1-Installer.zip` asset preserves the branded Finder icon; the
+   release also provides the raw `WindowHop-1.3.1.dmg`.
 2. Unzip the installer if needed, open the DMG, and drag WindowHop to Applications.
 3. Open WindowHop from Applications and grant
    **System Settings → Privacy & Security → Accessibility**.
@@ -47,8 +49,10 @@ by Apple, stapled, and Gatekeeper-validated before publication.
 | **Click** | Confirm a tile; click outside to cancel |
 
 Hovering reveals a Close control centered on the preview canvas's top-left point. It
-always targets that tile and uses a 44 pt hit area without moving the card. The global
-Settings control overlaps the panel's top-right corner without taking layout space.
+always targets that tile and uses a 44 pt hit area without moving the card. During normal
+cycling, the global Settings control appears only while the pointer is anywhere over the
+panel. It remains visible for the complete persistent **Open WindowHop** session. In both
+cases it overlaps the top-right corner without taking layout space or moving previews.
 Close always asks first; Quit is graceful, and Force Quit has its own second warning.
 
 ### Expanded preview after pausing
@@ -66,15 +70,15 @@ window and desktop stacking unchanged.
 
 ### One entry per window
 
-Tabs are never separate switcher entries. A Safari window with five tabs is one entry
-showing “5 tabs”; Finder and Terminal tab groups collapse to their visible top-level
-window.
+Tabs are never separate switcher entries. Finder, Safari, and Terminal tab groups collapse
+to their visible top-level window. Optional tab-count metadata is hidden by default and
+can be enabled in Settings → Appearance without changing preview width.
 
 ### Open WindowHop shortcut
 
-Assign an optional second shortcut in Settings → General when you do not want to hold a
-modifier. It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space
-confirms; Escape cancels. It is unassigned by default.
+Use **⌥Tab** (configurable in Settings → General) when you do not want to hold a modifier.
+It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space confirms;
+Escape cancels.
 
 ## Preview behavior and permissions
 
@@ -90,18 +94,18 @@ bottom-right corner in every state.
 
 | State | What WindowHop shows |
 |---|---|
-| Capturing | **Loading preview…** |
-| Screen Recording is missing | **Permission required** with one panel-level Settings action |
-| Capture failed while permission exists | **Preview unavailable** |
+| Capturing | A gently pulsing macOS-window skeleton |
+| Screen Recording is missing | A static subdued skeleton; one panel-level Settings action |
+| Capture failed while permission exists | A static unavailable skeleton |
 | Capture succeeded | The current snapshot |
 
 Missing permission is checked before capture starts, so it cannot masquerade as loading
 or enter a retry loop. Returning from Privacy & Security refreshes the state; once
 permission exists, capture starts without moving the cards.
 
-![Permission-required previews in Light Mode](docs/screenshots/switcher-permission-required-light.png)
+![Permission-blocked preview skeletons in Light Mode](docs/screenshots/switcher-permission-blocked-light.png)
 
-![Permission-required previews in Dark Mode](docs/screenshots/switcher-permission-required-dark.png)
+![Permission-blocked preview skeletons in Dark Mode](docs/screenshots/switcher-permission-blocked-dark.png)
 
 ## Settings and defaults
 
@@ -113,7 +117,7 @@ and apply immediately when safe; invalid stored values restore documented defaul
 - Enable WindowHop — **on**
 - Launch at login — **on**
 - Switcher shortcut — **⌘Tab**
-- Open WindowHop shortcut — **unassigned**
+- Open WindowHop shortcut — **⌥Tab**
 - Include windows from other Spaces — **on**
 - Include windows from other displays — **on**
 - Include minimized windows — **off**
@@ -121,6 +125,7 @@ and apply immediately when safe; invalid stored values restore documented defaul
 - Include Picture-in-Picture windows — **off**
 - Show menu bar item — **off**
 - Show Dock icon — **off**
+- Restore Defaults… — confirmed action that restores every configurable preference
 
 The default is intentionally a curated set of normal windows. Inclusion toggles are
 explicit opt-ins, rebuild the available list, and do not weaken the invariants that
@@ -131,7 +136,7 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
 ### Appearance
 
 - Switcher shows — **App Icons** or Window Previews; default **App Icons**
-- Show tab counts — **on**
+- Show tab counts — **off**
 - Show an expanded preview after pausing — **Off, 1, 2, 3, or 5 seconds**; default
   **3 seconds**
 - Screen Recording status and the single permission action for Window Previews
@@ -142,7 +147,8 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
 
 Automatic checks are enabled by default. Sparkle verifies the EdDSA signature and Apple
 code signature before replacing the app in place; the Settings pane also offers a manual
-check.
+check. About identifies **Developed by Marton Paulo** and links to the official WindowHop
+website, source, issue tracker, GPL-3.0 license, and AltTab acknowledgement.
 
 ![Settings Updates](docs/screenshots/settings-updates.png)
 
@@ -184,9 +190,9 @@ this again.
 
 - **⌘Tab shows Apple's switcher** — WindowHop is not running, is disabled, or lacks
   Accessibility. This is the fail-safe; WindowHop never disables the native shortcut.
-- **Window Previews says Permission required** — use the one panel or Settings action to
-  open Screen Recording, enable WindowHop, then return to the app. App Icons remains
-  fully usable without it.
+- **Window Previews remain static** — use the one panel or Settings action to open Screen
+  Recording, enable WindowHop, then return to the app. App Icons remains fully usable
+  without it.
 - **A window is missing** — minimized, hidden-app, and PiP windows are excluded by
   default and can be enabled under General → Windows shown. Public Accessibility APIs
   reveal an unvisited Space only after you visit it once.
@@ -211,8 +217,8 @@ git clone https://github.com/martonpaulo/windowhop
 cd windowhop
 swift build && swift test
 scripts/validate.sh
-scripts/package-app.sh 1.2.0 10200
-scripts/make-dmg.sh 1.2.0
+scripts/package-app.sh 1.3.1 10301
+scripts/make-dmg.sh 1.3.1
 ```
 
 Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved
@@ -220,6 +226,7 @@ Developer ID identity. Official tags run the fail-closed signing, notarization, 
 Gatekeeper, Sparkle, and GitHub Release workflow.
 
 Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
+[feature defaults](docs/feature-defaults.md) · [website deployment](docs/website.md) ·
 [contributing](CONTRIBUTING.md) · [upstream attribution](UPSTREAM.md)
 
 ## Known limitations
@@ -229,7 +236,7 @@ Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
 - Tab counts exist only for apps exposing native tab groups and are never guessed.
 - Screen Recording's public preflight API distinguishes authorized from unavailable but
   does not expose whether an unavailable grant is specifically denied or restricted;
-  both correctly use the permission-required product state.
+  both correctly use the static permission-blocked fallback and single recovery action.
 - English-only interface in this release.
 
 ## License and attribution

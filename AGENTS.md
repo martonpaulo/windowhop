@@ -77,6 +77,32 @@ Two explicit session modes share one pure state machine (`SwitcherState`):
   release is meaningless; Return/Space/click/Escape end it.
 Fixing one mode must not silently change the other — both are covered by tests.
 
+## User-facing feature defaults and configurability
+
+For every new user-facing behavior or presentation feature:
+
+- Explicitly define its default value.
+- Decide whether it should be configurable by the user and record that decision in
+  implementation notes or product documentation.
+- Prefer a Settings option when both enabled and disabled states are legitimate user
+  preferences.
+- Do not add settings for bug fixes, security behavior, internal implementation details,
+  mandatory accessibility behavior, or features with only one valid outcome.
+- Store defaults in `Core/Preferences.Defaults`. Do not duplicate fallback values in
+  views, services, tests, shortcut registration, or migration code.
+- Persist configurable preferences through the existing typed `Preferences.Key`
+  infrastructure and keep `Preferences` as the runtime source of truth.
+- Preserve existing user choices during upgrades; migration may change a stored value
+  only when the old representation is obsolete or invalid.
+- Add every configurable preference to `Preferences.configurableKeys` so Restore Defaults
+  picks it up. Reset must not change permissions, identity, build metadata, caches, or
+  non-preference user data.
+- Add default, migration, persistence, runtime-update, and reset coverage as applicable.
+- Update the Settings-related pull-request checklist whenever this contract evolves.
+
+Features that are intentionally non-configurable must say why in the task implementation
+notes. A missing configurability decision is a review failure.
+
 ## Conventions
 
 - Conventional Commits; English everywhere.

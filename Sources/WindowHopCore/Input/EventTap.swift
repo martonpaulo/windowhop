@@ -2,7 +2,7 @@ import AppKit
 import ApplicationServices
 
 /// Semantic input events the tap produces for the controller (delivered on main).
-public enum SwitcherInputEvent {
+public enum SwitcherInputEvent: Equatable {
     case trigger(backward: Bool)
     case openPersistent
     case step(backward: Bool)
@@ -17,10 +17,10 @@ public enum SwitcherInputEvent {
 
 /// What the tap callback is allowed to consume right now. Kept in a tiny
 /// lock-protected box because the callback must decide synchronously on its own thread.
-public enum TapMode {
+public enum TapMode: Equatable {
     /// switcher disabled or permission missing: consume nothing, native Cmd-Tab works
     case off
-    /// idle: consume only the trigger chords when at least one window is eligible
+    /// idle: consume only the two configured trigger chords
     case watching
     /// hold-based session: consume the handled keys; modifier release ends it
     case sessionHeld
@@ -29,6 +29,128 @@ public enum TapMode {
     case sessionSticky
     /// close-confirmation dialog open: consume nothing so the dialog gets the keyboard
     case passthrough
+}
+
+enum EventTapDisposition: Equatable {
+    case pass
+    case consume
+}
+
+struct EventTapDecision: Equatable {
+    let disposition: EventTapDisposition
+    let input: SwitcherInputEvent?
+
+    static let pass = EventTapDecision(disposition: .pass, input: nil)
+    static let consume = EventTapDecision(disposition: .consume, input: nil)
+}
+
+/// Pure, lock-contained interception state. It owns the complete key sequence:
+/// a keyUp remains suppressed even if the main thread already ended the
+/// session after its keyDown. That prevents orphaned Tab events from reaching
+/// the native switcher during rapid input or cancellation.
+struct EventTapInterceptionState {
+    var mode: TapMode = .off
+    var holdModifier: CGEventFlags = .maskCommand
+    var persistentShortcut: PersistentShortcut?
+    private(set) var suppressedKeyUps: Set<Int64> = []
+
+    mutating func reset() {
+        mode = .off
+        suppressedKeyUps.removeAll()
+    }
+
+    mutating func decide(type: CGEventType,
+                         keyCode: Int64,
+                         flags: CGEventFlags) -> EventTapDecision {
+        if type == .flagsChanged {
+            guard mode == .sessionHeld, !flags.contains(holdModifier) else {
+                return .pass
+            }
+            return EventTapDecision(disposition: .pass, input: .modifierReleased)
+        }
+
+        // Consume the matching release even when the controller moved back to
+        // watching between the down/up halves of a rapid chord.
+        if type == .keyUp, suppressedKeyUps.remove(keyCode) != nil {
+            return .consume
+        }
+
+        switch mode {
+        case .off, .passthrough:
+            return .pass
+        case .watching:
+            guard type == .keyDown else { return .pass }
+            if isSwitcherTrigger(keyCode: keyCode, flags: flags) {
+                mode = .sessionHeld
+                suppressedKeyUps.insert(keyCode)
+                return EventTapDecision(
+                    disposition: .consume,
+                    input: .trigger(backward: flags.contains(.maskShift)))
+            }
+            if let persistentShortcut,
+               persistentShortcut.matches(keyCode: keyCode, flags: flags) {
+                mode = .sessionSticky
+                suppressedKeyUps.insert(keyCode)
+                return EventTapDecision(disposition: .consume, input: .openPersistent)
+            }
+            return .pass
+        case .sessionHeld, .sessionSticky:
+            let sticky = mode == .sessionSticky
+            if let persistentShortcut,
+               persistentShortcut.matches(keyCode: keyCode, flags: flags) {
+                if type == .keyDown { suppressedKeyUps.insert(keyCode) }
+                return .consume
+            }
+            guard let input = sessionEvent(
+                for: keyCode, flags: flags, sticky: sticky) else { return .pass }
+            if type == .keyDown {
+                suppressedKeyUps.insert(keyCode)
+                return EventTapDecision(disposition: .consume, input: input)
+            }
+            return type == .keyUp ? .consume : .pass
+        }
+    }
+
+    private func isSwitcherTrigger(keyCode: Int64, flags: CGEventFlags) -> Bool {
+        keyCode == KeyCode.tab
+            && flags.contains(holdModifier)
+            && flags.isDisjoint(with: otherModifiers(than: holdModifier))
+    }
+
+    private func sessionEvent(for keyCode: Int64,
+                              flags: CGEventFlags,
+                              sticky: Bool) -> SwitcherInputEvent? {
+        switch keyCode {
+        case KeyCode.tab:
+            return .step(backward: flags.contains(.maskShift))
+        case KeyCode.escape:
+            return .escape
+        case KeyCode.returnKey, KeyCode.keypadEnter:
+            return .returnKey
+        case KeyCode.space where sticky:
+            return .spaceKey
+        case KeyCode.upArrow:
+            return .arrow(.up)
+        case KeyCode.downArrow:
+            return .arrow(.down)
+        case KeyCode.leftArrow:
+            return .arrow(.left)
+        case KeyCode.rightArrow:
+            return .arrow(.right)
+        case KeyCode.delete, KeyCode.forwardDelete:
+            return .deleteKey
+        case KeyCode.comma where flags.contains(.maskCommand):
+            return .openSettings
+        default:
+            return nil
+        }
+    }
+
+    private func otherModifiers(than holdModifier: CGEventFlags) -> CGEventFlags {
+        var others: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl]
+        others.remove(holdModifier)
+        return others
+    }
 }
 
 /// A consuming CGEvent tap. AltTab disables the native Cmd-Tab symbolic hotkey with
@@ -43,42 +165,37 @@ public final class EventTap {
     private var runLoopSource: CFRunLoopSource?
 
     private let lock = NSLock()
-    private var _mode: TapMode = .off
-    private var _holdModifier: CGEventFlags = .maskCommand
-    private var _persistentShortcut: PersistentShortcut?
-    private var _eligibleCount = 0
+    private var interception = EventTapInterceptionState()
 
     /// Called on the main queue with each semantic event.
     public var onEvent: ((SwitcherInputEvent) -> Void)?
 
     public var mode: TapMode {
-        get { lock.lock(); defer { lock.unlock() }; return _mode }
-        set { lock.lock(); _mode = newValue; lock.unlock() }
+        get { lock.lock(); defer { lock.unlock() }; return interception.mode }
+        set { lock.lock(); interception.mode = newValue; lock.unlock() }
     }
 
     public var holdModifier: CGEventFlags {
-        get { lock.lock(); defer { lock.unlock() }; return _holdModifier }
-        set { lock.lock(); _holdModifier = newValue; lock.unlock() }
+        get { lock.lock(); defer { lock.unlock() }; return interception.holdModifier }
+        set { lock.lock(); interception.holdModifier = newValue; lock.unlock() }
     }
 
     /// The optional "Open WindowHop" chord; nil when unassigned.
     public var persistentShortcut: PersistentShortcut? {
-        get { lock.lock(); defer { lock.unlock() }; return _persistentShortcut }
-        set { lock.lock(); _persistentShortcut = newValue; lock.unlock() }
-    }
-
-    /// Snapshot of how many windows the switcher would show; when 0 the trigger is
-    /// passed through so the native switcher handles it instead of a dead chord.
-    public var eligibleCount: Int {
-        get { lock.lock(); defer { lock.unlock() }; return _eligibleCount }
-        set { lock.lock(); _eligibleCount = newValue; lock.unlock() }
+        get { lock.lock(); defer { lock.unlock() }; return interception.persistentShortcut }
+        set { lock.lock(); interception.persistentShortcut = newValue; lock.unlock() }
     }
 
     /// Creates the tap on the dedicated tap thread. Returns false when tap creation
     /// fails (no Accessibility permission).
     @discardableResult
     public func start() -> Bool {
-        guard eventTap == nil else { return true }
+        if let eventTap {
+            if !CGEvent.tapIsEnabled(tap: eventTap) {
+                CGEvent.tapEnable(tap: eventTap, enable: true)
+            }
+            return true
+        }
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
@@ -105,7 +222,9 @@ public final class EventTap {
         }
         eventTap = nil
         runLoopSource = nil
-        mode = .off
+        lock.lock()
+        interception.reset()
+        lock.unlock()
     }
 
     /// macOS silently disables taps after sleep/wake or long stalls without sending
@@ -124,118 +243,17 @@ public final class EventTap {
             }
             return Unmanaged.passUnretained(event)
         }
+        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
         lock.lock()
-        let mode = _mode
-        let holdModifier = _holdModifier
-        let persistentShortcut = _persistentShortcut
-        let eligibleCount = _eligibleCount
+        let decision = interception.decide(type: type, keyCode: keyCode, flags: event.flags)
         lock.unlock()
-        switch mode {
-        case .off, .passthrough:
-            return Unmanaged.passUnretained(event)
-        case .watching:
-            return handleWhileWatching(type, event, holdModifier, persistentShortcut, eligibleCount)
-        case .sessionHeld, .sessionSticky:
-            return handleDuringSession(type, event, holdModifier, persistentShortcut,
-                                       sticky: mode == .sessionSticky)
+        if let input = decision.input {
+            DebugLog.log("tap: consumed \(input)")
+            post(input)
         }
-    }
-
-    private func handleWhileWatching(_ type: CGEventType, _ event: CGEvent,
-                                     _ holdModifier: CGEventFlags,
-                                     _ persistentShortcut: PersistentShortcut?,
-                                     _ eligibleCount: Int) -> Unmanaged<CGEvent>? {
-        guard type == .keyDown else { return Unmanaged.passUnretained(event) }
-        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        if keyCode == KeyCode.tab,
-           event.flags.contains(holdModifier),
-           // only Shift may accompany the chord; Cmd-Opt-Tab etc. stay native
-           event.flags.isDisjoint(with: otherModifiers(than: holdModifier)) {
-            guard eligibleCount > 0 else {
-                // nothing to show: let the native switcher handle the chord
-                DebugLog.log("tap: trigger passed through, eligibleCount=0")
-                return Unmanaged.passUnretained(event)
-            }
-            // flip synchronously so the very next event is treated as in-session
-            mode = .sessionHeld
-            let backward = event.flags.contains(.maskShift)
-            DebugLog.log("tap: consumed trigger (backward=\(backward), eligible=\(eligibleCount))")
-            post(.trigger(backward: backward))
-            return nil
-        }
-        if let persistentShortcut, persistentShortcut.matches(keyCode: keyCode, flags: event.flags) {
-            guard eligibleCount > 0 else { return Unmanaged.passUnretained(event) }
-            mode = .sessionSticky
-            DebugLog.log("tap: consumed persistent shortcut (eligible=\(eligibleCount))")
-            post(.openPersistent)
-            return nil
-        }
-        return Unmanaged.passUnretained(event)
-    }
-
-    private func handleDuringSession(_ type: CGEventType, _ event: CGEvent,
-                                     _ holdModifier: CGEventFlags,
-                                     _ persistentShortcut: PersistentShortcut?,
-                                     sticky: Bool) -> Unmanaged<CGEvent>? {
-        if type == .flagsChanged {
-            // never consume flagsChanged: swallowing modifier state breaks other apps.
-            // covers left+right modifier keys: the flag clears when the last one lifts
-            if !sticky, !event.flags.contains(holdModifier) {
-                post(.modifierReleased)
-            }
-            return Unmanaged.passUnretained(event)
-        }
-        let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        // re-invoking "Open WindowHop" during a session keeps it open (and never leaks
-        // the chord to the frontmost app)
-        if let persistentShortcut, persistentShortcut.matches(keyCode: keyCode, flags: event.flags) {
-            return nil
-        }
-        guard let handled = sessionEvent(for: keyCode, flags: event.flags, sticky: sticky) else {
-            // unhandled keys pass through; the switcher adds no hidden key commands
-            return Unmanaged.passUnretained(event)
-        }
-        // consume both keyDown and keyUp of handled keys so apps never see halves
-        if type == .keyDown {
-            post(handled)
-        }
-        return nil
-    }
-
-    private func sessionEvent(for keyCode: Int64, flags: CGEventFlags, sticky: Bool) -> SwitcherInputEvent? {
-        switch keyCode {
-        case KeyCode.tab:
-            return .step(backward: flags.contains(.maskShift))
-        case KeyCode.escape:
-            return .escape
-        case KeyCode.returnKey, KeyCode.keypadEnter:
-            return .returnKey
-        case KeyCode.space where sticky:
-            // in a held session ⌘Space must stay Spotlight's; in a persistent one
-            // Space activates like Return
-            return .spaceKey
-        case KeyCode.upArrow:
-            return .arrow(.up)
-        case KeyCode.downArrow:
-            return .arrow(.down)
-        case KeyCode.leftArrow:
-            return .arrow(.left)
-        case KeyCode.rightArrow:
-            return .arrow(.right)
-        case KeyCode.delete, KeyCode.forwardDelete:
-            return .deleteKey
-        case KeyCode.comma where flags.contains(.maskCommand):
-            // the standard ⌘, affordance while the switcher is open
-            return .openSettings
-        default:
-            return nil
-        }
-    }
-
-    private func otherModifiers(than holdModifier: CGEventFlags) -> CGEventFlags {
-        var others: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl]
-        others.remove(holdModifier)
-        return others
+        return decision.disposition == .consume
+            ? nil
+            : Unmanaged.passUnretained(event)
     }
 
     private func post(_ inputEvent: SwitcherInputEvent) {

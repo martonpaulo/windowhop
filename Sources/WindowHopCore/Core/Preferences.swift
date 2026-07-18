@@ -75,29 +75,73 @@ public final class Preferences: ObservableObject {
         case showTabCounts
         case showMenuBarItem
         case showDockIcon
+        case automaticUpdateChecks = "SUEnableAutomaticChecks"
         case firstLaunchCompleted
     }
 
+    /// The only source for product defaults. Views, registration, migration,
+    /// Restore Defaults, and tests consume these values instead of restating them.
+    public enum Defaults {
+        public static let switcherEnabled = true
+        public static let launchAtLogin = true
+        public static let shortcut = ShortcutSpec.commandTab
+        public static let persistentShortcut: PersistentShortcut? = .optionTab
+        public static let appearanceMode = AppearanceMode.appIcons
+        public static let expandedPreviewDelay = ExpandedPreviewDelay.threeSeconds
+        public static let includeOtherSpaces = true
+        public static let includeOtherDisplays = true
+        public static let includeMinimizedWindows = false
+        public static let includeHiddenApplicationWindows = false
+        public static let includePictureInPictureWindows = false
+        public static let showTabCounts = false
+        public static let showMenuBarItem = false
+        public static let showDockIcon = false
+        public static let automaticUpdateChecks = true
+        public static let firstLaunchCompleted = false
+    }
+
+    /// Every user-configurable preference. Restore Defaults iterates this
+    /// closed contract; the regression test compares it with every non-internal
+    /// key so a future preference cannot silently miss reset integration.
+    public static let configurableKeys: Set<Key> = [
+        .switcherEnabled,
+        .launchAtLogin,
+        .shortcut,
+        .persistentShortcut,
+        .appearanceMode,
+        .expandedPreviewDelay,
+        .includeOtherSpaces,
+        .includeOtherDisplays,
+        .includeMinimizedWindows,
+        .includeHiddenApplicationWindows,
+        .includePictureInPictureWindows,
+        .showTabCounts,
+        .showMenuBarItem,
+        .showDockIcon,
+        .automaticUpdateChecks,
+    ]
+
     public static let defaultValues: [String: Any] = [
-        Key.switcherEnabled.rawValue: true,
-        Key.launchAtLogin.rawValue: true,
-        Key.shortcut.rawValue: ShortcutSpec.commandTab.rawValue,
-        // unassigned by default: assigning a global chord must be a deliberate choice
-        Key.persistentShortcut.rawValue: "",
-        Key.appearanceMode.rawValue: AppearanceMode.appIcons.rawValue,
-        Key.expandedPreviewDelay.rawValue: ExpandedPreviewDelay.threeSeconds.rawValue,
-        Key.includeOtherSpaces.rawValue: true,
-        Key.includeOtherDisplays.rawValue: true,
-        Key.includeMinimizedWindows.rawValue: false,
-        Key.includeHiddenApplicationWindows.rawValue: false,
-        Key.includePictureInPictureWindows.rawValue: false,
-        Key.showTabCounts.rawValue: true,
-        Key.showMenuBarItem.rawValue: false,
-        Key.showDockIcon.rawValue: false,
-        Key.firstLaunchCompleted.rawValue: false,
+        Key.switcherEnabled.rawValue: Defaults.switcherEnabled,
+        Key.launchAtLogin.rawValue: Defaults.launchAtLogin,
+        Key.shortcut.rawValue: Defaults.shortcut.rawValue,
+        Key.persistentShortcut.rawValue: Defaults.persistentShortcut?.encoded ?? "",
+        Key.appearanceMode.rawValue: Defaults.appearanceMode.rawValue,
+        Key.expandedPreviewDelay.rawValue: Defaults.expandedPreviewDelay.rawValue,
+        Key.includeOtherSpaces.rawValue: Defaults.includeOtherSpaces,
+        Key.includeOtherDisplays.rawValue: Defaults.includeOtherDisplays,
+        Key.includeMinimizedWindows.rawValue: Defaults.includeMinimizedWindows,
+        Key.includeHiddenApplicationWindows.rawValue: Defaults.includeHiddenApplicationWindows,
+        Key.includePictureInPictureWindows.rawValue: Defaults.includePictureInPictureWindows,
+        Key.showTabCounts.rawValue: Defaults.showTabCounts,
+        Key.showMenuBarItem.rawValue: Defaults.showMenuBarItem,
+        Key.showDockIcon.rawValue: Defaults.showDockIcon,
+        Key.automaticUpdateChecks.rawValue: Defaults.automaticUpdateChecks,
+        Key.firstLaunchCompleted.rawValue: Defaults.firstLaunchCompleted,
     ]
 
     private let defaults: UserDefaults
+    private var isRestoringDefaults = false
 
     @Published public var switcherEnabled: Bool {
         didSet { defaults.set(switcherEnabled, forKey: Key.switcherEnabled.rawValue) }
@@ -111,7 +155,7 @@ public final class Preferences: ObservableObject {
         didSet { defaults.set(shortcut.rawValue, forKey: Key.shortcut.rawValue) }
     }
 
-    /// nil when unassigned (the default).
+    /// nil when the user explicitly leaves Open WindowHop unassigned.
     @Published public var persistentShortcut: PersistentShortcut? {
         didSet { defaults.set(persistentShortcut?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
     }
@@ -177,36 +221,63 @@ public final class Preferences: ObservableObject {
         didSet { defaults.set(showDockIcon, forKey: Key.showDockIcon.rawValue) }
     }
 
+    @Published public var automaticUpdateChecks: Bool {
+        didSet {
+            defaults.set(automaticUpdateChecks,
+                         forKey: Key.automaticUpdateChecks.rawValue)
+        }
+    }
+
     @Published public var firstLaunchCompleted: Bool {
         didSet { defaults.set(firstLaunchCompleted, forKey: Key.firstLaunchCompleted.rawValue) }
     }
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        // Registration defaults are not persisted. Capture whether the user
+        // explicitly cleared or customized Open WindowHop before registering
+        // the new 1.3.1 default so upgrades never overwrite that choice.
+        let storedPersistentShortcut = defaults.object(
+            forKey: Key.persistentShortcut.rawValue)
         defaults.register(defaults: Preferences.defaultValues)
-        switcherEnabled = Self.bool(defaults, .switcherEnabled, fallback: true)
-        launchAtLogin = Self.bool(defaults, .launchAtLogin, fallback: true)
-        shortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "") ?? .commandTab
-        persistentShortcut = PersistentShortcut(
-            encoded: Self.string(defaults, .persistentShortcut) ?? "")
+        switcherEnabled = Self.bool(
+            defaults, .switcherEnabled, fallback: Defaults.switcherEnabled)
+        launchAtLogin = Self.bool(
+            defaults, .launchAtLogin, fallback: Defaults.launchAtLogin)
+        shortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "")
+            ?? Defaults.shortcut
+        persistentShortcut = Self.persistentShortcut(from: storedPersistentShortcut)
         appearanceMode = AppearanceMode(
-            rawValue: Self.string(defaults, .appearanceMode) ?? "") ?? .appIcons
+            rawValue: Self.string(defaults, .appearanceMode) ?? "")
+            ?? Defaults.appearanceMode
         let restoredExpandedPreviewDelay = Self.expandedPreviewDelay(from: defaults)
         expandedPreviewDelay = restoredExpandedPreviewDelay
         defaults.set(restoredExpandedPreviewDelay.rawValue,
                      forKey: Key.expandedPreviewDelay.rawValue)
-        includeOtherSpaces = Self.bool(defaults, .includeOtherSpaces, fallback: true)
-        includeOtherDisplays = Self.bool(defaults, .includeOtherDisplays, fallback: true)
+        includeOtherSpaces = Self.bool(
+            defaults, .includeOtherSpaces, fallback: Defaults.includeOtherSpaces)
+        includeOtherDisplays = Self.bool(
+            defaults, .includeOtherDisplays, fallback: Defaults.includeOtherDisplays)
         includeMinimizedWindows = Self.bool(defaults, .includeMinimizedWindows,
-                                            fallback: false)
+                                            fallback: Defaults.includeMinimizedWindows)
         includeHiddenApplicationWindows = Self.bool(
-            defaults, .includeHiddenApplicationWindows, fallback: false)
+            defaults, .includeHiddenApplicationWindows,
+            fallback: Defaults.includeHiddenApplicationWindows)
         includePictureInPictureWindows = Self.bool(
-            defaults, .includePictureInPictureWindows, fallback: false)
-        showTabCounts = Self.bool(defaults, .showTabCounts, fallback: true)
-        showMenuBarItem = Self.bool(defaults, .showMenuBarItem, fallback: false)
-        showDockIcon = Self.bool(defaults, .showDockIcon, fallback: false)
-        firstLaunchCompleted = Self.bool(defaults, .firstLaunchCompleted, fallback: false)
+            defaults, .includePictureInPictureWindows,
+            fallback: Defaults.includePictureInPictureWindows)
+        showTabCounts = Self.bool(
+            defaults, .showTabCounts, fallback: Defaults.showTabCounts)
+        showMenuBarItem = Self.bool(
+            defaults, .showMenuBarItem, fallback: Defaults.showMenuBarItem)
+        showDockIcon = Self.bool(
+            defaults, .showDockIcon, fallback: Defaults.showDockIcon)
+        automaticUpdateChecks = Self.bool(
+            defaults, .automaticUpdateChecks,
+            fallback: Defaults.automaticUpdateChecks)
+        firstLaunchCompleted = Self.bool(
+            defaults, .firstLaunchCompleted,
+            fallback: Defaults.firstLaunchCompleted)
     }
 
     private static func bool(_ defaults: UserDefaults, _ key: Key, fallback: Bool) -> Bool {
@@ -216,6 +287,16 @@ public final class Preferences: ObservableObject {
 
     private static func string(_ defaults: UserDefaults, _ key: Key) -> String? {
         defaults.object(forKey: key.rawValue) as? String
+    }
+
+    private static func persistentShortcut(from storedValue: Any?) -> PersistentShortcut? {
+        // Missing means this installation has never chosen a value and receives
+        // the new default. An explicitly stored empty string means the user
+        // deliberately cleared the shortcut and must remain unassigned.
+        guard let storedValue else { return Defaults.persistentShortcut }
+        guard let encoded = storedValue as? String else { return Defaults.persistentShortcut }
+        guard !encoded.isEmpty else { return nil }
+        return PersistentShortcut(encoded: encoded) ?? Defaults.persistentShortcut
     }
 
     /// Migrates the 1.1.2 temporary-activation presets to the closest expanded
@@ -228,14 +309,51 @@ public final class Preferences: ObservableObject {
             case "short": return .oneSecond
             case "long": return .fiveSeconds
             case "standard": return .threeSeconds
-            default: return .threeSeconds
+            default: return Defaults.expandedPreviewDelay
             }
         }
         if let raw = string(defaults, .expandedPreviewDelay),
            let delay = ExpandedPreviewDelay(rawValue: raw) {
             return delay
         }
-        return .threeSeconds
+        return Defaults.expandedPreviewDelay
+    }
+
+    /// Restores every user-configurable value synchronously on the main thread.
+    /// SwiftUI publishes after this call returns, so controls and runtime
+    /// observers see the complete default set rather than a half-reset form.
+    public func restoreDefaults() {
+        isRestoringDefaults = true
+        defer {
+            isRestoringDefaults = false
+            notifyWindowFiltersChanged()
+        }
+        for key in Self.configurableKeys {
+            switch key {
+            case .switcherEnabled: switcherEnabled = Defaults.switcherEnabled
+            case .launchAtLogin: launchAtLogin = Defaults.launchAtLogin
+            case .shortcut: shortcut = Defaults.shortcut
+            case .persistentShortcut: persistentShortcut = Defaults.persistentShortcut
+            case .appearanceMode: appearanceMode = Defaults.appearanceMode
+            case .expandedPreviewDelay:
+                expandedPreviewDelay = Defaults.expandedPreviewDelay
+            case .includeOtherSpaces: includeOtherSpaces = Defaults.includeOtherSpaces
+            case .includeOtherDisplays: includeOtherDisplays = Defaults.includeOtherDisplays
+            case .includeMinimizedWindows:
+                includeMinimizedWindows = Defaults.includeMinimizedWindows
+            case .includeHiddenApplicationWindows:
+                includeHiddenApplicationWindows = Defaults.includeHiddenApplicationWindows
+            case .includePictureInPictureWindows:
+                includePictureInPictureWindows = Defaults.includePictureInPictureWindows
+            case .showTabCounts: showTabCounts = Defaults.showTabCounts
+            case .showMenuBarItem: showMenuBarItem = Defaults.showMenuBarItem
+            case .showDockIcon: showDockIcon = Defaults.showDockIcon
+            case .automaticUpdateChecks:
+                automaticUpdateChecks = Defaults.automaticUpdateChecks
+            case .navigationPreviewDelay, .firstLaunchCompleted:
+                preconditionFailure("Internal keys must never participate in Restore Defaults")
+            }
+        }
     }
 
     public var windowInclusionPolicy: WindowInclusionPolicy {
@@ -248,6 +366,7 @@ public final class Preferences: ObservableObject {
     }
 
     private func notifyWindowFiltersChanged() {
+        guard !isRestoringDefaults else { return }
         NotificationCenter.default.post(name: Self.windowFiltersDidChange, object: self)
     }
 }

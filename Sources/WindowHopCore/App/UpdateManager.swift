@@ -36,6 +36,8 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
         controller = SPUStandardUpdaterController(startingUpdater: true,
                                                   updaterDelegate: self,
                                                   userDriverDelegate: nil)
+        controller?.updater.automaticallyChecksForUpdates =
+            Preferences.shared.automaticUpdateChecks
     }
 
     public func checkForUpdates() {

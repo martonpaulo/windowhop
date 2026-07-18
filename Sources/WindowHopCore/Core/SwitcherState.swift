@@ -98,7 +98,7 @@ public struct SwitcherState {
         return finish(.activate(index: selectedIndex))
     }
 
-    public enum ArrowDirection {
+    public enum ArrowDirection: Equatable {
         case up, down, left, right
     }
 

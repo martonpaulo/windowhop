@@ -1,8 +1,8 @@
 import CoreGraphics
 import Foundation
 
-/// The optional "Open WindowHop" shortcut: any modifier+key chord that opens a
-/// persistent switcher session (no held modifier required). Unassigned by default.
+/// The configurable "Open WindowHop" shortcut: any modifier+key chord that opens a
+/// persistent switcher session (no held modifier required).
 public struct PersistentShortcut: Equatable {
     /// Only these modifiers participate in matching and display.
     public static let relevantModifiers: CGEventFlags =
@@ -10,6 +10,9 @@ public struct PersistentShortcut: Equatable {
 
     public let keyCode: Int64
     public let modifiersRaw: UInt64
+
+    public static let optionTab = PersistentShortcut(
+        keyCode: KeyCode.tab, modifiers: [.maskAlternate])
 
     public init(keyCode: Int64, modifiers: CGEventFlags) {
         self.keyCode = keyCode

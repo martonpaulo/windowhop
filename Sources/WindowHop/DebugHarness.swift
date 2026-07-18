@@ -51,11 +51,15 @@ enum DebugHarness {
         }
 
         let savedMode = Preferences.shared.appearanceMode
+        let savedShowTabCounts = Preferences.shared.showTabCounts
         Preferences.shared.appearanceMode = .appIcons
+        Preferences.shared.showTabCounts = Preferences.Defaults.showTabCounts
         var pending = 0
         let finishOne = {
             pending -= 1
             if pending == 0 {
+                Preferences.shared.appearanceMode = savedMode
+                Preferences.shared.showTabCounts = savedShowTabCounts
                 exit(0)
             }
         }
@@ -65,7 +69,10 @@ enum DebugHarness {
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
-        overflowPanel.show(items: overflowItems, selectedIndex: 60)
+        overflowPanel.show(
+            items: overflowItems,
+            selectedIndex: 60,
+            presentationMode: .persistent)
         pending += 1
         print("overflow panel: 120 tiles in "
             + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
@@ -86,7 +93,10 @@ enum DebugHarness {
             let previewPanel = SwitcherPanel(rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
             let previewItems = demoItems()
-            previewPanel.show(items: previewItems, selectedIndex: 1)
+            previewPanel.show(
+                items: previewItems,
+                selectedIndex: 1,
+                presentationMode: .persistent)
             pending += 1
             for (index, item) in previewItems.enumerated() where index != 4 && index != 5 {
                 // Index 4 is an explicit unavailable fallback; index 5 remains
@@ -113,7 +123,7 @@ enum DebugHarness {
                 previewPanel.hideExpandedPreview()
                 previewPanel.setPreviewPermissionStatus(.denied)
                 if let contentView = previewPanel.contentView {
-                    write(contentView, "switcher-permission-required-\(suffix)")
+                    write(contentView, "switcher-permission-blocked-\(suffix)")
                 }
                 previewPanel.hide()
                 finishOne()
@@ -126,7 +136,10 @@ enum DebugHarness {
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let panel = SwitcherPanel(rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
-            panel.show(items: demoItems(), selectedIndex: 1)
+            panel.show(
+                items: demoItems(),
+                selectedIndex: 1,
+                presentationMode: .persistent)
             pending += 1
             // give SwiftUI a few runloop turns to lay out before rasterizing
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -151,7 +164,6 @@ enum DebugHarness {
                 finishOne()
             }
         }
-        Preferences.shared.appearanceMode = savedMode
         app.run()
     }
 
@@ -233,7 +245,10 @@ enum DebugHarness {
         DispatchQueue.main.async {
             let items = CommandLine.arguments.contains("--many") ? manyDemoItems() : demoItems()
             let showStart = CFAbsoluteTimeGetCurrent()
-            panel.show(items: items, selectedIndex: 1)
+            panel.show(
+                items: items,
+                selectedIndex: 1,
+                presentationMode: .cycling)
             let showMs = (CFAbsoluteTimeGetCurrent() - showStart) * 1000
             print("demo panel: \(items.count) tiles in \(String(format: "%.1f", showMs))ms, frame \(panel.frame)")
         }

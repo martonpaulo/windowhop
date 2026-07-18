@@ -3,28 +3,29 @@
 ## Automated suite
 
 ```sh
-swift build && swift test   # 143 unit and integration tests, zero warnings
+swift build && swift test   # 157+ unit and integration tests, zero warnings
 scripts/validate.sh         # repository and documentation invariants
 ```
 
 The suite covers both held and sticky session state machines; tab grouping; Settings
 window lifecycle; title fallback; MRU; keyboard shortcuts; persistence and migration;
-and the shared inclusion policy for minimized, hidden-app, PiP, other-Space, and
-other-display windows.
+the shared inclusion policy for minimized, hidden-app, PiP, other-Space, and
+other-display windows; centralized defaults/reset coverage; and complete event-tap
+sequence ownership.
 
 Preview regressions pin:
 
 - authorized, denied, restricted, not-determined, and revoked-during-use permission
   classification;
-- loading, permission-required, unavailable, cached, and loaded states over one fixed
+- loading, permission-blocked, unavailable, cached, and loaded skeleton/image states over one fixed
   canvas;
 - stale asynchronous results to the stable window id and current session generation;
 - borderless App Icons selection and the shared semantic preview selection plate in
   Light and Dark Mode;
 - intentional semantic letterbox surfaces for wide and tall sources;
 - the bottom-right app badge and exact `closeButton.center == canvas.origin` geometry;
-- clip-safe 44 pt overlay hit areas, consistent row/column spacing, and overlay-only
-  Settings geometry;
+- clip-safe 44 pt overlay hit areas, consistent row/column spacing, compact hidden metadata,
+  and contextual overlay-only Settings geometry;
 - expanded-preview target replacement, rapid navigation, same-app identities, closed
   targets, and cancellation invalidation without origin/activation state.
 
@@ -33,7 +34,7 @@ Preview regressions pin:
 ```sh
 scripts/verify-release-identity.sh build/WindowHop.app
 scripts/verify-update-continuity.sh <previous.app> <candidate.app>
-scripts/verify-dmg-branding.sh artifacts/WindowHop-1.2.0.dmg
+scripts/verify-dmg-branding.sh artifacts/WindowHop-1.3.1.dmg
 ```
 
 `verify-release-identity.sh` fails unless the app has:
@@ -64,7 +65,7 @@ WINDOWHOP_DEBUG=1 .build/debug/WindowHop
 `--render-ui` produces synthetic, privacy-safe PNGs for:
 
 - App Icons and Window Previews in Light and Dark Mode;
-- loaded, letterboxed, loading, unavailable, and permission-required previews;
+- loaded, letterboxed, loading, unavailable, and permission-blocked previews;
 - expanded preview in both appearances;
 - multi-row overflow;
 - every Settings pane.
@@ -106,6 +107,10 @@ Screen Recording permission.
       a closed target selects a valid neighbor without crashing.
 - [ ] Sticky mode ignores modifier release and confirms/cancels only through its explicit
       controls.
+- [ ] The configured ⌘Tab sequence never leaks key-down or key-up events to the native
+      app switcher during forward/reverse, rapid, repeated, cancel, or Settings flows.
+- [ ] Disable/enable, shortcut reassignment, relaunch, sleep, and wake leave one active
+      event tap with no obsolete chord interception.
 
 ### Window inclusion
 
@@ -124,22 +129,23 @@ Screen Recording permission.
       plate with no stacked gray/blue frames and no layout shift.
 - [ ] Wide, tall, small-dialog, and display-ratio snapshots aspect-fit over the intentional
       surface without distortion, cropping, or transparent holes.
-- [ ] Loading, permission-required, unavailable, and loaded cards retain identical canvas,
+- [ ] Loading, permission-blocked, unavailable, and loaded cards retain identical canvas,
       badge, title, Close, selection, and hit-test geometry.
 - [ ] Close is fully drawn and centered on the loaded canvas origin; the Settings control
-      stays visually attached to the panel corner.
+      stays hidden in unhovered cycling, appears on panel hover, and remains visible for a
+      persistent session without reflow.
 - [ ] VoiceOver announces selected title/app/tab count; keyboard focus, Increase Contrast,
       Reduce Transparency, Reduce Motion, and larger accessibility text remain usable.
 
 ### Permissions
 
 - [ ] App Icons works without Screen Recording.
-- [ ] Not-determined Window Previews shows Permission required before Loading, with one
-      permission action for the panel.
+- [ ] Not-determined Window Previews shows a static fallback rather than Loading, with one
+      permission action for the panel and no per-card permission text.
 - [ ] Denied/restricted state opens the correct Privacy & Security pane and never retries
       while unavailable.
 - [ ] Returning after grant starts capture and replaces placeholders without movement.
-- [ ] Revoking Screen Recording during a session returns to Permission required without a
+- [ ] Revoking Screen Recording during a session returns to the static fallback without a
       loop or stale preview substitution.
 - [ ] Accessibility revocation restores native ⌘Tab fail-safe behavior.
 
@@ -149,16 +155,16 @@ Screen Recording permission.
       branded on the Desktop and opens at the intended compact icon-view layout.
 - [ ] Dragging the real app to the real Applications alias installs cleanly; labels and
       icons do not overlap on a second Mac/display scale.
-- [ ] The 1.1.2 app and 1.2.0 candidate have identical effective designated requirements,
+- [ ] The 1.2.0 app and 1.3.1 candidate have identical effective designated requirements,
       Team ID, bundle/signing identifier, entitlements, and Developer ID leaf identity.
-- [ ] Grant Accessibility and Screen Recording to 1.1.2, perform the automatic Sparkle
-      1.1.2 → 1.2.0 update in place, and confirm both grants remain effective.
-- [ ] Perform a signed 1.2.0 → test-update cycle and confirm the same grants remain.
-- [ ] Replace 1.1.2 manually from the notarized DMG in Applications and confirm permissions
+- [ ] Grant Accessibility and Screen Recording to 1.2.0, perform the automatic Sparkle
+      1.2.0 → 1.3.1 update in place, and confirm both grants remain effective.
+- [ ] Perform a signed 1.3.1 → test-update cycle and confirm the same grants remain.
+- [ ] Replace 1.2.0 manually from the notarized DMG in Applications and confirm permissions
       remain associated with WindowHop.
 - [ ] No updater helper or temporary app bundle requests application permissions.
 - [ ] The notarized app/DMG validate and staple successfully; Gatekeeper accepts both; the
-      updater detects 1.2.0 and rejects a tampered signature.
+      updater detects 1.3.1 and rejects a tampered signature.
 
 ## Historical integration evidence
 

@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.3.1 — 2026-07-18
+
+- **Centralized defaults and safe reset**: every user preference now consumes one typed
+  `Preferences.Defaults` contract. Fresh installs use ⌘Tab and ⌥Tab with tab counts hidden;
+  upgrades retain saved choices, and the confirmed Restore Defaults action resets every
+  configurable value without touching permissions, identity, or first-run state.
+- **Reliable shortcut ownership**: WindowHop now consumes the complete configured
+  Command–Tab key sequence, including rapid release, reverse cycling, repeated input, and
+  re-arming after sleep/wake. No new preference was added for this correctness fix.
+- **Contextual switcher chrome**: Settings stays out of normal cycling until the pointer
+  enters the panel, while persistent Open WindowHop sessions keep it visible. The overlay
+  never changes panel measurement, preview placement, or keyboard navigation.
+- **Polished card hierarchy**: native system typography strengthens titles, optional tab
+  metadata leaves no hidden row, and loading/failure copy is replaced by explicit animated
+  or static macOS-window skeleton states that respect Reduce Motion.
+- **About and product website**: About now identifies developer Marton Paulo and links to
+  the official responsive GitHub Pages site. The zero-backend site includes current
+  product visuals, direct downloads, release notes, GPL-3.0 source, issue reporting, and
+  AltTab acknowledgement in adaptive Light and Dark appearances.
+- **Regression coverage and documentation**: typed reset coverage fails when a future
+  preference is omitted; shortcut interception, contextual gear visibility, compact
+  metadata layout, shared typography, and skeleton domain states are tested. README,
+  release metadata, and privacy-safe screenshots reflect 1.3.1.
+
 ## 1.2.0 — 2026-07-18
 
 - **Branded macOS installer**: the automated appdmg build now produces a compact custom

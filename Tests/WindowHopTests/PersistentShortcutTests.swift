@@ -55,16 +55,17 @@ final class PersistentShortcutTests: XCTestCase {
                        "⌃⇧⌘K")
     }
 
-    func testPreferencesDefaultIsUnassigned() {
+    func testPreferencesDefaultIsOptionTabAndCanBeCleared() {
         let suite = "windowhop-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = Preferences(defaults: defaults)
-        XCTAssertNil(preferences.persistentShortcut)
+        XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         let shortcut = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.persistentShortcut = shortcut
         XCTAssertEqual(preferences.persistentShortcut, shortcut)
         preferences.persistentShortcut = nil
         XCTAssertNil(preferences.persistentShortcut)
+        XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
     }
 }

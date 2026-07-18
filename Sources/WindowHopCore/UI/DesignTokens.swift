@@ -35,16 +35,23 @@ enum DesignTokens {
     /// visual breathing room between complete cards.
     static let tileRowSpacing: CGFloat = 30
     static let tileLabelInset: CGFloat = 8
-    static let titleFontSize: CGFloat = 13
-    static let tabsFontSize: CGFloat = 11
+    /// Native system typography, tuned to the public product preview. Font
+    /// family remains AppKit-owned so locale, rendering, and accessibility
+    /// continue to follow macOS.
+    static let titleFontSize: CGFloat = 14
+    static let titleFontWeight: NSFont.Weight = .medium
+    static let titleLetterSpacing: CGFloat = -0.08
+    static let metadataFontSize: CGFloat = 12
+    static let metadataFontWeight: NSFont.Weight = .regular
+    static let metadataLetterSpacing: CGFloat = 0
     /// Titles wrap to two lines before truncating; the zone is always two lines
     /// tall so tiles never resize between one- and two-line titles. A single
     /// line centers vertically inside the zone.
-    static let titleZoneHeight: CGFloat = 34
+    static let titleZoneHeight: CGFloat = 36
     static let titleMaxLines = 2
-    static let titleY: CGFloat = 22
-    static let tabsHeight: CGFloat = 15
-    static let tabsY: CGFloat = 6
+    static let metadataHeight: CGFloat = 16
+    static let labelBottomInset: CGFloat = 6
+    static let titleMetadataSpacing: CGFloat = 1
     static let contentTopInset: CGFloat = 10
     /// The one gap between the bottom of the content (icon or preview) and the
     /// top of the title zone — identical on every card, in both appearances.
@@ -52,8 +59,13 @@ enum DesignTokens {
 
     /// Tile height derived from the content height, so the label zone and the
     /// content-to-title gap stay identical across appearances and screens.
-    static func tileHeight(contentHeight: CGFloat) -> CGFloat {
-        titleY + titleZoneHeight + contentTitleGap + contentHeight + contentTopInset
+    static func titleY(showMetadata: Bool) -> CGFloat {
+        labelBottomInset + (showMetadata ? metadataHeight + titleMetadataSpacing : 0)
+    }
+
+    static func tileHeight(contentHeight: CGFloat, showMetadata: Bool) -> CGFloat {
+        titleY(showMetadata: showMetadata) + titleZoneHeight
+            + contentTitleGap + contentHeight + contentTopInset
     }
 
     // MARK: App Icons appearance (density matched to the native switcher)
@@ -92,10 +104,21 @@ enum DesignTokens {
         0, closeButtonHitSize / 2 - tileLabelInset)
     static let closeButtonTopOverflow = max(
         0, closeButtonHitSize / 2 - contentTopInset)
-    // MARK: Preview placeholder (while loading or unavailable)
+    // MARK: Preview skeleton (while loading or unavailable)
     static let previewFillInFadeDuration: TimeInterval = 0.15
     /// Crossfade used when a fresh capture replaces a cached snapshot mid-session.
     static let previewRefreshFadeDuration: TimeInterval = 0.25
+    static let previewSkeletonPulseDuration: TimeInterval = 1.15
+    static let previewSkeletonMinimumOpacity: Float = 0.5
+    static let previewSkeletonTitleBarHeight: CGFloat = 17
+    static let previewSkeletonInset: CGFloat = 12
+    static let previewSkeletonDotSize: CGFloat = 4
+    static let previewSkeletonDotSpacing: CGFloat = 5
+    static let previewSkeletonLineHeight: CGFloat = 6
+    static let previewSkeletonLineSpacing: CGFloat = 8
+    static let previewSkeletonLineRadius: CGFloat = 3
+    static let previewSkeletonLoadingLineFractions: [CGFloat] = [0.72, 0.88, 0.58, 0.81, 0.66]
+    static let previewSkeletonUnavailableLineFractions: [CGFloat] = [0.62, 0.78, 0.48]
 
     // MARK: Colors
     static var iconSelectionFill: NSColor { .labelColor.withAlphaComponent(0.14) }
@@ -111,11 +134,19 @@ enum DesignTokens {
     static var previewSurfaceFill: NSColor {
         NSColor.controlBackgroundColor.withAlphaComponent(0.76)
     }
-    static var previewUnavailableSymbolColor: NSColor { .secondaryLabelColor }
-    static let previewUnavailableSymbolSize: CGFloat = 18
-    static let previewUnavailableFontSize: CGFloat = 11
-    static let previewExplanationFontSize: CGFloat = 9.5
-    static let previewUnavailableSpacing: CGFloat = 5
+    static var previewSkeletonChromeFill: NSColor {
+        .separatorColor.withAlphaComponent(0.22)
+    }
+    static var previewSkeletonDotFill: NSColor {
+        .tertiaryLabelColor.withAlphaComponent(0.42)
+    }
+    static var previewSkeletonLineFill: NSColor {
+        .tertiaryLabelColor.withAlphaComponent(0.28)
+    }
+    static var previewSkeletonUnavailableLineFill: NSColor {
+        .tertiaryLabelColor.withAlphaComponent(0.16)
+    }
+    static let settingsVisibilityFadeDuration: TimeInterval = 0.14
 
     // MARK: Expanded dwell preview
     static let expandedPreviewMinimumWidth: CGFloat = 720
