@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.1.0 — 2026-07-18
 
 - **Live preview refresh**: opening the switcher still shows cached snapshots
   instantly, but each tile now crossfades to a fresh capture the moment it

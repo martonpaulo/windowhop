@@ -19,7 +19,7 @@ Prefer window snapshots? Turn on the optional **Window Previews** appearance:
 
 ## Download and install
 
-1. **[⬇ Download WindowHop-1.0.0.dmg](https://github.com/martonpaulo/windowhop/releases/latest)**
+1. **[⬇ Download WindowHop-1.1.0.dmg](https://github.com/martonpaulo/windowhop/releases/latest)**
 2. Open the DMG and **drag WindowHop into Applications**.
 3. First launch: **right-click WindowHop.app → Open → Open**. macOS asks once
    because releases aren't notarized by Apple (see Known limitations).
