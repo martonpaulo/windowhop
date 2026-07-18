@@ -17,7 +17,7 @@ import ScreenCaptureKit
 /// - Public ScreenCaptureKit only. AX windows are matched to SCWindows by
 ///   pid + frame (+ title), and every request receives a DISTINCT window —
 ///   two windows of the same app can never share a preview. When no confident
-///   match exists the tile keeps its icon fallback; a wrong preview is worse
+///   match exists the tile keeps its placeholder and corner badge; a wrong preview is worse
 ///   than none.
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
@@ -183,7 +183,7 @@ public final class PreviewProvider {
     /// Unique assignment of SCWindows to requests: frame proximity first (title
     /// breaks ties), then exact title. Every candidate is consumed at most once,
     /// so two same-app windows can never receive the same preview. Requests with
-    /// no confident match stay unassigned (icon fallback) — never guessed.
+    /// no confident match stay unassigned (placeholder + badge) — never guessed.
     static func assign(requests: [MatchRequest],
                        candidates: [MatchCandidate]) -> [AnyHashable: Int] {
         var available = Set(candidates.map { $0.index })

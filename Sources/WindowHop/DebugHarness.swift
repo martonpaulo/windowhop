@@ -44,7 +44,10 @@ enum DebugHarness {
             }
         }
 
-        // overflow check: 120 synthetic windows in a horizontally scrolling strip
+        let savedMode = Preferences.shared.appearanceMode
+        Preferences.shared.appearanceMode = .appIcons
+
+        // overflow check: 120 synthetic windows in a wrapping, vertically scrolling grid
         let overflowPanel = SwitcherPanel(rasterizableBackground: true)
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
@@ -62,7 +65,6 @@ enum DebugHarness {
 
         // preview appearance, populated with synthetic window images (real
         // captures need Screen Recording; the layout under test is identical)
-        let savedMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let previewPanel = SwitcherPanel(rasterizableBackground: true)
@@ -83,7 +85,9 @@ enum DebugHarness {
                 previewPanel.hide()
             }
         }
-        Preferences.shared.appearanceMode = savedMode
+        // Standard switcher renders always exercise the permission-free default,
+        // independent of the developer's persisted local preference.
+        Preferences.shared.appearanceMode = .appIcons
 
         var pending = 0
         let finishOne = {
@@ -119,6 +123,7 @@ enum DebugHarness {
                 finishOne()
             }
         }
+        Preferences.shared.appearanceMode = savedMode
         app.run()
     }
 
@@ -159,13 +164,13 @@ enum DebugHarness {
     /// long titles, entries with and without tab counts, and the Settings entry.
     private static func demoItems() -> [SwitcherItem] {
         let rows: [(String, String, String, Int?)] = [
-            ("UserResourceMapper.java", "IntelliJ IDEA", "com.jetbrains.intellij", nil),
-            ("Apple Human Interface Guidelines — Materials and Vibrancy", "Safari", "com.apple.Safari", 7),
-            ("GitHub — Safari", "Safari", "com.apple.Safari", 12),
+            ("Project Plan", "Notes", "com.apple.Notes", nil),
+            ("Apple Design Resources", "Safari", "com.apple.Safari", 7),
+            ("Window Management Guide", "Safari", "com.apple.Safari", 12),
             ("Downloads", "Finder", "com.apple.finder", 3),
-            ("untitled", "TextEdit", "com.apple.TextEdit", nil),
-            ("untitled", "TextEdit", "com.apple.TextEdit", nil),
-            ("main.swift — windowhop — zsh — 118×34", "Terminal", "com.apple.Terminal", 2),
+            ("Untitled", "TextEdit", "com.apple.TextEdit", nil),
+            ("Untitled", "TextEdit", "com.apple.TextEdit", nil),
+            ("Terminal", "Terminal", "com.apple.Terminal", 2),
             ("WindowHop Settings", "WindowHop", "com.perso.windowhop", nil),
         ]
         return rows.enumerated().map { index, row in

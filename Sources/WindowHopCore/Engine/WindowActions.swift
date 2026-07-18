@@ -7,7 +7,16 @@ import ApplicationServices
 /// kAXFrontmostAttribute, which is honored regardless of cooperative-activation
 /// rules because the caller holds Accessibility permission.
 public enum WindowActions {
-    public static func activate(_ window: TrackedWindow) {
+    /// Schedules main-thread UI only after every previously requested AX action
+    /// has finished. This prevents an in-flight temporary activation from
+    /// stealing focus back from Settings or a confirmation dialog.
+    public static func afterPendingActions(_ action: @escaping () -> Void) {
+        BackgroundWork.axActionsQueue.async {
+            DispatchQueue.main.async(execute: action)
+        }
+    }
+
+    public static func activate(_ window: TrackedWindow, completion: (() -> Void)? = nil) {
         // own Settings window: cooperative NSApp.activate() is sometimes DENIED
         // (macOS 14+ never saw "real" user input reach WindowHop — the tap
         // consumed it), leaving the window ordered but behind. The AX frontmost
@@ -20,10 +29,14 @@ public enum WindowActions {
             BackgroundWork.axActionsQueue.async {
                 let ownElement = AXUIElementCreateApplication(ProcessInfo.processInfo.processIdentifier)
                 try? ownElement.setAttribute(kAXFrontmostAttribute, true)
+                DispatchQueue.main.async { completion?() }
             }
             return
         }
-        guard let ax = window.ax, let app = window.app else { return }
+        guard let ax = window.ax, let app = window.app else {
+            completion?()
+            return
+        }
         BackgroundWork.axActionsQueue.async {
             try? ax.setAttribute(kAXMainAttribute, true)
             try? ax.performAction(kAXRaiseAction)
@@ -31,6 +44,7 @@ public enum WindowActions {
             DispatchQueue.main.async {
                 // reinforcement so menu bar and key state follow; harmless if already front
                 app.runningApplication.activate()
+                completion?()
             }
         }
     }

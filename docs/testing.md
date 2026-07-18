@@ -3,7 +3,7 @@
 ## Automated
 
 ```sh
-swift test           # 95 unit tests
+swift test           # 133 unit tests
 scripts/validate.sh  # repository invariants (identifiers, no private APIs,
                      # ScreenCaptureKit confinement, updater config)
 ```
@@ -14,6 +14,11 @@ phases, list shrinking, cancellation), tab-group resolution (incl. two browser w
 with five tabs each → exactly two entries), Settings-window entry lifecycle, window
 eligibility and display rules, MRU ordering, title fallback (incl. Unicode/RTL),
 persistent-shortcut matching/validation/encoding, settings defaults and persistence.
+Temporary-activation coverage includes confirm/cancel, exact-origin restoration,
+closed origin/target handling, rapid navigation, same-application identities, and MRU
+suppression until commit. Layout tests pin fixed-canvas overlay alignment across source
+aspect ratios, the three outline strengths (including exactly one selected outline),
+uniform spacing, stable loading badges, and corner-centered overlay-only Settings geometry.
 The pure Core layer makes these deterministic; the Settings-entry tests drive real
 NSWindow notifications against a fresh store.
 
@@ -52,6 +57,10 @@ Core interaction
 - [ ] ⌘⇧Tab opens selecting the last item; Shift press/release mid-session reverses direction
 - [ ] Holding Tab autorepeats; navigation wraps; arrows move intuitively
 - [ ] Escape cancels and focus stays put; Return activates; click activates; outside click cancels
+- [ ] Pausing on a target temporarily raises it behind the still-interactive panel; fast
+      key repeat skips intermediate windows; Escape restores the exact origin window
+- [ ] Confirming a temporarily active target keeps it active and records it once in MRU;
+      closing the target selects a neighboring entry; closing the origin makes cancel a safe no-op
 - [ ] Native macOS switcher never appears while WindowHop is enabled; appears again when
       disabled (Settings/menu bar), after quit, and after `kill -9`
 - [ ] With 0 eligible windows the chord falls through to the native switcher; with 1 window
@@ -87,9 +96,15 @@ Appearance & previews
       inline, and the switcher falls back to icons (verified 2026-07-03: preview-mode
       session with permission denied rendered icon tiles, no crash, activation worked)
 - [ ] With permission granted: snapshots aspect-fit without distortion, tall/wide
-      windows letterbox, the icon badge hugs the snapshot, a window closed mid-capture
-      leaves its icon tile, and switching back to App Icons applies on the next session
-- [ ] No capture activity while the switcher is closed; previews gone after the session
+      windows letterbox, the icon badge overlaps the fixed canvas corner, a window closed
+      mid-capture is removed safely, and switching back to App Icons applies on the next session
+- [ ] Every preview has a subtle outline; hover/temporary activation is restrained; the
+      selected target has exactly one strong blue outline over both bright and dark snapshots
+- [ ] App badges align bottom-right and Close controls top-left across wide/tall sources;
+      loading/fallback cards keep the badge in that same position; the global Settings
+      control is centered over the panel's top-right corner without shifting the grid
+- [ ] No capture activity while the switcher is closed; cached previews remain memory-only
+      and appear immediately at the next open before fresh captures replace them
 
 Closing and quitting
 - [ ] The confirmation always appears above the switcher (the panel hides while the

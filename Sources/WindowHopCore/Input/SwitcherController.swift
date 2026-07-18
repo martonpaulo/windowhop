@@ -14,7 +14,8 @@ public final class SwitcherController {
     private var mouseMonitor: Any?
     private var heldModifierGuard: Timer?
     private var originWindow: TrackedWindow?
-    private var didShowConfirmation = false
+    private var temporaryActivation = TemporaryActivationSession<AnyHashable>()
+    private var temporaryActivationTimer: Timer?
     private var configuredEnabled = false
 
     private init() {}
@@ -101,12 +102,26 @@ public final class SwitcherController {
         }
     }
 
-    /// Ends the session cleanly, then opens Settings visible and focused.
+    /// Ends the switcher without committing its target, then opens the global
+    /// Settings action. Settings intentionally becomes the next active window;
+    /// no preview tile click is allowed to leak through.
     private func openSettingsFromSession() {
-        if state.isActive {
-            perform(state.escape())
+        let hadActiveSession = state.isActive
+        if hadActiveSession {
+            state.reset()
+            cancelTemporaryActivationTimer()
+            endSession()
+            WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
+            temporaryActivation.reset()
+            originWindow = nil
         }
-        SettingsWindowController.shared.show()
+        if hadActiveSession {
+            WindowActions.afterPendingActions {
+                SettingsWindowController.shared.show()
+            }
+        } else {
+            SettingsWindowController.shared.show()
+        }
     }
 
     private func perform(_ command: SwitcherState.Command) {
@@ -115,12 +130,16 @@ public final class SwitcherController {
         case .none:
             break
         case .show(let selectedIndex):
-            didShowConfirmation = false
             originWindow = items.first?.window
+            WindowStore.shared.beginTemporaryActivationSession()
+            let request = temporaryActivation.begin(
+                originWindowID: originWindow.map { AnyHashable($0.stableId) },
+                targetedWindowID: itemID(at: selectedIndex))
             panel.show(items: items, selectedIndex: selectedIndex)
             state.updateColumns(panel.columnsPerRow)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
+            scheduleTemporaryActivation(request)
             // previews (cached ones already showed instantly) refresh live,
             // asynchronously, never gating panel presentation
             PreviewProvider.shared.beginSession(
@@ -132,19 +151,41 @@ public final class SwitcherController {
             WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
         case .select(let index):
             panel.select(index)
+            targetTemporaryWindow(at: index)
         case .activate(let index):
+            cancelTemporaryActivationTimer()
+            let availableIDs = Set(items.map(\.id))
+            let item = index >= 0 && index < items.count ? items[index] : nil
+            let window = item?.window.flatMap { candidate in
+                WindowStore.shared.windows.contains(where: { $0 === candidate }) ? candidate : nil
+            }
+            let committedID = temporaryActivation.commit(item?.id,
+                                                          availableWindowIDs: availableIDs)
             endSession()
-            if index >= 0, index < items.count, let window = items[index].window {
+            if committedID != nil, let window {
+                WindowStore.shared.finishTemporaryActivationSession(committedWindow: window)
                 WindowActions.activate(window)
+            } else {
+                WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
+                restoreOriginIfAvailable()
             }
+            temporaryActivation.reset()
+            originWindow = nil
         case .cancel:
-            endSession()
-            // the confirmation dialog activated WindowHop; hand focus back to the
-            // window that was focused when the session began
-            if didShowConfirmation, let originWindow,
-               WindowStore.shared.windows.contains(where: { $0 === originWindow }) {
-                WindowActions.activate(originWindow)
+            cancelTemporaryActivationTimer()
+            let availableIDs = Set(WindowStore.shared.windows.map { AnyHashable($0.stableId) })
+            let restoreID = temporaryActivation.cancel(availableWindowIDs: availableIDs)
+            let restoreWindow = restoreID.flatMap { id in
+                originWindow.flatMap { AnyHashable($0.stableId) == id ? $0 : nil }
             }
+            endSession()
+            WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
+            if let restoreWindow,
+               WindowStore.shared.windows.contains(where: { $0 === restoreWindow }) {
+                WindowActions.activate(restoreWindow)
+            }
+            temporaryActivation.reset()
+            originWindow = nil
         case .requestClose(let index):
             if index >= 0, index < items.count {
                 runCloseConfirmation(for: items[index])
@@ -162,9 +203,18 @@ public final class SwitcherController {
     /// hidden for the duration so the dialog is unquestionably on top, and is
     /// restored afterwards with the previous selection.
     private func runCloseConfirmation(for item: SwitcherItem) {
-        didShowConfirmation = true
+        cancelTemporaryActivationTimer()
+        temporaryActivation.interruptTemporaryActivation()
+        panel.setTemporarilyActive(id: nil)
         EventTap.shared.mode = .passthrough
         panel.hide()
+        WindowActions.afterPendingActions { [weak self] in
+            guard let self, self.state.phase == .confirming else { return }
+            self.presentCloseConfirmation(for: item)
+        }
+    }
+
+    private func presentCloseConfirmation(for item: SwitcherItem) {
         let app = item.window?.app
         let isOwnEntry = item.window?.isOwnSettingsEntry ?? false
         let offersQuit = !isOwnEntry && app != nil
@@ -246,7 +296,12 @@ public final class SwitcherController {
         guard state.isActive else { return }
         let selectedId = state.selectedIndex < items.count ? items[state.selectedIndex].id : nil
         let fresh = WindowStore.shared.snapshot()
-        items = items.compactMap { item in fresh.first { $0.id == item.id } }
+        items = items.compactMap { item in
+            fresh.first { $0.id == item.id } ?? (shouldPreserveAcrossTemporaryLocationChange(item)
+                ? item
+                : nil)
+        }
+        temporaryActivation.retainAvailable(Set(items.map(\.id)))
         let preferredIndex = selectedId.flatMap { id in
             items.firstIndex { $0.id == id }
         } ?? state.selectedIndex
@@ -254,10 +309,24 @@ public final class SwitcherController {
         if state.isActive {
             panel.update(items: items, selectedIndex: state.selectedIndex)
             state.updateColumns(panel.columnsPerRow)
+            targetTemporaryWindow(at: state.selectedIndex)
         }
         if case .cancel = command {
             perform(command)
         }
+    }
+
+    /// A temporary activation can move the active Space/display, which must not
+    /// make frozen session entries disappear. Genuine closure, minimization,
+    /// hiding, tab exclusion, or PiP exclusion still removes them immediately.
+    private func shouldPreserveAcrossTemporaryLocationChange(_ item: SwitcherItem) -> Bool {
+        guard let window = item.window,
+              WindowStore.shared.windows.contains(where: { $0 === window }) else { return false }
+        return window.isActual
+            && !window.isMinimized
+            && !(window.app?.isHidden ?? false)
+            && !window.isTabbed
+            && !(window.isPictureInPicture ?? false)
     }
 
     private func pushEligibleCount() {
@@ -292,9 +361,11 @@ public final class SwitcherController {
     }
 
     private func endSession() {
+        cancelTemporaryActivationTimer()
+        panel.setTemporarilyActive(id: nil)
         panel.hide()
-        // previews are session-scoped: pending captures become stale and the
-        // in-memory cache is released now
+        // capture is session-scoped: pending results stop delivering live, but
+        // the memory-only cache remains warm for the next instant open
         PreviewProvider.shared.endSession()
         if let mouseMonitor {
             NSEvent.removeMonitor(mouseMonitor)
@@ -303,6 +374,61 @@ public final class SwitcherController {
         heldModifierGuard?.invalidate()
         heldModifierGuard = nil
         EventTap.shared.mode = configuredEnabled ? .watching : .off
+    }
+
+    // MARK: - Temporary window activation
+
+    private func itemID(at index: Int) -> AnyHashable? {
+        index >= 0 && index < items.count ? items[index].id : nil
+    }
+
+    private func targetTemporaryWindow(at index: Int) {
+        cancelTemporaryActivationTimer()
+        scheduleTemporaryActivation(temporaryActivation.target(itemID(at: index)))
+    }
+
+    private func scheduleTemporaryActivation(
+        _ request: TemporaryActivationSession<AnyHashable>.Request?
+    ) {
+        guard let request else { return }
+        let timer = Timer(timeInterval: TemporaryActivationSession<AnyHashable>.navigationSettleDelay,
+                          repeats: false) { [weak self] _ in
+            self?.temporarilyActivate(request)
+        }
+        temporaryActivationTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    private func temporarilyActivate(
+        _ request: TemporaryActivationSession<AnyHashable>.Request
+    ) {
+        temporaryActivationTimer = nil
+        guard state.isActive,
+              let id = temporaryActivation.settle(
+                request, availableWindowIDs: Set(items.map(\.id))),
+              let item = items.first(where: { $0.id == id }),
+              let window = item.window,
+              WindowStore.shared.windows.contains(where: { $0 === window }) else { return }
+        panel.setTemporarilyActive(id: id)
+        WindowStore.shared.noteTemporaryActivation(window)
+        WindowActions.activate(window) { [weak self] in
+            guard let self, self.state.isActive,
+                  self.temporaryActivation.temporarilyActiveWindowID == id else { return }
+            // Public AX activation may change Spaces asynchronously. A pop-up
+            // level nonactivating panel is reasserted only after that work lands.
+            self.panel.presentAgain()
+        }
+    }
+
+    private func cancelTemporaryActivationTimer() {
+        temporaryActivationTimer?.invalidate()
+        temporaryActivationTimer = nil
+    }
+
+    private func restoreOriginIfAvailable() {
+        guard let originWindow,
+              WindowStore.shared.windows.contains(where: { $0 === originWindow }) else { return }
+        WindowActions.activate(originWindow)
     }
 
     private func nsModifier(of flags: CGEventFlags) -> NSEvent.ModifierFlags {

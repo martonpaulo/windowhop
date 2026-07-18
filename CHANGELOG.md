@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.1.1 — 2026-07-18
+
+- **Complete Settings contract**: every existing user-configurable behavior is exposed
+  through the native General, Appearance, or Updates panes. `Preferences` is now the
+  single observable runtime model backed by `UserDefaults`; existing values survive,
+  and invalid or obsolete shortcut, appearance, and Boolean values restore documented
+  defaults.
+- **Temporary window activation**: pause on a target and WindowHop raises it behind the
+  still-active switcher after a short debounce. Confirm commits that target; Escape or
+  outside click restores the exact origin when it still exists. Temporary focus changes
+  never rewrite MRU history, and closed origins/targets, rapid traversal, same-app
+  windows, modal confirmation, and Settings focus races are covered by regressions.
+- **Clear preview boundaries and selection**: uniform horizontal card spacing, a subtle
+  outline on every preview, restrained hover/temporary emphasis, and exactly one strong
+  blue selected outline that remains legible over bright and dark snapshots without
+  moving layout.
+- **Canvas-aligned overlays**: the app badge is 60% of its former size at the fixed
+  canvas bottom-right and overlaps both edges; Close is 50% of its former rendered size
+  over the top-left with a 44 pt hit target. Both stay aligned across wide, tall,
+  letterboxed, loading, and unavailable windows.
+- **Global Settings control**: the gear is 50% of its former rendered size and overlays
+  the panel with its center on the top-right corner, without a reserved chrome strip,
+  preview displacement, or visible-panel size changes.
+- **Consistent preview geometry**: source images remain proportional, centered, and
+  transparently letterboxed while outline, selection, shadow, overlays, hit testing, and
+  title rhythm all follow the display-ratio preview canvas.
+
 ## 1.1.0 — 2026-07-18
 
 - **Live preview refresh**: opening the switcher still shows cached snapshots

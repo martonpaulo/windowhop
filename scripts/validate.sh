@@ -70,6 +70,43 @@ if [ -f appcast.xml ]; then
     fi
 fi
 
+# --- documentation/release synchronization ----------------------------------
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
+README_DMG_VERSIONS=$(grep -oE 'WindowHop-[0-9]+\.[0-9]+\.[0-9]+\.dmg' README.md | sort -u)
+if [ "$README_DMG_VERSIONS" = "WindowHop-$VERSION.dmg" ]; then
+    pass "README download matches version $VERSION"
+else
+    fail "README download does not uniquely match version $VERSION: $README_DMG_VERSIONS"
+fi
+
+MARKDOWN_FILES=$(git ls-files '*.md')
+while IFS= read -r markdown; do
+    [ -n "$markdown" ] || continue
+    while IFS= read -r target; do
+        case "$target" in
+            https://*|http://*|mailto:*|'#'*|'') continue ;;
+        esac
+        if [ -e "$(dirname "$markdown")/$target" ]; then
+            :
+        else
+            fail "$markdown references missing local file: $target"
+        fi
+    done < <(grep -oE '\]\([^)]+\)' "$markdown" 2>/dev/null | sed 's/^](//; s/)$//')
+done <<< "$MARKDOWN_FILES"
+
+while IFS= read -r screenshot; do
+    [ -n "$screenshot" ] || continue
+    if grep -qF "($screenshot)" $MARKDOWN_FILES; then
+        :
+    else
+        fail "unreferenced screenshot is tracked: $screenshot"
+    fi
+done < <(git ls-files 'docs/screenshots/*')
+
+if [ "$failures" -eq 0 ]; then
+    pass "Markdown local links and tracked screenshots are synchronized"
+fi
+
 # --- secrets must never be committed -----------------------------------------
 if git ls-files | grep -iE "private.?key|\.p12$|\.pem$"; then
     fail "potential secret file tracked in git"

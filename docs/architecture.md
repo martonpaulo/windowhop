@@ -12,8 +12,8 @@ about AppKit or AX.
 │                            │  WindowActions, AccessibilityPermission, LoginItem
 ├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
 └─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
-                                MRUOrder, TitleResolver, PersistentShortcut, Preferences
-                                (pure, unit-tested)
+                                MRUOrder, TitleResolver, PersistentShortcut, Preferences,
+                                TemporaryActivationSession (pure, unit-tested)
 ```
 
 ## Window model (event-driven, no polling)
@@ -62,9 +62,14 @@ through plain AppKit.
 3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
-4. The switcher list is **frozen at session start**; store changes while open only remove
+4. `TemporaryActivationSession` keeps four identities separate: origin, targeted,
+   temporarily active, and committed. Target changes settle for 0.18 seconds before AX
+   activation, so fast traversal never raises every intermediate window. The store keeps
+   processing AX events but freezes MRU history until the final target is committed;
+   cancellation raises the exact origin again when it still exists.
+5. The switcher list is **frozen at session start**; store changes while open only remove
    or refresh entries (nearby selection preserved), never reorder or add.
-5. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
+6. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
    recover from missed key-up events. Sticky sessions have no such timer — modifier
    release means nothing there; only Return/Space/click/Escape end them.
 
@@ -75,8 +80,9 @@ applies on the next session, no restart):
 
 - **App Icons** (default): a large application icon dominates a compact tile.
 - **Window Previews**: an aspect-fit window snapshot with the app icon as a
-  corner badge on the fitted image; until a preview arrives (or when one is
-  unavailable) the large icon shows instead — never a blank tile. Every preview
+  bottom-right badge overlapping the fixed preview canvas by the same amount on both
+  edges. Until a preview arrives (or when one is unavailable), a quiet placeholder
+  remains inside that canvas while the badge stays at the same corner. Every preview
   container shares the aspect ratio of the display the switcher is presented
   on, so all cards have identical dimensions; the snapshot centers inside with
   transparent letterboxing (whole window visible, never cropped or stretched),
@@ -85,12 +91,17 @@ applies on the next session, no restart):
 Every tile keeps a 13 pt title and the reserved 11 pt tab-count line so nothing
 shifts as data arrives (all dimensions from `UI/DesignTokens.swift`). Titles
 wrap to two lines; a single-line title centers vertically in the same fixed
-zone. Selection is a neutral rounded rectangle like the native switcher and
-surrounds only the content area (icon or preview) — the title stays outside.
+zone. Preview cards use one horizontal spacing token and a three-level outline
+hierarchy: subtle when unselected, restrained while hovered or temporarily active, and
+one stronger blue outline on the selected target that visually replaces the neutral
+outline. Selection surrounds only the preview canvas
+— the title stays outside — and every overlay is excluded from layout measurement.
 Hovering a tile reveals an overlay close control (routed through the same
-confirmation as ⌫; also a VoiceOver custom action); hovering the panel reveals a
-Settings control (⌘, works without a pointer) in a chrome strip above the grid
-reserved so the enlarged gear never overlays tiles. On macOS 26+ the panel
+confirmation as ⌫; also a VoiceOver custom action). A compact Settings control
+(⌘, works without a pointer) has its center aligned to the panel's top-right corner, so
+half of its hit target remains outside the visible panel. A transparent host preserves
+that outside area; the control reserves no chrome row and cannot change the visible
+panel's centering or dimensions. On macOS 26+ the panel
 background is the system glass material (NSGlassEffectView, the native
 switcher's look); older systems use the HUD visual-effect material. Tiles wrap
 into **rows** when one row can't fit ~88 % of the screen width (the AltTab
@@ -127,13 +138,18 @@ the window's stable id — never by tile position — and pooled tiles reset the
 image state on reconfigure, so a snapshot can never appear on another window's
 card (regression-tested, including rapid list changes).
 
+Source images aspect-fit and center inside a display-ratio canvas with transparent
+letterboxing. The app badge, Close control, outline, selection indicator, shadow, hit testing,
+and title position all anchor to that canvas rather than the fitted source-image bounds.
+
 While a window has no snapshot, the tile shows a quiet placeholder card
-(quaternary system fill) with the app icon, and the first capture fades in over
-it (Reduce Motion disables the fade) — constant geometry, no flash.
+(quaternary system fill) under the same corner-aligned app badge, and the first capture
+fades in over it (Reduce Motion disables the fade) — constant geometry, no icon movement,
+no flash.
 
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never
-share a snapshot; a request with no confident match keeps the icon fallback —
+share a snapshot; a request with no confident match keeps the placeholder and badge —
 a wrong preview is worse than none. Images are requested pre-scaled (no
 full-resolution retention). Preview failure can never remove an entry or block
 activation.

@@ -18,7 +18,9 @@ Requires macOS 14+ and Xcode 16+ command line tools. No paid Apple account is ne
 ## Ground rules
 
 - **Public Apple APIs only.** No private frameworks or `_`-prefixed SPI.
-- **No previews, screenshots, or Screen Recording permission.** Ever.
+- **Screen Recording stays opt-in.** ScreenCaptureKit is confined to
+  `Engine/PreviewProvider.swift`, runs only during an open Window Previews session,
+  and never persists snapshots. App Icons must work without permission.
 - **No polling while idle** — observe events. Bounded timers only during a session
   or while the onboarding window is open.
 - **One entry per top-level window.** Tabs are never separate entries.
@@ -36,8 +38,8 @@ Requires macOS 14+ and Xcode 16+ command line tools. No paid Apple account is ne
 
 ## Out of scope
 
-Window previews/thumbnails, search or type-to-filter, window tiling or layout
-management, app launching, themes, telemetry, and anything that requires an
+Search or type-to-filter, window tiling or layout management, app launching,
+themes, telemetry, and anything that requires an
 online account. Issues asking for these will be closed with a pointer here.
 
 ## License

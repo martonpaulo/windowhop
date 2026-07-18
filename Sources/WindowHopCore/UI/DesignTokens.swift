@@ -10,20 +10,19 @@ enum DesignTokens {
     /// The grid may use up to this fraction of the screen's width/height.
     static let panelMaxWidthFraction: CGFloat = 0.88
     static let panelMaxHeightFraction: CGFloat = 0.85
-    /// The panel Settings control (top-right corner), matched to the tile close
-    /// control so the two overlay buttons read as one family, on one inset grid.
-    static let chromeButtonSize: CGFloat = 78
-    static let chromeButtonSymbolSize: CGFloat = 57
-    static let overlayInset: CGFloat = 8
-    /// Chrome strip above the grid reserving room for the Settings control, so
-    /// the enlarged gear never overlays tiles.
-    static var panelTopChromeHeight: CGFloat { chromeButtonSize + overlayInset * 2 }
+    /// Settings is a compact global overlay. The visible glyph is half its
+    /// previous size while the hit target remains comfortably clickable.
+    static let chromeButtonHitSize: CGFloat = 44
+    static let chromeButtonSymbolSize: CGFloat = 29
 
     // MARK: Tiles (both appearances)
     static let tileSelectionCornerRadius: CGFloat = 18
     /// The selection surrounds only the content area (icon or preview) — the
     /// title always stays outside the highlighted region.
     static let selectionPadding: CGFloat = 6
+    /// One horizontal rhythm for every row; tiles never manufacture spacing by
+    /// changing their own dimensions.
+    static let tileSpacing: CGFloat = 18
     static let tileLabelInset: CGFloat = 8
     static let titleFontSize: CGFloat = 13
     static let tabsFontSize: CGFloat = 11
@@ -60,9 +59,10 @@ enum DesignTokens {
         (width / max(displayAspect, 0.2)).rounded()
     }
     static let previewCornerRadius: CGFloat = 10
-    /// The app icon badged onto a snapshot — large enough to identify at a glance.
-    static let previewBadgeSize: CGFloat = 80
-    static let previewBadgeOutset: CGFloat = 8
+    /// The badge is 60% of its previous rendered size and overlaps the fixed
+    /// canvas corner, independent of the source image's aspect-fit bounds.
+    static let previewBadgeSize: CGFloat = 48
+    static let previewOverlayOverlap: CGFloat = 8
     /// The snapshot's own soft shadow (the capture itself is shadow-free); the
     /// path follows the preview's rounded shape, never a plain rectangle.
     static let previewShadowRadius: CGFloat = 8
@@ -70,14 +70,13 @@ enum DesignTokens {
     static let previewShadowOffset = CGSize(width: 0, height: -3)
 
     // MARK: Overlay close control
-    static let closeButtonSize: CGFloat = 78
-    static let closeButtonSymbolSize: CGFloat = 60
+    static let closeButtonHitSize: CGFloat = 44
+    static let closeButtonSymbolSize: CGFloat = 30
     /// Overlay controls hang half over the content corner, badge-style
     /// (the Mission Control / Safari tab-close idiom).
-    static let closeButtonCornerOverlap: CGFloat = 10
+    static let closeButtonBoundaryOverlap: CGFloat = 8
 
     // MARK: Preview placeholder (while a first snapshot loads)
-    static let previewPlaceholderIconSize: CGFloat = 48
     static let previewFillInFadeDuration: TimeInterval = 0.15
     /// Crossfade used when a fresh capture replaces a cached snapshot mid-session.
     static let previewRefreshFadeDuration: TimeInterval = 0.25
@@ -87,6 +86,13 @@ enum DesignTokens {
     /// panel in Dark Mode and darker in Light Mode — labelColor with low alpha
     /// gives exactly that in both, resolved under the panel's appearance.
     static var selectionFill: NSColor { .labelColor.withAlphaComponent(0.16) }
+    static var temporaryTargetFill: NSColor { .labelColor.withAlphaComponent(0.09) }
+    static var previewOutline: NSColor { .labelColor.withAlphaComponent(0.26) }
+    static var previewEmphasisOutline: NSColor { .labelColor.withAlphaComponent(0.58) }
+    static var previewSelectionOutline: NSColor { .keyboardFocusIndicatorColor }
+    static let previewOutlineWidth: CGFloat = 1
+    static let previewEmphasisOutlineWidth: CGFloat = 2
+    static let previewSelectionOutlineWidth: CGFloat = 5
     /// Placeholder card behind a not-yet-captured preview (a quieter step of
     /// the same ramp so it never competes with the selection).
     static var previewPlaceholderFill: NSColor { .labelColor.withAlphaComponent(0.07) }

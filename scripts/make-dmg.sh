@@ -8,7 +8,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="${1:-1.0.0}"
+DEFAULT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
+VERSION="${1:-$DEFAULT_VERSION}"
 APPDMG_VERSION=0.6.6
 DMG="artifacts/WindowHop-$VERSION.dmg"
 

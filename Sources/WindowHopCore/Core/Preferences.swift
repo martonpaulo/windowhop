@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// The two switcher presentations. App Icons is the default and never needs
 /// Screen Recording permission; Window Previews shows live window snapshots.
@@ -17,8 +18,10 @@ public enum AppearanceMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// All WindowHop settings with their defaults. UserDefaults-backed; the store is injectable for tests.
-public final class Preferences {
+/// All WindowHop settings with their defaults. This observable model is the
+/// single runtime source of truth; UserDefaults is only its persistence layer.
+/// The store is injectable for deterministic migration and persistence tests.
+public final class Preferences: ObservableObject {
     public static let shared = Preferences()
 
     public enum Key: String, CaseIterable {
@@ -52,64 +55,75 @@ public final class Preferences {
 
     private let defaults: UserDefaults
 
-    public init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        defaults.register(defaults: Preferences.defaultValues)
+    @Published public var switcherEnabled: Bool {
+        didSet { defaults.set(switcherEnabled, forKey: Key.switcherEnabled.rawValue) }
     }
 
-    public var switcherEnabled: Bool {
-        get { defaults.bool(forKey: Key.switcherEnabled.rawValue) }
-        set { defaults.set(newValue, forKey: Key.switcherEnabled.rawValue) }
+    @Published public var launchAtLogin: Bool {
+        didSet { defaults.set(launchAtLogin, forKey: Key.launchAtLogin.rawValue) }
     }
 
-    public var launchAtLogin: Bool {
-        get { defaults.bool(forKey: Key.launchAtLogin.rawValue) }
-        set { defaults.set(newValue, forKey: Key.launchAtLogin.rawValue) }
-    }
-
-    public var shortcut: ShortcutSpec {
-        get { ShortcutSpec(rawValue: defaults.string(forKey: Key.shortcut.rawValue) ?? "") ?? .commandTab }
-        set { defaults.set(newValue.rawValue, forKey: Key.shortcut.rawValue) }
+    @Published public var shortcut: ShortcutSpec {
+        didSet { defaults.set(shortcut.rawValue, forKey: Key.shortcut.rawValue) }
     }
 
     /// nil when unassigned (the default).
-    public var persistentShortcut: PersistentShortcut? {
-        get { PersistentShortcut(encoded: defaults.string(forKey: Key.persistentShortcut.rawValue) ?? "") }
-        set { defaults.set(newValue?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
+    @Published public var persistentShortcut: PersistentShortcut? {
+        didSet { defaults.set(persistentShortcut?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
     }
 
-    public var appearanceMode: AppearanceMode {
-        get { AppearanceMode(rawValue: defaults.string(forKey: Key.appearanceMode.rawValue) ?? "") ?? .appIcons }
-        set { defaults.set(newValue.rawValue, forKey: Key.appearanceMode.rawValue) }
+    @Published public var appearanceMode: AppearanceMode {
+        didSet { defaults.set(appearanceMode.rawValue, forKey: Key.appearanceMode.rawValue) }
     }
 
-    public var includeOtherSpaces: Bool {
-        get { defaults.bool(forKey: Key.includeOtherSpaces.rawValue) }
-        set { defaults.set(newValue, forKey: Key.includeOtherSpaces.rawValue) }
+    @Published public var includeOtherSpaces: Bool {
+        didSet { defaults.set(includeOtherSpaces, forKey: Key.includeOtherSpaces.rawValue) }
     }
 
-    public var includeOtherDisplays: Bool {
-        get { defaults.bool(forKey: Key.includeOtherDisplays.rawValue) }
-        set { defaults.set(newValue, forKey: Key.includeOtherDisplays.rawValue) }
+    @Published public var includeOtherDisplays: Bool {
+        didSet { defaults.set(includeOtherDisplays, forKey: Key.includeOtherDisplays.rawValue) }
     }
 
-    public var showTabCounts: Bool {
-        get { defaults.bool(forKey: Key.showTabCounts.rawValue) }
-        set { defaults.set(newValue, forKey: Key.showTabCounts.rawValue) }
+    @Published public var showTabCounts: Bool {
+        didSet { defaults.set(showTabCounts, forKey: Key.showTabCounts.rawValue) }
     }
 
-    public var showMenuBarItem: Bool {
-        get { defaults.bool(forKey: Key.showMenuBarItem.rawValue) }
-        set { defaults.set(newValue, forKey: Key.showMenuBarItem.rawValue) }
+    @Published public var showMenuBarItem: Bool {
+        didSet { defaults.set(showMenuBarItem, forKey: Key.showMenuBarItem.rawValue) }
     }
 
-    public var showDockIcon: Bool {
-        get { defaults.bool(forKey: Key.showDockIcon.rawValue) }
-        set { defaults.set(newValue, forKey: Key.showDockIcon.rawValue) }
+    @Published public var showDockIcon: Bool {
+        didSet { defaults.set(showDockIcon, forKey: Key.showDockIcon.rawValue) }
     }
 
-    public var firstLaunchCompleted: Bool {
-        get { defaults.bool(forKey: Key.firstLaunchCompleted.rawValue) }
-        set { defaults.set(newValue, forKey: Key.firstLaunchCompleted.rawValue) }
+    @Published public var firstLaunchCompleted: Bool {
+        didSet { defaults.set(firstLaunchCompleted, forKey: Key.firstLaunchCompleted.rawValue) }
+    }
+
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        defaults.register(defaults: Preferences.defaultValues)
+        switcherEnabled = Self.bool(defaults, .switcherEnabled, fallback: true)
+        launchAtLogin = Self.bool(defaults, .launchAtLogin, fallback: true)
+        shortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "") ?? .commandTab
+        persistentShortcut = PersistentShortcut(
+            encoded: Self.string(defaults, .persistentShortcut) ?? "")
+        appearanceMode = AppearanceMode(
+            rawValue: Self.string(defaults, .appearanceMode) ?? "") ?? .appIcons
+        includeOtherSpaces = Self.bool(defaults, .includeOtherSpaces, fallback: true)
+        includeOtherDisplays = Self.bool(defaults, .includeOtherDisplays, fallback: true)
+        showTabCounts = Self.bool(defaults, .showTabCounts, fallback: true)
+        showMenuBarItem = Self.bool(defaults, .showMenuBarItem, fallback: false)
+        showDockIcon = Self.bool(defaults, .showDockIcon, fallback: false)
+        firstLaunchCompleted = Self.bool(defaults, .firstLaunchCompleted, fallback: false)
+    }
+
+    private static func bool(_ defaults: UserDefaults, _ key: Key, fallback: Bool) -> Bool {
+        guard let value = defaults.object(forKey: key.rawValue) else { return fallback }
+        return value as? Bool ?? fallback
+    }
+
+    private static func string(_ defaults: UserDefaults, _ key: Key) -> String? {
+        defaults.object(forKey: key.rawValue) as? String
     }
 }

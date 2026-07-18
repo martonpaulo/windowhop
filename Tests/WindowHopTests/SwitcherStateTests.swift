@@ -210,6 +210,6 @@ extension SwitcherStateTests {
         preferences.appearanceMode = .windowPreviews
         XCTAssertEqual(preferences.appearanceMode, .windowPreviews)
         defaults.set("garbage", forKey: Preferences.Key.appearanceMode.rawValue)
-        XCTAssertEqual(preferences.appearanceMode, .appIcons)
+        XCTAssertEqual(Preferences(defaults: defaults).appearanceMode, .appIcons)
     }
 }

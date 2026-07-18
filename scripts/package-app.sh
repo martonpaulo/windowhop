@@ -11,8 +11,10 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="${1:-1.0.0}"
-BUILD_NUMBER="${2:-1}"
+DEFAULT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
+DEFAULT_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Support/Info.plist)
+VERSION="${1:-$DEFAULT_VERSION}"
+BUILD_NUMBER="${2:-$DEFAULT_BUILD}"
 IDENTITY="${DEVELOPER_ID_IDENTITY:--}"
 
 swift build -c release
