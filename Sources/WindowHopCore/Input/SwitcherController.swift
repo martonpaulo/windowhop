@@ -37,6 +37,9 @@ public final class SwitcherController {
         PreviewProvider.shared.onPreview = { [weak self] id, image in
             self?.panel.updatePreview(id: id, image: image)
         }
+        PreviewProvider.shared.onPreviewUnavailable = { [weak self] id in
+            self?.panel.updatePreviewUnavailable(id: id)
+        }
     }
 
     /// Applies the enabled/permission state: the tap only exists while the switcher
@@ -390,8 +393,9 @@ public final class SwitcherController {
     private func scheduleTemporaryActivation(
         _ request: TemporaryActivationSession<AnyHashable>.Request?
     ) {
-        guard let request else { return }
-        let timer = Timer(timeInterval: TemporaryActivationSession<AnyHashable>.navigationSettleDelay,
+        guard let request,
+              let delay = Preferences.shared.navigationPreviewDelay.duration else { return }
+        let timer = Timer(timeInterval: delay,
                           repeats: false) { [weak self] _ in
             self?.temporarilyActivate(request)
         }

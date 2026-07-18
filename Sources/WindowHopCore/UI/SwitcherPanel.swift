@@ -1,5 +1,19 @@
 import AppKit
 
+/// NSView normally ignores a child's descendants outside that child's bounds.
+/// Close is intentionally centered on the canvas corner, so the document view
+/// explicitly forwards hits within its clip-safe overlay gutter.
+private final class SwitcherTilesContainerView: NSView {
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        for case let tile as SwitcherTileView in subviews.reversed() where !tile.isHidden {
+            if let hit = tile.closeControlHitTest(convert(point, to: tile)) {
+                return hit
+            }
+        }
+        return super.hitTest(point)
+    }
+}
+
 /// The switcher: a compact, non-activating panel centered on the active display.
 /// A fixed-size grid of tiles — one per window — in either App Icons or Window
 /// Previews appearance. No search or theme options. System
@@ -20,7 +34,7 @@ public final class SwitcherPanel: NSPanel {
     /// Everything inside the visible panel background (the preview grid).
     private let chromeView = NSView()
     private let scrollView = NSScrollView()
-    private let tilesContainer = NSView()
+    private let tilesContainer = SwitcherTilesContainerView()
     private let settingsButton = NSButton()
     /// Pooled tiles, reconfigured in place; index i shows item i.
     private var tilePool: [SwitcherTileView] = []
@@ -183,6 +197,14 @@ public final class SwitcherPanel: NSPanel {
         tilePool[index].setPreview(image, fadeIn: true)
     }
 
+    /// A capture could not be produced for this window and no cached image is
+    /// available. The tile keeps its fixed geometry and shows a semantic
+    /// fallback instead of looking empty or broken.
+    public func updatePreviewUnavailable(id: AnyHashable) {
+        guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
+        tilePool[index].setPreviewUnavailable()
+    }
+
     public func hide() {
         orderOut(nil)
     }
@@ -218,6 +240,7 @@ public final class SwitcherPanel: NSPanel {
         guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
         let padding = DesignTokens.panelPadding
         let spacing = DesignTokens.tileSpacing
+        let rowSpacing = DesignTokens.tileRowSpacing
         let tileSize = SwitcherTileView.Metrics.metrics(for: mode).tileSize
         let visibleFrame = screen.visibleFrame
 
@@ -231,10 +254,16 @@ public final class SwitcherPanel: NSPanel {
         columnsPerRow = columns
 
         let visibleColumns = min(tileCount, columns)
-        let gridWidth = CGFloat(visibleColumns) * tileSize.width
+        let contentGridWidth = CGFloat(visibleColumns) * tileSize.width
             + CGFloat(max(0, visibleColumns - 1)) * spacing
-        let gridHeight = CGFloat(rows) * tileSize.height
-        tilesContainer.frame = NSRect(x: 0, y: 0, width: gridWidth, height: gridHeight)
+        let contentGridHeight = CGFloat(rows) * tileSize.height
+            + CGFloat(max(0, rows - 1)) * rowSpacing
+        let leadingOverflow = DesignTokens.closeButtonLeadingOverflow
+        let topOverflow = DesignTokens.closeButtonTopOverflow
+        let documentWidth = contentGridWidth + leadingOverflow
+        let documentHeight = contentGridHeight + topOverflow
+        tilesContainer.frame = NSRect(x: 0, y: 0,
+                                      width: documentWidth, height: documentHeight)
         for (index, tile) in tilePool.prefix(tileCount).enumerated() {
             let column = index % columns
             let row = index / columns
@@ -242,32 +271,39 @@ public final class SwitcherPanel: NSPanel {
             let tilesInRow = min(columns, tileCount - row * columns)
             let rowWidth = CGFloat(tilesInRow) * tileSize.width
                 + CGFloat(max(0, tilesInRow - 1)) * spacing
-            let rowOffset = (gridWidth - rowWidth) / 2
-            tile.frame = NSRect(x: rowOffset + CGFloat(column) * (tileSize.width + spacing),
-                                y: CGFloat(rows - 1 - row) * tileSize.height,
+            let rowOffset = (contentGridWidth - rowWidth) / 2
+            tile.frame = NSRect(x: leadingOverflow + rowOffset
+                                    + CGFloat(column) * (tileSize.width + spacing),
+                                y: CGFloat(rows - 1 - row) * (tileSize.height + rowSpacing),
                                 width: tileSize.width, height: tileSize.height)
         }
 
-        let maxVisibleRows = max(1, Int((visibleFrame.height * DesignTokens.panelMaxHeightFraction
-            - padding * 2) / tileSize.height))
+        let availableHeight = visibleFrame.height * DesignTokens.panelMaxHeightFraction
+            - padding * 2
+        let maxVisibleRows = max(1, Int((availableHeight + rowSpacing)
+            / (tileSize.height + rowSpacing)))
         let visibleRows = min(rows, maxVisibleRows)
-        scrollView.frame = NSRect(x: padding, y: padding,
-                                  width: gridWidth,
-                                  height: CGFloat(visibleRows) * tileSize.height)
+        let visibleGridHeight = CGFloat(visibleRows) * tileSize.height
+            + CGFloat(max(0, visibleRows - 1)) * rowSpacing
+        scrollView.frame = NSRect(x: padding - leadingOverflow, y: padding,
+                                  width: documentWidth,
+                                  height: visibleGridHeight + topOverflow)
         // start reading from the first row (top of the grid)
-        tilesContainer.scroll(NSPoint(x: 0, y: max(0, gridHeight - scrollView.frame.height)))
+        tilesContainer.scroll(NSPoint(
+            x: 0,
+            y: max(0, contentGridHeight - visibleGridHeight)))
 
-        let panelSize = NSSize(width: gridWidth + padding * 2,
-                               height: scrollView.frame.height + padding * 2)
+        let panelSize = NSSize(width: contentGridWidth + padding * 2,
+                               height: visibleGridHeight + padding * 2)
         panelBackgroundView.frame = NSRect(origin: .zero, size: panelSize)
 
-        // Center the complete hit target on the visible panel's outer corner.
-        // The transparent host is larger only to keep that outside half visible;
-        // the panel background and its preview layout retain their exact size.
+        // Keep most of the complete hit target inside the panel with only the
+        // named overlap outside. The transparent host preserves that overflow;
+        // the panel background and preview layout retain their exact size.
         let controlSize = DesignTokens.chromeButtonHitSize
-        let overflow = controlSize / 2
-        settingsButton.frame = NSRect(x: panelSize.width - overflow,
-                                      y: panelSize.height - overflow,
+        let overflow = DesignTokens.chromeButtonOutsideOverlap
+        settingsButton.frame = NSRect(x: panelSize.width - controlSize + overflow,
+                                      y: panelSize.height - controlSize + overflow,
                                       width: controlSize, height: controlSize)
         let hostSize = NSSize(width: panelSize.width + overflow,
                               height: panelSize.height + overflow)
@@ -301,6 +337,26 @@ public final class SwitcherPanel: NSPanel {
 
     func tileFrameForTesting(at index: Int) -> NSRect? {
         index >= 0 && index < visibleTileCount ? tilePool[index].frame : nil
+    }
+
+    func tileForTesting(at index: Int) -> SwitcherTileView? {
+        index >= 0 && index < visibleTileCount ? tilePool[index] : nil
+    }
+
+    func closeFrameForTesting(at index: Int) -> NSRect? {
+        guard let tile = tileForTesting(at: index) else { return nil }
+        return tile.convert(tile.closeFrameForTesting, to: hostView)
+    }
+
+    /// Explicit offscreen-render hook used by the documentation harness.
+    /// Production close visibility remains hover-driven.
+    public func prepareCloseForRendering(at index: Int?) {
+        for tile in tilePool.prefix(visibleTileCount) {
+            tile.prepareCloseControlForRendering(visible: false)
+        }
+        if let index {
+            tileForTesting(at: index)?.prepareCloseControlForRendering(visible: true)
+        }
     }
 
     var settingsButtonFrameForTesting: NSRect { settingsButton.frame }

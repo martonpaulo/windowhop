@@ -63,8 +63,10 @@ through plain AppKit.
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
 4. `TemporaryActivationSession` keeps four identities separate: origin, targeted,
-   temporarily active, and committed. Target changes settle for 0.18 seconds before AX
-   activation, so fast traversal never raises every intermediate window. The store keeps
+   temporarily active, and committed. The `Preferences` dwell preset is the single source
+   of truth: Off disables temporary activation; Short, Default (700 ms), and Long schedule
+   one cancellable session timer. Target changes replace the pending request, so an expired
+   request can never raise a stale intermediate window. The store keeps
    processing AX events but freezes MRU history until the final target is committed;
    cancellation raises the exact origin again when it still exists.
 5. The switcher list is **frozen at session start**; store changes while open only remove
@@ -81,8 +83,9 @@ applies on the next session, no restart):
 - **App Icons** (default): a large application icon dominates a compact tile.
 - **Window Previews**: an aspect-fit window snapshot with the app icon as a
   bottom-right badge overlapping the fixed preview canvas by the same amount on both
-  edges. Until a preview arrives (or when one is unavailable), a quiet placeholder
-  remains inside that canvas while the badge stays at the same corner. Every preview
+  edges. Until a preview arrives, a subtle labelled loading state remains inside that
+  canvas; a failed first capture becomes a labelled unavailable state while the badge
+  stays at the same corner. Every preview
   container shares the aspect ratio of the display the switcher is presented
   on, so all cards have identical dimensions; the snapshot centers inside with
   transparent letterboxing (whole window visible, never cropped or stretched),
@@ -91,16 +94,21 @@ applies on the next session, no restart):
 Every tile keeps a 13 pt title and the reserved 11 pt tab-count line so nothing
 shifts as data arrives (all dimensions from `UI/DesignTokens.swift`). Titles
 wrap to two lines; a single-line title centers vertically in the same fixed
-zone. Preview cards use one horizontal spacing token and a three-level outline
-hierarchy: subtle when unselected, restrained while hovered or temporarily active, and
-one stronger blue outline on the selected target that visually replaces the neutral
-outline. Selection surrounds only the preview canvas
+zone. Horizontal and vertical spacing each have one shared token; the latter separates
+the complete card footprint, including overlays, title, and metadata. Preview states
+share one outline implementation: subtle when unselected, restrained while hovered or
+temporarily active, and one 4 pt AppKit semantic focus ring on the selected target that
+replaces the neutral outline. App Icons has no neutral border and uses the native
+switcher's soft rounded background for selected and hovered states. Selection surrounds
+only the fixed content canvas
 — the title stays outside — and every overlay is excluded from layout measurement.
 Hovering a tile reveals an overlay close control (routed through the same
-confirmation as ⌫; also a VoiceOver custom action). A compact Settings control
-(⌘, works without a pointer) has its center aligned to the panel's top-right corner, so
-half of its hit target remains outside the visible panel. A transparent host preserves
-that outside area; the control reserves no chrome row and cannot change the visible
+confirmation as ⌫; also a VoiceOver custom action). Its center equals the canvas's
+top-left point; the scroll document reuses the panel's existing padding as a clip-safe,
+hit-testable overflow gutter, so the card and panel do not grow. A compact Settings
+control (⌘, works without a pointer) keeps most of its 44 pt target inside the panel and
+10 pt outside its top-right corner. A transparent host preserves that outside area;
+the control reserves no chrome row and cannot change the visible
 panel's centering or dimensions. On macOS 26+ the panel
 background is the system glass material (NSGlassEffectView, the native
 switcher's look); older systems use the HUD visual-effect material. Tiles wrap
@@ -142,10 +150,12 @@ Source images aspect-fit and center inside a display-ratio canvas with transpare
 letterboxing. The app badge, Close control, outline, selection indicator, shadow, hit testing,
 and title position all anchor to that canvas rather than the fitted source-image bounds.
 
-While a window has no snapshot, the tile shows a quiet placeholder card
+While a window has no snapshot, the tile shows a quiet “Loading preview…” state
 (quaternary system fill) under the same corner-aligned app badge, and the first capture
-fades in over it (Reduce Motion disables the fade) — constant geometry, no icon movement,
-no flash.
+fades in over it (Reduce Motion disables the fade). If acquisition, matching, or capture
+fails and no cache exists, the same canvas changes to “Preview unavailable”; cached
+previews are never replaced by a failure. Both paths keep constant geometry, with no
+icon, outline, or title movement.
 
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never
@@ -199,6 +209,13 @@ changes nothing. The appcast lives at
 `https://raw.githubusercontent.com/martonpaulo/windowhop/main/appcast.xml`; archives are
 EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI secret).
 Update checks are the app's only network activity.
+
+Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
+requires an Apple-issued Developer ID Application identity plus Apple ID notarization
+credentials, submits both the app archive and final DMG with `notarytool --wait`, staples
+and validates both tickets, and runs `codesign` and Gatekeeper assessment before the
+release or appcast can be published. Local packages may remain ad-hoc signed and skip
+notarization explicitly.
 
 ## Public-API replacements for AltTab's private calls
 

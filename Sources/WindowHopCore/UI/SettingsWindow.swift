@@ -212,6 +212,20 @@ struct AppearancePane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+            Section {
+                Picker("Preview selected window", selection: $preferences.navigationPreviewDelay) {
+                    ForEach(NavigationPreviewDelay.allCases) { delay in
+                        Text(delay.displayName).tag(delay)
+                    }
+                }
+                .pickerStyle(.menu)
+            } header: {
+                Text("Navigation Preview")
+            } footer: {
+                Text("After you pause on a window, WindowHop can show it without committing the switch. Confirm keeps it active; cancel restores the original window.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
             // this section is always present so the window height never jumps
             // when the appearance mode changes
             Section {
@@ -250,8 +264,11 @@ struct AppearancePane: View {
             }
         }
         .formStyle(.grouped)
-        // fixed pane height: swapping modes must not resize the Settings window
-        .frame(width: paneWidth, height: 360)
+        // fixed minimum pane height: swapping modes must not resize the Settings
+        // window, while larger accessibility text can still request more space.
+        .frame(width: paneWidth)
+        .frame(minHeight: 450)
+        .fixedSize(horizontal: true, vertical: false)
     }
 }
 

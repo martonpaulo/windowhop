@@ -18,6 +18,36 @@ public enum AppearanceMode: String, CaseIterable, Identifiable {
     }
 }
 
+/// User-facing dwell presets for showing a targeted window before a switch is
+/// committed. Raw milliseconds stay an implementation detail; `off` disables
+/// temporary activation without changing confirmation or cancellation.
+public enum NavigationPreviewDelay: String, CaseIterable, Identifiable {
+    case off
+    case short
+    case standard
+    case long
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .off: return "Off"
+        case .short: return "Short"
+        case .standard: return "Default"
+        case .long: return "Long"
+        }
+    }
+
+    public var duration: TimeInterval? {
+        switch self {
+        case .off: return nil
+        case .short: return 0.35
+        case .standard: return 0.7
+        case .long: return 1.2
+        }
+    }
+}
+
 /// All WindowHop settings with their defaults. This observable model is the
 /// single runtime source of truth; UserDefaults is only its persistence layer.
 /// The store is injectable for deterministic migration and persistence tests.
@@ -30,6 +60,7 @@ public final class Preferences: ObservableObject {
         case shortcut
         case persistentShortcut
         case appearanceMode
+        case navigationPreviewDelay
         case includeOtherSpaces
         case includeOtherDisplays
         case showTabCounts
@@ -45,6 +76,7 @@ public final class Preferences: ObservableObject {
         // unassigned by default: assigning a global chord must be a deliberate choice
         Key.persistentShortcut.rawValue: "",
         Key.appearanceMode.rawValue: AppearanceMode.appIcons.rawValue,
+        Key.navigationPreviewDelay.rawValue: NavigationPreviewDelay.standard.rawValue,
         Key.includeOtherSpaces.rawValue: true,
         Key.includeOtherDisplays.rawValue: true,
         Key.showTabCounts.rawValue: true,
@@ -74,6 +106,13 @@ public final class Preferences: ObservableObject {
 
     @Published public var appearanceMode: AppearanceMode {
         didSet { defaults.set(appearanceMode.rawValue, forKey: Key.appearanceMode.rawValue) }
+    }
+
+    @Published public var navigationPreviewDelay: NavigationPreviewDelay {
+        didSet {
+            defaults.set(navigationPreviewDelay.rawValue,
+                         forKey: Key.navigationPreviewDelay.rawValue)
+        }
     }
 
     @Published public var includeOtherSpaces: Bool {
@@ -110,6 +149,8 @@ public final class Preferences: ObservableObject {
             encoded: Self.string(defaults, .persistentShortcut) ?? "")
         appearanceMode = AppearanceMode(
             rawValue: Self.string(defaults, .appearanceMode) ?? "") ?? .appIcons
+        navigationPreviewDelay = NavigationPreviewDelay(
+            rawValue: Self.string(defaults, .navigationPreviewDelay) ?? "") ?? .standard
         includeOtherSpaces = Self.bool(defaults, .includeOtherSpaces, fallback: true)
         includeOtherDisplays = Self.bool(defaults, .includeOtherDisplays, fallback: true)
         showTabCounts = Self.bool(defaults, .showTabCounts, fallback: true)

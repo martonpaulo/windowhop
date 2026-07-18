@@ -57,6 +57,7 @@ enum DebugHarness {
             + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
             + "frame \(overflowPanel.frame)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            overflowPanel.prepareCloseForRendering(at: nil)
             if let contentView = overflowPanel.contentView {
                 write(contentView, "switcher-overflow")
             }
@@ -71,14 +72,18 @@ enum DebugHarness {
             previewPanel.appearance = NSAppearance(named: appearanceName)
             let previewItems = demoItems()
             previewPanel.show(items: previewItems, selectedIndex: 1)
-            for (index, item) in previewItems.enumerated() where index != 4 {
-                // one tile (index 4) is deliberately left without a preview to show
-                // the placeholder fallback; the rest get varied aspect ratios
+            for (index, item) in previewItems.enumerated() where index != 4 && index != 5 {
+                // Index 4 is an explicit unavailable fallback; index 5 remains
+                // loading. The rest get varied source aspect ratios.
                 let wide = index % 3 != 2
                 let size = wide ? NSSize(width: 456, height: 286) : NSSize(width: 240, height: 380)
                 previewPanel.updatePreview(id: item.id, image: syntheticWindowImage(size: size, seed: index))
             }
+            previewPanel.updatePreviewUnavailable(id: previewItems[4].id)
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                // The documented loaded-preview screenshot also exercises the
+                // exact top-left close geometry without private data or annotations.
+                previewPanel.prepareCloseForRendering(at: 2)
                 if let contentView = previewPanel.contentView {
                     write(contentView, "switcher-previews-\(suffix)")
                 }
@@ -103,6 +108,7 @@ enum DebugHarness {
             pending += 1
             // give SwiftUI a few runloop turns to lay out before rasterizing
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                panel.prepareCloseForRendering(at: nil)
                 if let contentView = panel.contentView {
                     write(contentView, "switcher-\(suffix)")
                 }

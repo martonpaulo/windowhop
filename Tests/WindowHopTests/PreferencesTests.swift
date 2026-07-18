@@ -1,4 +1,5 @@
 import XCTest
+import Combine
 @testable import WindowHopCore
 
 final class PreferencesTests: XCTestCase {
@@ -24,6 +25,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.shortcut, .commandTab)
         XCTAssertNil(preferences.persistentShortcut)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
+        XCTAssertEqual(preferences.navigationPreviewDelay, .standard)
+        XCTAssertEqual(preferences.navigationPreviewDelay.duration, 0.7)
         XCTAssertTrue(preferences.includeOtherSpaces)
         XCTAssertTrue(preferences.includeOtherDisplays)
         XCTAssertTrue(preferences.showTabCounts)
@@ -39,6 +42,7 @@ final class PreferencesTests: XCTestCase {
         preferences.persistentShortcut = PersistentShortcut(
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.appearanceMode = .windowPreviews
+        preferences.navigationPreviewDelay = .long
         preferences.includeOtherSpaces = false
         preferences.includeOtherDisplays = false
         preferences.showTabCounts = false
@@ -53,6 +57,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.shortcut, .optionTab)
         XCTAssertEqual(restored.persistentShortcut, preferences.persistentShortcut)
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
+        XCTAssertEqual(restored.navigationPreviewDelay, .long)
         XCTAssertFalse(restored.includeOtherSpaces)
         XCTAssertFalse(restored.includeOtherDisplays)
         XCTAssertFalse(restored.showTabCounts)
@@ -80,6 +85,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(migrated.shortcut, .optionTab)
         XCTAssertEqual(migrated.persistentShortcut, openShortcut)
         XCTAssertEqual(migrated.appearanceMode, .windowPreviews)
+        XCTAssertEqual(migrated.navigationPreviewDelay, .standard,
+                       "existing users inherit the documented 700 ms default")
         XCTAssertFalse(migrated.showTabCounts)
         XCTAssertTrue(migrated.showMenuBarItem)
     }
@@ -91,12 +98,14 @@ final class PreferencesTests: XCTestCase {
 
     func testCorruptAppearanceAndBooleanValuesFallBackToDocumentedDefaults() {
         defaults.set("obsolete-mode", forKey: Preferences.Key.appearanceMode.rawValue)
+        defaults.set("obsolete-delay", forKey: Preferences.Key.navigationPreviewDelay.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.includeOtherSpaces.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.showMenuBarItem.rawValue)
 
         let restored = Preferences(defaults: defaults)
 
         XCTAssertEqual(restored.appearanceMode, .appIcons)
+        XCTAssertEqual(restored.navigationPreviewDelay, .standard)
         XCTAssertTrue(restored.includeOtherSpaces)
         XCTAssertFalse(restored.showMenuBarItem)
     }
@@ -104,5 +113,26 @@ final class PreferencesTests: XCTestCase {
     func testCorruptPersistentShortcutRestoresUnassignedDefault() {
         defaults.set("broken-shortcut", forKey: Preferences.Key.persistentShortcut.rawValue)
         XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
+    }
+
+    func testNavigationPreviewDelayPresetsAvoidRawMillisecondsInSettings() {
+        XCTAssertNil(NavigationPreviewDelay.off.duration)
+        XCTAssertEqual(NavigationPreviewDelay.short.duration, 0.35)
+        XCTAssertEqual(NavigationPreviewDelay.standard.duration, 0.7)
+        XCTAssertEqual(NavigationPreviewDelay.long.duration, 1.2)
+        XCTAssertEqual(NavigationPreviewDelay.allCases.map(\.displayName),
+                       ["Off", "Short", "Default", "Long"])
+    }
+
+    func testNavigationPreviewDelayPublishesRuntimeUpdatesImmediately() {
+        var observed: [NavigationPreviewDelay] = []
+        let observation = preferences.$navigationPreviewDelay.sink {
+            observed.append($0)
+        }
+
+        preferences.navigationPreviewDelay = .short
+
+        XCTAssertEqual(observed, [.standard, .short])
+        withExtendedLifetime(observation) {}
     }
 }

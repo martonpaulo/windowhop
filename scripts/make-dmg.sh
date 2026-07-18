@@ -50,11 +50,11 @@ if xcrun --find Rez >/dev/null 2>&1 && command -v SetFile >/dev/null 2>&1; then
     rm -f artifacts/dmg-file-icon.icns artifacts/dmg-icon.rsrc
 fi
 
-# sign with the stable WindowHop identity when the keychain has it (CI and
-# release machines); unsigned DMGs remain valid for local inspection
-if security find-identity -v -p codesigning 2>/dev/null | grep -q '"WindowHop Code Signing"'; then
-    codesign --force --sign "WindowHop Code Signing" "$DMG"
-    echo "signed with WindowHop Code Signing"
+# Official CI passes its validated Developer ID identity explicitly. Local
+# builds remain unsigned unless the caller intentionally provides an identity.
+if [ -n "${DEVELOPER_ID_IDENTITY:-}" ]; then
+    codesign --force --timestamp --sign "$DEVELOPER_ID_IDENTITY" "$DMG"
+    echo "signed with $DEVELOPER_ID_IDENTITY"
 fi
 
 hdiutil verify "$DMG" -quiet && echo "hdiutil verify: ok"

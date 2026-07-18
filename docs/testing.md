@@ -3,7 +3,7 @@
 ## Automated
 
 ```sh
-swift test           # 133 unit tests
+swift test           # 141 unit tests
 scripts/validate.sh  # repository invariants (identifiers, no private APIs,
                      # ScreenCaptureKit confinement, updater config)
 ```
@@ -17,8 +17,11 @@ persistent-shortcut matching/validation/encoding, settings defaults and persiste
 Temporary-activation coverage includes confirm/cancel, exact-origin restoration,
 closed origin/target handling, rapid navigation, same-application identities, and MRU
 suppression until commit. Layout tests pin fixed-canvas overlay alignment across source
-aspect ratios, the three outline strengths (including exactly one selected outline),
-uniform spacing, stable loading badges, and corner-centered overlay-only Settings geometry.
+aspect ratios, one shared semantic selected outline across loaded, loading, and
+unavailable previews, borderless background selection for App Icons, uniform row and
+column spacing, explicit loading and
+unavailable states, exact Close-to-canvas-origin geometry, clip-safe overlay bounds, and
+overlay-only Settings geometry.
 The pure Core layer makes these deterministic; the Settings-entry tests drive real
 NSWindow notifications against a fresh store.
 
@@ -58,7 +61,8 @@ Core interaction
 - [ ] Holding Tab autorepeats; navigation wraps; arrows move intuitively
 - [ ] Escape cancels and focus stays put; Return activates; click activates; outside click cancels
 - [ ] Pausing on a target temporarily raises it behind the still-interactive panel; fast
-      key repeat skips intermediate windows; Escape restores the exact origin window
+      key repeat skips intermediate windows; the Appearance dwell presets Off/Short/
+      Default (700 ms)/Long apply immediately; Escape restores the exact origin window
 - [ ] Confirming a temporarily active target keeps it active and records it once in MRU;
       closing the target selects a neighboring entry; closing the origin makes cancel a safe no-op
 - [ ] Native macOS switcher never appears while WindowHop is enabled; appears again when
@@ -98,11 +102,15 @@ Appearance & previews
 - [ ] With permission granted: snapshots aspect-fit without distortion, tall/wide
       windows letterbox, the icon badge overlaps the fixed canvas corner, a window closed
       mid-capture is removed safely, and switching back to App Icons applies on the next session
-- [ ] Every preview has a subtle outline; hover/temporary activation is restrained; the
-      selected target has exactly one strong blue outline over both bright and dark snapshots
+- [ ] Loaded, loading, and unavailable previews share exactly one semantic selected focus
+      ring in Light and Dark Mode over bright and dark snapshots; the selected ring replaces
+      the subtle neutral outline; App Icons has no neutral border and uses a rounded selection
+      background instead of an outline
 - [ ] App badges align bottom-right and Close controls top-left across wide/tall sources;
-      loading/fallback cards keep the badge in that same position; the global Settings
-      control is centered over the panel's top-right corner without shifting the grid
+      the Close center equals the loaded canvas's top-left point and remains fully visible
+      and clickable; loading and “Preview unavailable” cards keep the badge fixed; the
+      global Settings control keeps most of its target inside the top-right corner without
+      shifting the grid
 - [ ] No capture activity while the switcher is closed; cached previews remain memory-only
       and appear immediately at the next open before fresh captures replace them
 

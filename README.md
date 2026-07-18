@@ -11,19 +11,19 @@ macOS's Command-Tab switches between *apps*. WindowHop switches between *windows
 every window gets its own large tile, and releasing Command lands you on the exact
 window you picked — even on another Space or display. Free, open source, native.
 
-![The WindowHop switcher](docs/screenshots/switcher-light.png)
+![WindowHop App Icons in Light Mode with a rounded selection background](docs/screenshots/switcher-light.png)
 
 Prefer window snapshots? Turn on the optional **Window Previews** appearance:
 
-![Window Previews appearance](docs/screenshots/switcher-previews-light.png)
+![Window Previews in Light Mode with a semantic selected focus ring, corner badges, a complete Close control, and loading and unavailable states](docs/screenshots/switcher-previews-light.png)
 
 ## Download and install
 
-1. **[⬇ Download WindowHop-1.1.1.dmg](https://github.com/martonpaulo/windowhop/releases/latest)**
+1. **[⬇ Download WindowHop-1.1.2.dmg](https://github.com/martonpaulo/windowhop/releases/latest)**
 2. Open the DMG and **drag WindowHop into Applications**.
-3. First launch: **right-click WindowHop.app → Open → Open**. macOS asks once
-   because releases aren't notarized by Apple (see Known limitations).
-4. Grant the one permission it needs:
+3. Open WindowHop from Applications. Official releases are Developer ID signed,
+   notarized by Apple, and validated by Gatekeeper before publication.
+4. Grant the one required permission:
    **System Settings → Privacy & Security → Accessibility → enable WindowHop.**
    The welcome window takes you there. That's it — press ⌘⇥.
 
@@ -42,14 +42,16 @@ Prefer window snapshots? Turn on the optional **Window Previews** appearance:
 | **⌘,** | Open WindowHop Settings |
 | **Click** | Switch to a window; click outside cancels |
 
-Hover a tile for a close button. The global Settings control is centered over the
-panel's top-right corner, without moving the previews. The close dialog can also
+Hover a tile for a close button centered on that card's top-left canvas corner.
+The global Settings control overlaps the panel's top-right corner with most of its
+hit target inside, without moving the previews. The close dialog can also
 **Quit** the app — and offers a separately confirmed **Force Quit**
 if an app refuses to quit. Closing always preserves the app's own unsaved-changes
 questions.
 
 Pause on a tile while navigating and WindowHop temporarily brings that window forward
-behind the switcher. Fast traversal is debounced, so intermediate windows are skipped.
+behind the switcher after the configured dwell. Fast traversal cancels pending work, so
+intermediate windows are skipped.
 Confirming keeps the targeted window active; cancelling restores the exact origin window
 when it still exists.
 
@@ -72,14 +74,19 @@ Previews are generated on your Mac and kept only in memory, never written to dis
 transmitted. A cached preview can appear immediately when the switcher opens; a fresh
 capture replaces it in place when available. Loading and unavailable cards keep the
 same fixed canvas, outline, title position, and bottom-right app badge, so nothing jumps.
+Loading cards say “Loading preview…”; a failed first capture changes in place to the
+secondary “Preview unavailable” state without exposing a technical error.
+App Icons stays borderless and uses a soft rounded selection background; Window Previews
+uses one semantic macOS focus ring that replaces its subtle neutral outline.
 
 ## Settings
 
 Native multi-pane Settings — General, Appearance, Updates, About. General exposes every
 existing user-configurable behavior: enablement, launch at login, both shortcuts,
-Space/display inclusion, and menu bar/Dock visibility. Appearance owns the presentation
-and tab-count options; Updates owns automatic update checks. Invalid stored values fall
-back to the documented defaults. Launching
+Space/display inclusion, and menu bar/Dock visibility. Appearance owns presentation,
+tab counts, and the navigation-preview dwell: Off, Short, Default (700 ms), or Long.
+Updates owns automatic update checks. Invalid stored values fall back to documented
+defaults. Launching
 WindowHop again (Finder, Spotlight, Dock) opens Settings even with the menu bar
 item and Dock icon hidden (both hidden by default).
 
@@ -92,9 +99,9 @@ using synthetic titles and preview content—no personal windows or Screen Recor
 
 ![WindowHop switcher in Dark Mode](docs/screenshots/switcher-dark.png)
 
-![Window Previews in Dark Mode with a selected preview, overlapping app badges, and a loading placeholder](docs/screenshots/switcher-previews-dark.png)
+![Window Previews in Dark Mode with one selected loaded preview, corner badges, a loaded-preview Close control, and loading and unavailable states](docs/screenshots/switcher-previews-dark.png)
 
-![WindowHop multi-row overflow layout](docs/screenshots/switcher-overflow.png)
+![WindowHop multi-row layout with consistent row spacing and selection](docs/screenshots/switcher-overflow.png)
 
 ![Settings — Appearance](docs/screenshots/settings-appearance.png)
 
@@ -128,8 +135,7 @@ System Settings → Privacy & Security → Accessibility (and Screen Recording).
   it fresh. Also make sure WindowHop was dragged into Applications with Finder
   (running it straight from the DMG or Downloads triggers macOS App
   Translocation, where no grant can persist — WindowHop warns about this).
-  Since 1.0.2, releases carry a stable signing identity, so the grant survives
-  updates.
+  Official releases use one stable Developer ID identity so the grant survives updates.
 - **Previews are icons instead of snapshots** — grant Screen Recording in
   System Settings → Privacy & Security, then relaunch WindowHop.
 - **A window is missing** — minimized windows, hidden apps, and floating
@@ -154,9 +160,6 @@ Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
 
 ## Known limitations
 
-- **Not notarized** (requires a paid Apple Developer account), so macOS shows a
-  one-time warning on first launch. The release workflow signs and notarizes
-  automatically once Developer ID credentials are configured.
 - **Windows on unvisited Spaces** appear only after that Space is visited once
   while WindowHop runs — a limitation of macOS's public Accessibility API
   (WindowHop deliberately uses no private APIs, unlike AltTab).

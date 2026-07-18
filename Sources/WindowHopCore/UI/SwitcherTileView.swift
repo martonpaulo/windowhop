@@ -49,8 +49,9 @@ final class SwitcherTileView: NSView {
     private var metrics = Metrics.appIcons
     private var mode = AppearanceMode.appIcons
     private var hasPreview = false
+    private var previewIsUnavailable = false
 
-    private let selectionView = NSView()
+    private let selectionBackgroundView = NSView()
     private let iconView = NSImageView()
     private let previewView = NSImageView()
     /// Carries the snapshot's soft shadow: the shadow path follows the
@@ -59,15 +60,18 @@ final class SwitcherTileView: NSView {
     private let previewShadowView = NSView()
     /// Canvas-aligned outline above the image. It never participates in layout,
     /// so changing state cannot resize or move a card.
-    private let previewOutlineView = NSView()
+    private let cardOutlineView = NSView()
     /// Rounded card shown while a window has no snapshot yet, so the tile's
     /// geometry never jumps when the first capture fades in.
     private let placeholderView = NSView()
+    private let unavailableSymbolView = NSImageView()
+    private let unavailableLabel = NSTextField(labelWithString: "Preview unavailable")
     private let badgeIconView = NSImageView()
     private let titleLabel = NSTextField(labelWithString: "")
     private let tabsLabel = NSTextField(labelWithString: "")
     private let closeButton = NSButton()
     private var trackingArea: NSTrackingArea?
+    private var suppressHoverForRendering = false
 
     var isSelected = false {
         didSet { applySelectionStyle() }
@@ -85,13 +89,27 @@ final class SwitcherTileView: NSView {
     /// stale-state regression coverage; pooled tiles must never carry a
     /// previous window's image).
     var showsPreviewImage: Bool { hasPreview && !previewView.isHidden && previewView.image != nil }
-    var previewCanvasFrameForTesting: NSRect { previewOutlineView.frame }
+    var previewCanvasFrameForTesting: NSRect { cardOutlineView.frame }
     var previewImageFrameForTesting: NSRect { previewView.frame }
     var badgeFrameForTesting: NSRect { badgeIconView.frame }
     var closeFrameForTesting: NSRect { closeButton.frame }
-    var previewOutlineWidthForTesting: CGFloat { previewOutlineView.layer?.borderWidth ?? 0 }
-    var previewSelectionBackingAlphaForTesting: CGFloat {
-        selectionView.layer?.backgroundColor?.alpha ?? 0
+    var previewOutlineWidthForTesting: CGFloat { cardOutlineView.layer?.borderWidth ?? 0 }
+    var previewOutlineCornerRadiusForTesting: CGFloat {
+        cardOutlineView.layer?.cornerRadius ?? 0
+    }
+    var previewOutlineColorForTesting: NSColor? {
+        cardOutlineView.layer?.borderColor.map(NSColor.init(cgColor:)) ?? nil
+    }
+    var showsCardOutlineForTesting: Bool { !cardOutlineView.isHidden }
+    var selectionBackgroundAlphaForTesting: CGFloat {
+        selectionBackgroundView.layer?.backgroundColor?.alpha ?? 0
+    }
+    var showsUnavailableStateForTesting: Bool {
+        previewIsUnavailable && !unavailableLabel.isHidden && !unavailableSymbolView.isHidden
+    }
+    var showsLoadingStateForTesting: Bool {
+        !previewIsUnavailable && !hasPreview
+            && !unavailableLabel.isHidden && !unavailableSymbolView.isHidden
     }
 
     /// Tiles are pooled and reconfigured (never recreated per session) so the
@@ -99,10 +117,10 @@ final class SwitcherTileView: NSView {
     init() {
         super.init(frame: NSRect(origin: .zero, size: Metrics.appIcons.tileSize))
 
-        selectionView.wantsLayer = true
-        selectionView.layer?.cornerRadius = DesignTokens.tileSelectionCornerRadius
-        selectionView.layer?.cornerCurve = .continuous
-        addSubview(selectionView)
+        selectionBackgroundView.wantsLayer = true
+        selectionBackgroundView.layer?.cornerRadius = DesignTokens.iconSelectionCornerRadius
+        selectionBackgroundView.layer?.cornerCurve = .continuous
+        addSubview(selectionBackgroundView)
 
         placeholderView.wantsLayer = true
         placeholderView.layer?.cornerRadius = DesignTokens.previewCornerRadius
@@ -123,9 +141,24 @@ final class SwitcherTileView: NSView {
         previewView.layer?.masksToBounds = true
         addSubview(previewView)
 
-        previewOutlineView.wantsLayer = true
-        previewOutlineView.layer?.cornerCurve = .continuous
-        addSubview(previewOutlineView)
+        unavailableSymbolView.image = NSImage(
+            systemSymbolName: "rectangle.slash",
+            accessibilityDescription: "Preview unavailable")?
+            .withSymbolConfiguration(.init(
+                pointSize: DesignTokens.previewUnavailableSymbolSize,
+                weight: .regular))
+        unavailableSymbolView.contentTintColor = DesignTokens.previewUnavailableSymbolColor
+        unavailableSymbolView.imageScaling = .scaleProportionallyDown
+        addSubview(unavailableSymbolView)
+
+        unavailableLabel.font = .systemFont(ofSize: DesignTokens.previewUnavailableFontSize)
+        unavailableLabel.textColor = .secondaryLabelColor
+        unavailableLabel.alignment = .center
+        addSubview(unavailableLabel)
+
+        cardOutlineView.wantsLayer = true
+        cardOutlineView.layer?.cornerCurve = .continuous
+        addSubview(cardOutlineView)
 
         iconView.imageScaling = .scaleProportionallyUpOrDown
         iconView.wantsLayer = true
@@ -204,18 +237,23 @@ final class SwitcherTileView: NSView {
         // a pooled tile may be re-representing another window: any in-flight
         // crossfade belongs to the previous occupant, never the next one
         previewView.layer?.removeAllAnimations()
+        previewIsUnavailable = false
         setPreview(preview)
         applySelectionStyle()
     }
 
     /// Applies (or clears) the window preview. While a window has no snapshot
-    /// the tile shows a quiet placeholder card under the corner badge, and the first
+    /// the tile shows a labelled loading card under the corner badge, and the first
     /// capture fades in over it. When a fresh capture replaces a cached
     /// snapshot mid-session it crossfades in place — same geometry, no blank
     /// frame, no layout shift. Reduce Motion disables both animations.
     func setPreview(_ image: NSImage?, fadeIn: Bool = false) {
         let hadPreview = hasPreview
         hasPreview = mode == .windowPreviews && image != nil
+        if hasPreview {
+            previewIsUnavailable = false
+        }
+        updatePlaceholderContent()
         let animatable = fadeIn && hasPreview && window != nil && !isHidden
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if animatable, hadPreview {
@@ -244,6 +282,15 @@ final class SwitcherTileView: NSView {
         needsLayout = true
     }
 
+    /// Marks a first capture as unavailable without disturbing a cached or
+    /// loaded preview. The fixed canvas, badge, title, and outline never move.
+    func setPreviewUnavailable() {
+        guard mode == .windowPreviews, !hasPreview else { return }
+        previewIsUnavailable = true
+        updatePlaceholderContent()
+        needsLayout = true
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
@@ -255,14 +302,9 @@ final class SwitcherTileView: NSView {
                                 y: size.height - DesignTokens.contentTopInset - contentHeight,
                                 width: size.width - DesignTokens.tileLabelInset * 2,
                                 height: contentHeight)
-        // the selection surrounds only the content, concentric with its corner
-        // radius; the title zone below stays outside the highlight
-        selectionView.frame = contentBox.insetBy(dx: -DesignTokens.selectionPadding,
-                                                 dy: -DesignTokens.selectionPadding)
-        selectionView.layer?.cornerRadius = mode == .windowPreviews
-            ? DesignTokens.previewCornerRadius + DesignTokens.selectionPadding
-            : DesignTokens.tileSelectionCornerRadius
-        var closeAnchor = contentBox
+        selectionBackgroundView.frame = contentBox.insetBy(
+            dx: -DesignTokens.iconSelectionPadding,
+            dy: -DesignTokens.iconSelectionPadding)
         if hasPreview {
             // aspect-fit inside the fixed display-aspect container: the whole
             // window stays visible, centered, unused area transparent
@@ -275,7 +317,6 @@ final class SwitcherTileView: NSView {
                 cornerHeight: DesignTokens.previewCornerRadius, transform: nil)
             // Both overlays belong to the fixed display-aspect canvas, never
             // the source image's fitted bounds.
-            closeAnchor = contentBox
             let badge = DesignTokens.previewBadgeSize
             badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
                                          y: contentBox.minY - DesignTokens.previewOverlayOverlap,
@@ -283,7 +324,6 @@ final class SwitcherTileView: NSView {
         } else if mode == .windowPreviews {
             // placeholder card keeps the geometry stable until a snapshot fades in
             placeholderView.frame = contentBox
-            closeAnchor = contentBox
             let badge = DesignTokens.previewBadgeSize
             badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
                                          y: contentBox.minY - DesignTokens.previewOverlayOverlap,
@@ -293,18 +333,31 @@ final class SwitcherTileView: NSView {
             iconView.frame = NSRect(x: contentBox.midX - iconSize / 2,
                                     y: contentBox.midY - iconSize / 2,
                                     width: iconSize, height: iconSize)
-            closeAnchor = iconView.frame
         }
         iconView.isHidden = mode == .windowPreviews
         placeholderView.isHidden = hasPreview || mode == .appIcons
+        unavailableSymbolView.isHidden = mode != .windowPreviews || hasPreview
+        unavailableLabel.isHidden = unavailableSymbolView.isHidden
+        if !unavailableSymbolView.isHidden {
+            let symbol = DesignTokens.previewUnavailableSymbolSize
+            let labelHeight = ceil(unavailableLabel.intrinsicContentSize.height)
+            let groupHeight = symbol + DesignTokens.previewUnavailableSpacing + labelHeight
+            unavailableSymbolView.frame = NSRect(
+                x: contentBox.midX - symbol / 2,
+                y: contentBox.midY + groupHeight / 2 - symbol,
+                width: symbol,
+                height: symbol)
+            unavailableLabel.frame = NSRect(
+                x: contentBox.minX,
+                y: unavailableSymbolView.frame.minY
+                    - DesignTokens.previewUnavailableSpacing - labelHeight,
+                width: contentBox.width,
+                height: labelHeight)
+        }
         previewShadowView.isHidden = !hasPreview
-        previewOutlineView.isHidden = mode != .windowPreviews
-        previewOutlineView.frame = contentBox
-        previewOutlineView.layer?.cornerRadius = DesignTokens.previewCornerRadius
-        previewOutlineView.layer?.shadowPath = CGPath(
-            roundedRect: CGRect(origin: .zero, size: contentBox.size),
-            cornerWidth: DesignTokens.previewCornerRadius,
-            cornerHeight: DesignTokens.previewCornerRadius, transform: nil)
+        cardOutlineView.isHidden = mode == .appIcons
+        cardOutlineView.frame = contentBox
+        cardOutlineView.layer?.cornerRadius = DesignTokens.cardCornerRadius
         let labelWidth = size.width - DesignTokens.tileLabelInset * 2
         // the zone is two lines tall; a single-line title centers within it so
         // one- and two-line cards read as the same layout
@@ -318,12 +371,12 @@ final class SwitcherTileView: NSView {
                                   width: labelWidth, height: textHeight)
         tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
                                  width: labelWidth, height: DesignTokens.tabsHeight)
-        // badge-style over the content's top-left corner (Mission Control idiom),
-        // clamped inside the tile
+        // Unlike the app badge, Close is centered exactly on the fixed
+        // canvas's top-left point. Its overlay frame never participates in
+        // measurement and intentionally extends beyond the canvas.
         let button = DesignTokens.closeButtonHitSize
-        let overlap = DesignTokens.closeButtonBoundaryOverlap
-        closeButton.frame = NSRect(x: max(closeAnchor.minX - overlap, 0),
-                                   y: min(closeAnchor.maxY - button + overlap, size.height - button),
+        closeButton.frame = NSRect(x: contentBox.minX - button / 2,
+                                   y: contentBox.maxY - button / 2,
                                    width: button, height: button)
     }
 
@@ -337,32 +390,44 @@ final class SwitcherTileView: NSView {
     }
 
     private func applySelectionStyle() {
-        // neutral rounded-rect selection like the native switcher; semantic color
-        // adapts to Dark Mode and Increase Contrast. CGColor resolution must run
-        // under this view's effective appearance, whatever thread state says.
+        // Preview states share exactly one canvas outline; App Icons uses only
+        // the native-style rounded background. CGColor resolution must run
+        // under this view's effective appearance.
         effectiveAppearance.performAsCurrentDrawingAppearance {
             let emphasized = isHovered || isTemporarilyActive
-            selectionView.layer?.backgroundColor = mode == .windowPreviews
-                ? NSColor.clear.cgColor
-                : (isSelected
-                    ? DesignTokens.selectionFill.cgColor
-                    : (emphasized ? DesignTokens.temporaryTargetFill.cgColor : NSColor.clear.cgColor))
+            selectionBackgroundView.layer?.backgroundColor = mode == .appIcons
+                ? (isSelected
+                    ? DesignTokens.iconSelectionFill.cgColor
+                    : (emphasized
+                        ? DesignTokens.iconEmphasisFill.cgColor
+                        : NSColor.clear.cgColor))
+                : NSColor.clear.cgColor
             placeholderView.layer?.backgroundColor = DesignTokens.previewPlaceholderFill.cgColor
-            if mode == .windowPreviews {
-                previewOutlineView.layer?.borderColor = isSelected
-                    ? DesignTokens.previewSelectionOutline.cgColor
-                    : (emphasized
-                        ? DesignTokens.previewEmphasisOutline.cgColor
-                        : DesignTokens.previewOutline.cgColor)
-                previewOutlineView.layer?.borderWidth = isSelected
-                    ? DesignTokens.previewSelectionOutlineWidth
-                    : (emphasized
-                        ? DesignTokens.previewEmphasisOutlineWidth
-                        : DesignTokens.previewOutlineWidth)
-                previewOutlineView.layer?.shadowOpacity = 0
-            }
+            unavailableSymbolView.contentTintColor = DesignTokens.previewUnavailableSymbolColor
+            cardOutlineView.layer?.borderColor = isSelected
+                ? DesignTokens.selectionOutline.cgColor
+                : (emphasized
+                    ? DesignTokens.previewEmphasisOutline.cgColor
+                    : DesignTokens.previewOutline.cgColor)
+            cardOutlineView.layer?.borderWidth = isSelected
+                ? DesignTokens.selectionOutlineWidth
+                : (emphasized
+                    ? DesignTokens.previewEmphasisOutlineWidth
+                    : DesignTokens.previewOutlineWidth)
         }
         needsLayout = true
+    }
+
+    private func updatePlaceholderContent() {
+        let text = previewIsUnavailable ? "Preview unavailable" : "Loading preview…"
+        let symbol = previewIsUnavailable ? "rectangle.slash" : "ellipsis.rectangle"
+        unavailableLabel.stringValue = text
+        unavailableSymbolView.image = NSImage(
+            systemSymbolName: symbol,
+            accessibilityDescription: text)?
+            .withSymbolConfiguration(.init(
+                pointSize: DesignTokens.previewUnavailableSymbolSize,
+                weight: .regular))
     }
 
     /// Selection color is CGColor-backed; refresh when the appearance flips.
@@ -386,6 +451,7 @@ final class SwitcherTileView: NSView {
     }
 
     override func mouseEntered(with event: NSEvent) {
+        guard !suppressHoverForRendering else { return }
         isHovered = true
         closeButton.isHidden = false
     }
@@ -399,6 +465,21 @@ final class SwitcherTileView: NSView {
     func resetHoverState() {
         isHovered = false
         closeButton.isHidden = true
+    }
+
+    /// Offscreen render harness hook. Production visibility continues to be
+    /// driven exclusively by pointer hover and the keyboard/VoiceOver action.
+    func prepareCloseControlForRendering(visible: Bool) {
+        suppressHoverForRendering = true
+        isHovered = visible
+        closeButton.isHidden = !visible
+    }
+
+    /// Allows the document view to preserve the complete overlay hit target
+    /// even for the portion intentionally outside this tile's bounds.
+    func closeControlHitTest(_ point: NSPoint) -> NSView? {
+        guard !closeButton.isHidden, closeButton.frame.contains(point) else { return nil }
+        return closeButton
     }
 
     @objc private func closeClicked() {

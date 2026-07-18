@@ -14,10 +14,6 @@ env:
 jobs:
   release:
     runs-on: macos-latest
-    env:
-      # the secrets context is not usable in step-level `if`; hoist presence flags
-      HAS_DEVELOPER_ID: ${{ secrets.DEVELOPER_ID_CERT_P12 != '' }}
-      HAS_NOTARY_CREDENTIALS: ${{ secrets.NOTARIZATION_APPLE_ID != '' }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
@@ -37,18 +33,53 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
 
+      - name: Enforce release source and version
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" || {
+            echo "Official release tags must point at the current main commit." >&2
+            exit 1
+          }
+          PLIST_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Support/Info.plist)
+          PLIST_BUILD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" Support/Info.plist)
+          test "$PLIST_VERSION" = "${{ steps.version.outputs.version }}" || {
+            echo "Tag version does not match Support/Info.plist." >&2
+            exit 1
+          }
+          test "$PLIST_BUILD" = "${{ steps.version.outputs.build }}" || {
+            echo "Derived build number does not match Support/Info.plist." >&2
+            exit 1
+          }
+
+      - name: Require official release credentials
+        env:
+          CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
+          CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
+          NOTARY_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
+          NOTARY_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          NOTARY_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+          SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          missing=()
+          [ -n "$CERT" ] || missing+=(DEVELOPER_ID_CERT_P12)
+          [ -n "$CERT_PASSWORD" ] || missing+=(DEVELOPER_ID_CERT_PASSWORD)
+          [ -n "$NOTARY_APPLE_ID" ] || missing+=(NOTARIZATION_APPLE_ID)
+          [ -n "$NOTARY_PASSWORD" ] || missing+=(NOTARIZATION_PASSWORD)
+          [ -n "$NOTARY_TEAM_ID" ] || missing+=(NOTARIZATION_TEAM_ID)
+          [ -n "$SPARKLE_KEY" ] || missing+=(SPARKLE_PRIVATE_KEY)
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "Official release blocked: missing required secrets: ${missing[*]}" >&2
+            exit 1
+          fi
+
       # A stable signing identity keeps the app's TCC (Accessibility) grant valid
-      # across updates — ad-hoc signatures change every build and macOS treats
-      # each update as a brand-new app. The same slot accepts a real Developer ID
-      # certificate later; the self-signed public cert lives in Support/.
-      - name: Import code-signing certificate (optional)
-        if: ${{ env.HAS_DEVELOPER_ID == 'true' }}
+      # across updates. Official releases require an Apple-issued Developer ID
+      # Application certificate; ad-hoc and self-signed identities are rejected.
+      - name: Import Developer ID certificate
         env:
           CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
         run: |
-          sudo security add-trusted-cert -d -r trustRoot \
-            -k /Library/Keychains/System.keychain Support/windowhop-signing.crt || true
           KEYCHAIN=build.keychain
           security create-keychain -p ci "$KEYCHAIN"
           security default-keychain -s "$KEYCHAIN"
@@ -57,24 +88,41 @@ jobs:
           security import cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
           rm cert.p12
           security set-key-partition-list -S apple-tool:,apple: -s -k ci "$KEYCHAIN"
-          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" | awk -F'"' 'NR==1 {print $2}')
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | awk -F'"' '/Developer ID Application:/ {print $2; exit}')
+          case "$IDENTITY" in
+            "Developer ID Application:"*) ;;
+            *) echo "Official release blocked: P12 does not contain a valid Developer ID Application identity." >&2; exit 1 ;;
+          esac
           echo "DEVELOPER_ID_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
-          echo "signing as: ${IDENTITY:-'(none found; will fall back to ad-hoc)'}"
+          echo "signing as: $IDENTITY"
 
       - name: Build and package
         run: scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
 
-      - name: Notarize and staple (optional)
-        if: ${{ env.DEVELOPER_ID_IDENTITY != '' && env.HAS_NOTARY_CREDENTIALS == 'true' }}
+      - name: Notarize, staple, and validate app
         env:
           APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          xcrun notarytool submit "artifacts/WindowHop-$VERSION.zip" \
-            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
+          RESULT=$(xcrun notarytool submit "artifacts/WindowHop-$VERSION.zip" \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+            --wait --output-format json)
+          STATUS=$(jq -r '.status' <<< "$RESULT")
+          SUBMISSION_ID=$(jq -r '.id' <<< "$RESULT")
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Apple notarization rejected the app archive (status: $STATUS, id: $SUBMISSION_ID)." >&2
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+              notarization-app-log.json || true
+            exit 1
+          fi
           xcrun stapler staple build/WindowHop.app
+          xcrun stapler validate build/WindowHop.app
+          codesign --verify --deep --strict --verbose=2 build/WindowHop.app
+          spctl --assess --type execute --verbose=2 build/WindowHop.app
           rm "artifacts/WindowHop-$VERSION.zip"
           ditto -c -k --keepParent build/WindowHop.app "artifacts/WindowHop-$VERSION.zip"
 
@@ -94,6 +142,39 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           scripts/make-dmg.sh "$VERSION"
+
+      - name: Notarize, staple, and validate DMG
+        env:
+          APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DMG="artifacts/WindowHop-$VERSION.dmg"
+          RESULT=$(xcrun notarytool submit "$DMG" \
+            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+            --wait --output-format json)
+          STATUS=$(jq -r '.status' <<< "$RESULT")
+          SUBMISSION_ID=$(jq -r '.id' <<< "$RESULT")
+          if [ "$STATUS" != "Accepted" ]; then
+            echo "Apple notarization rejected the DMG (status: $STATUS, id: $SUBMISSION_ID)." >&2
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
+              notarization-dmg-log.json || true
+            exit 1
+          fi
+          xcrun stapler staple "$DMG"
+          xcrun stapler validate "$DMG"
+          codesign --verify --verbose=2 "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+          MOUNT=$(mktemp -d)
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT"
+          trap 'hdiutil detach "$MOUNT" -quiet || true; rmdir "$MOUNT" || true' EXIT
+          codesign --verify --deep --strict --verbose=2 "$MOUNT/WindowHop.app"
+          spctl --assess --type execute --verbose=2 "$MOUNT/WindowHop.app"
+          hdiutil detach "$MOUNT" -quiet
+          rmdir "$MOUNT"
+          trap - EXIT
 
       - name: Update appcast on main
         run: |
@@ -121,8 +202,14 @@ jobs:
           fi
           # standard macOS app release assets only: the DMG (human download)
           # and the ZIP (Sparkle update archive)
+          awk -v version="$VERSION" '
+            $0 ~ "^## " version " " { printing=1; next }
+            printing && /^## / { exit }
+            printing { print }
+          ' CHANGELOG.md > release-notes.md
+          test -s release-notes.md || { echo "Missing CHANGELOG release notes for $VERSION" >&2; exit 1; }
           gh release create "$GITHUB_REF_NAME" \
             "artifacts/WindowHop-$VERSION.dmg" \
             "artifacts/WindowHop-$VERSION.zip" \
             --title "WindowHop $VERSION" \
-            --generate-notes
+            --notes-file release-notes.md

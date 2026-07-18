@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.1.2 — 2026-07-18
+
+- **Native selection for each appearance**: Window Previews uses one 4 pt semantic
+  macOS focus ring that replaces its subtle neutral outline for loaded, loading, and
+  unavailable canvases. App Icons has no neutral border and follows the native switcher
+  idiom with a soft rounded selection background instead of a heavy outline.
+- **Calmer multi-row layout**: one shared vertical spacing token separates complete
+  cards, including preview overlays, titles, and tab metadata, while the existing
+  display-height budget still switches extreme window counts to vertical scrolling.
+- **Precise overlay geometry**: Close is centered exactly on the fixed canvas's
+  top-left point; app badges remain anchored beyond its bottom-right corner. The global
+  Settings control is slightly larger and now keeps most of its hit target inside the
+  panel with a small, stable outer overlap.
+- **Explicit preview fallback**: failed first captures show a semantic “Preview
+  unavailable” placeholder inside the normal canvas. Cached snapshots remain visible,
+  and loading, fallback, and loaded transitions never move the badge, border, or title.
+- **Configurable navigation preview dwell**: Appearance offers Off, Short, Default
+  (700 ms), and Long presets. Rapid traversal cancels superseded work; confirmation is
+  immediate, cancellation restores the origin, and temporary focus never becomes MRU
+  history.
+- **Release integrity and documentation**: official tag workflows now require an
+  Apple-issued Developer ID Application certificate plus all notarization credentials,
+  wait for acceptance, staple and validate the app and DMG, and run Gatekeeper checks
+  before publishing. README screenshots and behavior documentation reflect 1.1.2.
+
 ## 1.1.1 — 2026-07-18
 
 - **Complete Settings contract**: every existing user-configurable behavior is exposed

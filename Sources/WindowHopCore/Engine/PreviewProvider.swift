@@ -25,6 +25,10 @@ public final class PreviewProvider {
     /// Delivered on the main thread for windows of the current session, keyed
     /// by the window's stable id (fill-ins and refreshes of cached snapshots).
     public var onPreview: ((AnyHashable, NSImage) -> Void)?
+    /// Delivered on the main thread when no first snapshot can be produced for
+    /// an item in the current session. Cached previews remain preferable and
+    /// are never replaced by an unavailable state.
+    public var onPreviewUnavailable: ((AnyHashable) -> Void)?
 
     /// Decides what late, out-of-order capture results may do (pure, tested).
     private var ledger = PreviewLedger<AnyHashable>()
@@ -35,6 +39,13 @@ public final class PreviewProvider {
         let pid: pid_t
         let title: String
         let frame: CGRect?
+    }
+
+    /// Stable IDs are immutable value identities in WindowHop, but
+    /// `AnyHashable` predates Sendable conformance. This wrapper limits the
+    /// unchecked boundary to transport into the main-actor delivery closure.
+    private struct SendableIdentity: @unchecked Sendable {
+        let value: AnyHashable
     }
 
     private init() {}
@@ -99,7 +110,12 @@ public final class PreviewProvider {
     private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
                          pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
-            .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
+            .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
+            for request in requests {
+                await markUnavailable(request.id, generation: sessionGeneration)
+            }
+            return
+        }
         let candidates = content.windows.enumerated().map { index, window in
             MatchCandidate(index: index,
                            pid: window.owningApplication?.processID ?? -1,
@@ -115,8 +131,15 @@ public final class PreviewProvider {
         let assigned = requests.compactMap { request in
             assignments[request.id].map { (request, content.windows[$0]) }
         }
+        let assignedIDs = Set(assigned.map { $0.0.id })
+        for request in requests where !assignedIDs.contains(request.id) {
+            await markUnavailable(request.id, generation: sessionGeneration)
+        }
         for wave in stride(from: 0, to: assigned.count, by: 4).map({ Array(assigned[$0..<min($0 + 4, assigned.count)]) }) {
-            let stale = await MainActor.run { self.ledger.generation != sessionGeneration }
+            let staleBeforeWave = await MainActor.run {
+                self.ledger.generation != sessionGeneration
+            }
+            if staleBeforeWave { return }
             await withTaskGroup(of: Void.self) { group in
                 for (request, scWindow) in wave {
                     group.addTask { [weak self] in
@@ -127,7 +150,10 @@ public final class PreviewProvider {
             }
             // once the session ended, finish the current wave into the cache but
             // start no further capture work
-            if stale { return }
+            let staleAfterWave = await MainActor.run {
+                self.ledger.generation != sessionGeneration
+            }
+            if staleAfterWave { return }
         }
     }
 
@@ -135,7 +161,10 @@ public final class PreviewProvider {
                             generation sessionGeneration: Int,
                             pixelTarget: CGSize) async {
         let windowSize = scWindow.frame.size
-        guard windowSize.width > 1, windowSize.height > 1 else { return }
+        guard windowSize.width > 1, windowSize.height > 1 else {
+            await markUnavailable(request.id, generation: sessionGeneration)
+            return
+        }
         let configuration = SCStreamConfiguration()
         // ask ScreenCaptureKit for a tile-sized image directly: the full-
         // resolution window content is never held by WindowHop
@@ -149,7 +178,10 @@ public final class PreviewProvider {
         configuration.ignoreShadowsSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
         guard let cgImage = try? await SCScreenshotManager.captureImage(
-            contentFilter: filter, configuration: configuration) else { return }
+            contentFilter: filter, configuration: configuration) else {
+            await markUnavailable(request.id, generation: sessionGeneration)
+            return
+        }
         let image = NSImage(cgImage: cgImage,
                             size: NSSize(width: CGFloat(cgImage.width) / 2,
                                          height: CGFloat(cgImage.height) / 2))
@@ -161,6 +193,16 @@ public final class PreviewProvider {
             if self.ledger.shouldDeliver(request.id, capturedIn: sessionGeneration) {
                 self.onPreview?(request.id, image)
             }
+        }
+    }
+
+    private func markUnavailable(_ id: AnyHashable, generation sessionGeneration: Int) async {
+        let identity = SendableIdentity(value: id)
+        await MainActor.run {
+            guard self.cache[identity.value] == nil,
+                  self.ledger.shouldDeliver(identity.value,
+                                            capturedIn: sessionGeneration) else { return }
+            self.onPreviewUnavailable?(identity.value)
         }
     }
 

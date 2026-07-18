@@ -16,7 +16,9 @@ if the problem is not sensitive. Reports are usually acknowledged within a week.
   window metadata and control windows of other apps. Anything that lets untrusted
   input influence those code paths is in scope.
 - Update security: releases are EdDSA-signed and verified by Sparkle before
-  installation. The private signing key is never stored in this repository. Issues
-  with the appcast, signature verification, or the release workflow are in scope.
+  installation. Official artifacts are Developer ID signed, notarized, stapled, and
+  Gatekeeper-assessed before publication. The private signing and notarization
+  credentials are never stored in this repository. Issues with the appcast, signature
+  verification, notarization gate, or release workflow are in scope.
 - WindowHop performs no network activity other than Sparkle update checks against
   GitHub. Any other observed network traffic is a bug — please report it.

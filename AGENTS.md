@@ -48,9 +48,9 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   second representation of the same key.
 - All UI dimensions come from `UI/DesignTokens.swift` — no hardcoded sizes,
   insets, radii, or font sizes in views.
-- Releases are signed with the stable "WindowHop Code Signing" identity
-  (CI secret DEVELOPER_ID_CERT_P12; public cert in Support/) so the TCC
-  Accessibility grant survives updates — never ship ad-hoc-only releases.
+- Official releases are signed with one stable Apple-issued Developer ID Application
+  identity (`DEVELOPER_ID_CERT_P12`), notarized and stapled, so the TCC Accessibility
+  grant survives updates — never ship ad-hoc, self-signed, or unnotarized releases.
 
 ## Architecture (see docs/architecture.md)
 

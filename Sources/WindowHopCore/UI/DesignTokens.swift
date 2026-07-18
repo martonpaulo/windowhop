@@ -10,19 +10,27 @@ enum DesignTokens {
     /// The grid may use up to this fraction of the screen's width/height.
     static let panelMaxWidthFraction: CGFloat = 0.88
     static let panelMaxHeightFraction: CGFloat = 0.85
-    /// Settings is a compact global overlay. The visible glyph is half its
-    /// previous size while the hit target remains comfortably clickable.
+    /// Settings is a compact global overlay. Most of the hit target remains
+    /// inside the panel while a small named overlap keeps it attached to the
+    /// outer top-right corner.
     static let chromeButtonHitSize: CGFloat = 44
-    static let chromeButtonSymbolSize: CGFloat = 29
+    static let chromeButtonSymbolSize: CGFloat = 32
+    static let chromeButtonOutsideOverlap: CGFloat = 10
 
     // MARK: Tiles (both appearances)
-    static let tileSelectionCornerRadius: CGFloat = 18
-    /// The selection surrounds only the content area (icon or preview) — the
-    /// title always stays outside the highlighted region.
-    static let selectionPadding: CGFloat = 6
+    /// Preview canvases use this radius for their fixed content and focus ring.
+    static let cardCornerRadius: CGFloat = 10
+    /// App Icons follows the native switcher idiom: no neutral border, with a
+    /// soft rounded selection background around the icon canvas.
+    static let iconSelectionPadding: CGFloat = 6
+    static let iconSelectionCornerRadius: CGFloat = 18
     /// One horizontal rhythm for every row; tiles never manufacture spacing by
     /// changing their own dimensions.
     static let tileSpacing: CGFloat = 18
+    /// Full-card separation between wrapped rows. The tile height already
+    /// includes preview overlays, title, and metadata; this is the remaining
+    /// visual breathing room between complete cards.
+    static let tileRowSpacing: CGFloat = 30
     static let tileLabelInset: CGFloat = 8
     static let titleFontSize: CGFloat = 13
     static let tabsFontSize: CGFloat = 11
@@ -58,7 +66,7 @@ enum DesignTokens {
     static func previewContentHeight(width: CGFloat, displayAspect: CGFloat) -> CGFloat {
         (width / max(displayAspect, 0.2)).rounded()
     }
-    static let previewCornerRadius: CGFloat = 10
+    static let previewCornerRadius = cardCornerRadius
     /// The badge is 60% of its previous rendered size and overlaps the fixed
     /// canvas corner, independent of the source image's aspect-fit bounds.
     static let previewBadgeSize: CGFloat = 48
@@ -71,31 +79,37 @@ enum DesignTokens {
 
     // MARK: Overlay close control
     static let closeButtonHitSize: CGFloat = 44
-    static let closeButtonSymbolSize: CGFloat = 30
-    /// Overlay controls hang half over the content corner, badge-style
-    /// (the Mission Control / Safari tab-close idiom).
-    static let closeButtonBoundaryOverlap: CGFloat = 8
-
-    // MARK: Preview placeholder (while a first snapshot loads)
+    static let closeButtonSymbolSize: CGFloat = 26
+    /// The centered control extends beyond the canvas. The panel reuses its
+    /// existing padding as clip-safe overflow, so neither cards nor the visible
+    /// panel grow to accommodate it.
+    static let closeButtonLeadingOverflow = max(
+        0, closeButtonHitSize / 2 - tileLabelInset)
+    static let closeButtonTopOverflow = max(
+        0, closeButtonHitSize / 2 - contentTopInset)
+    // MARK: Preview placeholder (while loading or unavailable)
     static let previewFillInFadeDuration: TimeInterval = 0.15
     /// Crossfade used when a fresh capture replaces a cached snapshot mid-session.
     static let previewRefreshFadeDuration: TimeInterval = 0.25
 
     // MARK: Colors
-    /// Selection: the native switcher's rounded rectangle is LIGHTER than the
-    /// panel in Dark Mode and darker in Light Mode — labelColor with low alpha
-    /// gives exactly that in both, resolved under the panel's appearance.
-    static var selectionFill: NSColor { .labelColor.withAlphaComponent(0.16) }
-    static var temporaryTargetFill: NSColor { .labelColor.withAlphaComponent(0.09) }
-    static var previewOutline: NSColor { .labelColor.withAlphaComponent(0.26) }
-    static var previewEmphasisOutline: NSColor { .labelColor.withAlphaComponent(0.58) }
-    static var previewSelectionOutline: NSColor { .keyboardFocusIndicatorColor }
+    /// AppKit's semantic focus-ring color follows the current appearance,
+    /// accent, and accessibility settings instead of freezing a custom blue.
+    static var selectionOutline: NSColor { .keyboardFocusIndicatorColor }
+    static var iconSelectionFill: NSColor { .labelColor.withAlphaComponent(0.14) }
+    static var iconEmphasisFill: NSColor { .labelColor.withAlphaComponent(0.075) }
+    static var previewOutline: NSColor { .separatorColor.withAlphaComponent(0.65) }
+    static var previewEmphasisOutline: NSColor { .labelColor.withAlphaComponent(0.30) }
     static let previewOutlineWidth: CGFloat = 1
     static let previewEmphasisOutlineWidth: CGFloat = 2
-    static let previewSelectionOutlineWidth: CGFloat = 5
+    static let selectionOutlineWidth: CGFloat = 4
     /// Placeholder card behind a not-yet-captured preview (a quieter step of
     /// the same ramp so it never competes with the selection).
     static var previewPlaceholderFill: NSColor { .labelColor.withAlphaComponent(0.07) }
+    static var previewUnavailableSymbolColor: NSColor { .secondaryLabelColor }
+    static let previewUnavailableSymbolSize: CGFloat = 18
+    static let previewUnavailableFontSize: CGFloat = 11
+    static let previewUnavailableSpacing: CGFloat = 5
     /// Fallback panel material for macOS 14/15, close to the pre-Tahoe native
     /// switcher; on macOS 26+ the panel uses the system glass effect instead
     /// (see SwitcherPanel), which is what the native switcher draws with.

@@ -5,9 +5,6 @@ import Foundation
 /// distinct, while request generations discard rapid-navigation work that has
 /// already been superseded.
 public struct TemporaryActivationSession<ID: Hashable> {
-    /// Long enough to skip fast key-repeat traversal, short enough to feel
-    /// immediate when the user pauses on a window.
-    public static var navigationSettleDelay: TimeInterval { 0.18 }
     /// AX focus notifications can trail a completed action; compare event time
     /// against this grace window rather than running any idle timer.
     public static var lateFocusGraceDuration: TimeInterval { 1 }
