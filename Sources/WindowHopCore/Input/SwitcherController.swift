@@ -13,9 +13,8 @@ public final class SwitcherController {
     private let panel = SwitcherPanel()
     private var mouseMonitor: Any?
     private var heldModifierGuard: Timer?
-    private var originWindow: TrackedWindow?
-    private var temporaryActivation = TemporaryActivationSession<AnyHashable>()
-    private var temporaryActivationTimer: Timer?
+    private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
+    private var expandedPreviewTimer: Timer?
     private var configuredEnabled = false
 
     private init() {}
@@ -34,11 +33,20 @@ public final class SwitcherController {
         panel.onSettingsRequested = { [weak self] in
             self?.openSettingsFromSession()
         }
+        panel.onPreviewPermissionRequested = { [weak self] in
+            self?.openScreenRecordingSettingsFromSession()
+        }
         PreviewProvider.shared.onPreview = { [weak self] id, image in
             self?.panel.updatePreview(id: id, image: image)
         }
         PreviewProvider.shared.onPreviewUnavailable = { [weak self] id in
             self?.panel.updatePreviewUnavailable(id: id)
+        }
+        PreviewProvider.shared.onPermissionRequired = { [weak self] status in
+            self?.panel.setPreviewPermissionStatus(status)
+        }
+        PreviewProvider.shared.onExpandedPreview = { [weak self] id, image in
+            self?.panel.updateExpandedPreview(id: id, image: image)
         }
     }
 
@@ -112,11 +120,8 @@ public final class SwitcherController {
         let hadActiveSession = state.isActive
         if hadActiveSession {
             state.reset()
-            cancelTemporaryActivationTimer()
             endSession()
-            WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
-            temporaryActivation.reset()
-            originWindow = nil
+            expandedPreview.reset()
         }
         if hadActiveSession {
             WindowActions.afterPendingActions {
@@ -127,22 +132,33 @@ public final class SwitcherController {
         }
     }
 
+    private func openScreenRecordingSettingsFromSession() {
+        let hadActiveSession = state.isActive
+        if hadActiveSession {
+            state.reset()
+            endSession()
+            expandedPreview.reset()
+        }
+        if ScreenRecordingPermission.status == .notDetermined {
+            _ = ScreenRecordingPermission.request()
+        } else {
+            ScreenRecordingPermission.openSystemSettings()
+        }
+    }
+
     private func perform(_ command: SwitcherState.Command) {
         DebugLog.log("perform \(command), phase \(state.phase)")
         switch command {
         case .none:
             break
         case .show(let selectedIndex):
-            originWindow = items.first?.window
-            WindowStore.shared.beginTemporaryActivationSession()
-            let request = temporaryActivation.begin(
-                originWindowID: originWindow.map { AnyHashable($0.stableId) },
-                targetedWindowID: itemID(at: selectedIndex))
+            let request = expandedPreview.begin(targetedWindowID: itemID(at: selectedIndex))
             panel.show(items: items, selectedIndex: selectedIndex)
             state.updateColumns(panel.columnsPerRow)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
-            scheduleTemporaryActivation(request)
+            panel.setPreviewPermissionStatus(ScreenRecordingPermission.status)
+            scheduleExpandedPreview(request)
             // previews (cached ones already showed instantly) refresh live,
             // asynchronously, never gating panel presentation
             PreviewProvider.shared.beginSession(
@@ -154,41 +170,21 @@ public final class SwitcherController {
             WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
         case .select(let index):
             panel.select(index)
-            targetTemporaryWindow(at: index)
+            targetExpandedPreview(at: index)
         case .activate(let index):
-            cancelTemporaryActivationTimer()
-            let availableIDs = Set(items.map(\.id))
+            cancelExpandedPreviewTimer()
             let item = index >= 0 && index < items.count ? items[index] : nil
             let window = item?.window.flatMap { candidate in
                 WindowStore.shared.windows.contains(where: { $0 === candidate }) ? candidate : nil
             }
-            let committedID = temporaryActivation.commit(item?.id,
-                                                          availableWindowIDs: availableIDs)
             endSession()
-            if committedID != nil, let window {
-                WindowStore.shared.finishTemporaryActivationSession(committedWindow: window)
+            if let window {
                 WindowActions.activate(window)
-            } else {
-                WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
-                restoreOriginIfAvailable()
             }
-            temporaryActivation.reset()
-            originWindow = nil
+            expandedPreview.reset()
         case .cancel:
-            cancelTemporaryActivationTimer()
-            let availableIDs = Set(WindowStore.shared.windows.map { AnyHashable($0.stableId) })
-            let restoreID = temporaryActivation.cancel(availableWindowIDs: availableIDs)
-            let restoreWindow = restoreID.flatMap { id in
-                originWindow.flatMap { AnyHashable($0.stableId) == id ? $0 : nil }
-            }
             endSession()
-            WindowStore.shared.finishTemporaryActivationSession(committedWindow: nil)
-            if let restoreWindow,
-               WindowStore.shared.windows.contains(where: { $0 === restoreWindow }) {
-                WindowActions.activate(restoreWindow)
-            }
-            temporaryActivation.reset()
-            originWindow = nil
+            expandedPreview.reset()
         case .requestClose(let index):
             if index >= 0, index < items.count {
                 runCloseConfirmation(for: items[index])
@@ -206,9 +202,9 @@ public final class SwitcherController {
     /// hidden for the duration so the dialog is unquestionably on top, and is
     /// restored afterwards with the previous selection.
     private func runCloseConfirmation(for item: SwitcherItem) {
-        cancelTemporaryActivationTimer()
-        temporaryActivation.interruptTemporaryActivation()
-        panel.setTemporarilyActive(id: nil)
+        cancelExpandedPreviewTimer()
+        expandedPreview.reset()
+        panel.hideExpandedPreview()
         EventTap.shared.mode = .passthrough
         panel.hide()
         WindowActions.afterPendingActions { [weak self] in
@@ -300,11 +296,11 @@ public final class SwitcherController {
         let selectedId = state.selectedIndex < items.count ? items[state.selectedIndex].id : nil
         let fresh = WindowStore.shared.snapshot()
         items = items.compactMap { item in
-            fresh.first { $0.id == item.id } ?? (shouldPreserveAcrossTemporaryLocationChange(item)
+            fresh.first { $0.id == item.id } ?? (shouldPreserveAcrossLocationRefresh(item)
                 ? item
                 : nil)
         }
-        temporaryActivation.retainAvailable(Set(items.map(\.id)))
+        expandedPreview.retainAvailable(Set(items.map(\.id)))
         let preferredIndex = selectedId.flatMap { id in
             items.firstIndex { $0.id == id }
         } ?? state.selectedIndex
@@ -312,24 +308,33 @@ public final class SwitcherController {
         if state.isActive {
             panel.update(items: items, selectedIndex: state.selectedIndex)
             state.updateColumns(panel.columnsPerRow)
-            targetTemporaryWindow(at: state.selectedIndex)
+            targetExpandedPreview(at: state.selectedIndex)
         }
         if case .cancel = command {
             perform(command)
         }
     }
 
-    /// A temporary activation can move the active Space/display, which must not
-    /// make frozen session entries disappear. Genuine closure, minimization,
-    /// hiding, tab exclusion, or PiP exclusion still removes them immediately.
-    private func shouldPreserveAcrossTemporaryLocationChange(_ item: SwitcherItem) -> Bool {
+    /// Frozen-session entries may briefly disappear from location metadata while
+    /// Spaces update. Preserve only windows that still satisfy every non-location
+    /// invariant; the external window is never activated by dwell preview.
+    private func shouldPreserveAcrossLocationRefresh(_ item: SwitcherItem) -> Bool {
         guard let window = item.window,
+              window.isActual,
               WindowStore.shared.windows.contains(where: { $0 === window }) else { return false }
-        return window.isActual
-            && !window.isMinimized
-            && !(window.app?.isHidden ?? false)
-            && !window.isTabbed
-            && !(window.isPictureInPicture ?? false)
+        let state = WindowDisplayState(
+            isMinimized: window.isMinimized,
+            isAppHidden: window.app?.isHidden ?? false,
+            isOwnWindow: window.isOwnSettingsEntry,
+            isOwnSettingsWindow: window.isOwnSettingsEntry,
+            isTabbed: window.isTabbed,
+            isPictureInPicture: window.isPictureInPicture ?? false,
+            // This fallback exists specifically for transient location metadata;
+            // all non-location rules still flow through the shared policy.
+            isOnCurrentSpace: true,
+            isOnActiveDisplay: true)
+        return WindowEligibility.shouldDisplay(
+            state, policy: Preferences.shared.windowInclusionPolicy)
     }
 
     private func pushEligibleCount() {
@@ -364,8 +369,8 @@ public final class SwitcherController {
     }
 
     private func endSession() {
-        cancelTemporaryActivationTimer()
-        panel.setTemporarilyActive(id: nil)
+        cancelExpandedPreviewTimer()
+        panel.hideExpandedPreview()
         panel.hide()
         // capture is session-scoped: pending results stop delivering live, but
         // the memory-only cache remains warm for the next instant open
@@ -379,60 +384,54 @@ public final class SwitcherController {
         EventTap.shared.mode = configuredEnabled ? .watching : .off
     }
 
-    // MARK: - Temporary window activation
+    // MARK: - Non-activating expanded preview
 
     private func itemID(at index: Int) -> AnyHashable? {
         index >= 0 && index < items.count ? items[index].id : nil
     }
 
-    private func targetTemporaryWindow(at index: Int) {
-        cancelTemporaryActivationTimer()
-        scheduleTemporaryActivation(temporaryActivation.target(itemID(at: index)))
+    private func targetExpandedPreview(at index: Int) {
+        cancelExpandedPreviewTimer()
+        panel.hideExpandedPreview()
+        PreviewProvider.shared.cancelExpandedPreview()
+        scheduleExpandedPreview(expandedPreview.target(itemID(at: index)))
     }
 
-    private func scheduleTemporaryActivation(
-        _ request: TemporaryActivationSession<AnyHashable>.Request?
+    private func scheduleExpandedPreview(
+        _ request: ExpandedPreviewSession<AnyHashable>.Request?
     ) {
-        guard let request,
-              let delay = Preferences.shared.navigationPreviewDelay.duration else { return }
+        guard Preferences.shared.appearanceMode == .windowPreviews,
+              let request,
+              let delay = Preferences.shared.expandedPreviewDelay.duration else { return }
         let timer = Timer(timeInterval: delay,
                           repeats: false) { [weak self] _ in
-            self?.temporarilyActivate(request)
+            self?.presentExpandedPreview(request)
         }
-        temporaryActivationTimer = timer
+        expandedPreviewTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func temporarilyActivate(
-        _ request: TemporaryActivationSession<AnyHashable>.Request
+    private func presentExpandedPreview(
+        _ request: ExpandedPreviewSession<AnyHashable>.Request
     ) {
-        temporaryActivationTimer = nil
+        expandedPreviewTimer = nil
         guard state.isActive,
-              let id = temporaryActivation.settle(
+              let id = expandedPreview.settle(
                 request, availableWindowIDs: Set(items.map(\.id))),
               let item = items.first(where: { $0.id == id }),
-              let window = item.window,
-              WindowStore.shared.windows.contains(where: { $0 === window }) else { return }
-        panel.setTemporarilyActive(id: id)
-        WindowStore.shared.noteTemporaryActivation(window)
-        WindowActions.activate(window) { [weak self] in
-            guard let self, self.state.isActive,
-                  self.temporaryActivation.temporarilyActiveWindowID == id else { return }
-            // Public AX activation may change Spaces asynchronously. A pop-up
-            // level nonactivating panel is reasserted only after that work lands.
-            self.panel.presentAgain()
+              item.window != nil else { return }
+        if let image = PreviewProvider.shared.cachedPreview(for: id) {
+            panel.showExpandedPreview(id: id, image: image)
         }
+        PreviewProvider.shared.requestExpandedPreview(
+            item: item,
+            targetSize: SwitcherPanel.expandedPreviewContentSize,
+            scale: NSScreen.main?.backingScaleFactor ?? 2)
     }
 
-    private func cancelTemporaryActivationTimer() {
-        temporaryActivationTimer?.invalidate()
-        temporaryActivationTimer = nil
-    }
-
-    private func restoreOriginIfAvailable() {
-        guard let originWindow,
-              WindowStore.shared.windows.contains(where: { $0 === originWindow }) else { return }
-        WindowActions.activate(originWindow)
+    private func cancelExpandedPreviewTimer() {
+        expandedPreviewTimer?.invalidate()
+        expandedPreviewTimer = nil
     }
 
     private func nsModifier(of flags: CGEventFlags) -> NSEvent.ModifierFlags {

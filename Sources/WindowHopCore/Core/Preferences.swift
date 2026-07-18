@@ -18,32 +18,34 @@ public enum AppearanceMode: String, CaseIterable, Identifiable {
     }
 }
 
-/// User-facing dwell presets for showing a targeted window before a switch is
-/// committed. Raw milliseconds stay an implementation detail; `off` disables
-/// temporary activation without changing confirmation or cancellation.
-public enum NavigationPreviewDelay: String, CaseIterable, Identifiable {
+/// User-facing dwell presets for expanding the targeted window inside
+/// WindowHop. The external window is never activated by this preview.
+public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable {
     case off
-    case short
-    case standard
-    case long
+    case oneSecond
+    case twoSeconds
+    case threeSeconds
+    case fiveSeconds
 
     public var id: String { rawValue }
 
     public var displayName: String {
         switch self {
         case .off: return "Off"
-        case .short: return "Short"
-        case .standard: return "Default"
-        case .long: return "Long"
+        case .oneSecond: return "1 second"
+        case .twoSeconds: return "2 seconds"
+        case .threeSeconds: return "3 seconds"
+        case .fiveSeconds: return "5 seconds"
         }
     }
 
     public var duration: TimeInterval? {
         switch self {
         case .off: return nil
-        case .short: return 0.35
-        case .standard: return 0.7
-        case .long: return 1.2
+        case .oneSecond: return 1
+        case .twoSeconds: return 2
+        case .threeSeconds: return 3
+        case .fiveSeconds: return 5
         }
     }
 }
@@ -53,6 +55,8 @@ public enum NavigationPreviewDelay: String, CaseIterable, Identifiable {
 /// The store is injectable for deterministic migration and persistence tests.
 public final class Preferences: ObservableObject {
     public static let shared = Preferences()
+    public static let windowFiltersDidChange = Notification.Name(
+        "com.perso.windowhop.windowFiltersDidChange")
 
     public enum Key: String, CaseIterable {
         case switcherEnabled
@@ -60,9 +64,14 @@ public final class Preferences: ObservableObject {
         case shortcut
         case persistentShortcut
         case appearanceMode
+        /// Kept only to migrate 1.1.2 dwell presets.
         case navigationPreviewDelay
+        case expandedPreviewDelay
         case includeOtherSpaces
         case includeOtherDisplays
+        case includeMinimizedWindows
+        case includeHiddenApplicationWindows
+        case includePictureInPictureWindows
         case showTabCounts
         case showMenuBarItem
         case showDockIcon
@@ -76,9 +85,12 @@ public final class Preferences: ObservableObject {
         // unassigned by default: assigning a global chord must be a deliberate choice
         Key.persistentShortcut.rawValue: "",
         Key.appearanceMode.rawValue: AppearanceMode.appIcons.rawValue,
-        Key.navigationPreviewDelay.rawValue: NavigationPreviewDelay.standard.rawValue,
+        Key.expandedPreviewDelay.rawValue: ExpandedPreviewDelay.threeSeconds.rawValue,
         Key.includeOtherSpaces.rawValue: true,
         Key.includeOtherDisplays.rawValue: true,
+        Key.includeMinimizedWindows.rawValue: false,
+        Key.includeHiddenApplicationWindows.rawValue: false,
+        Key.includePictureInPictureWindows.rawValue: false,
         Key.showTabCounts.rawValue: true,
         Key.showMenuBarItem.rawValue: false,
         Key.showDockIcon.rawValue: false,
@@ -108,19 +120,49 @@ public final class Preferences: ObservableObject {
         didSet { defaults.set(appearanceMode.rawValue, forKey: Key.appearanceMode.rawValue) }
     }
 
-    @Published public var navigationPreviewDelay: NavigationPreviewDelay {
+    @Published public var expandedPreviewDelay: ExpandedPreviewDelay {
         didSet {
-            defaults.set(navigationPreviewDelay.rawValue,
-                         forKey: Key.navigationPreviewDelay.rawValue)
+            defaults.set(expandedPreviewDelay.rawValue,
+                         forKey: Key.expandedPreviewDelay.rawValue)
         }
     }
 
     @Published public var includeOtherSpaces: Bool {
-        didSet { defaults.set(includeOtherSpaces, forKey: Key.includeOtherSpaces.rawValue) }
+        didSet {
+            defaults.set(includeOtherSpaces, forKey: Key.includeOtherSpaces.rawValue)
+            notifyWindowFiltersChanged()
+        }
     }
 
     @Published public var includeOtherDisplays: Bool {
-        didSet { defaults.set(includeOtherDisplays, forKey: Key.includeOtherDisplays.rawValue) }
+        didSet {
+            defaults.set(includeOtherDisplays, forKey: Key.includeOtherDisplays.rawValue)
+            notifyWindowFiltersChanged()
+        }
+    }
+
+    @Published public var includeMinimizedWindows: Bool {
+        didSet {
+            defaults.set(includeMinimizedWindows,
+                         forKey: Key.includeMinimizedWindows.rawValue)
+            notifyWindowFiltersChanged()
+        }
+    }
+
+    @Published public var includeHiddenApplicationWindows: Bool {
+        didSet {
+            defaults.set(includeHiddenApplicationWindows,
+                         forKey: Key.includeHiddenApplicationWindows.rawValue)
+            notifyWindowFiltersChanged()
+        }
+    }
+
+    @Published public var includePictureInPictureWindows: Bool {
+        didSet {
+            defaults.set(includePictureInPictureWindows,
+                         forKey: Key.includePictureInPictureWindows.rawValue)
+            notifyWindowFiltersChanged()
+        }
     }
 
     @Published public var showTabCounts: Bool {
@@ -149,10 +191,18 @@ public final class Preferences: ObservableObject {
             encoded: Self.string(defaults, .persistentShortcut) ?? "")
         appearanceMode = AppearanceMode(
             rawValue: Self.string(defaults, .appearanceMode) ?? "") ?? .appIcons
-        navigationPreviewDelay = NavigationPreviewDelay(
-            rawValue: Self.string(defaults, .navigationPreviewDelay) ?? "") ?? .standard
+        let restoredExpandedPreviewDelay = Self.expandedPreviewDelay(from: defaults)
+        expandedPreviewDelay = restoredExpandedPreviewDelay
+        defaults.set(restoredExpandedPreviewDelay.rawValue,
+                     forKey: Key.expandedPreviewDelay.rawValue)
         includeOtherSpaces = Self.bool(defaults, .includeOtherSpaces, fallback: true)
         includeOtherDisplays = Self.bool(defaults, .includeOtherDisplays, fallback: true)
+        includeMinimizedWindows = Self.bool(defaults, .includeMinimizedWindows,
+                                            fallback: false)
+        includeHiddenApplicationWindows = Self.bool(
+            defaults, .includeHiddenApplicationWindows, fallback: false)
+        includePictureInPictureWindows = Self.bool(
+            defaults, .includePictureInPictureWindows, fallback: false)
         showTabCounts = Self.bool(defaults, .showTabCounts, fallback: true)
         showMenuBarItem = Self.bool(defaults, .showMenuBarItem, fallback: false)
         showDockIcon = Self.bool(defaults, .showDockIcon, fallback: false)
@@ -166,5 +216,38 @@ public final class Preferences: ObservableObject {
 
     private static func string(_ defaults: UserDefaults, _ key: Key) -> String? {
         defaults.object(forKey: key.rawValue) as? String
+    }
+
+    /// Migrates the 1.1.2 temporary-activation presets to the closest expanded
+    /// preview delay. Invalid values use the documented three-second default.
+    private static func expandedPreviewDelay(from defaults: UserDefaults) -> ExpandedPreviewDelay {
+        if let legacy = string(defaults, .navigationPreviewDelay) {
+            defaults.removeObject(forKey: Key.navigationPreviewDelay.rawValue)
+            switch legacy {
+            case "off": return .off
+            case "short": return .oneSecond
+            case "long": return .fiveSeconds
+            case "standard": return .threeSeconds
+            default: return .threeSeconds
+            }
+        }
+        if let raw = string(defaults, .expandedPreviewDelay),
+           let delay = ExpandedPreviewDelay(rawValue: raw) {
+            return delay
+        }
+        return .threeSeconds
+    }
+
+    public var windowInclusionPolicy: WindowInclusionPolicy {
+        WindowInclusionPolicy(
+            includeMinimizedWindows: includeMinimizedWindows,
+            includeHiddenApplicationWindows: includeHiddenApplicationWindows,
+            includePictureInPictureWindows: includePictureInPictureWindows,
+            includeOtherSpaces: includeOtherSpaces,
+            includeOtherDisplays: includeOtherDisplays)
+    }
+
+    private func notifyWindowFiltersChanged() {
+        NotificationCenter.default.post(name: Self.windowFiltersDidChange, object: self)
     }
 }

@@ -29,10 +29,16 @@ public final class PreviewProvider {
     /// an item in the current session. Cached previews remain preferable and
     /// are never replaced by an unavailable state.
     public var onPreviewUnavailable: ((AnyHashable) -> Void)?
+    /// One panel-level permission state; never repeated as a per-card action.
+    public var onPermissionRequired: ((ScreenRecordingPermission.Status) -> Void)?
+    /// A fresh dwell snapshot for the still-targeted window.
+    public var onExpandedPreview: ((AnyHashable, NSImage) -> Void)?
 
     /// Decides what late, out-of-order capture results may do (pure, tested).
     private var ledger = PreviewLedger<AnyHashable>()
     private var cache: [AnyHashable: NSImage] = [:]
+    private var activeSessionGeneration: Int?
+    private var expandedGeneration = 0
 
     struct CaptureRequest {
         let id: AnyHashable
@@ -72,25 +78,16 @@ public final class PreviewProvider {
     /// Starts recapturing previews for the session's items. No-op unless Window
     /// Previews mode is active and Screen Recording is granted.
     public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
-        guard Preferences.shared.appearanceMode == .windowPreviews,
-              ScreenRecordingPermission.isGranted else { return }
-        let ownPid = ProcessInfo.processInfo.processIdentifier
-        let requests: [CaptureRequest] = items.compactMap { item in
-            guard let window = item.window else { return nil }
-            if let native = window.nativeWindow, let primary = NSScreen.screens.first {
-                // the own Settings window previews too: convert its Cocoa frame
-                // (bottom-left origin) to the global top-left space SCWindow uses
-                let frame = native.frame
-                return CaptureRequest(id: item.id, pid: ownPid, title: item.title,
-                                      frame: CGRect(x: frame.origin.x,
-                                                    y: primary.frame.maxY - frame.maxY,
-                                                    width: frame.width, height: frame.height))
-            }
-            guard let app = window.app else { return nil }
-            return CaptureRequest(id: item.id, pid: app.pid,
-                                  title: item.title, frame: window.frame)
+        guard Preferences.shared.appearanceMode == .windowPreviews else { return }
+        let permissionStatus = ScreenRecordingPermission.status
+        guard permissionStatus.isAuthorized else {
+            activeSessionGeneration = nil
+            onPermissionRequired?(permissionStatus)
+            return
         }
+        let requests = items.compactMap(makeCaptureRequest)
         let sessionGeneration = ledger.beginSession(ids: requests.map { $0.id })
+        activeSessionGeneration = sessionGeneration
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(requests, generation: sessionGeneration,
@@ -102,7 +99,36 @@ public final class PreviewProvider {
     /// In-flight captures may still finish into the cache (free freshness),
     /// but no further capture work starts while the switcher is closed.
     public func endSession() {
+        activeSessionGeneration = nil
+        cancelExpandedPreview()
         ledger.endSession()
+    }
+
+    /// Requests a larger snapshot for the dwell presentation. It remains fully
+    /// session-scoped and only delivers when both the session and target
+    /// generation are still current.
+    public func requestExpandedPreview(item: SwitcherItem,
+                                       targetSize: CGSize,
+                                       scale: CGFloat) {
+        guard Preferences.shared.appearanceMode == .windowPreviews,
+              ScreenRecordingPermission.status.isAuthorized,
+              let sessionGeneration = activeSessionGeneration,
+              let request = makeCaptureRequest(item) else { return }
+        expandedGeneration += 1
+        let requestGeneration = expandedGeneration
+        let pixelTarget = CGSize(width: targetSize.width * scale,
+                                 height: targetSize.height * scale)
+        Task { [weak self] in
+            await self?.captureExpanded(
+                request,
+                sessionGeneration: sessionGeneration,
+                requestGeneration: requestGeneration,
+                pixelTarget: pixelTarget)
+        }
+    }
+
+    public func cancelExpandedPreview() {
+        expandedGeneration += 1
     }
 
     // MARK: - Capture
@@ -160,31 +186,10 @@ public final class PreviewProvider {
     private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
                             generation sessionGeneration: Int,
                             pixelTarget: CGSize) async {
-        let windowSize = scWindow.frame.size
-        guard windowSize.width > 1, windowSize.height > 1 else {
+        guard let image = await captureImage(scWindow, pixelTarget: pixelTarget) else {
             await markUnavailable(request.id, generation: sessionGeneration)
             return
         }
-        let configuration = SCStreamConfiguration()
-        // ask ScreenCaptureKit for a tile-sized image directly: the full-
-        // resolution window content is never held by WindowHop
-        let fit = min(pixelTarget.width / windowSize.width,
-                      pixelTarget.height / windowSize.height, 2)
-        configuration.width = max(1, Int(windowSize.width * fit))
-        configuration.height = max(1, Int(windowSize.height * fit))
-        configuration.showsCursor = false
-        // the bare window, no baked-in shadow margins: the tile draws its own
-        // shadow along the preview's rounded shape (never a rectangular halo)
-        configuration.ignoreShadowsSingleWindow = true
-        let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-        guard let cgImage = try? await SCScreenshotManager.captureImage(
-            contentFilter: filter, configuration: configuration) else {
-            await markUnavailable(request.id, generation: sessionGeneration)
-            return
-        }
-        let image = NSImage(cgImage: cgImage,
-                            size: NSSize(width: CGFloat(cgImage.width) / 2,
-                                         height: CGFloat(cgImage.height) / 2))
         await MainActor.run {
             // the ledger is the single authority on what a late result may do:
             // nothing for vanished windows, cache-only for ended sessions
@@ -196,9 +201,82 @@ public final class PreviewProvider {
         }
     }
 
+    private func captureExpanded(_ request: CaptureRequest,
+                                 sessionGeneration: Int,
+                                 requestGeneration: Int,
+                                 pixelTarget: CGSize) async {
+        guard let content = try? await SCShareableContent
+            .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
+        let candidates = content.windows.enumerated().map { index, window in
+            MatchCandidate(index: index,
+                           pid: window.owningApplication?.processID ?? -1,
+                           title: window.title ?? "",
+                           frame: window.frame)
+        }
+        guard let candidateIndex = Self.assign(
+            requests: [MatchRequest(id: request.id,
+                                    pid: request.pid,
+                                    title: request.title,
+                                    frame: request.frame)],
+            candidates: candidates)[request.id],
+              let image = await captureImage(content.windows[candidateIndex],
+                                             pixelTarget: pixelTarget) else { return }
+        let identity = SendableIdentity(value: request.id)
+        await MainActor.run {
+            guard self.activeSessionGeneration == sessionGeneration,
+                  self.ledger.shouldDeliver(identity.value,
+                                            capturedIn: sessionGeneration),
+                  self.expandedGeneration == requestGeneration else { return }
+            self.cache[identity.value] = image
+            self.onPreview?(identity.value, image)
+            self.onExpandedPreview?(identity.value, image)
+        }
+    }
+
+    private func captureImage(_ scWindow: SCWindow,
+                              pixelTarget: CGSize) async -> NSImage? {
+        let windowSize = scWindow.frame.size
+        guard windowSize.width > 1, windowSize.height > 1 else { return nil }
+        let configuration = SCStreamConfiguration()
+        let fit = min(pixelTarget.width / windowSize.width,
+                      pixelTarget.height / windowSize.height, 2)
+        configuration.width = max(1, Int(windowSize.width * fit))
+        configuration.height = max(1, Int(windowSize.height * fit))
+        configuration.showsCursor = false
+        configuration.ignoreShadowsSingleWindow = true
+        let filter = SCContentFilter(desktopIndependentWindow: scWindow)
+        guard let cgImage = try? await SCScreenshotManager.captureImage(
+            contentFilter: filter, configuration: configuration) else { return nil }
+        return NSImage(cgImage: cgImage,
+                       size: NSSize(width: CGFloat(cgImage.width) / 2,
+                                    height: CGFloat(cgImage.height) / 2))
+    }
+
+    private func makeCaptureRequest(_ item: SwitcherItem) -> CaptureRequest? {
+        guard let window = item.window else { return nil }
+        if let native = window.nativeWindow, let primary = NSScreen.screens.first {
+            let frame = native.frame
+            return CaptureRequest(id: item.id,
+                                  pid: ProcessInfo.processInfo.processIdentifier,
+                                  title: item.title,
+                                  frame: CGRect(x: frame.origin.x,
+                                                y: primary.frame.maxY - frame.maxY,
+                                                width: frame.width,
+                                                height: frame.height))
+        }
+        guard let app = window.app else { return nil }
+        return CaptureRequest(id: item.id, pid: app.pid,
+                              title: item.title, frame: window.frame)
+    }
+
     private func markUnavailable(_ id: AnyHashable, generation sessionGeneration: Int) async {
         let identity = SendableIdentity(value: id)
         await MainActor.run {
+            let status = ScreenRecordingPermission.status
+            if !status.isAuthorized {
+                self.onPermissionRequired?(status)
+                return
+            }
             guard self.cache[identity.value] == nil,
                   self.ledger.shouldDeliver(identity.value,
                                             capturedIn: sessionGeneration) else { return }

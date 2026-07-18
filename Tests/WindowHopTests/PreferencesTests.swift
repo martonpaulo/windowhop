@@ -25,10 +25,13 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.shortcut, .commandTab)
         XCTAssertNil(preferences.persistentShortcut)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
-        XCTAssertEqual(preferences.navigationPreviewDelay, .standard)
-        XCTAssertEqual(preferences.navigationPreviewDelay.duration, 0.7)
+        XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
+        XCTAssertEqual(preferences.expandedPreviewDelay.duration, 3)
         XCTAssertTrue(preferences.includeOtherSpaces)
         XCTAssertTrue(preferences.includeOtherDisplays)
+        XCTAssertFalse(preferences.includeMinimizedWindows)
+        XCTAssertFalse(preferences.includeHiddenApplicationWindows)
+        XCTAssertFalse(preferences.includePictureInPictureWindows)
         XCTAssertTrue(preferences.showTabCounts)
         XCTAssertFalse(preferences.showMenuBarItem)
         XCTAssertFalse(preferences.showDockIcon)
@@ -42,9 +45,12 @@ final class PreferencesTests: XCTestCase {
         preferences.persistentShortcut = PersistentShortcut(
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.appearanceMode = .windowPreviews
-        preferences.navigationPreviewDelay = .long
+        preferences.expandedPreviewDelay = .fiveSeconds
         preferences.includeOtherSpaces = false
         preferences.includeOtherDisplays = false
+        preferences.includeMinimizedWindows = true
+        preferences.includeHiddenApplicationWindows = true
+        preferences.includePictureInPictureWindows = true
         preferences.showTabCounts = false
         preferences.showMenuBarItem = true
         preferences.showDockIcon = true
@@ -57,9 +63,12 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.shortcut, .optionTab)
         XCTAssertEqual(restored.persistentShortcut, preferences.persistentShortcut)
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
-        XCTAssertEqual(restored.navigationPreviewDelay, .long)
+        XCTAssertEqual(restored.expandedPreviewDelay, .fiveSeconds)
         XCTAssertFalse(restored.includeOtherSpaces)
         XCTAssertFalse(restored.includeOtherDisplays)
+        XCTAssertTrue(restored.includeMinimizedWindows)
+        XCTAssertTrue(restored.includeHiddenApplicationWindows)
+        XCTAssertTrue(restored.includePictureInPictureWindows)
         XCTAssertFalse(restored.showTabCounts)
         XCTAssertTrue(restored.showMenuBarItem)
         XCTAssertTrue(restored.showDockIcon)
@@ -85,8 +94,11 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(migrated.shortcut, .optionTab)
         XCTAssertEqual(migrated.persistentShortcut, openShortcut)
         XCTAssertEqual(migrated.appearanceMode, .windowPreviews)
-        XCTAssertEqual(migrated.navigationPreviewDelay, .standard,
-                       "existing users inherit the documented 700 ms default")
+        XCTAssertEqual(migrated.expandedPreviewDelay, .threeSeconds,
+                       "existing users inherit the documented three-second default")
+        XCTAssertFalse(migrated.includeMinimizedWindows)
+        XCTAssertFalse(migrated.includeHiddenApplicationWindows)
+        XCTAssertFalse(migrated.includePictureInPictureWindows)
         XCTAssertFalse(migrated.showTabCounts)
         XCTAssertTrue(migrated.showMenuBarItem)
     }
@@ -98,15 +110,18 @@ final class PreferencesTests: XCTestCase {
 
     func testCorruptAppearanceAndBooleanValuesFallBackToDocumentedDefaults() {
         defaults.set("obsolete-mode", forKey: Preferences.Key.appearanceMode.rawValue)
-        defaults.set("obsolete-delay", forKey: Preferences.Key.navigationPreviewDelay.rawValue)
+        defaults.set("obsolete-delay", forKey: Preferences.Key.expandedPreviewDelay.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.includeOtherSpaces.rawValue)
+        defaults.set("not-a-boolean",
+                     forKey: Preferences.Key.includeMinimizedWindows.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.showMenuBarItem.rawValue)
 
         let restored = Preferences(defaults: defaults)
 
         XCTAssertEqual(restored.appearanceMode, .appIcons)
-        XCTAssertEqual(restored.navigationPreviewDelay, .standard)
+        XCTAssertEqual(restored.expandedPreviewDelay, .threeSeconds)
         XCTAssertTrue(restored.includeOtherSpaces)
+        XCTAssertFalse(restored.includeMinimizedWindows)
         XCTAssertFalse(restored.showMenuBarItem)
     }
 
@@ -115,24 +130,39 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
     }
 
-    func testNavigationPreviewDelayPresetsAvoidRawMillisecondsInSettings() {
-        XCTAssertNil(NavigationPreviewDelay.off.duration)
-        XCTAssertEqual(NavigationPreviewDelay.short.duration, 0.35)
-        XCTAssertEqual(NavigationPreviewDelay.standard.duration, 0.7)
-        XCTAssertEqual(NavigationPreviewDelay.long.duration, 1.2)
-        XCTAssertEqual(NavigationPreviewDelay.allCases.map(\.displayName),
-                       ["Off", "Short", "Default", "Long"])
+    func testExpandedPreviewDelayPresetsAvoidRawMillisecondsInSettings() {
+        XCTAssertNil(ExpandedPreviewDelay.off.duration)
+        XCTAssertEqual(ExpandedPreviewDelay.oneSecond.duration, 1)
+        XCTAssertEqual(ExpandedPreviewDelay.twoSeconds.duration, 2)
+        XCTAssertEqual(ExpandedPreviewDelay.threeSeconds.duration, 3)
+        XCTAssertEqual(ExpandedPreviewDelay.fiveSeconds.duration, 5)
+        XCTAssertEqual(ExpandedPreviewDelay.allCases.map(\.displayName),
+                       ["Off", "1 second", "2 seconds", "3 seconds", "5 seconds"])
     }
 
-    func testNavigationPreviewDelayPublishesRuntimeUpdatesImmediately() {
-        var observed: [NavigationPreviewDelay] = []
-        let observation = preferences.$navigationPreviewDelay.sink {
+    func testExpandedPreviewDelayPublishesRuntimeUpdatesImmediately() {
+        var observed: [ExpandedPreviewDelay] = []
+        let observation = preferences.$expandedPreviewDelay.sink {
             observed.append($0)
         }
 
-        preferences.navigationPreviewDelay = .short
+        preferences.expandedPreviewDelay = .oneSecond
 
-        XCTAssertEqual(observed, [.standard, .short])
+        XCTAssertEqual(observed, [.threeSeconds, .oneSecond])
         withExtendedLifetime(observation) {}
+    }
+
+    func testLegacyNavigationDelayMigratesToExpandedPreviewPreset() {
+        defaults.removeObject(forKey: Preferences.Key.expandedPreviewDelay.rawValue)
+        defaults.set("long", forKey: Preferences.Key.navigationPreviewDelay.rawValue)
+
+        XCTAssertEqual(Preferences(defaults: defaults).expandedPreviewDelay, .fiveSeconds)
+    }
+
+    func testWindowFilterChangesPublishRuntimeRefresh() {
+        let expectation = expectation(forNotification: Preferences.windowFiltersDidChange,
+                                      object: preferences)
+        preferences.includePictureInPictureWindows = true
+        wait(for: [expectation], timeout: 1)
     }
 }

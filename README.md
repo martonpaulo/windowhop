@@ -7,169 +7,234 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 
-macOS's Command-Tab switches between *apps*. WindowHop switches between *windows*:
-every window gets its own large tile, and releasing Command lands you on the exact
-window you picked — even on another Space or display. Free, open source, native.
+macOS Command-Tab switches between *apps*. WindowHop gives every top-level window its
+own tile, then lands on the exact window you select — including windows on another Space
+or display. It is native, free, open source, and contains no telemetry.
 
-![WindowHop App Icons in Light Mode with a rounded selection background](docs/screenshots/switcher-light.png)
+![WindowHop App Icons in Light Mode with a borderless selected background](docs/screenshots/switcher-light.png)
 
-Prefer window snapshots? Turn on the optional **Window Previews** appearance:
+Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
 
-![Window Previews in Light Mode with a semantic selected focus ring, corner badges, a complete Close control, and loading and unavailable states](docs/screenshots/switcher-previews-light.png)
+![WindowHop previews in Light Mode with semantic surfaces, selected treatment, tall-window letterboxing, loading and unavailable states](docs/screenshots/switcher-previews-light.png)
 
 ## Download and install
 
-1. **[⬇ Download WindowHop-1.1.2.dmg](https://github.com/martonpaulo/windowhop/releases/latest)**
-2. Open the DMG and **drag WindowHop into Applications**.
-3. Open WindowHop from Applications. Official releases are Developer ID signed,
-   notarized by Apple, and validated by Gatekeeper before publication.
-4. Grant the one required permission:
-   **System Settings → Privacy & Security → Accessibility → enable WindowHop.**
-   The welcome window takes you there. That's it — press ⌘⇥.
+1. Download **[WindowHop 1.2.0](https://github.com/martonpaulo/windowhop/releases/latest)**.
+   The `WindowHop-1.2.0-Installer.zip` asset preserves the branded Finder icon; the
+   release also provides the raw `WindowHop-1.2.0.dmg`.
+2. Unzip the installer if needed, open the DMG, and drag WindowHop to Applications.
+3. Open WindowHop from Applications and grant
+   **System Settings → Privacy & Security → Accessibility**.
+
+Official releases are signed with WindowHop's stable Developer ID identity, notarized
+by Apple, stapled, and Gatekeeper-validated before publication.
+
+![Branded WindowHop DMG with the app and real Applications alias](docs/screenshots/installer-dmg.png)
 
 ## Using WindowHop
 
 | Keys | Action |
 |---|---|
-| **⌘⇥** | Open the switcher and select your previous window |
-| **⌘⇥⇥…** (keep holding ⌘) | Cycle forward |
+| **⌘⇥** | Open and select the previous window |
+| **⌘⇥⇥…** while holding ⌘ | Cycle forward |
 | **⇧⌘⇥** | Cycle backward |
-| **Release ⌘** | Switch to the selected window |
+| **Release ⌘** | Confirm and activate the selected window |
 | **← → ↑ ↓** | Navigate |
-| **↩** | Switch to the selected window |
-| **⎋** | Cancel and restore the window active before WindowHop opened |
-| **⌫** | Close the selected window (always asks first) |
-| **⌘,** | Open WindowHop Settings |
-| **Click** | Switch to a window; click outside cancels |
+| **↩** or **Space** | Confirm the selected window |
+| **⎋** | Cancel without changing the desktop |
+| **⌫** | Close the selected window after confirmation |
+| **⌘,** | Open Settings without confirming or cancelling |
+| **Click** | Confirm a tile; click outside to cancel |
 
-Hover a tile for a close button centered on that card's top-left canvas corner.
-The global Settings control overlaps the panel's top-right corner with most of its
-hit target inside, without moving the previews. The close dialog can also
-**Quit** the app — and offers a separately confirmed **Force Quit**
-if an app refuses to quit. Closing always preserves the app's own unsaved-changes
-questions.
+Hovering reveals a Close control centered on the preview canvas's top-left point. It
+always targets that tile and uses a 44 pt hit area without moving the card. The global
+Settings control overlaps the panel's top-right corner without taking layout space.
+Close always asks first; Quit is graceful, and Force Quit has its own second warning.
 
-Pause on a tile while navigating and WindowHop temporarily brings that window forward
-behind the switcher after the configured dwell. Fast traversal cancels pending work, so
-intermediate windows are skipped.
-Confirming keeps the targeted window active; cancelling restores the exact origin window
-when it still exists.
+### Expanded preview after pausing
 
-**One entry per window, never per tab.** A Safari window with 5 tabs is one entry
-showing "5 tabs". Finder/Terminal tab groups collapse to their visible tab.
+Pause on the selected tile for the configured delay (3 seconds by default) and
+WindowHop enlarges the latest snapshot **inside the switcher**. It never activates,
+raises, focuses, reorders, or moves the real window. Navigation remains available;
+moving to another tile closes the expanded view and starts a new delay. Confirming
+activates the current target immediately. Cancelling leaves the originally focused
+window and desktop stacking unchanged.
 
-### The "Open WindowHop" shortcut
+![Expanded in-panel preview in Light Mode](docs/screenshots/switcher-expanded-light.png)
 
-Prefer not to hold a modifier? Assign a second shortcut (say ⌥Space) in Settings →
-General. It opens the switcher and *keeps it open*: ⇥/⇧⇥/arrows navigate, ↩ or
-Space switches, ⎋ cancels. Unassigned by default.
+![Expanded in-panel preview in Dark Mode](docs/screenshots/switcher-expanded-dark.png)
 
-### App Icons vs Window Previews
+### One entry per window
 
-Settings → **Appearance**. *App Icons* (default) shows each window as a large app
-icon and needs no extra permission. *Window Previews* shows a snapshot of each
-window and needs **Screen Recording** permission (macOS requires it); WindowHop
-asks only when you pick previews, and falls back to icons until it's granted.
-Previews are generated on your Mac and kept only in memory, never written to disk or
-transmitted. A cached preview can appear immediately when the switcher opens; a fresh
-capture replaces it in place when available. Loading and unavailable cards keep the
-same fixed canvas, outline, title position, and bottom-right app badge, so nothing jumps.
-Loading cards say “Loading preview…”; a failed first capture changes in place to the
-secondary “Preview unavailable” state without exposing a technical error.
-App Icons stays borderless and uses a soft rounded selection background; Window Previews
-uses one semantic macOS focus ring that replaces its subtle neutral outline.
+Tabs are never separate switcher entries. A Safari window with five tabs is one entry
+showing “5 tabs”; Finder and Terminal tab groups collapse to their visible top-level
+window.
 
-## Settings
+### Open WindowHop shortcut
 
-Native multi-pane Settings — General, Appearance, Updates, About. General exposes every
-existing user-configurable behavior: enablement, launch at login, both shortcuts,
-Space/display inclusion, and menu bar/Dock visibility. Appearance owns presentation,
-tab counts, and the navigation-preview dwell: Off, Short, Default (700 ms), or Long.
-Updates owns automatic update checks. Invalid stored values fall back to documented
-defaults. Launching
-WindowHop again (Finder, Spotlight, Dock) opens Settings even with the menu bar
-item and Dock icon hidden (both hidden by default).
+Assign an optional second shortcut in Settings → General when you do not want to hold a
+modifier. It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space
+confirms; Escape cancels. It is unassigned by default.
 
-![Settings — General](docs/screenshots/settings-general.png)
+## Preview behavior and permissions
 
-### Interface gallery
+**App Icons** is the default and needs no Screen Recording permission. **Window
+Previews** uses ScreenCaptureKit only while the switcher is open. Captures remain in
+memory and are never written to disk or transmitted. A cached preview may appear first;
+a fresh capture replaces it in place.
 
-The screenshots below are generated by the app's release-equivalent render harness
-using synthetic titles and preview content—no personal windows or Screen Recording data.
+Every preview keeps one fixed display-ratio canvas. Wide, tall, and narrow windows are
+scaled proportionally and centered over an adaptive semantic surface — never stretched,
+cropped, or left as a transparent hole. The app badge remains attached to the canvas's
+bottom-right corner in every state.
 
-![WindowHop switcher in Dark Mode](docs/screenshots/switcher-dark.png)
+| State | What WindowHop shows |
+|---|---|
+| Capturing | **Loading preview…** |
+| Screen Recording is missing | **Permission required** with one panel-level Settings action |
+| Capture failed while permission exists | **Preview unavailable** |
+| Capture succeeded | The current snapshot |
 
-![Window Previews in Dark Mode with one selected loaded preview, corner badges, a loaded-preview Close control, and loading and unavailable states](docs/screenshots/switcher-previews-dark.png)
+Missing permission is checked before capture starts, so it cannot masquerade as loading
+or enter a retry loop. Returning from Privacy & Security refreshes the state; once
+permission exists, capture starts without moving the cards.
 
-![WindowHop multi-row layout with consistent row spacing and selection](docs/screenshots/switcher-overflow.png)
+![Permission-required previews in Light Mode](docs/screenshots/switcher-permission-required-light.png)
 
-![Settings — Appearance](docs/screenshots/settings-appearance.png)
+![Permission-required previews in Dark Mode](docs/screenshots/switcher-permission-required-dark.png)
 
-![Settings — Updates](docs/screenshots/settings-updates.png)
+## Settings and defaults
 
-![Settings — About](docs/screenshots/settings-about.png)
+Settings has four native panes: General, Appearance, Updates, and About. Changes persist
+and apply immediately when safe; invalid stored values restore documented defaults.
 
-## Automatic updates and privacy
+### General
 
-WindowHop updates itself with [Sparkle](https://sparkle-project.org): it checks a
-feed on GitHub and cryptographically verifies (EdDSA) every update before
-installing — a plain native dialog, no embedded web pages. Control it in
-Settings → Updates, which also shows when a newer version is available.
-**Update checks are WindowHop's only network activity** — no telemetry, no
-analytics, no accounts.
+- Enable WindowHop — **on**
+- Launch at login — **on**
+- Switcher shortcut — **⌘Tab**
+- Open WindowHop shortcut — **unassigned**
+- Include windows from other Spaces — **on**
+- Include windows from other displays — **on**
+- Include minimized windows — **off**
+- Include windows from hidden applications — **off**
+- Include Picture-in-Picture windows — **off**
+- Show menu bar item — **off**
+- Show Dock icon — **off**
 
-## Uninstall
+The default is intentionally a curated set of normal windows. Inclusion toggles are
+explicit opt-ins, rebuild the available list, and do not weaken the invariants that
+exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helper UI.
 
-Quit WindowHop (menu bar item → Quit, or via Activity Monitor), then delete
-`/Applications/WindowHop.app`. Optional cleanup:
-`defaults delete com.perso.windowhop` and remove WindowHop from
-System Settings → Privacy & Security → Accessibility (and Screen Recording).
+![Settings General with the Windows shown section](docs/screenshots/settings-general.png)
+
+### Appearance
+
+- Switcher shows — **App Icons** or Window Previews; default **App Icons**
+- Show tab counts — **on**
+- Show an expanded preview after pausing — **Off, 1, 2, 3, or 5 seconds**; default
+  **3 seconds**
+- Screen Recording status and the single permission action for Window Previews
+
+![Settings Appearance with expanded-preview and Screen Recording controls](docs/screenshots/settings-appearance.png)
+
+### Updates and About
+
+Automatic checks are enabled by default. Sparkle verifies the EdDSA signature and Apple
+code signature before replacing the app in place; the Settings pane also offers a manual
+check.
+
+![Settings Updates](docs/screenshots/settings-updates.png)
+
+![Settings About](docs/screenshots/settings-about.png)
+
+## Interface gallery
+
+These images are generated by the app's release-equivalent render harness with synthetic
+titles and preview content — no personal windows or Screen Recording data.
+
+![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.png)
+
+![WindowHop previews in Dark Mode with selected, letterboxed, loading and unavailable cards](docs/screenshots/switcher-previews-dark.png)
+
+![WindowHop responsive multi-row layout with consistent row spacing](docs/screenshots/switcher-overflow.png)
+
+## Updates, signing, and privacy
+
+WindowHop uses [Sparkle](https://sparkle-project.org) and GitHub Releases. Update checks
+are its only network activity. There are no accounts, analytics, advertising, or
+telemetry. Official release automation refuses to publish if the Developer ID identity,
+nested signatures, hardened runtime, designated requirement, notarization, stapling,
+Gatekeeper assessment, DMG branding, or Sparkle signature is missing or inconsistent.
+
+The bundle identifier, Team ID, leaf Developer ID certificate, entitlements, and exact
+designated requirement are validated against the previous official release. This keeps
+macOS TCC permissions associated with the same code identity across Sparkle updates and
+manual in-place replacement.
+
+### One-time recovery for an already-corrupted grant
+
+Only users whose Accessibility entry was created by an old ad-hoc, development-signed,
+translocated, or otherwise differently identified build may need one repair: remove the
+stale WindowHop entry from Privacy & Security → Accessibility, install the current
+official build in Applications, and grant it once. Normal signed updates must not require
+this again.
 
 ## Troubleshooting
 
-- **⌘⇥ shows the old macOS switcher** — WindowHop isn't running, is disabled, or
-  lost Accessibility permission. That's the fail-safe: native switching always keeps
-  working.
-- **The Accessibility toggle doesn't stick** — the welcome window has a
-  "Reset Stuck Permission…" button that clears the stale entry so you can grant
-  it fresh. Also make sure WindowHop was dragged into Applications with Finder
-  (running it straight from the DMG or Downloads triggers macOS App
-  Translocation, where no grant can persist — WindowHop warns about this).
-  Official releases use one stable Developer ID identity so the grant survives updates.
-- **Previews are icons instead of snapshots** — grant Screen Recording in
-  System Settings → Privacy & Security, then relaunch WindowHop.
-- **A window is missing** — minimized windows, hidden apps, and floating
-  Picture-in-Picture panels are excluded by design; a window on an unvisited
-  Space appears after you visit that Space once.
-- **Typing a password?** Secure input pauses interception; ⌘⇥ is native until done.
+- **⌘Tab shows Apple's switcher** — WindowHop is not running, is disabled, or lacks
+  Accessibility. This is the fail-safe; WindowHop never disables the native shortcut.
+- **Window Previews says Permission required** — use the one panel or Settings action to
+  open Screen Recording, enable WindowHop, then return to the app. App Icons remains
+  fully usable without it.
+- **A window is missing** — minimized, hidden-app, and PiP windows are excluded by
+  default and can be enabled under General → Windows shown. Public Accessibility APIs
+  reveal an unvisited Space only after you visit it once.
+- **A previous build's Accessibility toggle does not stick** — ensure WindowHop is in
+  Applications and use the one-time recovery above. Running directly from Downloads or
+  the DMG can trigger App Translocation.
+- **Secure input is active** — password fields make WindowHop pass ⌘Tab through to the
+  native switcher until secure input ends.
+
+## Uninstall
+
+Quit WindowHop, delete `/Applications/WindowHop.app`, and optionally run
+`defaults delete com.perso.windowhop`. You can also remove WindowHop from Accessibility
+and Screen Recording in System Settings.
 
 ## Build from source
 
-macOS 14+, Xcode 16+ (free); no paid account needed.
+Requires macOS 14+ and Xcode 16+.
 
 ```sh
-git clone https://github.com/martonpaulo/windowhop && cd windowhop
-swift test                # test suite
-scripts/validate.sh       # repository invariants
-scripts/package-app.sh    # build/WindowHop.app (ad-hoc signed)
-scripts/make-dmg.sh       # the installer DMG
+git clone https://github.com/martonpaulo/windowhop
+cd windowhop
+swift build && swift test
+scripts/validate.sh
+scripts/package-app.sh 1.2.0 10200
+scripts/make-dmg.sh 1.2.0
 ```
+
+Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved
+Developer ID identity. Official tags run the fail-closed signing, notarization, stapling,
+Gatekeeper, Sparkle, and GitHub Release workflow.
 
 Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
 [contributing](CONTRIBUTING.md) · [upstream attribution](UPSTREAM.md)
 
 ## Known limitations
 
-- **Windows on unvisited Spaces** appear only after that Space is visited once
-  while WindowHop runs — a limitation of macOS's public Accessibility API
-  (WindowHop deliberately uses no private APIs, unlike AltTab).
-- **Tab counts** appear only for apps exposing native tab groups (Safari, Finder,
-  Terminal, TextEdit, …); Chrome-style custom tabs show no count — never guessed.
+- Other-Space windows become discoverable only after that Space has been visited while
+  WindowHop runs; WindowHop deliberately uses no private APIs.
+- Tab counts exist only for apps exposing native tab groups and are never guessed.
+- Screen Recording's public preflight API distinguishes authorized from unavailable but
+  does not expose whether an unavailable grant is specifically denied or restricted;
+  both correctly use the permission-required product state.
 - English-only interface in this release.
 
 ## License and attribution
 
 [GPL-3.0](LICENSE). Derived from
 [AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise (lwouis) and
-contributors — base tag `v10.12.0` (`317a485b`), full upstream history preserved
-in this repository. See [UPSTREAM.md](UPSTREAM.md). Thank you, AltTab.
+contributors — base tag `v10.12.0` (`317a485b`), with upstream history preserved.
+See [UPSTREAM.md](UPSTREAM.md).

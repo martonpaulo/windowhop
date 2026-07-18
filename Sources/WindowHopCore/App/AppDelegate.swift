@@ -132,6 +132,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             StatusItemController.shared.apply()
             self.applyConfiguration()
         }
+        NotificationCenter.default.addObserver(
+            forName: Preferences.windowFiltersDidChange,
+            object: preferences,
+            queue: .main) { _ in
+                WindowStore.shared.windowFiltersChanged()
+            }
         // permission granted or revoked while running
         AccessibilityPermission.observeChanges { [weak self] granted in
             guard let self else { return }

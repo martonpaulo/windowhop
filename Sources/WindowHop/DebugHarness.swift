@@ -6,6 +6,8 @@ import WindowHopCore
 ///   without needing Accessibility permission. Used for screenshots and layout QA.
 /// - `--dump-windows`: starts the real engine, waits for discovery, prints the
 ///   switcher list with timings, and exits. Requires Accessibility permission.
+/// - `--dump-permissions`: prints the app identity's effective Accessibility and
+///   Screen Recording states without prompting.
 enum DebugHarness {
     static func runIfRequested(_ arguments: [String]) -> Bool {
         if arguments.contains("--demo-switcher") {
@@ -14,6 +16,10 @@ enum DebugHarness {
         }
         if arguments.contains("--dump-windows") {
             runWindowDump()
+            return true
+        }
+        if arguments.contains("--dump-permissions") {
+            runPermissionDump()
             return true
         }
         if let flagIndex = arguments.firstIndex(of: "--render-ui"), arguments.count > flagIndex + 1 {
@@ -46,6 +52,13 @@ enum DebugHarness {
 
         let savedMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .appIcons
+        var pending = 0
+        let finishOne = {
+            pending -= 1
+            if pending == 0 {
+                exit(0)
+            }
+        }
 
         // overflow check: 120 synthetic windows in a wrapping, vertically scrolling grid
         let overflowPanel = SwitcherPanel(rasterizableBackground: true)
@@ -53,6 +66,7 @@ enum DebugHarness {
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
         overflowPanel.show(items: overflowItems, selectedIndex: 60)
+        pending += 1
         print("overflow panel: 120 tiles in "
             + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
             + "frame \(overflowPanel.frame)")
@@ -62,6 +76,7 @@ enum DebugHarness {
                 write(contentView, "switcher-overflow")
             }
             overflowPanel.hide()
+            finishOne()
         }
 
         // preview appearance, populated with synthetic window images (real
@@ -72,6 +87,7 @@ enum DebugHarness {
             previewPanel.appearance = NSAppearance(named: appearanceName)
             let previewItems = demoItems()
             previewPanel.show(items: previewItems, selectedIndex: 1)
+            pending += 1
             for (index, item) in previewItems.enumerated() where index != 4 && index != 5 {
                 // Index 4 is an explicit unavailable fallback; index 5 remains
                 // loading. The rest get varied source aspect ratios.
@@ -87,20 +103,26 @@ enum DebugHarness {
                 if let contentView = previewPanel.contentView {
                     write(contentView, "switcher-previews-\(suffix)")
                 }
+                let expandedImage = syntheticWindowImage(
+                    size: NSSize(width: 760, height: 480), seed: 1)
+                previewPanel.showExpandedPreview(id: previewItems[1].id,
+                                                 image: expandedImage)
+                if let contentView = previewPanel.contentView {
+                    write(contentView, "switcher-expanded-\(suffix)")
+                }
+                previewPanel.hideExpandedPreview()
+                previewPanel.setPreviewPermissionStatus(.denied)
+                if let contentView = previewPanel.contentView {
+                    write(contentView, "switcher-permission-required-\(suffix)")
+                }
                 previewPanel.hide()
+                finishOne()
             }
         }
         // Standard switcher renders always exercise the permission-free default,
         // independent of the developer's persisted local preference.
         Preferences.shared.appearanceMode = .appIcons
 
-        var pending = 0
-        let finishOne = {
-            pending -= 1
-            if pending == 0 {
-                exit(0)
-            }
-        }
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let panel = SwitcherPanel(rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
@@ -243,5 +265,17 @@ enum DebugHarness {
             exit(0)
         }
         app.run()
+    }
+
+    private static func runPermissionDump() {
+        let screenRecording: String
+        switch ScreenRecordingPermission.status {
+        case .authorized: screenRecording = "authorized"
+        case .notDetermined: screenRecording = "not-determined"
+        case .denied: screenRecording = "denied"
+        case .restricted: screenRecording = "restricted"
+        }
+        print("accessibility=\(AccessibilityPermission.isGranted ? "authorized" : "unavailable")")
+        print("screen-recording=\(screenRecording)")
     }
 }

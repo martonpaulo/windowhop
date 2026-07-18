@@ -34,10 +34,10 @@ ditto .build/release/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framewo
 # sign nested code first (Sparkle's helpers), then the framework, then the app
 SIGN_FLAGS=(--force --sign "$IDENTITY")
 if [ "$IDENTITY" != "-" ]; then
-    SIGN_FLAGS+=(--timestamp)
-    case "$IDENTITY" in
-        *"Developer ID"*) SIGN_FLAGS+=(--options runtime) ;;
-    esac
+    # A hash is safer than a display name when the Keychain contains renewed
+    # certificates with identical names. Every non-ad-hoc release identity
+    # still requires timestamping and Hardened Runtime.
+    SIGN_FLAGS+=(--timestamp --options runtime)
 fi
 codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Downloader.xpc"
 codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework/Versions/B/XPCServices/Installer.xpc"
@@ -46,6 +46,9 @@ codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework/Versions
 codesign "${SIGN_FLAGS[@]}" "$APP/Contents/Frameworks/Sparkle.framework"
 codesign "${SIGN_FLAGS[@]}" "$APP"
 codesign --verify --deep --strict "$APP"
+if [ "$IDENTITY" != "-" ]; then
+    scripts/verify-release-identity.sh "$APP"
+fi
 
 mkdir -p artifacts
 ZIP="artifacts/WindowHop-$VERSION.zip"

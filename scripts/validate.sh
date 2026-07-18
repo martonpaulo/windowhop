@@ -101,7 +101,7 @@ while IFS= read -r screenshot; do
     else
         fail "unreferenced screenshot is tracked: $screenshot"
     fi
-done < <(git ls-files 'docs/screenshots/*')
+done < <(find docs/screenshots -type f -print | sort)
 
 if [ "$failures" -eq 0 ]; then
     pass "Markdown local links and tracked screenshots are synchronized"

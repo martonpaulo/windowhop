@@ -38,13 +38,6 @@ public final class WindowStore {
     private var preferences: Preferences { Preferences.shared }
     private var runningAppsObserver: NSKeyValueObservation?
     private var started = false
-    /// Temporary navigation is visual inspection, not completed switching. AX
-    /// focus notifications still refresh window facts while this is true, but
-    /// they cannot rewrite the window-level MRU order.
-    private var suppressesFocusHistory = false
-    private var temporarilyActivatedWindowIDs: Set<UUID> = []
-    private var ignoredTemporaryFocusWindowIDs: Set<UUID> = []
-    private var ignoreTemporaryFocusUntil: CFAbsoluteTime = 0
 
     /// Requires Accessibility permission. Safe to call again after stop().
     public func start() {
@@ -167,53 +160,10 @@ public final class WindowStore {
     }
 
     private func windowFocused(_ window: TrackedWindow) {
-        guard !suppressesFocusHistory else { return }
-        if CFAbsoluteTimeGetCurrent() <= ignoreTemporaryFocusUntil,
-           ignoredTemporaryFocusWindowIDs.contains(window.stableId) {
-            return
-        }
-        if CFAbsoluteTimeGetCurrent() > ignoreTemporaryFocusUntil {
-            ignoredTemporaryFocusWindowIDs.removeAll()
-        }
         if let index = windows.firstIndex(where: { $0 === window }), index != 0 {
             windows.remove(at: index)
             windows.insert(window, at: 0)
         }
-    }
-
-    // MARK: - Temporary activation history
-
-    /// Begins a switcher-owned temporary activation session. This never stops
-    /// event handling; it only freezes completed-switch ordering.
-    func beginTemporaryActivationSession() {
-        suppressesFocusHistory = true
-        temporarilyActivatedWindowIDs.removeAll()
-        ignoredTemporaryFocusWindowIDs.removeAll()
-        ignoreTemporaryFocusUntil = 0
-    }
-
-    /// Records an AX action whose focus notifications are inspection-only. The
-    /// short post-session grace window catches notifications macOS delivers
-    /// after the action queue itself has already completed, without any timer.
-    func noteTemporaryActivation(_ window: TrackedWindow) {
-        temporarilyActivatedWindowIDs.insert(window.stableId)
-    }
-
-    /// Restores normal focus history and records only the explicitly committed
-    /// window. Cancellation passes nil and preserves the exact pre-session MRU.
-    func finishTemporaryActivationSession(committedWindow: TrackedWindow?) {
-        suppressesFocusHistory = false
-        ignoredTemporaryFocusWindowIDs = temporarilyActivatedWindowIDs
-        if let committedWindow {
-            ignoredTemporaryFocusWindowIDs.remove(committedWindow.stableId)
-        }
-        temporarilyActivatedWindowIDs.removeAll()
-        ignoreTemporaryFocusUntil = CFAbsoluteTimeGetCurrent()
-            + TemporaryActivationSession<UUID>.lateFocusGraceDuration
-        guard let committedWindow,
-              windows.contains(where: { $0 === committedWindow }) else { return }
-        windowFocused(committedWindow)
-        onChange?()
     }
 
     func removeWindow(_ element: AXUIElement) {
@@ -362,8 +312,7 @@ public final class WindowStore {
     /// The visible, ordered switcher list under the current settings.
     public func snapshot() -> [SwitcherItem] {
         resolveFloatingWindows()
-        let includeOtherSpaces = preferences.includeOtherSpaces
-        let includeOtherDisplays = preferences.includeOtherDisplays
+        let policy = preferences.windowInclusionPolicy
         let showTabCounts = preferences.showTabCounts
         let activeScreen = NSScreen.main
         return windows.compactMap { window in
@@ -379,9 +328,7 @@ public final class WindowStore {
                 isPictureInPicture: window.isPictureInPicture ?? false,
                 isOnCurrentSpace: window.isOnCurrentSpace,
                 isOnActiveDisplay: activeScreen.map { window.isOn(screen: $0) } ?? true)
-            guard WindowEligibility.shouldDisplay(state,
-                                                  includeOtherSpaces: includeOtherSpaces,
-                                                  includeOtherDisplays: includeOtherDisplays) else { return nil }
+            guard WindowEligibility.shouldDisplay(state, policy: policy) else { return nil }
             return SwitcherItem(id: window.stableId,
                                 window: window,
                                 title: window.title,
@@ -389,6 +336,13 @@ public final class WindowStore {
                                 icon: window.appIcon,
                                 tabCount: showTabCounts ? window.tabCount : nil)
         }
+    }
+
+    /// Re-evaluates the shared inclusion policy immediately after a user-facing
+    /// filter changes. Discovery remains event-driven; no AX work is added.
+    public func windowFiltersChanged() {
+        guard started else { return }
+        onChange?()
     }
 
     // MARK: - Picture-in-Picture resolution (behavior-based, one query per new window)

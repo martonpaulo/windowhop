@@ -114,7 +114,9 @@ jobs:
           echo "signing as: $IDENTITY"
 
       - name: Build and package
-        run: scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
+        run: |
+          scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
+          scripts/verify-release-identity.sh build/WindowHop.app
 
       - name: Notarize, staple, and validate app
         env:
@@ -183,14 +185,48 @@ jobs:
           xcrun stapler validate "$DMG"
           codesign --verify --verbose=2 "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+          scripts/verify-dmg-branding.sh "$DMG"
           MOUNT=$(mktemp -d)
           hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT"
           trap 'hdiutil detach "$MOUNT" -quiet || true; rmdir "$MOUNT" || true' EXIT
           codesign --verify --deep --strict --verbose=2 "$MOUNT/WindowHop.app"
+          scripts/verify-release-identity.sh "$MOUNT/WindowHop.app"
           spctl --assess --type execute --verbose=2 "$MOUNT/WindowHop.app"
+          cmp Support/AppInstallerIcon.icns "$MOUNT/.VolumeIcon.icns" || {
+            echo "Branded mounted-volume icon is missing or changed." >&2
+            exit 1
+          }
+          test -f "$MOUNT/.DS_Store" || {
+            echo "Finder installer layout is missing." >&2
+            exit 1
+          }
           hdiutil detach "$MOUNT" -quiet
           rmdir "$MOUNT"
           trap - EXIT
+          # GitHub's raw-asset transport cannot preserve a macOS resource fork.
+          # This human-download ZIP preserves the DMG's branded Finder icon;
+          # the raw DMG remains attached for direct mounts and automation.
+          # A single-file source already keeps its basename. --keepParent would
+          # also archive the local artifacts/ directory, which is poor installer UX.
+          ditto -c -k --sequesterRsrc "$DMG" \
+            "artifacts/WindowHop-$VERSION-Installer.zip"
+          ZIP_TEST=$(mktemp -d)
+          ditto -x -k "artifacts/WindowHop-$VERSION-Installer.zip" "$ZIP_TEST"
+          EXTRACTED_DMG="$ZIP_TEST/WindowHop-$VERSION.dmg"
+          test -f "$EXTRACTED_DMG" || {
+            echo "Installer ZIP has an unexpected directory layout." >&2
+            exit 1
+          }
+          DeRez -only icns "$EXTRACTED_DMG" | grep -F "data 'icns'" >/dev/null || {
+            echo "Installer ZIP did not preserve the DMG Finder icon resource." >&2
+            exit 1
+          }
+          GetFileInfo -a "$EXTRACTED_DMG" | grep -q C || {
+            echo "Installer ZIP did not preserve the DMG custom-icon Finder flag." >&2
+            exit 1
+          }
+          hdiutil verify "$EXTRACTED_DMG" -quiet
+          find "$ZIP_TEST" -depth -delete
 
       - name: Update appcast on main
         run: |
@@ -216,8 +252,8 @@ jobs:
             echo "release $GITHUB_REF_NAME already exists; skipping creation"
             exit 0
           fi
-          # standard macOS app release assets only: the DMG (human download)
-          # and the ZIP (Sparkle update archive)
+          # Human installer ZIP preserves the DMG Finder icon; raw DMG remains
+          # available, and the plain ZIP is Sparkle's signed update archive.
           awk -v version="$VERSION" '
             $0 ~ "^## " version " " { printing=1; next }
             printing && /^## / { exit }
@@ -225,6 +261,7 @@ jobs:
           ' CHANGELOG.md > release-notes.md
           test -s release-notes.md || { echo "Missing CHANGELOG release notes for $VERSION" >&2; exit 1; }
           gh release create "$GITHUB_REF_NAME" \
+            "artifacts/WindowHop-$VERSION-Installer.zip" \
             "artifacts/WindowHop-$VERSION.dmg" \
             "artifacts/WindowHop-$VERSION.zip" \
             --title "WindowHop $VERSION" \

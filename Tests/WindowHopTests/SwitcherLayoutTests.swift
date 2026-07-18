@@ -37,25 +37,31 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(loading.badgeFrameForTesting, wide.badgeFrameForTesting)
     }
 
-    func testEveryPreviewStateUsesTheSameSingleSelectionOutline() {
+    func testEveryPreviewStateUsesTheSameSingleSelectionBackground() throws {
         let loaded = configuredTile(imageSize: NSSize(width: 300, height: 200))
         let loading = configuredTile(imageSize: nil)
         let unavailable = configuredTile(imageSize: nil)
         unavailable.setPreviewUnavailable()
         unavailable.layoutSubtreeIfNeeded()
+        let permissionRequired = configuredTile(imageSize: nil)
+        permissionRequired.setPreviewPermissionRequired()
+        permissionRequired.layoutSubtreeIfNeeded()
 
-        for tile in [loaded, loading, unavailable] {
+        for tile in [loaded, loading, unavailable, permissionRequired] {
             tile.isSelected = true
-            XCTAssertEqual(tile.previewOutlineWidthForTesting,
-                           DesignTokens.selectionOutlineWidth)
-            XCTAssertEqual(tile.previewOutlineCornerRadiusForTesting,
-                           DesignTokens.cardCornerRadius)
+            tile.layoutSubtreeIfNeeded()
+            XCTAssertFalse(tile.showsCardOutlineForTesting)
+            XCTAssertEqual(tile.selectionBackgroundFrameForTesting,
+                           loaded.selectionBackgroundFrameForTesting)
+            XCTAssertEqual(tile.selectionBackgroundAlphaForTesting,
+                           DesignTokens.previewSelectionFill.alphaComponent,
+                           accuracy: 0.001)
         }
-        XCTAssertEqual(loaded.previewOutlineColorForTesting,
-                       loading.previewOutlineColorForTesting)
-        XCTAssertEqual(loaded.previewOutlineColorForTesting,
-                       unavailable.previewOutlineColorForTesting)
+        XCTAssertEqual(try rgba(try XCTUnwrap(loaded.selectionBackgroundColorForTesting)).3,
+                       try rgba(try XCTUnwrap(permissionRequired.selectionBackgroundColorForTesting)).3,
+                       accuracy: 0.001)
         XCTAssertTrue(unavailable.showsUnavailableStateForTesting)
+        XCTAssertTrue(permissionRequired.showsPermissionRequiredStateForTesting)
     }
 
     func testIconOnlyCardsUseBackgroundSelectionWithoutAnyOutline() {
@@ -69,35 +75,34 @@ final class SwitcherLayoutTests: XCTestCase {
                        DesignTokens.iconSelectionFill.alphaComponent)
     }
 
-    func testOutlineHierarchyReplacesNeutralWithOneSelectedOutline() {
+    func testUnselectedPreviewHasSurfaceButNoPermanentSelectionFrame() {
         let tile = configuredTile(imageSize: NSSize(width: 300, height: 200))
-        XCTAssertEqual(tile.previewOutlineWidthForTesting, DesignTokens.previewOutlineWidth)
-
-        tile.isTemporarilyActive = true
-        XCTAssertEqual(tile.previewOutlineWidthForTesting,
-                       DesignTokens.previewEmphasisOutlineWidth)
+        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertEqual(tile.selectionBackgroundAlphaForTesting, 0)
+        XCTAssertNotNil(tile.previewSurfaceColorForTesting)
 
         tile.isSelected = true
-        XCTAssertEqual(tile.previewOutlineWidthForTesting,
-                       DesignTokens.selectionOutlineWidth)
-        XCTAssertGreaterThan(DesignTokens.selectionOutlineWidth,
-                             DesignTokens.previewEmphasisOutlineWidth)
+        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertGreaterThan(tile.selectionBackgroundAlphaForTesting, 0)
     }
 
-    func testSelectionColorAdaptsBetweenLightAndDarkAppearances() throws {
+    func testSelectionUsesSemanticSystemFocusColorInBothAppearances() throws {
         let tile = configuredTile(imageSize: NSSize(width: 300, height: 200))
         tile.appearance = try XCTUnwrap(NSAppearance(named: .aqua))
         tile.isSelected = true
-        let light = try rgba(try XCTUnwrap(tile.previewOutlineColorForTesting))
+        let light = try rgba(try XCTUnwrap(tile.selectionBackgroundColorForTesting))
 
         tile.appearance = try XCTUnwrap(NSAppearance(named: .darkAqua))
         tile.isSelected = false
         tile.isSelected = true
-        let dark = try rgba(try XCTUnwrap(tile.previewOutlineColorForTesting))
+        let dark = try rgba(try XCTUnwrap(tile.selectionBackgroundColorForTesting))
 
-        XCTAssertNotEqual(light.0, dark.0)
-        XCTAssertNotEqual(light.2, dark.2)
-        XCTAssertLessThan(light.2, dark.2, "Dark Mode receives the brighter blue")
+        XCTAssertEqual(light.3, DesignTokens.previewSelectionFill.alphaComponent,
+                       accuracy: 0.001)
+        XCTAssertEqual(dark.3, DesignTokens.previewSelectionFill.alphaComponent,
+                       accuracy: 0.001)
+        XCTAssertGreaterThan(light.0 + light.1 + light.2, 0)
+        XCTAssertGreaterThan(dark.0 + dark.1 + dark.2, 0)
     }
 
     func testUnavailableToLoadedTransitionKeepsCanvasBadgeAndSelectionGeometry() {
@@ -107,7 +112,7 @@ final class SwitcherLayoutTests: XCTestCase {
         tile.layoutSubtreeIfNeeded()
         let canvas = tile.previewCanvasFrameForTesting
         let badge = tile.badgeFrameForTesting
-        let width = tile.previewOutlineWidthForTesting
+        let selectionFrame = tile.selectionBackgroundFrameForTesting
 
         tile.setPreview(NSImage(size: NSSize(width: 400, height: 100)), fadeIn: true)
         tile.layoutSubtreeIfNeeded()
@@ -115,7 +120,7 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertFalse(tile.showsUnavailableStateForTesting)
         XCTAssertEqual(tile.previewCanvasFrameForTesting, canvas)
         XCTAssertEqual(tile.badgeFrameForTesting, badge)
-        XCTAssertEqual(tile.previewOutlineWidthForTesting, width)
+        XCTAssertEqual(tile.selectionBackgroundFrameForTesting, selectionFrame)
     }
 
     func testCloseButtonCenterMatchesLoadedPreviewTopLeftPoint() {

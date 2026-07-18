@@ -25,6 +25,8 @@ public final class SwitcherPanel: NSPanel {
     public var onItemCloseRequested: ((Int) -> Void)?
     /// The panel-chrome gear control (and ⌘, while a session is open).
     public var onSettingsRequested: (() -> Void)?
+    /// One panel-level action when all preview capture is permission-blocked.
+    public var onPreviewPermissionRequested: (() -> Void)?
 
     /// Transparent overflow host. The visible panel occupies only
     /// `panelBackgroundView`; global controls may extend into the host without
@@ -36,13 +38,16 @@ public final class SwitcherPanel: NSPanel {
     private let scrollView = NSScrollView()
     private let tilesContainer = SwitcherTilesContainerView()
     private let settingsButton = NSButton()
+    private let permissionButton = NSButton()
+    private let expandedPreviewView = ExpandedPreviewView()
     /// Pooled tiles, reconfigured in place; index i shows item i.
     private var tilePool: [SwitcherTileView] = []
     private var visibleTileCount = 0
     private var selectedIndex = 0
     private var mode = AppearanceMode.appIcons
+    private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
-    private var temporarilyActiveID: AnyHashable?
+    private var expandedPreviewID: AnyHashable?
     /// Grid geometry of the current layout, for 2D arrow-key navigation.
     public private(set) var columnsPerRow = 1
 
@@ -51,6 +56,14 @@ public final class SwitcherPanel: NSPanel {
         let metrics = SwitcherTileView.Metrics.metrics(for: .windowPreviews)
         return NSSize(width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
                       height: metrics.contentHeight)
+    }
+
+    public static var expandedPreviewContentSize: NSSize {
+        NSSize(width: DesignTokens.expandedPreviewMinimumWidth
+                        - DesignTokens.expandedPreviewPanelInset * 2,
+               height: DesignTokens.expandedPreviewMinimumHeight
+                        - DesignTokens.expandedPreviewPanelInset * 2
+                        - DesignTokens.expandedPreviewTitleHeight)
     }
 
     /// `rasterizableBackground` is for the offscreen render harness only: the
@@ -93,6 +106,9 @@ public final class SwitcherPanel: NSPanel {
         scrollView.documentView = tilesContainer
         chromeView.addSubview(scrollView)
 
+        expandedPreviewView.isHidden = true
+        chromeView.addSubview(expandedPreviewView)
+
         // Global panel action: always visible, overlaid in the top-right, and
         // never measured as part of the preview grid.
         settingsButton.image = NSImage(systemSymbolName: "gearshape.circle.fill",
@@ -109,6 +125,24 @@ public final class SwitcherPanel: NSPanel {
         settingsButton.setAccessibilityLabel("WindowHop Settings")
         settingsButton.alphaValue = 1
         hostView.addSubview(settingsButton)
+
+        permissionButton.image = NSImage(
+            systemSymbolName: "lock.shield.fill",
+            accessibilityDescription: "Screen Recording permission required")?
+            .withSymbolConfiguration(NSImage.SymbolConfiguration(
+                pointSize: DesignTokens.chromeButtonSymbolSize * 0.72,
+                weight: .semibold)
+                .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
+                                                DesignTokens.overlayCircleColor])))
+        permissionButton.isBordered = false
+        permissionButton.imagePosition = .imageOnly
+        permissionButton.target = self
+        permissionButton.action = #selector(permissionClicked)
+        permissionButton.toolTip = "Screen Recording permission required — Open System Settings"
+        permissionButton.setAccessibilityLabel(
+            "Screen Recording permission required. Open System Settings")
+        permissionButton.isHidden = true
+        hostView.addSubview(permissionButton)
 
         chromeView.setAccessibilityElement(true)
         chromeView.setAccessibilityRole(.list)
@@ -165,7 +199,13 @@ public final class SwitcherPanel: NSPanel {
     }
 
     public func update(items: [SwitcherItem], selectedIndex index: Int) {
+        if expandedPreviewID != nil {
+            expandedPreviewID = nil
+            expandedPreviewView.isHidden = true
+            scrollView.isHidden = false
+        }
         mode = Preferences.shared.appearanceMode
+        self.items = items
         selectedIndex = index
         itemIds = items.map { $0.id }
         rebuildTiles(items: items)
@@ -177,15 +217,6 @@ public final class SwitcherPanel: NSPanel {
         selectedIndex = index
         applySelection()
         announceSelection()
-    }
-
-    /// The window currently shown behind the switcher may differ briefly from
-    /// the highlighted target while rapid navigation is settling.
-    public func setTemporarilyActive(id: AnyHashable?) {
-        temporarilyActiveID = id
-        for (index, tile) in tilePool.prefix(visibleTileCount).enumerated() {
-            tile.isTemporarilyActive = itemIds[index] == id
-        }
     }
 
     /// A capture arrived for a window in the open session: fill in tiles that
@@ -203,6 +234,49 @@ public final class SwitcherPanel: NSPanel {
     public func updatePreviewUnavailable(id: AnyHashable) {
         guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
         tilePool[index].setPreviewUnavailable()
+    }
+
+    /// Applies one permission state to every preview canvas and exposes a
+    /// single global action instead of repeating a button on each card.
+    public func setPreviewPermissionStatus(_ status: ScreenRecordingPermission.Status) {
+        guard mode == .windowPreviews else {
+            permissionButton.isHidden = true
+            return
+        }
+        permissionButton.isHidden = status.isAuthorized
+        for tile in tilePool.prefix(visibleTileCount) {
+            if status.isAuthorized {
+                tile.setPreviewLoading()
+            } else {
+                tile.setPreviewPermissionRequired()
+            }
+        }
+    }
+
+    /// Shows the latest available snapshot at a larger size inside WindowHop.
+    /// This method performs no application/window action.
+    public func showExpandedPreview(id: AnyHashable, image: NSImage) {
+        guard mode == .windowPreviews,
+              let item = items.first(where: { $0.id == id }) else { return }
+        expandedPreviewID = id
+        expandedPreviewView.configure(item: item, image: image)
+        expandedPreviewView.isHidden = false
+        scrollView.isHidden = true
+        layoutExpandedPreview()
+    }
+
+    public func updateExpandedPreview(id: AnyHashable, image: NSImage) {
+        guard expandedPreviewID == id,
+              let item = items.first(where: { $0.id == id }) else { return }
+        expandedPreviewView.configure(item: item, image: image)
+    }
+
+    public func hideExpandedPreview() {
+        guard expandedPreviewID != nil else { return }
+        expandedPreviewID = nil
+        expandedPreviewView.isHidden = true
+        scrollView.isHidden = false
+        layoutOnActiveScreen(tileCount: visibleTileCount)
     }
 
     public func hide() {
@@ -225,7 +299,6 @@ public final class SwitcherPanel: NSPanel {
                 tile.onClick = { [weak self] in self?.onItemClicked?(index) }
                 tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
                 tile.resetHoverState()
-                tile.isTemporarilyActive = item.id == temporarilyActiveID
                 tile.isHidden = false
             } else {
                 tile.resetHoverState()
@@ -305,6 +378,37 @@ public final class SwitcherPanel: NSPanel {
         settingsButton.frame = NSRect(x: panelSize.width - controlSize + overflow,
                                       y: panelSize.height - controlSize + overflow,
                                       width: controlSize, height: controlSize)
+        permissionButton.frame = NSRect(
+            x: panelSize.width - controlSize * 2,
+            y: panelSize.height - controlSize,
+            width: controlSize, height: controlSize)
+        let hostSize = NSSize(width: panelSize.width + overflow,
+                              height: panelSize.height + overflow)
+        let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
+                             y: visibleFrame.midY - panelSize.height / 2)
+        setFrame(NSRect(origin: origin, size: hostSize), display: true)
+    }
+
+    private func layoutExpandedPreview() {
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        let visibleFrame = screen.visibleFrame
+        let currentSize = panelBackgroundView.frame.size
+        let panelSize = NSSize(
+            width: min(max(currentSize.width, DesignTokens.expandedPreviewMinimumWidth),
+                       visibleFrame.width * DesignTokens.panelMaxWidthFraction),
+            height: min(max(currentSize.height, DesignTokens.expandedPreviewMinimumHeight),
+                        visibleFrame.height * DesignTokens.panelMaxHeightFraction))
+        panelBackgroundView.frame = NSRect(origin: .zero, size: panelSize)
+        chromeView.frame = panelBackgroundView.bounds
+        expandedPreviewView.frame = panelBackgroundView.bounds.insetBy(
+            dx: DesignTokens.expandedPreviewPanelInset,
+            dy: DesignTokens.expandedPreviewPanelInset)
+        let controlSize = DesignTokens.chromeButtonHitSize
+        let overflow = DesignTokens.chromeButtonOutsideOverlap
+        settingsButton.frame = NSRect(x: panelSize.width - controlSize + overflow,
+                                      y: panelSize.height - controlSize + overflow,
+                                      width: controlSize, height: controlSize)
+        permissionButton.isHidden = true
         let hostSize = NSSize(width: panelSize.width + overflow,
                               height: panelSize.height + overflow)
         let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
@@ -365,5 +469,9 @@ public final class SwitcherPanel: NSPanel {
 
     @objc private func settingsClicked() {
         onSettingsRequested?()
+    }
+
+    @objc private func permissionClicked() {
+        onPreviewPermissionRequested?()
     }
 }

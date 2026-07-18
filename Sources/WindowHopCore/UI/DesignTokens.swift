@@ -24,6 +24,9 @@ enum DesignTokens {
     /// soft rounded selection background around the icon canvas.
     static let iconSelectionPadding: CGFloat = 6
     static let iconSelectionCornerRadius: CGFloat = 18
+    /// Preview selection is a single accent-colored plate behind the canvas,
+    /// not a border stacked over the image.
+    static let previewSelectionPadding: CGFloat = 2
     /// One horizontal rhythm for every row; tiles never manufacture spacing by
     /// changing their own dimensions.
     static let tileSpacing: CGFloat = 18
@@ -62,7 +65,8 @@ enum DesignTokens {
     static let previewsTileWidth: CGFloat = 204
     /// Preview containers all share the aspect ratio of the display the
     /// switcher is presented on, so every card has identical dimensions and
-    /// any window fits inside without cropping (unused area stays transparent).
+    /// any window fits inside without cropping (unused area uses the semantic
+    /// preview surface instead of exposing content behind the panel).
     static func previewContentHeight(width: CGFloat, displayAspect: CGFloat) -> CGFloat {
         (width / max(displayAspect, 0.2)).rounded()
     }
@@ -73,13 +77,14 @@ enum DesignTokens {
     static let previewOverlayOverlap: CGFloat = 8
     /// The snapshot's own soft shadow (the capture itself is shadow-free); the
     /// path follows the preview's rounded shape, never a plain rectangle.
-    static let previewShadowRadius: CGFloat = 8
-    static let previewShadowOpacity: Float = 0.35
-    static let previewShadowOffset = CGSize(width: 0, height: -3)
+    static let previewShadowRadius: CGFloat = 6
+    static let previewShadowOpacity: Float = 0.16
+    static let previewShadowOffset = CGSize(width: 0, height: -2)
 
     // MARK: Overlay close control
     static let closeButtonHitSize: CGFloat = 44
-    static let closeButtonSymbolSize: CGFloat = 26
+    static let closeButtonVisibleSize: CGFloat = 28
+    static let closeButtonGlyphSize: CGFloat = 12
     /// The centered control extends beyond the canvas. The panel reuses its
     /// existing padding as clip-safe overflow, so neither cards nor the visible
     /// panel grow to accommodate it.
@@ -93,23 +98,33 @@ enum DesignTokens {
     static let previewRefreshFadeDuration: TimeInterval = 0.25
 
     // MARK: Colors
-    /// AppKit's semantic focus-ring color follows the current appearance,
-    /// accent, and accessibility settings instead of freezing a custom blue.
-    static var selectionOutline: NSColor { .keyboardFocusIndicatorColor }
     static var iconSelectionFill: NSColor { .labelColor.withAlphaComponent(0.14) }
     static var iconEmphasisFill: NSColor { .labelColor.withAlphaComponent(0.075) }
-    static var previewOutline: NSColor { .separatorColor.withAlphaComponent(0.65) }
-    static var previewEmphasisOutline: NSColor { .labelColor.withAlphaComponent(0.30) }
-    static let previewOutlineWidth: CGFloat = 1
-    static let previewEmphasisOutlineWidth: CGFloat = 2
-    static let selectionOutlineWidth: CGFloat = 4
-    /// Placeholder card behind a not-yet-captured preview (a quieter step of
-    /// the same ramp so it never competes with the selection).
-    static var previewPlaceholderFill: NSColor { .labelColor.withAlphaComponent(0.07) }
+    static var previewSelectionFill: NSColor {
+        NSColor.keyboardFocusIndicatorColor.withAlphaComponent(0.78)
+    }
+    static var previewEmphasisFill: NSColor {
+        NSColor.keyboardFocusIndicatorColor.withAlphaComponent(0.14)
+    }
+    /// A semantic, adaptive canvas surface makes letterboxing and placeholders
+    /// intentional without framing every window with a gray rectangle.
+    static var previewSurfaceFill: NSColor {
+        NSColor.controlBackgroundColor.withAlphaComponent(0.76)
+    }
     static var previewUnavailableSymbolColor: NSColor { .secondaryLabelColor }
     static let previewUnavailableSymbolSize: CGFloat = 18
     static let previewUnavailableFontSize: CGFloat = 11
+    static let previewExplanationFontSize: CGFloat = 9.5
     static let previewUnavailableSpacing: CGFloat = 5
+
+    // MARK: Expanded dwell preview
+    static let expandedPreviewMinimumWidth: CGFloat = 720
+    static let expandedPreviewMinimumHeight: CGFloat = 440
+    static let expandedPreviewPanelInset: CGFloat = 24
+    static let expandedPreviewTitleHeight: CGFloat = 34
+    static let expandedPreviewBadgeSize: CGFloat = 56
+    static let expandedPreviewBadgeInset: CGFloat = 10
+    static let expandedPreviewCornerRadius: CGFloat = 16
     /// Fallback panel material for macOS 14/15, close to the pre-Tahoe native
     /// switcher; on macOS 26+ the panel uses the system glass effect instead
     /// (see SwitcherPanel), which is what the native switcher draws with.

@@ -1,8 +1,8 @@
 import AppKit
 import ApplicationServices
 
-/// Accessibility is the only permission WindowHop needs: it powers the event tap,
-/// window discovery, and window activation. Screen Recording is never requested.
+/// Accessibility powers the event tap, window discovery, and committed window
+/// activation. Optional Window Previews owns its separate Screen Recording grant.
 public enum AccessibilityPermission {
     public static var isGranted: Bool {
         AXIsProcessTrusted()

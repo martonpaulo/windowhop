@@ -8,7 +8,7 @@ import ApplicationServices
 /// rules because the caller holds Accessibility permission.
 public enum WindowActions {
     /// Schedules main-thread UI only after every previously requested AX action
-    /// has finished. This prevents an in-flight temporary activation from
+    /// has finished. This prevents a committed activation already in flight from
     /// stealing focus back from Settings or a confirmation dialog.
     public static func afterPendingActions(_ action: @escaping () -> Void) {
         BackgroundWork.axActionsQueue.async {

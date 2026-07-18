@@ -133,7 +133,6 @@ final class TabGroupResolverTests: XCTestCase {
         let state = WindowDisplayState(isMinimized: false, isAppHidden: false,
                                        isOwnWindow: false, isTabbed: true,
                                        isOnCurrentSpace: true, isOnActiveDisplay: true)
-        XCTAssertFalse(WindowEligibility.shouldDisplay(state, includeOtherSpaces: true,
-                                                       includeOtherDisplays: true))
+        XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
     }
 }

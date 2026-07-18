@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.2.0 — 2026-07-18
+
+- **Branded macOS installer**: the automated appdmg build now produces a compact custom
+  WindowHop installation window with real draggable app/Applications items, branded
+  background, custom mounted-volume icon, and a complete multi-resolution Finder icon.
+  The release also wraps the DMG in a resource-fork-preserving installer ZIP.
+- **Stable release identity**: official builds are checked against the reviewed Developer
+  ID leaf certificate and exact designated requirement. Bundle/team identity, hardened
+  runtime, entitlements, nested executable signatures, notarization, stapling,
+  Gatekeeper, and Sparkle signing all fail closed before publication.
+- **Permission-aware previews**: Screen Recording is classified before capture begins.
+  Missing permission uses a dedicated `Permission required` canvas and one panel action;
+  authorized capture distinguishes `Loading preview…` from `Preview unavailable` and
+  handles revocation without retry loops.
+- **Configurable windows shown**: General now owns one shared filtering policy for other
+  Spaces/displays and opt-in minimized, hidden-application, and Picture-in-Picture
+  windows. Existing curated behavior remains the default and changes apply immediately.
+- **Non-activating dwell preview**: pausing for 3 seconds by default enlarges the latest
+  snapshot inside WindowHop. Target changes cancel stale work; only confirmation activates
+  the real window, while cancellation leaves desktop focus and stacking untouched.
+- **Apple-style preview surfaces**: unselected cards drop heavy permanent frames in favor
+  of an adaptive surface and shallow rounded shadow. Selection is one appearance-aware
+  background plate, App Icons remains borderless, and letterboxing/loading/fallback states
+  share the same intentional semantic canvas.
+- **Documentation and visual regressions**: privacy-safe Light/Dark, permission, expanded,
+  Settings, overflow, and DMG captures now match 1.2.0. Tests cover permission states,
+  shared filter combinations, overlay geometry, selection semantics, and stale dwell work.
+
 ## 1.1.2 — 2026-07-18
 
 - **Native selection for each appearance**: Window Previews uses one 4 pt semantic

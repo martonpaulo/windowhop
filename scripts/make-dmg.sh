@@ -19,17 +19,17 @@ mkdir -p artifacts
 rm -f "$DMG"
 
 # icon centers must stay in sync with the background artwork
-# (scripts/render-dmg-background.swift): window 660x420, icons at y 220
-cat > artifacts/dmg-spec.json <<'JSON'
+# (scripts/render-dmg-background.swift): window 680x400, icons at y 225
+cat > artifacts/dmg-spec.json <<JSON
 {
-  "title": "WindowHop",
-  "icon": "../Support/AppIcon.icns",
-  "background": "../Support/dmg-background.tiff",
-  "icon-size": 128,
-  "window": { "size": { "width": 660, "height": 420 } },
+  "title": "WindowHop $VERSION",
+  "icon": "../Support/AppInstallerIcon.icns",
+  "background": "../Support/WindowHopInstallerBackground.tiff",
+  "icon-size": 112,
+  "window": { "size": { "width": 680, "height": 400 } },
   "contents": [
-    { "x": 180, "y": 220, "type": "file", "path": "../build/WindowHop.app" },
-    { "x": 480, "y": 220, "type": "link", "path": "/Applications" }
+    { "x": 180, "y": 225, "type": "file", "path": "../build/WindowHop.app" },
+    { "x": 500, "y": 225, "type": "link", "path": "/Applications" }
   ]
 }
 JSON
@@ -42,7 +42,7 @@ rm -f artifacts/dmg-spec.json
 if xcrun --find Rez >/dev/null 2>&1 && command -v SetFile >/dev/null 2>&1; then
     # sips -i gives the icns a resource fork holding itself, which DeRez can
     # then extract (flat icns files have none)
-    cp Support/AppIcon.icns artifacts/dmg-file-icon.icns
+    cp Support/AppInstallerIcon.icns artifacts/dmg-file-icon.icns
     sips -i artifacts/dmg-file-icon.icns >/dev/null
     DeRez -only icns artifacts/dmg-file-icon.icns > artifacts/dmg-icon.rsrc
     Rez -append artifacts/dmg-icon.rsrc -o "$DMG"

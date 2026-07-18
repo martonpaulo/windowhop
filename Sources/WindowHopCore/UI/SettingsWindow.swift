@@ -145,9 +145,20 @@ struct GeneralPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            Section("Windows") {
+            Section {
                 Toggle("Include windows from other Spaces", isOn: $preferences.includeOtherSpaces)
                 Toggle("Include windows from other displays", isOn: $preferences.includeOtherDisplays)
+                Toggle("Include minimized windows", isOn: $preferences.includeMinimizedWindows)
+                Toggle("Include windows from hidden applications",
+                       isOn: $preferences.includeHiddenApplicationWindows)
+                Toggle("Include Picture-in-Picture windows",
+                       isOn: $preferences.includePictureInPictureWindows)
+            } header: {
+                Text("Windows shown")
+            } footer: {
+                Text("WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
             Section {
                 Toggle("Show menu bar item", isOn: $preferences.showMenuBarItem)
@@ -183,7 +194,7 @@ struct GeneralPane: View {
 
 struct AppearancePane: View {
     @ObservedObject private var preferences = Preferences.shared
-    @State private var screenRecordingGranted = ScreenRecordingPermission.isGranted
+    @State private var screenRecordingStatus = ScreenRecordingPermission.status
 
     private var previewsSelected: Bool { preferences.appearanceMode == .windowPreviews }
 
@@ -199,7 +210,8 @@ struct AppearancePane: View {
                 .onChange(of: preferences.appearanceMode) { _, newValue in
                     // ask for the permission only when the user opts into previews
                     if newValue == .windowPreviews, !ScreenRecordingPermission.isGranted {
-                        screenRecordingGranted = ScreenRecordingPermission.request()
+                        _ = ScreenRecordingPermission.request()
+                        screenRecordingStatus = ScreenRecordingPermission.status
                     }
                     if newValue == .appIcons {
                         // back to icons: no reason to retain any snapshot
@@ -213,16 +225,17 @@ struct AppearancePane: View {
                     .foregroundStyle(.secondary)
             }
             Section {
-                Picker("Preview selected window", selection: $preferences.navigationPreviewDelay) {
-                    ForEach(NavigationPreviewDelay.allCases) { delay in
+                Picker("Show an expanded preview after pausing",
+                       selection: $preferences.expandedPreviewDelay) {
+                    ForEach(ExpandedPreviewDelay.allCases) { delay in
                         Text(delay.displayName).tag(delay)
                     }
                 }
                 .pickerStyle(.menu)
             } header: {
-                Text("Navigation Preview")
+                Text("Expanded Preview")
             } footer: {
-                Text("After you pause on a window, WindowHop can show it without committing the switch. Confirm keeps it active; cancel restores the original window.")
+                Text("After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -235,7 +248,7 @@ struct AppearancePane: View {
                     Text("Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                } else if screenRecordingGranted {
+                } else if screenRecordingStatus.isAuthorized {
                     Label("Screen Recording access is granted.", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                     Text("Snapshots are captured only while the switcher is open.")
@@ -244,15 +257,18 @@ struct AppearancePane: View {
                 } else {
                     Label("Window Previews needs Screen Recording access.", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Text("Until it's granted, the switcher automatically falls back to App Icons.")
+                    Text("Until it is granted, preview cards clearly show Permission required instead of remaining in a loading state.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                    Button("Open System Settings") {
-                        ScreenRecordingPermission.openSystemSettings()
-                    }
-                    // bounded polling: only while this pane shows the pending state
-                    .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
-                        screenRecordingGranted = ScreenRecordingPermission.isGranted
+                    Button(screenRecordingStatus == .notDetermined
+                           ? "Grant Permission"
+                           : "Open System Settings") {
+                        if screenRecordingStatus == .notDetermined {
+                            _ = ScreenRecordingPermission.request()
+                            screenRecordingStatus = ScreenRecordingPermission.status
+                        } else {
+                            ScreenRecordingPermission.openSystemSettings()
+                        }
                     }
                 }
             } header: {
@@ -264,11 +280,12 @@ struct AppearancePane: View {
             }
         }
         .formStyle(.grouped)
-        // fixed minimum pane height: swapping modes must not resize the Settings
-        // window, while larger accessibility text can still request more space.
         .frame(width: paneWidth)
-        .frame(minHeight: 450)
-        .fixedSize(horizontal: true, vertical: false)
+        .fixedSize()
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            screenRecordingStatus = ScreenRecordingPermission.status
+        }
     }
 }
 

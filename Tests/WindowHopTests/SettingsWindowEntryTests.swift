@@ -68,13 +68,11 @@ final class SettingsWindowEntryTests: XCTestCase {
         let ownWindow = WindowDisplayState(isMinimized: false, isAppHidden: false,
                                            isOwnWindow: true, isOwnSettingsWindow: false,
                                            isOnCurrentSpace: true, isOnActiveDisplay: true)
-        XCTAssertFalse(WindowEligibility.shouldDisplay(ownWindow, includeOtherSpaces: true,
-                                                       includeOtherDisplays: true))
+        XCTAssertFalse(WindowEligibility.shouldDisplay(ownWindow, policy: .init()))
         let settingsWindow = WindowDisplayState(isMinimized: false, isAppHidden: false,
                                                 isOwnWindow: true, isOwnSettingsWindow: true,
                                                 isOnCurrentSpace: true, isOnActiveDisplay: true)
-        XCTAssertTrue(WindowEligibility.shouldDisplay(settingsWindow, includeOtherSpaces: true,
-                                                      includeOtherDisplays: true))
+        XCTAssertTrue(WindowEligibility.shouldDisplay(settingsWindow, policy: .init()))
     }
 
     func testNativeEntryActivationAndCloseUseAppKitPaths() {

@@ -33,7 +33,7 @@ public struct WindowDisplayState {
     public var isOwnSettingsWindow: Bool
     /// An inactive tab of a native tab group (see TabGroupResolver): never an entry.
     public var isTabbed: Bool
-    /// A floating Picture-in-Picture panel (see PictureInPictureDetector): never an entry.
+    /// A floating Picture-in-Picture panel (see PictureInPictureDetector): opt-in.
     public var isPictureInPicture: Bool
     public var isOnCurrentSpace: Bool
     public var isOnActiveDisplay: Bool
@@ -51,6 +51,29 @@ public struct WindowDisplayState {
         self.isPictureInPicture = isPictureInPicture
         self.isOnCurrentSpace = isOnCurrentSpace
         self.isOnActiveDisplay = isOnActiveDisplay
+    }
+}
+
+/// The complete user-facing display policy. Discovery, snapshots, navigation,
+/// and tests all pass this one value instead of reimplementing individual
+/// preference checks.
+public struct WindowInclusionPolicy: Equatable {
+    public var includeMinimizedWindows: Bool
+    public var includeHiddenApplicationWindows: Bool
+    public var includePictureInPictureWindows: Bool
+    public var includeOtherSpaces: Bool
+    public var includeOtherDisplays: Bool
+
+    public init(includeMinimizedWindows: Bool = false,
+                includeHiddenApplicationWindows: Bool = false,
+                includePictureInPictureWindows: Bool = false,
+                includeOtherSpaces: Bool = true,
+                includeOtherDisplays: Bool = true) {
+        self.includeMinimizedWindows = includeMinimizedWindows
+        self.includeHiddenApplicationWindows = includeHiddenApplicationWindows
+        self.includePictureInPictureWindows = includePictureInPictureWindows
+        self.includeOtherSpaces = includeOtherSpaces
+        self.includeOtherDisplays = includeOtherDisplays
     }
 }
 
@@ -81,13 +104,14 @@ public enum WindowEligibility {
     }
 
     public static func shouldDisplay(_ state: WindowDisplayState,
-                                     includeOtherSpaces: Bool,
-                                     includeOtherDisplays: Bool) -> Bool {
+                                     policy: WindowInclusionPolicy) -> Bool {
         if state.isOwnWindow && !state.isOwnSettingsWindow { return false }
-        if state.isMinimized || state.isAppHidden || state.isTabbed { return false }
-        if state.isPictureInPicture { return false }
-        if !includeOtherSpaces && !state.isOnCurrentSpace { return false }
-        if !includeOtherDisplays && !state.isOnActiveDisplay { return false }
+        if state.isMinimized && !policy.includeMinimizedWindows { return false }
+        if state.isAppHidden && !policy.includeHiddenApplicationWindows { return false }
+        if state.isTabbed { return false }
+        if state.isPictureInPicture && !policy.includePictureInPictureWindows { return false }
+        if !policy.includeOtherSpaces && !state.isOnCurrentSpace { return false }
+        if !policy.includeOtherDisplays && !state.isOnActiveDisplay { return false }
         return true
     }
 

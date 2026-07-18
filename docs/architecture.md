@@ -13,7 +13,7 @@ about AppKit or AX.
 ├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
 └─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
                                 MRUOrder, TitleResolver, PersistentShortcut, Preferences,
-                                TemporaryActivationSession (pure, unit-tested)
+                                ExpandedPreviewSession (pure, unit-tested)
 ```
 
 ## Window model (event-driven, no polling)
@@ -62,13 +62,13 @@ through plain AppKit.
 3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
-4. `TemporaryActivationSession` keeps four identities separate: origin, targeted,
-   temporarily active, and committed. The `Preferences` dwell preset is the single source
-   of truth: Off disables temporary activation; Short, Default (700 ms), and Long schedule
-   one cancellable session timer. Target changes replace the pending request, so an expired
-   request can never raise a stale intermediate window. The store keeps
-   processing AX events but freezes MRU history until the final target is committed;
-   cancellation raises the exact origin again when it still exists.
+4. `ExpandedPreviewSession` owns only targeted and expanded identities. The `Preferences`
+   delay is the single source of truth: Off, 1, 2, 3 (default), or 5 seconds. Target
+   changes cancel the one session-scoped timer and invalidate its generation, so an
+   expired request can never display stale content. Settling presents the latest snapshot
+   inside WindowHop; it never calls the AX activation/raise path or changes MRU. Only the
+   state machine's final confirm command activates the selected real window. Cancellation
+   performs no desktop action because navigation never changed the desktop.
 5. The switcher list is **frozen at session start**; store changes while open only remove
    or refresh entries (nearby selection preserved), never reorder or add.
 6. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
@@ -83,24 +83,21 @@ applies on the next session, no restart):
 - **App Icons** (default): a large application icon dominates a compact tile.
 - **Window Previews**: an aspect-fit window snapshot with the app icon as a
   bottom-right badge overlapping the fixed preview canvas by the same amount on both
-  edges. Until a preview arrives, a subtle labelled loading state remains inside that
-  canvas; a failed first capture becomes a labelled unavailable state while the badge
-  stays at the same corner. Every preview
-  container shares the aspect ratio of the display the switcher is presented
-  on, so all cards have identical dimensions; the snapshot centers inside with
-  transparent letterboxing (whole window visible, never cropped or stretched),
-  and carries a soft shadow whose path follows the preview's rounded shape.
+  edges. Every canvas shares the display aspect ratio, so the snapshot can center and
+  aspect-fit without cropping or distortion. Unused space is an intentional semantic
+  surface rather than transparent letterboxing. Loading, permission-required, failure,
+  and loaded content all reuse that surface, geometry, badge anchor, and corner radius.
 
 Every tile keeps a 13 pt title and the reserved 11 pt tab-count line so nothing
 shifts as data arrives (all dimensions from `UI/DesignTokens.swift`). Titles
 wrap to two lines; a single-line title centers vertically in the same fixed
 zone. Horizontal and vertical spacing each have one shared token; the latter separates
-the complete card footprint, including overlays, title, and metadata. Preview states
-share one outline implementation: subtle when unselected, restrained while hovered or
-temporarily active, and one 4 pt AppKit semantic focus ring on the selected target that
-replaces the neutral outline. App Icons has no neutral border and uses the native
-switcher's soft rounded background for selected and hovered states. Selection surrounds
-only the fixed content canvas
+the complete card footprint, including overlays, title, and metadata. Unselected previews
+use the semantic surface and a shallow rounded shadow instead of a permanent gray frame.
+Selected and hovered states use one rounded background plate derived from AppKit's
+appearance-aware keyboard focus color; no neutral border remains underneath it. App Icons
+has no border and uses the native switcher's soft rounded background for selection and
+hover. Selection surrounds only the fixed content canvas
 — the title stays outside — and every overlay is excluded from layout measurement.
 Hovering a tile reveals an overlay close control (routed through the same
 confirmation as ⌫; also a VoiceOver custom action). Its center equals the canvas's
@@ -126,8 +123,12 @@ Transparency.
 `PreviewProvider` (the only file allowed to touch ScreenCaptureKit — enforced by
 `scripts/validate.sh`) captures tile-sized snapshots via `SCScreenshotManager`,
 but only while a session is open, only in Window Previews mode, and only with
-Screen Recording granted (requested the first time the user selects previews;
-App Icons never needs it). The cache is memory-only and app-lifetime: opening
+Screen Recording granted. `ScreenRecordingPermission` classifies permission before the
+provider emits a loading state, so unavailable authorization never starts capture or a
+retry loop. One panel-level action requests a not-determined grant or opens the correct
+Privacy & Security pane; cards never duplicate that action. App activation refreshes the
+status after the user returns from System Settings. App Icons never needs this permission.
+The cache is memory-only and app-lifetime: opening
 the switcher shows the last known snapshot of every window instantly. The
 session recaptures in parallel waves of four and delivers every result live —
 a tile that opened with a cached snapshot crossfades to the fresh capture the
@@ -146,16 +147,21 @@ the window's stable id — never by tile position — and pooled tiles reset the
 image state on reconfigure, so a snapshot can never appear on another window's
 card (regression-tested, including rapid list changes).
 
-Source images aspect-fit and center inside a display-ratio canvas with transparent
-letterboxing. The app badge, Close control, outline, selection indicator, shadow, hit testing,
-and title position all anchor to that canvas rather than the fitted source-image bounds.
+Source images aspect-fit and center inside a display-ratio canvas over the semantic
+preview surface. The app badge, Close control, selection plate, shadow, hit testing, and
+title position all anchor to that canvas rather than the fitted source-image bounds.
 
-While a window has no snapshot, the tile shows a quiet “Loading preview…” state
-(quaternary system fill) under the same corner-aligned app badge, and the first capture
-fades in over it (Reduce Motion disables the fade). If acquisition, matching, or capture
-fails and no cache exists, the same canvas changes to “Preview unavailable”; cached
-previews are never replaced by a failure. Both paths keep constant geometry, with no
-icon, outline, or title movement.
+While an authorized window has no snapshot, the tile shows “Loading preview…” and the
+first capture fades in (Reduce Motion disables the fade). Missing or revoked permission
+uses a lock symbol, “Permission required,” and “Screen Recording.” If acquisition,
+matching, or capture fails while permission exists, it shows “Preview unavailable.” A
+cached snapshot is never replaced by an ordinary capture failure. All paths keep constant
+geometry and selection, with no badge, surface, or title movement.
+
+After the configured dwell, `SwitcherController` asks the provider for a current snapshot
+of the selected id and presents it in `ExpandedPreviewView`. Both the dwell request and
+asynchronous result carry session/target generations; navigating or closing invalidates
+them. This path is snapshot-only and has no reference to `WindowActions.activate`.
 
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never
@@ -164,18 +170,26 @@ a wrong preview is worse than none. Images are requested pre-scaled (no
 full-resolution retention). Preview failure can never remove an entry or block
 activation.
 
-## Picture-in-Picture exclusion
+## Shared window-inclusion policy
 
-PiP panels (browser PiP, native floating video) are never entries. AX cannot
+`Preferences.windowInclusionPolicy` is the single value passed to
+`WindowEligibility.shouldDisplay`, so discovery, session snapshots, navigation, previews,
+and tests cannot disagree. Existing defaults remain curated: other Spaces and displays
+are included; minimized, hidden-application, and Picture-in-Picture windows are excluded
+unless the user opts in. A filter notification asks `WindowStore` to rebuild immediately.
+
+PiP detection remains behavioral because AX cannot
 tell them apart — a Chromium PiP window reports `AXStandardWindow` like a real
 browser window — so detection is behavioral: the window server keeps PiP
 floating above normal windows (nonzero `kCGWindowLayer`, public
 `CGWindowListCopyWindowInfo` — bounds and layer need no capture permission).
 The pure rule lives in `PictureInPictureDetector` (unit-tested): a floating
 window is PiP unless it covers (almost) a whole screen — Keynote presentations
-and fullscreen overlays stay listed. Each window's floating status is resolved
+and fullscreen overlays stay eligible. Each window's floating status is resolved
 once, lazily, at snapshot time, and only when an unresolved on-screen window
-exists — idle stays query-free.
+exists — idle stays query-free. Core safety invariants remain non-configurable: actual
+top-level windows only, one visible tab-group member, no menus/tooltips/system overlays,
+and no WindowHop-owned UI except the registered Settings window.
 
 ## Stale-window pruning
 
@@ -212,10 +226,14 @@ Update checks are the app's only network activity.
 
 Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
 requires an Apple-issued Developer ID Application identity plus Apple ID notarization
-credentials, submits both the app archive and final DMG with `notarytool --wait`, staples
-and validates both tickets, and runs `codesign` and Gatekeeper assessment before the
-release or appcast can be published. Local packages may remain ad-hoc signed and skip
-notarization explicitly.
+credentials, and validates the final app against `Support/ExpectedDesignatedRequirement.txt`
+and the stable public leaf certificate in `Support/WindowHopCodeSigning.cer`. The validator
+checks bundle id, Team ID, hardened runtime, entitlements, every nested Mach-O signature,
+and the exact designated requirement. The workflow submits both the app archive and final
+DMG with `notarytool --wait`, staples and validates both tickets, runs Gatekeeper on the
+app and DMG, preserves the branded DMG resource fork in an installer ZIP, then signs the
+Sparkle archive and publishes. Local packages may remain ad-hoc signed only when release
+identity validation is explicitly inapplicable.
 
 ## Public-API replacements for AltTab's private calls
 
