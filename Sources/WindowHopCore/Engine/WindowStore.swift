@@ -311,6 +311,7 @@ public final class WindowStore {
 
     /// The visible, ordered switcher list under the current settings.
     public func snapshot() -> [SwitcherItem] {
+        resolveFloatingWindows()
         let includeOtherSpaces = preferences.includeOtherSpaces
         let includeOtherDisplays = preferences.includeOtherDisplays
         let showTabCounts = preferences.showTabCounts
@@ -325,6 +326,7 @@ public final class WindowStore {
                 isOwnWindow: window.isOwnSettingsEntry,
                 isOwnSettingsWindow: window.isOwnSettingsEntry,
                 isTabbed: window.isTabbed,
+                isPictureInPicture: window.isPictureInPicture ?? false,
                 isOnCurrentSpace: window.isOnCurrentSpace,
                 isOnActiveDisplay: activeScreen.map { window.isOn(screen: $0) } ?? true)
             guard WindowEligibility.shouldDisplay(state,
@@ -336,6 +338,56 @@ public final class WindowStore {
                                 appName: window.appName,
                                 icon: window.appIcon,
                                 tabCount: showTabCounts ? window.tabCount : nil)
+        }
+    }
+
+    // MARK: - Picture-in-Picture resolution (behavior-based, one query per new window)
+
+    /// Resolves each window's floating status once, lazily, from the window
+    /// server (public CGWindowList info — bounds and layer need no capture
+    /// permission). Runs only when an unresolved, currently visible window
+    /// exists, so idle stays query-free; a window absent from the on-screen
+    /// list resolves to "not PiP" (PiP panels join every Space, so a real one
+    /// is always on screen).
+    private func resolveFloatingWindows() {
+        let unresolved = windows.filter {
+            $0.isPictureInPicture == nil && !$0.isOwnSettingsEntry
+                && !$0.isMinimized && $0.isOnCurrentSpace && $0.ax != nil
+        }
+        guard !unresolved.isEmpty else { return }
+        let onScreen = Self.onScreenWindowFacts()
+        // screens in Quartz coordinates, the space CG and AX frames share
+        let screens: [CGRect] = NSScreen.screens.compactMap { screen in
+            guard let primary = NSScreen.screens.first else { return nil }
+            var frame = screen.frame
+            frame.origin.y = primary.frame.maxY - screen.frame.maxY
+            return frame
+        }
+        for window in unresolved {
+            window.isPictureInPicture = PictureInPictureDetector.isPictureInPicture(
+                pid: window.app?.pid ?? -1,
+                frame: window.frame,
+                onScreenWindows: onScreen,
+                screenFrames: screens)
+        }
+        if unresolved.contains(where: { $0.isPictureInPicture == true }) {
+            DebugLog.log("excluding \(unresolved.filter { $0.isPictureInPicture == true }.count) "
+                + "Picture-in-Picture window(s)")
+        }
+    }
+
+    private static func onScreenWindowFacts() -> [PictureInPictureDetector.OnScreenWindow] {
+        guard let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
+                                                    kCGNullWindowID) as? [[String: Any]] else { return [] }
+        return info.compactMap { entry in
+            guard let pid = entry[kCGWindowOwnerPID as String] as? Int,
+                  let layer = entry[kCGWindowLayer as String] as? Int,
+                  let bounds = entry[kCGWindowBounds as String] as? [String: CGFloat] else { return nil }
+            return PictureInPictureDetector.OnScreenWindow(
+                pid: pid_t(pid),
+                frame: CGRect(x: bounds["X"] ?? 0, y: bounds["Y"] ?? 0,
+                              width: bounds["Width"] ?? 0, height: bounds["Height"] ?? 0),
+                layer: layer)
         }
     }
 }

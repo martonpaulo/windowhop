@@ -73,23 +73,34 @@ through plain AppKit.
 Fixed-size tiles in one of two appearances (Settings → Appearance; changing it
 applies on the next session, no restart):
 
-- **App Icons** (default): a 96 pt application icon dominates a 136×176 tile.
-- **Window Previews**: an aspect-fit window snapshot in a 220×186 tile with the app
-  icon as a corner badge on the fitted image; until a preview arrives (or when one
-  is unavailable) the large icon shows instead — never a blank tile.
+- **App Icons** (default): a large application icon dominates a compact tile.
+- **Window Previews**: an aspect-fit window snapshot with the app icon as a
+  corner badge on the fitted image; until a preview arrives (or when one is
+  unavailable) the large icon shows instead — never a blank tile. Every preview
+  container shares the aspect ratio of the display the switcher is presented
+  on, so all cards have identical dimensions; the snapshot centers inside with
+  transparent letterboxing (whole window visible, never cropped or stretched),
+  and carries a soft shadow whose path follows the preview's rounded shape.
 
 Every tile keeps a 13 pt title and the reserved 11 pt tab-count line so nothing
-shifts as data arrives. Selection is a neutral rounded rectangle like the native
-switcher. Hovering a tile reveals an overlay close control (routed through the same
+shifts as data arrives (all dimensions from `UI/DesignTokens.swift`). Titles
+wrap to two lines; a single-line title centers vertically in the same fixed
+zone. Selection is a neutral rounded rectangle like the native switcher and
+surrounds only the content area (icon or preview) — the title stays outside.
+Hovering a tile reveals an overlay close control (routed through the same
 confirmation as ⌫; also a VoiceOver custom action); hovering the panel reveals a
-Settings control (⌘, works without a pointer). Tiles wrap into **rows** when one
-row can't fit ~88 % of the screen width (the AltTab layout model) — there is no
-horizontal scrolling and tiles never shrink; ←/→ step linearly while ↑/↓ move by
-one row. Only an extreme window count exceeds the ~85 % height budget and falls
-back to vertical scrolling with the selection kept visible. Tile views are pooled
-and reconfigured, so repeated opens and live updates are single-digit milliseconds
-even with 100+ windows. System materials and semantic colors handle Light/Dark,
-Increase Contrast, and Reduce Transparency.
+Settings control (⌘, works without a pointer) in a chrome strip above the grid
+reserved so the enlarged gear never overlays tiles. On macOS 26+ the panel
+background is the system glass material (NSGlassEffectView, the native
+switcher's look); older systems use the HUD visual-effect material. Tiles wrap
+into **rows** when one row can't fit ~88 % of the screen width (the AltTab
+layout model) — there is no horizontal scrolling and tiles never shrink; ←/→
+step linearly while ↑/↓ move by one row. Only an extreme window count exceeds
+the ~85 % height budget and falls back to vertical scrolling with the selection
+kept visible. Tile views are pooled and reconfigured, so repeated opens and
+live updates are single-digit milliseconds even with 100+ windows. System
+materials and semantic colors handle Light/Dark, Increase Contrast, and Reduce
+Transparency.
 
 ## Window previews
 
@@ -97,14 +108,24 @@ Increase Contrast, and Reduce Transparency.
 `scripts/validate.sh`) captures tile-sized snapshots via `SCScreenshotManager`,
 but only while a session is open, only in Window Previews mode, and only with
 Screen Recording granted (requested the first time the user selects previews;
-App Icons never needs it). The cache is memory-only and app-lifetime (the AltTab
-model): opening the switcher shows the last known snapshot of every window
-instantly. The session recaptures in parallel waves of four, but strictly to
-refresh the cache for the NEXT open — a snapshot on screen is never swapped
-mid-session (the AltTab model); only tiles that opened with no snapshot at all
-are filled in as captures land. WindowHop's own Settings window is captured too
-(own pid + converted frame). Entries are evicted the moment their window
-disappears and when the user switches back to App Icons.
+App Icons never needs it). The cache is memory-only and app-lifetime: opening
+the switcher shows the last known snapshot of every window instantly. The
+session recaptures in parallel waves of four and delivers every result live —
+a tile that opened with a cached snapshot crossfades to the fresh capture the
+moment it lands (constant geometry, no layout shift; Reduce Motion disables
+the fade), and tiles that opened with none fill in. Captures are taken without
+the system window shadow (`ignoreShadowsSingleWindow`); the tile draws its own
+shadow along the preview's rounded clip. WindowHop's own Settings window is
+captured too (own pid + converted frame). Entries are evicted the moment their
+window disappears and when the user switches back to App Icons.
+
+Captures finish asynchronously and out of order, so the pure, unit-tested
+`PreviewLedger` decides what a late result may do: results for evicted windows
+are discarded entirely, and results from an ended or superseded session may
+still warm the cache but are never delivered live. Panel delivery is keyed by
+the window's stable id — never by tile position — and pooled tiles reset their
+image state on reconfigure, so a snapshot can never appear on another window's
+card (regression-tested, including rapid list changes).
 
 While a window has no snapshot, the tile shows a quiet placeholder card
 (quaternary system fill) with the app icon, and the first capture fades in over
@@ -116,6 +137,19 @@ share a snapshot; a request with no confident match keeps the icon fallback —
 a wrong preview is worse than none. Images are requested pre-scaled (no
 full-resolution retention). Preview failure can never remove an entry or block
 activation.
+
+## Picture-in-Picture exclusion
+
+PiP panels (browser PiP, native floating video) are never entries. AX cannot
+tell them apart — a Chromium PiP window reports `AXStandardWindow` like a real
+browser window — so detection is behavioral: the window server keeps PiP
+floating above normal windows (nonzero `kCGWindowLayer`, public
+`CGWindowListCopyWindowInfo` — bounds and layer need no capture permission).
+The pure rule lives in `PictureInPictureDetector` (unit-tested): a floating
+window is PiP unless it covers (almost) a whole screen — Keynote presentations
+and fullscreen overlays stay listed. Each window's floating status is resolved
+once, lazily, at snapshot time, and only when an unresolved on-screen window
+exists — idle stays query-free.
 
 ## Stale-window pruning
 
@@ -140,7 +174,12 @@ offers Cancel/Close only.
 ## Updates
 
 `UpdateManager` wraps Sparkle 2's `SPUStandardUpdaterController` and only starts from a
-real bundle (`com.perso.windowhop` with `SUFeedURL` present). The appcast lives at
+real bundle (`com.perso.windowhop` with `SUFeedURL` present). As the updater
+delegate it mirrors the latest found update version (`availableVersion`,
+observable) so the Settings Updates pane can show "X.Y.Z is available" with an
+install button; the standard Sparkle dialog still owns install / remind-later /
+skip-this-version, so the same version never nags twice and a failed check
+changes nothing. The appcast lives at
 `https://raw.githubusercontent.com/martonpaulo/windowhop/main/appcast.xml`; archives are
 EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI secret).
 Update checks are the app's only network activity.

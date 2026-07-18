@@ -77,8 +77,10 @@ item and Dock icon hidden (both hidden by default).
 
 WindowHop updates itself with [Sparkle](https://sparkle-project.org): it checks a
 feed on GitHub and cryptographically verifies (EdDSA) every update before
-installing — a plain native dialog, no embedded web pages. Control it in Settings → Updates. **Update checks are WindowHop's only
-network activity** — no telemetry, no analytics, no accounts.
+installing — a plain native dialog, no embedded web pages. Control it in
+Settings → Updates, which also shows when a newer version is available.
+**Update checks are WindowHop's only network activity** — no telemetry, no
+analytics, no accounts.
 
 ## Uninstall
 
@@ -101,8 +103,9 @@ System Settings → Privacy & Security → Accessibility (and Screen Recording).
   updates.
 - **Previews are icons instead of snapshots** — grant Screen Recording in
   System Settings → Privacy & Security, then relaunch WindowHop.
-- **A window is missing** — minimized windows and hidden apps are excluded by
-  design; a window on an unvisited Space appears after you visit that Space once.
+- **A window is missing** — minimized windows, hidden apps, and floating
+  Picture-in-Picture panels are excluded by design; a window on an unvisited
+  Space appears after you visit that Space once.
 - **Typing a password?** Secure input pauses interception; ⌘⇥ is native until done.
 
 ## Build from source

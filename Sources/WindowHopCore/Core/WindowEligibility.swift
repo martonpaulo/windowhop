@@ -33,18 +33,22 @@ public struct WindowDisplayState {
     public var isOwnSettingsWindow: Bool
     /// An inactive tab of a native tab group (see TabGroupResolver): never an entry.
     public var isTabbed: Bool
+    /// A floating Picture-in-Picture panel (see PictureInPictureDetector): never an entry.
+    public var isPictureInPicture: Bool
     public var isOnCurrentSpace: Bool
     public var isOnActiveDisplay: Bool
 
     public init(isMinimized: Bool, isAppHidden: Bool, isOwnWindow: Bool,
                 isOwnSettingsWindow: Bool = false,
                 isTabbed: Bool = false,
+                isPictureInPicture: Bool = false,
                 isOnCurrentSpace: Bool, isOnActiveDisplay: Bool) {
         self.isMinimized = isMinimized
         self.isAppHidden = isAppHidden
         self.isOwnWindow = isOwnWindow
         self.isOwnSettingsWindow = isOwnSettingsWindow
         self.isTabbed = isTabbed
+        self.isPictureInPicture = isPictureInPicture
         self.isOnCurrentSpace = isOnCurrentSpace
         self.isOnActiveDisplay = isOnActiveDisplay
     }
@@ -81,6 +85,7 @@ public enum WindowEligibility {
                                      includeOtherDisplays: Bool) -> Bool {
         if state.isOwnWindow && !state.isOwnSettingsWindow { return false }
         if state.isMinimized || state.isAppHidden || state.isTabbed { return false }
+        if state.isPictureInPicture { return false }
         if !includeOtherSpaces && !state.isOnCurrentSpace { return false }
         if !includeOtherDisplays && !state.isOnActiveDisplay { return false }
         return true

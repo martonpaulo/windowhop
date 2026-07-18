@@ -55,8 +55,9 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 ## Architecture (see docs/architecture.md)
 
 - `Core/` — pure logic, no AppKit/AX imports beyond value types. All business rules live
-  here (eligibility, MRU, title fallback, tab-group resolution, session state machine,
-  shortcut model, settings defaults). New behavior rules go here **with unit tests**.
+  here (eligibility, MRU, title fallback, tab-group resolution, PiP detection,
+  preview-result ledger, session state machine, shortcut model, settings defaults).
+  New behavior rules go here **with unit tests**.
 - `Engine/` — AX integration: `TrackedApp`/`TrackedWindow`, `WindowStore` (main-thread
   source of truth), `AXNotificationRouter` (AX thread → reads queue → main).
 - `Input/` — `EventTap` (tap thread; modes off/watching/sessionHeld/sessionSticky/

@@ -12,13 +12,32 @@ final class SwitcherTileView: NSView {
         let tileSize: NSSize
         let contentHeight: CGFloat // icon or preview area height
 
-        static let appIcons = Metrics(tileSize: DesignTokens.appIconsTileSize,
-                                      contentHeight: DesignTokens.appIconsContentHeight)
-        static let windowPreviews = Metrics(tileSize: DesignTokens.previewsTileSize,
-                                            contentHeight: DesignTokens.previewsContentHeight)
+        static let appIcons = Metrics(
+            tileSize: NSSize(width: DesignTokens.appIconsTileWidth,
+                             height: DesignTokens.tileHeight(contentHeight: DesignTokens.appIconsContentHeight)),
+            contentHeight: DesignTokens.appIconsContentHeight)
+
+        /// Preview containers share the presenting display's aspect ratio, so
+        /// every card is identical and any window aspect-fits without cropping.
+        static func windowPreviews(displayAspect: CGFloat) -> Metrics {
+            let contentHeight = DesignTokens.previewContentHeight(
+                width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2,
+                displayAspect: displayAspect)
+            return Metrics(
+                tileSize: NSSize(width: DesignTokens.previewsTileWidth,
+                                 height: DesignTokens.tileHeight(contentHeight: contentHeight)),
+                contentHeight: contentHeight)
+        }
 
         static func metrics(for mode: AppearanceMode) -> Metrics {
-            mode == .appIcons ? .appIcons : .windowPreviews
+            mode == .appIcons ? .appIcons : .windowPreviews(displayAspect: mainDisplayAspect)
+        }
+
+        /// Aspect ratio of the display the switcher is presented on.
+        static var mainDisplayAspect: CGFloat {
+            guard let frame = (NSScreen.main ?? NSScreen.screens.first)?.frame,
+                  frame.height > 0 else { return 16.0 / 10.0 }
+            return frame.width / frame.height
         }
     }
 
@@ -33,6 +52,10 @@ final class SwitcherTileView: NSView {
     private let selectionView = NSView()
     private let iconView = NSImageView()
     private let previewView = NSImageView()
+    /// Carries the snapshot's soft shadow: the shadow path follows the
+    /// preview's rounded shape, so no rectangular halo can appear (the clip on
+    /// previewView would swallow a shadow set on it directly).
+    private let previewShadowView = NSView()
     /// Rounded card shown while a window has no snapshot yet, so the tile's
     /// geometry never jumps when the first capture fades in.
     private let placeholderView = NSView()
@@ -45,6 +68,11 @@ final class SwitcherTileView: NSView {
     var isSelected = false {
         didSet { applySelectionStyle() }
     }
+
+    /// Whether the tile currently shows a window snapshot (test hook for the
+    /// stale-state regression coverage; pooled tiles must never carry a
+    /// previous window's image).
+    var showsPreviewImage: Bool { hasPreview && !previewView.isHidden && previewView.image != nil }
 
     /// Tiles are pooled and reconfigured (never recreated per session) so the
     /// panel opens fast even with 100+ windows.
@@ -60,6 +88,13 @@ final class SwitcherTileView: NSView {
         placeholderView.layer?.cornerRadius = DesignTokens.previewCornerRadius
         placeholderView.layer?.cornerCurve = .continuous
         addSubview(placeholderView)
+
+        previewShadowView.wantsLayer = true
+        previewShadowView.layer?.shadowColor = NSColor.black.cgColor
+        previewShadowView.layer?.shadowOpacity = DesignTokens.previewShadowOpacity
+        previewShadowView.layer?.shadowRadius = DesignTokens.previewShadowRadius
+        previewShadowView.layer?.shadowOffset = DesignTokens.previewShadowOffset
+        addSubview(previewShadowView)
 
         previewView.imageScaling = .scaleProportionallyDown
         previewView.wantsLayer = true
@@ -142,28 +177,45 @@ final class SwitcherTileView: NSView {
         titleLabel.stringValue = item.title
         tabsLabel.stringValue = tabsText
         setAccessibilityLabel(accessibilityText)
+        // a pooled tile may be re-representing another window: any in-flight
+        // crossfade belongs to the previous occupant, never the next one
+        previewView.layer?.removeAllAnimations()
         setPreview(preview)
     }
 
     /// Applies (or clears) the window preview. While a window has no snapshot
     /// the tile shows a quiet placeholder card with the app icon, and the first
-    /// capture fades in over it (no flash; Reduce Motion disables the fade).
-    /// Snapshots are never swapped mid-session (the AltTab model).
+    /// capture fades in over it. When a fresh capture replaces a cached
+    /// snapshot mid-session it crossfades in place — same geometry, no blank
+    /// frame, no layout shift. Reduce Motion disables both animations.
     func setPreview(_ image: NSImage?, fadeIn: Bool = false) {
+        let hadPreview = hasPreview
         hasPreview = mode == .windowPreviews && image != nil
-        previewView.image = hasPreview ? image : nil
+        let animatable = fadeIn && hasPreview && window != nil && !isHidden
+            && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        if animatable, hadPreview {
+            // cached → fresh: crossfade the layer contents in place
+            let crossfade = CATransition()
+            crossfade.duration = DesignTokens.previewRefreshFadeDuration
+            crossfade.type = .fade
+            previewView.layer?.add(crossfade, forKey: "previewRefresh")
+            previewView.image = image
+            previewView.alphaValue = 1
+        } else {
+            previewView.image = hasPreview ? image : nil
+            if animatable {
+                // placeholder → first capture: fade in over the card
+                previewView.alphaValue = 0
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = DesignTokens.previewFillInFadeDuration
+                    previewView.animator().alphaValue = 1
+                }
+            } else {
+                previewView.alphaValue = 1
+            }
+        }
         previewView.isHidden = !hasPreview
         badgeIconView.isHidden = !hasPreview
-        if fadeIn, hasPreview, window != nil, !isHidden,
-           !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
-            previewView.alphaValue = 0
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = DesignTokens.previewFillInFadeDuration
-                previewView.animator().alphaValue = 1
-            }
-        } else {
-            previewView.alphaValue = 1
-        }
         needsLayout = true
     }
 
@@ -174,24 +226,35 @@ final class SwitcherTileView: NSView {
         super.layout()
         let size = metrics.tileSize
         let contentHeight = metrics.contentHeight
-        let contentTop = size.height - DesignTokens.contentTopInset
-        selectionView.frame = bounds.insetBy(dx: DesignTokens.tileSelectionInset,
-                                             dy: DesignTokens.tileSelectionInset)
         let contentBox = NSRect(x: DesignTokens.tileLabelInset,
-                                y: contentTop - contentHeight,
+                                y: size.height - DesignTokens.contentTopInset - contentHeight,
                                 width: size.width - DesignTokens.tileLabelInset * 2,
                                 height: contentHeight)
+        // the selection surrounds only the content, concentric with its corner
+        // radius; the title zone below stays outside the highlight
+        selectionView.frame = contentBox.insetBy(dx: -DesignTokens.selectionPadding,
+                                                 dy: -DesignTokens.selectionPadding)
+        selectionView.layer?.cornerRadius = mode == .windowPreviews
+            ? DesignTokens.previewCornerRadius + DesignTokens.selectionPadding
+            : DesignTokens.tileSelectionCornerRadius
         var closeAnchor = contentBox
         if hasPreview {
-            // aspect-fit box; NSImageView letterboxes without distortion
-            previewView.frame = contentBox
+            // aspect-fit inside the fixed display-aspect container: the whole
+            // window stays visible, centered, unused area transparent
+            let fitted = fittedImageRect(in: contentBox, imageSize: previewView.image?.size)
+            previewView.frame = fitted
+            previewShadowView.frame = fitted
+            previewShadowView.layer?.shadowPath = CGPath(
+                roundedRect: CGRect(origin: .zero, size: fitted.size),
+                cornerWidth: DesignTokens.previewCornerRadius,
+                cornerHeight: DesignTokens.previewCornerRadius, transform: nil)
+            closeAnchor = fitted
             // badge the fitted image, not the letterbox frame, so it hugs the
             // visible snapshot even for very tall or very narrow windows
-            let fitted = fittedImageRect(in: previewView.frame, imageSize: previewView.image?.size)
-            closeAnchor = fitted
             let badge = DesignTokens.previewBadgeSize
             badgeIconView.frame = NSRect(x: min(fitted.maxX - badge + DesignTokens.previewBadgeOutset, bounds.maxX - badge - 4),
-                                         y: max(fitted.minY - DesignTokens.previewBadgeOutset, 2),
+                                         y: max(fitted.minY - DesignTokens.previewBadgeOutset,
+                                                contentBox.minY - DesignTokens.previewBadgeOutset),
                                          width: badge, height: badge)
         } else if mode == .windowPreviews {
             // placeholder card keeps the geometry stable until a snapshot fades in
@@ -203,16 +266,25 @@ final class SwitcherTileView: NSView {
                                     width: iconSize, height: iconSize)
         } else {
             let iconSize = DesignTokens.largeIconSize
-            iconView.frame = NSRect(x: (size.width - iconSize) / 2,
-                                    y: contentTop - contentHeight + (contentHeight - iconSize) / 2,
+            iconView.frame = NSRect(x: contentBox.midX - iconSize / 2,
+                                    y: contentBox.midY - iconSize / 2,
                                     width: iconSize, height: iconSize)
             closeAnchor = iconView.frame
         }
         iconView.isHidden = hasPreview
         placeholderView.isHidden = hasPreview || mode == .appIcons
+        previewShadowView.isHidden = !hasPreview
         let labelWidth = size.width - DesignTokens.tileLabelInset * 2
-        titleLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
-                                  width: labelWidth, height: DesignTokens.titleZoneHeight)
+        // the zone is two lines tall; a single-line title centers within it so
+        // one- and two-line cards read as the same layout
+        let zone = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.titleY,
+                          width: labelWidth, height: DesignTokens.titleZoneHeight)
+        let textHeight = min(titleLabel.cell?.cellSize(forBounds: zone).height
+                                 ?? DesignTokens.titleZoneHeight,
+                             DesignTokens.titleZoneHeight)
+        titleLabel.frame = NSRect(x: zone.minX,
+                                  y: zone.minY + ((zone.height - textHeight) / 2).rounded(.down),
+                                  width: labelWidth, height: textHeight)
         tabsLabel.frame = NSRect(x: DesignTokens.tileLabelInset, y: DesignTokens.tabsY,
                                  width: labelWidth, height: DesignTokens.tabsHeight)
         // badge-style over the content's top-left corner (Mission Control idiom),

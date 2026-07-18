@@ -45,7 +45,7 @@ enum DebugHarness {
         }
 
         // overflow check: 120 synthetic windows in a horizontally scrolling strip
-        let overflowPanel = SwitcherPanel()
+        let overflowPanel = SwitcherPanel(rasterizableBackground: true)
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
@@ -65,7 +65,7 @@ enum DebugHarness {
         let savedMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let previewPanel = SwitcherPanel()
+            let previewPanel = SwitcherPanel(rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
             let previewItems = demoItems()
             previewPanel.show(items: previewItems, selectedIndex: 1)
@@ -93,7 +93,7 @@ enum DebugHarness {
             }
         }
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let panel = SwitcherPanel()
+            let panel = SwitcherPanel(rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
             panel.show(items: demoItems(), selectedIndex: 1)
             pending += 1

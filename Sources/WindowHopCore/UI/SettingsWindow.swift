@@ -270,9 +270,25 @@ struct AppearancePane: View {
 
 struct UpdatesPane: View {
     @State private var automaticUpdates = UpdateManager.shared.automaticallyChecksForUpdates
+    @ObservedObject private var updateManager = UpdateManager.shared
 
     var body: some View {
         Form {
+            if let availableVersion = updateManager.availableVersion {
+                Section {
+                    // mirrors Sparkle's own prompt: installing (or postponing/
+                    // skipping) continues in the standard Sparkle dialog
+                    LabeledContent {
+                        Button("Install Update…") {
+                            UpdateManager.shared.checkForUpdates()
+                        }
+                    } label: {
+                        Label("WindowHop \(availableVersion) is available",
+                              systemImage: "arrow.down.circle.fill")
+                            .foregroundStyle(.tint)
+                    }
+                }
+            }
             Section {
                 Toggle("Automatically check for updates", isOn: $automaticUpdates)
                     .onChange(of: automaticUpdates) { _, newValue in

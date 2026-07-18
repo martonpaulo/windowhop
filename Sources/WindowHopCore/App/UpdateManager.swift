@@ -3,14 +3,23 @@ import Sparkle
 
 /// Sparkle 2 wrapper. Update checks are WindowHop's only routine network
 /// activity — no telemetry, no analytics, no accounts. The standard Sparkle
-/// UI handles the whole experience; the updater only starts from a real app
-/// bundle (development builds run without it).
-public final class UpdateManager {
+/// UI handles the whole experience (prompt with the new version, install,
+/// remind-later, skip-this-version — so the same version never nags twice);
+/// the updater only starts from a real app bundle (development builds run
+/// without it). The Settings Updates pane additionally mirrors the latest
+/// known available version, observed through the updater delegate.
+public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     public static let shared = UpdateManager()
 
     private var controller: SPUStandardUpdaterController?
 
-    private init() {}
+    /// The newest version the appcast offered, when newer than the running
+    /// one; nil while up to date. Set from Sparkle's scheduled background
+    /// checks and manual ones alike — check failures just leave it unchanged
+    /// and never block anything.
+    @Published public private(set) var availableVersion: String?
+
+    override private init() {}
 
     public var isAvailable: Bool { controller != nil }
 
@@ -25,7 +34,7 @@ public final class UpdateManager {
               Bundle.main.bundleIdentifier == "com.perso.windowhop",
               Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else { return }
         controller = SPUStandardUpdaterController(startingUpdater: true,
-                                                  updaterDelegate: nil,
+                                                  updaterDelegate: self,
                                                   userDriverDelegate: nil)
     }
 
@@ -36,5 +45,15 @@ public final class UpdateManager {
     public var automaticallyChecksForUpdates: Bool {
         get { controller?.updater.automaticallyChecksForUpdates ?? true }
         set { controller?.updater.automaticallyChecksForUpdates = newValue }
+    }
+
+    // MARK: - SPUUpdaterDelegate (main thread, per Sparkle 2)
+
+    public func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        availableVersion = item.displayVersionString
+    }
+
+    public func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+        availableVersion = nil
     }
 }

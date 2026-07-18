@@ -2,17 +2,18 @@ import AppKit
 import ScreenCaptureKit
 
 /// Window previews for the optional Window Previews appearance, tuned for an
-/// instant-open feel (the AltTab model, public APIs only):
+/// instant-open feel (public APIs only):
 ///
 /// - The cache lives in memory for the app's lifetime, so opening the switcher
 ///   shows the last known preview of every window IMMEDIATELY.
-/// - Each session recaptures in parallel to refresh the cache for the NEXT
-///   open; snapshots on screen are never swapped mid-session. Only tiles that
-///   had no snapshot at all are filled in as captures land. Nothing is
+/// - Each session recaptures in parallel and delivers every result live: a
+///   tile that opened with a cached snapshot crossfades to the fresh capture
+///   the moment it lands, and tiles that had none fill in. Nothing is
 ///   captured while the switcher is closed.
 /// - Images are requested already scaled to tile size (no full-resolution
 ///   retention), never written to disk, never transmitted, and evicted the
-///   moment their window disappears.
+///   moment their window disappears — a late capture for a vanished window is
+///   discarded (see PreviewLedger).
 /// - Public ScreenCaptureKit only. AX windows are matched to SCWindows by
 ///   pid + frame (+ title), and every request receives a DISTINCT window —
 ///   two windows of the same app can never share a preview. When no confident
@@ -21,11 +22,12 @@ import ScreenCaptureKit
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
-    /// Delivered on the main thread, only for windows that had no cached
-    /// snapshot when the session opened (fill-in; never a mid-session swap).
+    /// Delivered on the main thread for windows of the current session, keyed
+    /// by the window's stable id (fill-ins and refreshes of cached snapshots).
     public var onPreview: ((AnyHashable, NSImage) -> Void)?
 
-    private var generation = 0
+    /// Decides what late, out-of-order capture results may do (pure, tested).
+    private var ledger = PreviewLedger<AnyHashable>()
     private var cache: [AnyHashable: NSImage] = [:]
 
     struct CaptureRequest {
@@ -45,11 +47,13 @@ public final class PreviewProvider {
 
     public func evict(_ id: AnyHashable) {
         cache[id] = nil
+        ledger.evict(id)
     }
 
     /// Used when the user switches back to App Icons: nothing to retain.
     public func evictAll() {
         cache.removeAll()
+        ledger.evictAll()
     }
 
     // MARK: - Session lifecycle
@@ -59,8 +63,6 @@ public final class PreviewProvider {
     public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
         guard Preferences.shared.appearanceMode == .windowPreviews,
               ScreenRecordingPermission.isGranted else { return }
-        generation += 1
-        let sessionGeneration = generation
         let ownPid = ProcessInfo.processInfo.processIdentifier
         let requests: [CaptureRequest] = items.compactMap { item in
             guard let window = item.window else { return nil }
@@ -77,12 +79,11 @@ public final class PreviewProvider {
             return CaptureRequest(id: item.id, pid: app.pid,
                                   title: item.title, frame: window.frame)
         }
-        // fill-in set: tiles that opened without any snapshot may receive one
-        let fillIds = Set(requests.map { $0.id }).filter { cache[$0] == nil }
+        let sessionGeneration = ledger.beginSession(ids: requests.map { $0.id })
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(requests, generation: sessionGeneration,
-                                pixelTarget: pixelTarget, fillIds: fillIds)
+                                pixelTarget: pixelTarget)
         }
     }
 
@@ -90,13 +91,13 @@ public final class PreviewProvider {
     /// In-flight captures may still finish into the cache (free freshness),
     /// but no further capture work starts while the switcher is closed.
     public func endSession() {
-        generation += 1
+        ledger.endSession()
     }
 
     // MARK: - Capture
 
     private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
-                         pixelTarget: CGSize, fillIds: Set<AnyHashable>) async {
+                         pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
         let candidates = content.windows.enumerated().map { index, window in
@@ -115,13 +116,12 @@ public final class PreviewProvider {
             assignments[request.id].map { (request, content.windows[$0]) }
         }
         for wave in stride(from: 0, to: assigned.count, by: 4).map({ Array(assigned[$0..<min($0 + 4, assigned.count)]) }) {
-            let stale = await MainActor.run { self.generation != sessionGeneration }
+            let stale = await MainActor.run { self.ledger.generation != sessionGeneration }
             await withTaskGroup(of: Void.self) { group in
                 for (request, scWindow) in wave {
                     group.addTask { [weak self] in
                         await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                               pixelTarget: pixelTarget,
-                                               deliver: !stale && fillIds.contains(request.id))
+                                               pixelTarget: pixelTarget)
                     }
                 }
             }
@@ -133,7 +133,7 @@ public final class PreviewProvider {
 
     private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
                             generation sessionGeneration: Int,
-                            pixelTarget: CGSize, deliver: Bool) async {
+                            pixelTarget: CGSize) async {
         let windowSize = scWindow.frame.size
         guard windowSize.width > 1, windowSize.height > 1 else { return }
         let configuration = SCStreamConfiguration()
@@ -144,6 +144,9 @@ public final class PreviewProvider {
         configuration.width = max(1, Int(windowSize.width * fit))
         configuration.height = max(1, Int(windowSize.height * fit))
         configuration.showsCursor = false
+        // the bare window, no baked-in shadow margins: the tile draws its own
+        // shadow along the preview's rounded shape (never a rectangular halo)
+        configuration.ignoreShadowsSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
         guard let cgImage = try? await SCScreenshotManager.captureImage(
             contentFilter: filter, configuration: configuration) else { return }
@@ -151,8 +154,11 @@ public final class PreviewProvider {
                             size: NSSize(width: CGFloat(cgImage.width) / 2,
                                          height: CGFloat(cgImage.height) / 2))
         await MainActor.run {
+            // the ledger is the single authority on what a late result may do:
+            // nothing for vanished windows, cache-only for ended sessions
+            guard self.ledger.shouldStore(request.id) else { return }
             self.cache[request.id] = image
-            if deliver, self.generation == sessionGeneration {
+            if self.ledger.shouldDeliver(request.id, capturedIn: sessionGeneration) {
                 self.onPreview?(request.id, image)
             }
         }

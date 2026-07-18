@@ -1,5 +1,39 @@
 # Changelog
 
+## Unreleased
+
+- **Live preview refresh**: opening the switcher still shows cached snapshots
+  instantly, but each tile now crossfades to a fresh capture the moment it
+  lands — no more stale previews for the whole session. Late captures for
+  closed windows are discarded (new tested PreviewLedger), and regression
+  tests pin previews to their window id so a snapshot can never appear on
+  another window's card.
+- **Picture-in-Picture windows are excluded** — browser PiP (Chrome/Brave/
+  Safari) and native floating video panels no longer clutter the switcher.
+  Detection is behavior-based (the window server keeps PiP panels floating
+  above normal windows), not an app-name list; fullscreen surfaces like
+  Keynote presentations stay listed.
+- **Preview cards redesigned**: every preview container now uses the display's
+  aspect ratio, so all cards are identical; snapshots aspect-fit, centered,
+  with transparent letterboxing. Captures no longer bake in the system window
+  shadow — the tile draws its own shadow along the preview's rounded shape
+  (no more rectangular halo around rounded windows). The selection highlight
+  surrounds only the preview, leaving the title outside, and single-line
+  titles center vertically in the two-line title zone.
+- **Bigger overlay controls**: the app-icon badge on previews is 2× larger,
+  and the close and Settings controls are 3× larger, with the panel reserving
+  a chrome strip so the gear never covers tiles.
+- **Native glass panel**: on macOS 26 the switcher background is the system
+  glass material (NSGlassEffectView), matching the native ⌘⇥ switcher; older
+  systems keep the HUD material fallback. Both respect Reduce Transparency.
+- **Update notice in Settings**: the Updates pane now shows "WindowHop X.Y.Z
+  is available" with an Install Update button when the scheduled Sparkle check
+  finds a newer version (the standard Sparkle prompt still handles install /
+  remind-later / skip).
+- **Polished DMG installer**: background artwork with drag-to-Applications
+  guidance, fixed icon layout, a volume icon, and a matching file icon —
+  generated headlessly (appdmg), so CI produces the full layout too.
+
 ## 1.0.5 — 2026-07-08
 
 - Window titles now wrap to **two lines** before truncating — no more premature

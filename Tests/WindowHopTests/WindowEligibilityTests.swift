@@ -100,6 +100,12 @@ final class WindowEligibilityTests: XCTestCase {
         XCTAssertFalse(WindowEligibility.shouldDisplay(state, includeOtherSpaces: true, includeOtherDisplays: true))
     }
 
+    func testPictureInPictureWindowsAreNeverDisplayed() {
+        var state = visibleState()
+        state.isPictureInPicture = true
+        XCTAssertFalse(WindowEligibility.shouldDisplay(state, includeOtherSpaces: true, includeOtherDisplays: true))
+    }
+
     func testOtherSpaceWindowsFollowTheSetting() {
         var state = visibleState()
         state.isOnCurrentSpace = false

@@ -28,6 +28,10 @@ public final class TrackedWindow {
     /// True when this window is really an inactive tab of a native tab group;
     /// tabbed windows are never shown as switcher entries (see TabGroupResolver).
     public internal(set) var isTabbed = false
+    /// Whether the window server keeps this window floating (Picture in
+    /// Picture); nil until resolved once at snapshot time. PiP-ness is
+    /// intrinsic to a window, so one resolution is enough.
+    public internal(set) var isPictureInPicture: Bool?
     /// Identities of this window's tab group members (including itself), when known.
     public internal(set) var tabGroupIds: [UUID]?
 
