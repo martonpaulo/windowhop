@@ -71,8 +71,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         SwitcherController.shared.wire()
         StatusItemController.shared.apply()
         UpdateManager.shared.startIfBundled()
-        UpdateManager.shared.automaticallyChecksForUpdates =
-            preferences.automaticUpdateChecks
         observeSystemEvents()
 
         if AccessibilityPermission.isGranted {
@@ -132,8 +130,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             NSApp.setActivationPolicy(self.preferences.showDockIcon ? .regular : .accessory)
             StatusItemController.shared.apply()
-            UpdateManager.shared.automaticallyChecksForUpdates =
-                self.preferences.automaticUpdateChecks
             self.applyConfiguration()
         }
         NotificationCenter.default.addObserver(
