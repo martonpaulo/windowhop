@@ -80,13 +80,29 @@ jobs:
           CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
         run: |
+          umask 077
           KEYCHAIN=build.keychain
           security create-keychain -p ci "$KEYCHAIN"
           security default-keychain -s "$KEYCHAIN"
           security unlock-keychain -p ci "$KEYCHAIN"
           echo "$CERT" | base64 --decode > cert.p12
-          security import cert.p12 -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
-          rm cert.p12
+          # OpenSSL 3 PKCS#12 encryption and non-ASCII export passwords are not
+          # consistently accepted by macOS Security.framework. Validate the
+          # supplied password, then normalize the bundle into the legacy
+          # PKCS#12 profile that Keychain accepts. The unencrypted intermediate
+          # is permission-restricted and removed by the EXIT trap on all paths.
+          export CERT_PASSWORD
+          COMPAT_PASSWORD=windowhop-ephemeral-ci-import
+          export COMPAT_PASSWORD
+          trap 'rm -f cert.p12 cert-extracted.pem cert-compatible.p12' EXIT
+          openssl pkcs12 -in cert.p12 -passin env:CERT_PASSWORD \
+            -nodes -out cert-extracted.pem
+          openssl pkcs12 -export -legacy -in cert-extracted.pem \
+            -passout env:COMPAT_PASSWORD -out cert-compatible.p12
+          security import cert-compatible.p12 -k "$KEYCHAIN" \
+            -P "$COMPAT_PASSWORD" -T /usr/bin/codesign
+          rm -f cert.p12 cert-extracted.pem cert-compatible.p12
+          trap - EXIT
           security set-key-partition-list -S apple-tool:,apple: -s -k ci "$KEYCHAIN"
           IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
             | awk -F'"' '/Developer ID Application:/ {print $2; exit}')
