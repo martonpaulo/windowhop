@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **The right preview on the right window**: Accessibility and the window server spell the
+  same window's title differently (Chromium reports `Page – Brave – Profile` where the
+  window server knows only `Page`), so same-sized windows of one app used to fall back to
+  window-server order and could show each other's snapshot. Matching now scores pid, frame,
+  and decoration-tolerant titles, accepts a pair only when it is the unambiguous best
+  choice for both sides, and leaves genuinely indistinguishable windows without a preview
+  instead of guessing.
+
 ## 1.3.1 — 2026-07-18
 
 - **Centralized defaults and safe reset**: every user preference now consumes one typed

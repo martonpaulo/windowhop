@@ -147,6 +147,18 @@ the window's stable id — never by tile position — and pooled tiles reset the
 image state on reconfigure, so a snapshot can never appear on another window's
 card (regression-tested, including rapid list changes).
 
+Accessibility and the window server describe the same window with different data, so
+`PreviewMatcher` (pure, unit-tested, in `Core/`) pairs them. Titles disagree by design —
+Chromium reports `Page – Brave – Profile` through AX while the window server knows only
+`Page` — and frames agree exactly but are not unique, because same-size, stacked, zoomed,
+and full-screen windows of one app share a frame and every app also owns invisible helper
+windows. Each pair is therefore scored on pid, frame agreement, and a
+decoration-tolerant title comparison, and is accepted only when it is the unambiguous best
+choice for both sides. Settling the certain pairs frees candidates and can resolve a
+window that was ambiguous a moment earlier; whatever stays ambiguous — same app, same
+frame, same title — is left unassigned, so the tile keeps its placeholder instead of
+showing another window's content.
+
 Source images aspect-fit and center inside a display-ratio canvas over the semantic
 preview surface. The app badge, Close control, selection plate, shadow, hit testing, and
 title position all anchor to that canvas rather than the fitted source-image bounds.

@@ -3,10 +3,15 @@ import XCTest
 
 /// The preview↔window assignment must be UNIQUE: two windows of the same app can
 /// never receive the same snapshot (the "both WhatsApp windows showed one
-/// preview" bug), and an unmatchable window gets no preview rather than a guess.
+/// preview" bug), a Chromium window must recognize its own snapshot even though
+/// AX and the window server spell its title differently (the "Brave shows
+/// another window's preview" bug), and an ambiguous window gets no preview
+/// rather than a guess.
 final class PreviewMatchingTests: XCTestCase {
-    private typealias Request = PreviewProvider.MatchRequest
-    private typealias Candidate = PreviewProvider.MatchCandidate
+    private typealias Request = PreviewMatcher.Request
+    private typealias Candidate = PreviewMatcher.Candidate
+
+    private static let windowFrame = CGRect(x: 0, y: 31, width: 1440, height: 869)
 
     func testTwoSameAppWindowsGetDistinctPreviews() {
         let requests = [
@@ -17,48 +22,97 @@ final class PreviewMatchingTests: XCTestCase {
             Candidate(index: 0, pid: 7, title: "WhatsApp", frame: CGRect(x: 400, y: 100, width: 800, height: 600)),
             Candidate(index: 1, pid: 7, title: "WhatsApp", frame: CGRect(x: 0, y: 0, width: 800, height: 600)),
         ]
-        let result = PreviewProvider.assign(requests: requests, candidates: candidates)
+        let result = PreviewMatcher.assign(requests: requests, candidates: candidates)
         XCTAssertEqual(result["a"], 1)
         XCTAssertEqual(result["b"], 0)
     }
 
-    func testEqualTitlesWithUnknownFramesNeverShareACandidate() {
-        // frames unavailable: title matching must still consume candidates uniquely
+    /// Chromium reports `"Page - Brave - Profile"` through AX and `"Page"` to the
+    /// window server, so equality alone matched nothing and every same-sized
+    /// window fell back to window-server order — the wrong preview.
+    func testChromiumWindowsWithIdenticalFramesMatchTheirOwnTitle() {
         let requests = [
-            Request(id: "a", pid: 7, title: "WhatsApp", frame: nil),
-            Request(id: "b", pid: 7, title: "WhatsApp", frame: nil),
-            Request(id: "c", pid: 7, title: "WhatsApp", frame: nil),
+            Request(id: "docs", pid: 7, title: "Docs - Brave - Personal", frame: Self.windowFrame),
+            Request(id: "mail", pid: 7, title: "Mail - Brave - Personal", frame: Self.windowFrame),
+            Request(id: "news", pid: 7, title: "News - Brave - Work", frame: Self.windowFrame),
+        ]
+        // window-server order is unrelated to the switcher's MRU order
+        let candidates = [
+            Candidate(index: 0, pid: 7, title: "News", frame: Self.windowFrame),
+            Candidate(index: 1, pid: 7, title: "Docs", frame: Self.windowFrame),
+            Candidate(index: 2, pid: 7, title: "Mail", frame: Self.windowFrame),
+        ]
+        let result = PreviewMatcher.assign(requests: requests, candidates: candidates)
+        XCTAssertEqual(result["docs"], 1)
+        XCTAssertEqual(result["mail"], 2)
+        XCTAssertEqual(result["news"], 0)
+    }
+
+    func testIndistinguishableWindowsGetNoPreviewInsteadOfAGuess() {
+        // same app, same frame, same title: nothing can tell them apart
+        let requests = [
+            Request(id: "a", pid: 7, title: "New Tab - Brave - Personal", frame: Self.windowFrame),
+            Request(id: "b", pid: 7, title: "New Tab - Brave - Personal", frame: Self.windowFrame),
         ]
         let candidates = [
-            Candidate(index: 0, pid: 7, title: "WhatsApp", frame: .zero),
-            Candidate(index: 1, pid: 7, title: "WhatsApp", frame: .zero),
+            Candidate(index: 0, pid: 7, title: "New Tab", frame: Self.windowFrame),
+            Candidate(index: 1, pid: 7, title: "New Tab", frame: Self.windowFrame),
         ]
-        let result = PreviewProvider.assign(requests: requests, candidates: candidates)
-        let assigned = result.values.sorted()
-        XCTAssertEqual(Set(assigned).count, assigned.count, "no candidate may be assigned twice")
-        XCTAssertEqual(assigned.count, 2, "the third request stays unmatched (icon fallback)")
+        XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
+    }
+
+    func testResolvingACertainWindowUnlocksAnAmbiguousOne() {
+        let requests = [
+            Request(id: "unknownFrame", pid: 7, title: "Doc", frame: nil),
+            Request(id: "knownFrame", pid: 7, title: "Doc", frame: Self.windowFrame),
+        ]
+        let candidates = [
+            Candidate(index: 0, pid: 7, title: "Doc", frame: Self.windowFrame),
+            Candidate(index: 1, pid: 7, title: "Doc", frame: CGRect(x: 200, y: 200, width: 400, height: 300)),
+        ]
+        let result = PreviewMatcher.assign(requests: requests, candidates: candidates)
+        XCTAssertEqual(result["knownFrame"], 0, "the frame match is certain")
+        XCTAssertEqual(result["unknownFrame"], 1, "the only candidate left is no longer ambiguous")
+    }
+
+    func testInvisibleHelperWindowsAreNeverAssigned() {
+        // Chromium keeps 1×1 and off-screen helper windows in the window list
+        let requests = [Request(id: "a", pid: 7, title: "Docs", frame: nil)]
+        let candidates = [
+            Candidate(index: 0, pid: 7, title: "Docs", frame: CGRect(x: 0, y: 0, width: 1, height: 1)),
+        ]
+        XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
     }
 
     func testNoCrossAppMatches() {
         let requests = [Request(id: "a", pid: 7, title: "Doc", frame: nil)]
-        let candidates = [Candidate(index: 0, pid: 8, title: "Doc", frame: .zero)]
-        XCTAssertTrue(PreviewProvider.assign(requests: requests, candidates: candidates).isEmpty)
+        let candidates = [Candidate(index: 0, pid: 8, title: "Doc", frame: Self.windowFrame)]
+        XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
     }
 
-    func testFramePreferredOverTitleAndTitleBreaksFrameTies() {
-        let frame = CGRect(x: 10, y: 10, width: 500, height: 400)
-        let requests = [Request(id: "a", pid: 7, title: "Two", frame: frame)]
+    func testTitleBreaksFrameTies() {
+        let requests = [Request(id: "a", pid: 7, title: "Two", frame: Self.windowFrame)]
         let candidates = [
-            Candidate(index: 0, pid: 7, title: "One", frame: frame),
-            Candidate(index: 1, pid: 7, title: "Two", frame: frame),
+            Candidate(index: 0, pid: 7, title: "One", frame: Self.windowFrame),
+            Candidate(index: 1, pid: 7, title: "Two", frame: Self.windowFrame),
         ]
-        XCTAssertEqual(PreviewProvider.assign(requests: requests, candidates: candidates)["a"], 1)
+        XCTAssertEqual(PreviewMatcher.assign(requests: requests, candidates: candidates)["a"], 1)
     }
 
     func testUnmatchableRequestGetsNothingRatherThanAGuess() {
         let requests = [Request(id: "a", pid: 7, title: "Alpha", frame: nil)]
-        let candidates = [Candidate(index: 0, pid: 7, title: "Beta", frame: .zero)]
-        XCTAssertTrue(PreviewProvider.assign(requests: requests, candidates: candidates).isEmpty)
+        let candidates = [Candidate(index: 0, pid: 7, title: "Beta", frame: Self.windowFrame)]
+        XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
+    }
+
+    func testTitleRelations() {
+        XCTAssertEqual(PreviewMatcher.titleRelation("Docs", "docs "), .equal)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Docs - Brave - Personal", "Docs"), .compatible)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Report.md — Edited", "Report.md"), .compatible)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Inbox", ""), .unknown)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Inbox", "Drafts"), .different)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Inbox Rules", "Inbox"), .different,
+                       "a shared word is not a decoration")
     }
 }
 

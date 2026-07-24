@@ -15,10 +15,10 @@ import ScreenCaptureKit
 ///   moment their window disappears — a late capture for a vanished window is
 ///   discarded (see PreviewLedger).
 /// - Public ScreenCaptureKit only. AX windows are matched to SCWindows by
-///   pid + frame (+ title), and every request receives a DISTINCT window —
-///   two windows of the same app can never share a preview. When no confident
-///   match exists the tile keeps its placeholder and corner badge; a wrong preview is worse
-///   than none.
+///   `PreviewMatcher` (pid + frame + decoration-tolerant title), and every
+///   request receives a DISTINCT window — two windows of the same app can never
+///   share a preview. When no unambiguous match exists the tile keeps its
+///   placeholder and corner badge; a wrong preview is worse than none.
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
@@ -142,17 +142,9 @@ public final class PreviewProvider {
             }
             return
         }
-        let candidates = content.windows.enumerated().map { index, window in
-            MatchCandidate(index: index,
-                           pid: window.owningApplication?.processID ?? -1,
-                           title: window.title ?? "",
-                           frame: window.frame)
-        }
-        let assignments = PreviewProvider.assign(
-            requests: requests.map {
-                MatchRequest(id: $0.id, pid: $0.pid, title: $0.title, frame: $0.frame)
-            },
-            candidates: candidates)
+        let assignments = PreviewMatcher.assign(
+            requests: requests.map(Self.matchRequest),
+            candidates: Self.matchCandidates(in: content.windows))
         // parallel capture in small waves: fast without saturating WindowServer
         let assigned = requests.compactMap { request in
             assignments[request.id].map { (request, content.windows[$0]) }
@@ -207,18 +199,9 @@ public final class PreviewProvider {
                                  pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
-        let candidates = content.windows.enumerated().map { index, window in
-            MatchCandidate(index: index,
-                           pid: window.owningApplication?.processID ?? -1,
-                           title: window.title ?? "",
-                           frame: window.frame)
-        }
-        guard let candidateIndex = Self.assign(
-            requests: [MatchRequest(id: request.id,
-                                    pid: request.pid,
-                                    title: request.title,
-                                    frame: request.frame)],
-            candidates: candidates)[request.id],
+        guard let candidateIndex = PreviewMatcher.assign(
+            requests: [Self.matchRequest(request)],
+            candidates: Self.matchCandidates(in: content.windows))[request.id],
               let image = await captureImage(content.windows[candidateIndex],
                                              pixelTarget: pixelTarget) else { return }
         let identity = SendableIdentity(value: request.id)
@@ -284,53 +267,21 @@ public final class PreviewProvider {
         }
     }
 
-    // MARK: - Matching (pure, unit-tested)
+    // MARK: - Matching
 
-    struct MatchRequest {
-        let id: AnyHashable
-        let pid: pid_t
-        let title: String
-        let frame: CGRect?
+    /// SCWindows are paired with switcher entries by `PreviewMatcher` (pure,
+    /// unit-tested): a unique, unambiguous assignment, never a guess.
+    private static func matchCandidates(in windows: [SCWindow]) -> [PreviewMatcher.Candidate] {
+        windows.enumerated().map { index, window in
+            PreviewMatcher.Candidate(index: index,
+                                     pid: window.owningApplication?.processID ?? -1,
+                                     title: window.title ?? "",
+                                     frame: window.frame)
+        }
     }
 
-    struct MatchCandidate {
-        let index: Int
-        let pid: pid_t
-        let title: String
-        let frame: CGRect
-    }
-
-    /// Unique assignment of SCWindows to requests: frame proximity first (title
-    /// breaks ties), then exact title. Every candidate is consumed at most once,
-    /// so two same-app windows can never receive the same preview. Requests with
-    /// no confident match stay unassigned (placeholder + badge) — never guessed.
-    static func assign(requests: [MatchRequest],
-                       candidates: [MatchCandidate]) -> [AnyHashable: Int] {
-        var available = Set(candidates.map { $0.index })
-        var result = [AnyHashable: Int]()
-        func frameClose(_ a: CGRect, _ b: CGRect) -> Bool {
-            abs(a.origin.x - b.origin.x) < 5 && abs(a.origin.y - b.origin.y) < 5
-                && abs(a.width - b.width) < 5 && abs(a.height - b.height) < 5
-        }
-        // pass 1: frame match, preferring an equal title among frame-close candidates
-        for request in requests {
-            guard let frame = request.frame else { continue }
-            let frameMatches = candidates.filter {
-                available.contains($0.index) && $0.pid == request.pid && frameClose($0.frame, frame)
-            }
-            guard !frameMatches.isEmpty else { continue }
-            let chosen = frameMatches.first { $0.title == request.title } ?? frameMatches[0]
-            result[request.id] = chosen.index
-            available.remove(chosen.index)
-        }
-        // pass 2: exact title for whatever is left
-        for request in requests where result[request.id] == nil {
-            guard let chosen = candidates.first(where: {
-                available.contains($0.index) && $0.pid == request.pid && $0.title == request.title
-            }) else { continue }
-            result[request.id] = chosen.index
-            available.remove(chosen.index)
-        }
-        return result
+    private static func matchRequest(_ request: CaptureRequest) -> PreviewMatcher.Request {
+        PreviewMatcher.Request(id: request.id, pid: request.pid,
+                               title: request.title, frame: request.frame)
     }
 }

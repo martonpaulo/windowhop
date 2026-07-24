@@ -3,7 +3,7 @@
 ## Automated suite
 
 ```sh
-swift build && swift test   # 157+ unit and integration tests, zero warnings
+swift build && swift test   # 164+ unit and integration tests, zero warnings
 scripts/validate.sh         # repository and documentation invariants
 ```
 
@@ -20,6 +20,9 @@ Preview regressions pin:
 - loading, permission-blocked, unavailable, cached, and loaded skeleton/image states over one fixed
   canvas;
 - stale asynchronous results to the stable window id and current session generation;
+- window↔snapshot matching: Chromium-style decorated titles, same-app windows sharing
+  one frame, invisible helper windows, and indistinguishable windows that must stay
+  without a preview instead of receiving a guess;
 - borderless App Icons selection and the shared semantic preview selection plate in
   Light and Dark Mode;
 - intentional semantic letterbox surfaces for wide and tall sources;
@@ -136,6 +139,9 @@ Screen Recording permission.
       persistent session without reflow.
 - [ ] VoiceOver announces selected title/app/tab count; keyboard focus, Increase Contrast,
       Reduce Transparency, Reduce Motion, and larger accessibility text remain usable.
+- [ ] With three or more windows of one Chromium browser — same size, and again with two of
+      them stacked at the same position — each card shows its own window, and a window that
+      cannot be told apart shows the skeleton rather than another window's content.
 
 ### Permissions
 
