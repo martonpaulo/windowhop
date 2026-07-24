@@ -6,6 +6,14 @@
     <description>Most recent updates to WindowHop</description>
     <language>en</language>
     <item>
+      <title>1.4.0</title>
+      <pubDate>Fri, 24 Jul 2026 18:45:06 +0000</pubDate>
+      <sparkle:version>10400</sparkle:version>
+      <sparkle:shortVersionString>1.4.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/martonpaulo/windowhop/releases/download/v1.4.0/WindowHop-1.4.0.zip" sparkle:edSignature="iv9e/aR7aMGVg47qHopmmAW56Oo05UPxAo4hxLhX+MmThgExtP00fuh4fCKt/ZfdXn2S1bQOJOwylqNiDX5dDw==" length="1598961" type="application/octet-stream"/>
+    </item>
+    <item>
       <title>1.3.1</title>
       <pubDate>Sat, 18 Jul 2026 07:06:55 +0000</pubDate>
       <sparkle:version>10301</sparkle:version>
