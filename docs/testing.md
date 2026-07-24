@@ -61,10 +61,17 @@ creating a release.
 ```sh
 .build/debug/WindowHop --dump-windows
 .build/debug/WindowHop --dump-permissions
+.build/debug/WindowHop --dump-previews
 .build/debug/WindowHop --demo-switcher [--dark] [--many]
+.build/debug/WindowHop --demo-settings [pane]
 .build/debug/WindowHop --render-ui <directory>
 WINDOWHOP_DEBUG=1 .build/debug/WindowHop
 ```
+
+`--dump-previews` prints the real switcher-entry → window-server-window pairing the next
+session would capture from, without requesting, keeping, or writing any image. It is the
+fastest check for "this window shows another window's preview": stack several windows of
+one browser at the same size and confirm every line resolves to its own title.
 
 `--render-ui` produces synthetic, privacy-safe PNGs for:
 
@@ -72,7 +79,18 @@ WINDOWHOP_DEBUG=1 .build/debug/WindowHop
 - loaded, letterboxed, loading, unavailable, and permission-blocked previews;
 - expanded preview in both appearances;
 - multi-row overflow;
-- every Settings pane.
+- every Settings pane (content only).
+
+The published Settings images instead capture the real window, because its toolbar exists
+only on a real window:
+
+```sh
+build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings general   # prints its window number
+screencapture -x -l<window-number> docs/screenshots/settings-general.png
+```
+
+`--demo-settings` shows the running user's real preferences, so set the documented
+defaults before capturing and restore them afterwards.
 
 Development comparison captures should retain the previous design plus the selected
 borderless/near-borderless, separator, and focus-plate candidates under `artifacts/`.

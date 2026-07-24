@@ -313,6 +313,9 @@ enum DebugHarness {
         window.makeKeyAndOrderFront(nil)
         print("settings window number \(window.windowNumber) "
             + "(\(Int(window.frame.width))x\(Int(window.frame.height)))")
+        // the process stays alive for the capture, so a redirected stdout must
+        // not hold the window number in its buffer
+        fflush(stdout)
         app.run()
     }
 

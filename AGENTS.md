@@ -13,6 +13,7 @@ Runtime checks (Accessibility permission is inherited when run from a trusted te
 
 ```sh
 .build/debug/WindowHop --dump-windows           # real discovery works?
+.build/debug/WindowHop --dump-previews          # entry → captured window pairing (no image)
 .build/debug/WindowHop --render-ui /tmp/shots   # switcher + settings renders, light/dark/overflow
 .build/debug/WindowHop --demo-switcher [--dark] [--many]  # on-screen panel demo
 .build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end (see docs/testing.md)

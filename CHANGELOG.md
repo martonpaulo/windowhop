@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 — 2026-07-24
 
 - **The right preview on the right window**: Accessibility and the window server spell the
   same window's title differently (Chromium reports `Page – Brave – Profile` where the
@@ -8,7 +8,11 @@
   window-server order and could show each other's snapshot. Matching now scores pid, frame,
   and decoration-tolerant titles, accepts a pair only when it is the unambiguous best
   choice for both sides, and leaves genuinely indistinguishable windows without a preview
-  instead of guessing.
+  instead of guessing. Long titles the window server reports with their middle elided are
+  recognized too, verified against real stacked browser windows.
+- **Documentation captures**: the published screenshots are a smaller, curated set, and
+  the Settings images are now the real window — title bar, toolbar, and all six panes'
+  identical frame — instead of an offscreen crop of one pane.
 - **One Settings window size**: panes no longer resize the window. General is split into
   General, Shortcuts, and Windows, every pane renders into one shared canvas (and scrolls
   if it ever outgrows it), and the selected pane is restored by identifier so future panes
