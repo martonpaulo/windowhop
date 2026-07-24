@@ -105,6 +105,33 @@ final class PreviewMatchingTests: XCTestCase {
         XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
     }
 
+    /// Observed live: the window server elides the middle of a long title, so
+    /// same-frame windows would all look "different" and lose their previews.
+    func testElidedWindowServerTitlesStillMatchTheirWindow() {
+        let requests = [
+            Request(id: "repo", pid: 7,
+                    title: "martonpaulo/windowhop: Switch between windows, not just apps. "
+                        + "Fast, native macOS window switcher with large app icons or live "
+                        + "previews — free, GPL, no telemetry. - Brave - Personal",
+                    frame: Self.windowFrame),
+            Request(id: "docs", pid: 7,
+                    title: "Accessibility API reference for macOS applications, windows, and "
+                        + "attributes | Apple Developer Documentation - Brave - Personal",
+                    frame: Self.windowFrame),
+        ]
+        let candidates = [
+            Candidate(index: 0, pid: 7,
+                      title: "Accessibility API reference …le Developer Documentation",
+                      frame: Self.windowFrame),
+            Candidate(index: 1, pid: 7,
+                      title: "martonpaulo/windowhop: Switch …ws — free, GPL, no telemetry.",
+                      frame: Self.windowFrame),
+        ]
+        let result = PreviewMatcher.assign(requests: requests, candidates: candidates)
+        XCTAssertEqual(result["repo"], 1)
+        XCTAssertEqual(result["docs"], 0)
+    }
+
     func testTitleRelations() {
         XCTAssertEqual(PreviewMatcher.titleRelation("Docs", "docs "), .equal)
         XCTAssertEqual(PreviewMatcher.titleRelation("Docs - Brave - Personal", "Docs"), .compatible)
@@ -113,6 +140,11 @@ final class PreviewMatchingTests: XCTestCase {
         XCTAssertEqual(PreviewMatcher.titleRelation("Inbox", "Drafts"), .different)
         XCTAssertEqual(PreviewMatcher.titleRelation("Inbox Rules", "Inbox"), .different,
                        "a shared word is not a decoration")
+        XCTAssertEqual(PreviewMatcher.titleRelation("Quarterly planning notes for the team",
+                                                    "Quarterly pl…for the team"), .compatible)
+        XCTAssertEqual(PreviewMatcher.titleRelation("Quarterly planning notes for the team",
+                                                    "Q…m"), .different,
+                       "too little of the title survived to mean anything")
     }
 }
 

@@ -47,7 +47,9 @@ enum PreviewMatcher {
     enum TitleRelation {
         case equal
         /// One title is the other plus an app/profile/state decoration
-        /// (`"Page – Brave – Personal"` vs `"Page"`).
+        /// (`"Page – Brave – Personal"` vs `"Page"`), or the same title with its
+        /// middle elided, which is how the window server reports long titles
+        /// (`"A very long page …with an ending"`).
         case compatible
         /// At least one side has no title to compare (helper windows).
         case unknown
@@ -158,6 +160,7 @@ enum PreviewMatcher {
         if left.isEmpty || right.isEmpty { return .unknown }
         if left == right { return .equal }
         if isDecorated(left, of: right) || isDecorated(right, of: left) { return .compatible }
+        if isElided(left, of: right) || isElided(right, of: left) { return .compatible }
         return .different
     }
 
@@ -172,5 +175,19 @@ enum PreviewMatcher {
         titleSeparators.contains {
             decorated.hasPrefix(core + $0) || decorated.hasSuffix($0 + core)
         }
+    }
+
+    /// The window server reports long titles with their middle elided, so the
+    /// kept head and tail must both still line up with the full title — and
+    /// together be specific enough to mean something.
+    private static let minimumElidedEvidence = 8
+
+    private static func isElided(_ elided: String, of full: String) -> Bool {
+        guard let ellipsis = elided.range(of: "…") else { return false }
+        let head = elided[elided.startIndex..<ellipsis.lowerBound]
+        let tail = elided[ellipsis.upperBound...]
+        guard head.count + tail.count >= minimumElidedEvidence,
+              full.hasPrefix(head) else { return false }
+        return tail.isEmpty || full.dropFirst(head.count).contains(tail)
     }
 }

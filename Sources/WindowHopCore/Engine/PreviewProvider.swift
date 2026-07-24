@@ -267,6 +267,34 @@ public final class PreviewProvider {
         }
     }
 
+    // MARK: - Diagnostics
+
+    /// Reports the pairing the next session would use, for the `--dump-previews`
+    /// harness flag: no capture is requested, so no image is produced, cached, or
+    /// written anywhere. Window titles are printed for the person running it.
+    public func dumpMatching(items: [SwitcherItem],
+                             completion: @escaping ([String]) -> Void) {
+        let requests = items.compactMap(makeCaptureRequest)
+        Task {
+            guard let content = try? await SCShareableContent
+                .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
+                await MainActor.run { completion(["dump-previews: no shareable content"]) }
+                return
+            }
+            let candidates = Self.matchCandidates(in: content.windows)
+            let assignments = PreviewMatcher.assign(requests: requests.map(Self.matchRequest),
+                                                    candidates: candidates)
+            let lines = requests.map { request -> String in
+                guard let index = assignments[request.id] else {
+                    return "· \(request.title) [pid \(request.pid)] → no unambiguous window (placeholder)"
+                }
+                let window = content.windows[index]
+                return "✓ \(request.title) [pid \(request.pid)] → \"\(window.title ?? "")\" \(window.frame)"
+            }
+            await MainActor.run { completion(lines) }
+        }
+    }
+
     // MARK: - Matching
 
     /// SCWindows are paired with switcher entries by `PreviewMatcher` (pure,

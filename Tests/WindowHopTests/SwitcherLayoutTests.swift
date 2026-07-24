@@ -164,6 +164,9 @@ final class SwitcherLayoutTests: XCTestCase {
         let items = [item("a")]
 
         panel.show(items: items, selectedIndex: 0, presentationMode: .cycling)
+        // showing seeds hover from the real pointer, which on a machine in use can
+        // already sit over the panel; the contextual rule is what is under test
+        panel.setPanelHoverForTesting(false)
         XCTAssertFalse(panel.settingsButtonIsVisibleForTesting)
         panel.setPanelHoverForTesting(true)
         XCTAssertTrue(panel.settingsButtonIsVisibleForTesting)
