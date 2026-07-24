@@ -9,6 +9,10 @@
   and decoration-tolerant titles, accepts a pair only when it is the unambiguous best
   choice for both sides, and leaves genuinely indistinguishable windows without a preview
   instead of guessing.
+- **One Settings window size**: panes no longer resize the window. General is split into
+  General, Shortcuts, and Windows, every pane renders into one shared canvas (and scrolls
+  if it ever outgrows it), and the selected pane is restored by identifier so future panes
+  cannot shift it.
 
 ## 1.3.1 — 2026-07-18
 

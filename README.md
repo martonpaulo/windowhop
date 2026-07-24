@@ -76,7 +76,7 @@ can be enabled in Settings → Appearance without changing preview width.
 
 ### Open WindowHop shortcut
 
-Use **⌥Tab** (configurable in Settings → General) when you do not want to hold a modifier.
+Use **⌥Tab** (configurable in Settings → Shortcuts) when you do not want to hold a modifier.
 It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space confirms;
 Escape cancels.
 
@@ -109,29 +109,45 @@ permission exists, capture starts without moving the cards.
 
 ## Settings and defaults
 
-Settings has four native panes: General, Appearance, Updates, and About. Changes persist
-and apply immediately when safe; invalid stored values restore documented defaults.
+Settings has six native panes: General, Shortcuts, Windows, Appearance, Updates, and
+About. Every pane shares one window size, so selecting a pane never resizes or re-centers
+the window, and no pane runs off the bottom of a laptop display. Changes persist and apply
+immediately when safe; invalid stored values restore documented defaults.
 
 ### General
 
 - Enable WindowHop — **on**
 - Launch at login — **on**
+- Show menu bar item — **off**
+- Show Dock icon — **off**
+- Restore Defaults… — confirmed action that restores every configurable preference
+- Quit WindowHop… — confirmed graceful termination
+
+![Settings General](docs/screenshots/settings-general.png)
+
+### Shortcuts
+
 - Switcher shortcut — **⌘Tab**
 - Open WindowHop shortcut — **⌥Tab**
+
+A recorded Open WindowHop chord that conflicts with the switcher shortcut is rejected with
+an explanation instead of being stored.
+
+![Settings Shortcuts](docs/screenshots/settings-shortcuts.png)
+
+### Windows
+
 - Include windows from other Spaces — **on**
 - Include windows from other displays — **on**
 - Include minimized windows — **off**
 - Include windows from hidden applications — **off**
 - Include Picture-in-Picture windows — **off**
-- Show menu bar item — **off**
-- Show Dock icon — **off**
-- Restore Defaults… — confirmed action that restores every configurable preference
 
 The default is intentionally a curated set of normal windows. Inclusion toggles are
 explicit opt-ins, rebuild the available list, and do not weaken the invariants that
 exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helper UI.
 
-![Settings General with the Windows shown section](docs/screenshots/settings-general.png)
+![Settings Windows with the Windows shown section](docs/screenshots/settings-windows.png)
 
 ### Appearance
 
@@ -194,7 +210,7 @@ this again.
   Recording, enable WindowHop, then return to the app. App Icons remains fully usable
   without it.
 - **A window is missing** — minimized, hidden-app, and PiP windows are excluded by
-  default and can be enabled under General → Windows shown. Public Accessibility APIs
+  default and can be enabled under Settings → Windows. Public Accessibility APIs
   reveal an unvisited Space only after you visit it once.
 - **A previous build's Accessibility toggle does not stick** — ensure WindowHop is in
   Applications and use the one-time recovery above. Running directly from Downloads or

@@ -8,8 +8,8 @@ fails when a new configurable key is omitted from Restore Defaults.
 
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
 |---|---|---|---|
-| Switcher shortcut | ⌘Tab | Yes | General; typed `UserDefaults`; existing stored values win; resets to ⌘Tab. |
-| Open WindowHop shortcut | ⌥Tab | Yes | General; typed `UserDefaults`; an existing custom or explicitly cleared value wins; resets to ⌥Tab. |
+| Switcher shortcut | ⌘Tab | Yes | Shortcuts; typed `UserDefaults`; existing stored values win; resets to ⌘Tab. |
+| Open WindowHop shortcut | ⌥Tab | Yes | Shortcuts; typed `UserDefaults`; an existing custom or explicitly cleared value wins; resets to ⌥Tab. |
 | Show tab counts | Off | Yes | Appearance; typed `UserDefaults`; existing stored values win; resets to Off. |
 | Context-sensitive Settings button | Enabled | No | One intended presentation behavior: hidden in cycling until panel hover, always visible in persistent mode. No persistence or reset entry. |
 | Complete shortcut interception | Enabled | No | Correctness fix: an owned shortcut must not leak into the native app switcher. No persistence or reset entry. |
@@ -20,3 +20,11 @@ fails when a new configurable key is omitted from Restore Defaults.
 
 Existing preferences are never overwritten during an upgrade. Missing keys receive the
 centralized default through the registration domain; migrations are explicit and tested.
+
+## Unreleased decisions
+
+| Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
+|---|---|---|---|
+| Uniform Settings pane size | Enabled | No | One intended presentation behavior: every pane shares `DesignTokens.settingsPaneWidth`/`settingsPaneHeight`, so selecting a pane never resizes the window. No persistence or reset entry. |
+| Selected Settings pane | General | No | Window-state restoration, not a preference: the pane identifier is stored in `UserDefaults` and ignored when unknown. Not part of `configurableKeys`; Restore Defaults leaves it untouched. |
+| Unambiguous preview matching | Enabled | No | Correctness fix: a preview is shown only for the window it belongs to, otherwise the tile keeps its placeholder. No persistence or reset entry. |

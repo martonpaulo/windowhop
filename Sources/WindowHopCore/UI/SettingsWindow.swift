@@ -3,7 +3,8 @@ import SwiftUI
 
 /// The Settings window: a native multi-pane layout (toolbar-style
 /// NSTabViewController, exactly like classic System Settings panes) hosting
-/// SwiftUI content. Panes: General, Appearance, Updates, About.
+/// SwiftUI content. Every pane is the same size, so selecting one never resizes
+/// or re-centers the window.
 public final class SettingsWindowController {
     public static let shared = SettingsWindowController()
 
@@ -20,12 +21,7 @@ public final class SettingsWindowController {
     /// Individual panes for the render harness (the toolbar lives on the window
     /// and cannot be rasterized offscreen).
     public static func makePaneViewControllers() -> [(name: String, viewController: NSViewController)] {
-        [
-            ("general", NSHostingController(rootView: GeneralPane())),
-            ("appearance", NSHostingController(rootView: AppearancePane())),
-            ("updates", NSHostingController(rootView: UpdatesPane())),
-            ("about", NSHostingController(rootView: AboutPane())),
-        ]
+        SettingsPane.allCases.map { ($0.rawValue, $0.makeViewController()) }
     }
 
     public func show() {
@@ -46,45 +42,102 @@ public final class SettingsWindowController {
     }
 }
 
+/// The Settings panes, in presentation order. Splitting shortcuts and window
+/// filters out of General keeps every pane scannable at a glance and close to
+/// the same length, instead of one pane taller than a laptop display.
+enum SettingsPane: String, CaseIterable {
+    case general
+    case shortcuts
+    case windows
+    case appearance
+    case updates
+    case about
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .shortcuts: "Shortcuts"
+        case .windows: "Windows"
+        case .appearance: "Appearance"
+        case .updates: "Updates"
+        case .about: "About"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .shortcuts: "keyboard"
+        case .windows: "macwindow.on.rectangle"
+        case .appearance: "rectangle.grid.1x2"
+        case .updates: "arrow.triangle.2.circlepath"
+        case .about: "info.circle"
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch self {
+        case .general: GeneralPane()
+        case .shortcuts: ShortcutsPane()
+        case .windows: WindowsPane()
+        case .appearance: AppearancePane()
+        case .updates: UpdatesPane()
+        case .about: AboutPane()
+        }
+    }
+
+    func makeViewController() -> NSHostingController<AnyView> {
+        let hosting = NSHostingController(rootView: AnyView(content))
+        hosting.title = title
+        hosting.sizingOptions = .preferredContentSize
+        return hosting
+    }
+}
+
 /// Toolbar-style panes with SF Symbols; the selected pane persists across launches.
 final class SettingsTabViewController: NSTabViewController {
-    private static let selectedPaneKey = "settingsSelectedPane"
+    /// Stores the pane's stable identifier, so adding or reordering panes never
+    /// reopens Settings on a different one.
+    private static let selectedPaneKey = "settingsSelectedPaneIdentifier"
 
     init() {
         super.init(nibName: nil, bundle: nil)
         tabStyle = .toolbar
         // no crossfade/slide: pane switches are instant (Reduce Motion friendly)
         transitionOptions = []
-        addPane(title: "General", symbol: "gearshape", view: GeneralPane())
-        addPane(title: "Appearance", symbol: "rectangle.grid.1x2", view: AppearancePane())
-        addPane(title: "Updates", symbol: "arrow.triangle.2.circlepath", view: UpdatesPane())
-        addPane(title: "About", symbol: "info.circle", view: AboutPane())
-        let saved = UserDefaults.standard.integer(forKey: Self.selectedPaneKey)
-        if saved >= 0, saved < tabViewItems.count {
-            selectedTabViewItemIndex = saved
+        for pane in SettingsPane.allCases {
+            let item = NSTabViewItem(viewController: pane.makeViewController())
+            item.identifier = pane.rawValue
+            item.label = pane.title
+            item.image = NSImage(systemSymbolName: pane.symbol,
+                                 accessibilityDescription: pane.title)
+            addTabViewItem(item)
+        }
+        if let saved = UserDefaults.standard.string(forKey: Self.selectedPaneKey),
+           let index = SettingsPane.allCases.firstIndex(where: { $0.rawValue == saved }) {
+            selectedTabViewItemIndex = index
         }
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
-    private func addPane(title: String, symbol: String, view: some View) {
-        let hosting = NSHostingController(rootView: AnyView(view))
-        hosting.title = title
-        hosting.sizingOptions = .preferredContentSize
-        let item = NSTabViewItem(viewController: hosting)
-        item.label = title
-        item.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
-        addTabViewItem(item)
-    }
-
     override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         super.tabView(tabView, didSelect: tabViewItem)
-        UserDefaults.standard.set(selectedTabViewItemIndex, forKey: Self.selectedPaneKey)
+        guard let identifier = tabViewItem?.identifier as? String else { return }
+        UserDefaults.standard.set(identifier, forKey: Self.selectedPaneKey)
     }
 }
 
-private let paneWidth: CGFloat = 560
+private extension View {
+    /// One canvas for every pane: identical size, content anchored at the top,
+    /// scrollable when it outgrows the canvas.
+    func settingsPane() -> some View {
+        formStyle(.grouped)
+            .frame(width: DesignTokens.settingsPaneWidth,
+                   height: DesignTokens.settingsPaneHeight)
+    }
+}
 
 // MARK: - General
 
@@ -92,7 +145,6 @@ struct GeneralPane: View {
     @ObservedObject private var preferences = Preferences.shared
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var launchAtLoginFailed = false
-    @State private var shortcutValidationMessage: String?
     @State private var restoreConfirmationShown = false
     @State private var restoreFailed = false
     @State private var quitConfirmationShown = false
@@ -116,7 +168,67 @@ struct GeneralPane: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+            } footer: {
+                Text("Disabling WindowHop hands ⌘⇥ back to the native app switcher without quitting.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
             }
+            Section {
+                Toggle("Show menu bar item", isOn: $preferences.showMenuBarItem)
+                Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
+            } header: {
+                Text("Appears in")
+            }
+            Section {
+                Button("Restore Defaults…") {
+                    restoreConfirmationShown = true
+                }
+                .confirmationDialog("Restore all WindowHop settings?",
+                                    isPresented: $restoreConfirmationShown) {
+                    Button("Restore Defaults") {
+                        restoreFailed = !SettingsDefaultsRestorer.shared.restore()
+                        launchAtLogin = LoginItem.isEnabled
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions and cached previews are unchanged.")
+                }
+                if restoreFailed {
+                    Text("Defaults could not be restored because Launch at Login is unavailable. Run WindowHop from Applications and try again.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                // macOS Form buttons ignore the destructive role's tint; make the
+                // destructive intent visible explicitly
+                Button(role: .destructive) {
+                    quitConfirmationShown = true
+                } label: {
+                    Text("Quit WindowHop…")
+                        .foregroundStyle(.red)
+                }
+                .confirmationDialog("Quit WindowHop?",
+                                    isPresented: $quitConfirmationShown) {
+                    Button("Quit WindowHop", role: .destructive) {
+                        NSApp.terminate(nil)
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("The native ⌘⇥ app switcher takes over until you open WindowHop again.")
+                }
+            }
+        }
+        .settingsPane()
+    }
+}
+
+// MARK: - Shortcuts
+
+struct ShortcutsPane: View {
+    @ObservedObject private var preferences = Preferences.shared
+    @State private var shortcutValidationMessage: String?
+
+    var body: some View {
+        Form {
             Section {
                 Picker("Switcher shortcut", selection: $preferences.shortcut) {
                     ForEach(ShortcutSpec.allCases) { spec in
@@ -147,6 +259,21 @@ struct GeneralPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+        }
+        .settingsPane()
+        // the message explains the change that just happened here; leaving the
+        // pane (to restore defaults, for instance) makes it obsolete
+        .onDisappear { shortcutValidationMessage = nil }
+    }
+}
+
+// MARK: - Windows
+
+struct WindowsPane: View {
+    @ObservedObject private var preferences = Preferences.shared
+
+    var body: some View {
+        Form {
             Section {
                 Toggle("Include windows from other Spaces", isOn: $preferences.includeOtherSpaces)
                 Toggle("Include windows from other displays", isOn: $preferences.includeOtherDisplays)
@@ -158,56 +285,12 @@ struct GeneralPane: View {
             } header: {
                 Text("Windows shown")
             } footer: {
-                Text("WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately.")
+                Text("WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            Section {
-                Toggle("Show menu bar item", isOn: $preferences.showMenuBarItem)
-                Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
-            }
-            Section {
-                Button("Restore Defaults…") {
-                    restoreConfirmationShown = true
-                }
-                .confirmationDialog("Restore all WindowHop settings?",
-                                    isPresented: $restoreConfirmationShown) {
-                    Button("Restore Defaults") {
-                        restoreFailed = !SettingsDefaultsRestorer.shared.restore()
-                        launchAtLogin = LoginItem.isEnabled
-                        shortcutValidationMessage = nil
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions and cached previews are unchanged.")
-                }
-                if restoreFailed {
-                    Text("Defaults could not be restored because Launch at Login is unavailable. Run WindowHop from Applications and try again.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                // macOS Form buttons ignore the destructive role's tint; make the
-                // destructive intent visible explicitly
-                Button(role: .destructive) {
-                    quitConfirmationShown = true
-                } label: {
-                    Text("Quit WindowHop…")
-                        .foregroundStyle(.red)
-                }
-                .confirmationDialog("Quit WindowHop?",
-                                    isPresented: $quitConfirmationShown) {
-                    Button("Quit WindowHop", role: .destructive) {
-                        NSApp.terminate(nil)
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text("The native ⌘⇥ app switcher takes over until you open WindowHop again.")
-                }
-            }
         }
-        .formStyle(.grouped)
-        .frame(width: paneWidth)
-        .fixedSize()
+        .settingsPane()
     }
 }
 
@@ -300,9 +383,7 @@ struct AppearancePane: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: paneWidth)
-        .fixedSize()
+        .settingsPane()
         .onReceive(NotificationCenter.default.publisher(
             for: NSApplication.didBecomeActiveNotification)) { _ in
             screenRecordingStatus = ScreenRecordingPermission.status
@@ -357,9 +438,7 @@ struct UpdatesPane: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: paneWidth)
-        .fixedSize()
+        .settingsPane()
     }
 }
 
@@ -381,12 +460,13 @@ struct AboutPane: View {
     var body: some View {
         Form {
             Section {
-                HStack(spacing: 16) {
+                HStack(spacing: DesignTokens.settingsAboutHeaderSpacing) {
                     Image(nsImage: NSApp.applicationIconImage ?? NSImage())
                         .resizable()
-                        .frame(width: 64, height: 64)
+                        .frame(width: DesignTokens.settingsAboutIconSize,
+                               height: DesignTokens.settingsAboutIconSize)
                         .accessibilityLabel("WindowHop application icon")
-                    VStack(alignment: .leading, spacing: 3) {
+                    VStack(alignment: .leading, spacing: DesignTokens.settingsAboutTitleSpacing) {
                         Text("WindowHop")
                             .font(.title2.weight(.semibold))
                         Text("Switch between windows, not just apps.")
@@ -394,10 +474,10 @@ struct AboutPane: View {
                         Text("Developed by Marton Paulo")
                             .font(.callout)
                             .foregroundStyle(.secondary)
-                            .padding(.top, 3)
+                            .padding(.top, DesignTokens.settingsAboutTitleSpacing)
                     }
                 }
-                .padding(.vertical, 4)
+                .padding(.vertical, DesignTokens.settingsAboutHeaderPadding)
                 LabeledContent("Version", value: "\(version) (build \(build))")
                 LabeledContent("Bundle identifier", value: bundleIdentifier)
             }
@@ -421,8 +501,6 @@ struct AboutPane: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
-        .frame(width: paneWidth)
-        .fixedSize()
+        .settingsPane()
     }
 }

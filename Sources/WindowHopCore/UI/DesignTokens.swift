@@ -17,6 +17,20 @@ enum DesignTokens {
     static let chromeButtonSymbolSize: CGFloat = 32
     static let chromeButtonOutsideOverlap: CGFloat = 10
 
+    // MARK: Settings window
+    /// Every pane renders into this one canvas, so selecting a pane never
+    /// resizes the window (the native Settings behavior): panes with less
+    /// content simply end in empty space, and a pane that outgrows the canvas —
+    /// large Dynamic Type, a long localization — scrolls inside it. The height
+    /// fits the tallest pane at the default text size and stays well inside a
+    /// laptop display's usable height.
+    static let settingsPaneWidth: CGFloat = 560
+    static let settingsPaneHeight: CGFloat = 540
+    static let settingsAboutIconSize: CGFloat = 64
+    static let settingsAboutHeaderSpacing: CGFloat = 16
+    static let settingsAboutTitleSpacing: CGFloat = 3
+    static let settingsAboutHeaderPadding: CGFloat = 4
+
     // MARK: Tiles (both appearances)
     /// Preview canvases use this radius for their fixed content and focus ring.
     static let cardCornerRadius: CGFloat = 10
