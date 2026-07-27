@@ -309,6 +309,7 @@ public final class SwitcherController {
         // a window that appeared mid-session has no capture in flight yet; without
         // this its tile would stay a placeholder for the rest of the session
         if !plan.appeared.isEmpty {
+            DebugLog.log("session list grew by \(plan.appeared.count): now \(items.count) items")
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
                 targetSize: SwitcherPanel.previewContentSize,
