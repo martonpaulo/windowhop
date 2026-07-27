@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 — 2026-07-27
 
 - **Windows that open while the switcher is up now show up**: the list used to be frozen
   the moment you opened WindowHop, so an app launching, a new document, or a dialog
