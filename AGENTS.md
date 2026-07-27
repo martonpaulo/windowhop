@@ -1,5 +1,51 @@
 # WindowHop — rules for coding agents
 
+## Project identity and policy
+
+- Project name: `WindowHop`
+- Public name: `WindowHop`
+- Benefit-first description: Switch between windows, not just apps. Fast, native macOS
+  window switcher with large app icons or live previews — free, GPL, no telemetry.
+- Repository: `martonpaulo/windowhop` (public)
+- Public identifiers: bundle identifier `com.perso.windowhop`; SwiftPM package, executable
+  target, and app name `WindowHop`; library target `WindowHopCore`
+- Landing page: <https://martonpaulo.github.io/windowhop/>, published from `docs/` by
+  `.github/workflows/pages.yml`. It lives in this repository; there is no separate site repo.
+- License: `GPL-3.0-only`, with AltTab attribution recorded in `UPSTREAM.md`
+- Copyright: GPL-3.0. Derived from AltTab, © lwouis and contributors
+  (`NSHumanReadableCopyright` in `Support/Info.plist` is the canonical string).
+- Development language: English.
+- Product copy: English only, authored inline. There is no localization layer, no `.lproj`
+  bundle, and no fallback locale; adding one is a migration, not an incidental change.
+- Branch policy: work directly on `main`. Use a branch and pull request only when the user
+  asks for one; bot PRs (Dependabot, ImgBot) still merge through GitHub.
+- Commit policy: automatic. When a task is complete and its validation has passed, commit it
+  without being asked — Conventional Commits, one commit per concern, diff inspected first.
+  Do not commit a task that is unfinished, unvalidated, or failing.
+- Push policy: automatic. Push to `origin/main` right after creating those commits. `main`
+  drives CI and the Pages deploy, so never push a red or unvalidated tree, and never
+  force-push.
+- Product versioning: SemVer `MAJOR.MINOR.PATCH`. The canonical source is
+  `CFBundleShortVersionString` in `Support/Info.plist`; `CFBundleVersion` is derived as
+  `MAJOR*10000 + MINOR*100 + PATCH`. Version increments are **not** automatic: they happen
+  only during an explicitly requested release, together with the `CHANGELOG.md` entry, the
+  `vX.Y.Z` tag, the appcast entry, and the published artifacts. Finishing a feature never
+  bumps a version.
+- Delete branches after merge: enabled on GitHub.
+- Release, signing, and secret-storage policy: distributed as a signed, notarized, stapled
+  `.app` in a DMG plus ZIP on GitHub Releases, updated in place by Sparkle from
+  `appcast.xml` on `raw.githubusercontent.com`. Tag `vX.Y.Z` triggers
+  `.github/workflows/release.yml`; local equivalents live in `scripts/`. Signing uses one
+  stable identity from the `DEVELOPER_ID_CERT_P12` / `DEVELOPER_ID_CERT_PASSWORD` GitHub
+  secrets; the Sparkle EdDSA private key lives in the login Keychain and the
+  `SPARKLE_PRIVATE_KEY` secret. No key material, certificate password, or signing log ever
+  enters the repository.
+
+Treat these values as stable project decisions. Change an established identifier, license,
+visibility, branch policy, versioning model, localization strategy, landing-page contract, or
+release policy only through an explicit task that describes the migration and downstream
+effects.
+
 ## Build and validate
 
 ```sh
@@ -104,14 +150,169 @@ For every new user-facing behavior or presentation feature:
 Features that are intentionally non-configurable must say why in the task implementation
 notes. A missing configurability decision is a review failure.
 
-## Conventions
+## Instruction hierarchy and sources of truth
 
-- Conventional Commits; English everywhere.
-- Comments state constraints the code can't show (ported-rule provenance, macOS quirks).
-- GPL-3.0 with AltTab attribution is non-negotiable; update UPSTREAM.md when porting
-  upstream rules (include the upstream commit hash).
-- Release flow: tag `vX.Y.Z` → `.github/workflows/release.yml` (or local scripts);
-  the Sparkle private key lives in the Keychain and the `SPARKLE_PRIVATE_KEY` GitHub
-  secret — never in the repository or logs.
+- Follow the direct task, the most specific applicable scoped instructions, this root file,
+  and then general working agreements, in that order.
+- Read applicable instructions before changing files.
+- Code is evidence of current behavior. This file is normative for process. An approved
+  specification is normative for desired behavior. Expose divergence among them; do not
+  silently resolve every conflict in favor of one source.
+- Keep one canonical source for each rule. `docs/architecture.md`, `docs/testing.md`,
+  `docs/feature-defaults.md`, and `docs/website.md` own their details; this file links to
+  them instead of restating them.
+- Do not turn analysis, research, or a read-only audit into implementation without
+  authorization.
+- Be direct and evidence-based. State assumptions, uncertainty, risks, tradeoffs, and
+  blockers. Ask only when a material decision cannot be discovered safely.
 
-## Imported Claude Cowork project instructions
+## Before editing
+
+1. Check applicable instructions, Git status, and the current branch. The user works on this
+   machine between sessions, so re-verify Git state rather than assuming the last known one.
+2. Search for the behavior, callers, tests, contracts, and nearby patterns before adding
+   anything.
+3. Read only the files and chunks required to understand the affected behavior.
+4. Distinguish verified facts, reasonable inferences, and unknowns.
+5. Define the source of truth and ownership before changing data or state.
+6. Make a short plan only for complex, risky, ambiguous, or multi-file work.
+
+## Scope, reuse, and implementation
+
+- Keep changes scoped to the requested result. Do not mix unrelated cleanup, redesign,
+  dependency updates, broad refactors, or future work.
+- Preserve behavior outside the task and preserve unrelated or uncommitted user changes.
+- Search for existing components, services, types, helpers, tokens, configuration, tests, and
+  platform capabilities before creating new ones.
+- Prefer the smallest correct, readable, reversible, and low-operational-cost solution.
+- Maintain one owner and one source of truth for each business rule, state, mapping, default,
+  and copy value.
+- Keep business rules out of presentation, transport, CLI, and adapter layers — in this
+  project that means `Core/`, not `UI/`, `Engine/`, or `Input/`.
+- Derive values instead of storing synchronized copies. Model invalid states explicitly.
+- Do not add dependencies, services, layers, caches, observers, timers, polling, or
+  background jobs without a current requirement and a clear owner. See the idle-polling and
+  single-dependency hard rules above.
+- For large changes, use reviewable, executable increments. Do not fragment one coherent
+  concern mechanically.
+- Implement relevant errors, states, accessibility, and tests with the behavior rather than as
+  unrelated follow-up work.
+
+## Data, security, and destructive operations
+
+- Distinguish canonical data, reconstructible cache, transient state, local preferences,
+  durable intent, and operating-system artifacts. Window snapshots are cache and must never
+  be persisted; `Preferences` is the only durable user state.
+- Use stable application-owned identifiers. Validate data at input and persistence boundaries.
+- Use atomic writes when partial failure could leave inconsistent state. Preserve unrelated
+  fields during external updates.
+- Request only necessary permissions and scopes. Keep credentials, tokens, private keys,
+  signing material, and personal data out of the repository and logs.
+- Use structured subprocess arguments and validate destinations, redirects, and untrusted
+  inputs.
+- Resolve an exact target before deletion, overwrite, interruption, or another hard-to-recover
+  action. Ask again when the target is ambiguous or effects exceed the named scope.
+- Never force-push and never perform broad cleanup without explicit authorization.
+- The user may be running WindowHop from `/Applications` during a session. Check before
+  killing a `WindowHop` process and leave pre-existing ones alone.
+
+## Product interface and accessibility
+
+- Prefer native platform components and established macOS patterns. Custom UI must provide
+  clear product value.
+- Define layout, hierarchy, controls, loading, content, empty, error, retry, disabled,
+  cancellation, and destructive states when applicable.
+- Include keyboard navigation, focus, screen-reader labels, scalable text, contrast, reduced
+  motion, and non-color status cues in the same change.
+- Keep visible copy centralized and consistent with the English-only copy strategy.
+- Keep expensive work out of render paths and latency-sensitive paths. Prefer event-driven,
+  on-demand, bounded, incremental, and cancelable work.
+- Measure before claiming a performance problem, and optimize measured user-visible
+  bottlenecks.
+- Published screenshots must never show the user's personal windows: switcher images come from
+  `--render-ui`, Settings images from `--demo-settings` plus `screencapture -l`.
+
+## Code, comments, and documentation
+
+- Conventional Commits; English in code, comments, commits, filenames, tests, configuration,
+  and developer documentation.
+- Follow the existing formatter, naming, file layout, and architectural conventions.
+- Prefer clear types, explicit ownership, and simple control flow over cleverness.
+- Comments state constraints the code can't show (ported-rule provenance, macOS quirks). Link
+  official documentation when an external rule or workaround must stay visible to prevent a
+  regression.
+- GPL-3.0 with AltTab attribution is non-negotiable; update `UPSTREAM.md` when porting
+  upstream rules (include the upstream commit hash). Never remove upstream notices.
+- Update the smallest canonical documentation section when a durable contract changes. Do not
+  create empty documentation for possible future use.
+- Keep the README easy to scan: benefit, behavior, requirements, install, usage, validation,
+  privacy, limitations, landing page, download. Use badges, real screenshots, and statistics
+  only when they improve comprehension and can stay current.
+- Maintain `CHANGELOG.md` — every public release gets a user-facing entry.
+
+## Configuration and repository hygiene
+
+- Keep `.gitignore` covering secrets, local environments, logs, caches, build output, and
+  generated artifacts that actually exist.
+- The project has no runtime environment variables, so there is no `.env.example`. Add one
+  only if real variables appear, with every supported name and a safe placeholder.
+- Keep secrets in the GitHub secret store or the login Keychain, never in versioned files.
+
+## Tests and validation
+
+- Add or update focused tests for changed behavior, regressions, persistence, migrations,
+  validation, and critical accessibility. Business rules in `Core/` ship with unit tests.
+- Test observable contracts at stable seams; avoid tests that only mirror implementation
+  details or framework behavior.
+- Run the smallest relevant check during iteration. Inspect the first useful failure and make a
+  relevant change before rerunning.
+- Once stable, run `swift build && swift test` plus `scripts/validate.sh` — both must pass with
+  zero warnings before a commit.
+- Never claim a check passed unless it ran successfully. Report exact skips, blockers, residual
+  risk, and manual gaps.
+
+## Artifacts and processes
+
+- Temporary is the default; retention is an explicit exception. Task logs belong in
+  `artifacts/` (gitignored).
+- Remove only temporary files created by the current task. Preserve deliverables, next-phase
+  inputs, and failure evidence.
+- Never delete pre-existing user artifacts, fixtures, baselines, or logs merely because they
+  look temporary.
+- Stop demo panels, servers, watchers, and other processes started by the task. Do not stop the
+  user's pre-existing processes.
+
+## Agent skill paths
+
+- Domain glossary: `CONTEXT.md` (optional; create only when a term is genuinely ambiguous
+  across `Core/`, `Engine/`, `Input/`, and `UI/`)
+- Architecture decision records: `docs/adr/` (create only when a decision needs its rationale
+  recorded; `docs/architecture.md` stays the description of what exists today)
+- Prototypes: `artifacts/prototypes/` (gitignored, disposable)
+
+## Git and releases
+
+- Follow the branch, commit, push, and versioning policies recorded above.
+- Check status and branch before editing and before the final report. Work only on task files
+  and leave unrelated changes untouched.
+- Inspect the diff before committing. Never commit secrets, caches, generated logs, temporary
+  artifacts, or unrelated formatting churn.
+- If a commit or push fails, report the exact failure without claiming success.
+- Release flow: bump the version and build number, update `CHANGELOG.md`, build and validate
+  from a clean tree, sign and notarize, verify the install and Sparkle update paths, then tag
+  `vX.Y.Z` → `.github/workflows/release.yml` (or the local `scripts/`), commit the appcast
+  entry, and verify the published download surfaces.
+- Do not publish a release or change a version unless the task explicitly authorizes it.
+- Pass `-R martonpaulo/windowhop` to `gh`; without it the wrong repository can be selected.
+
+## Completion report
+
+Lead with the outcome and include:
+
+- what changed and why;
+- files touched;
+- validation commands and actual results;
+- warnings, failures, skips, manual gaps, and remaining risks;
+- temporary artifacts kept or removed;
+- commit and push status;
+- final worktree status and unrelated dirty files left untouched.
