@@ -22,6 +22,14 @@ public struct PreviewLedger<ID: Hashable> {
         return generation
     }
 
+    /// Windows appeared while the session stayed open: they join the current
+    /// generation so their captures deliver live. The generation must NOT be
+    /// bumped here — that would silently strip live delivery from every capture
+    /// already in flight for this same session.
+    public mutating func extendSession(ids: some Sequence<ID>) {
+        validIds.formUnion(ids)
+    }
+
     /// The session ended: any not-yet-delivered result loses live delivery.
     public mutating func endSession() {
         generation += 1

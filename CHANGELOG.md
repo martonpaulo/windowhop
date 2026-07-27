@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+- **Windows that open while the switcher is up now show up**: the list used to be frozen
+  the moment you opened WindowHop, so an app launching, a new document, or a dialog
+  appearing behind the panel stayed invisible until you closed and reopened the switcher.
+  New windows are now appended to the end of the open list — every tile you were already
+  cycling through keeps its position, so nothing moves under your fingers — and in Window
+  Previews mode the new tile gets its own snapshot without disturbing the captures still
+  filling in.
+
 ## 1.4.0 — 2026-07-24
 
 - **The right preview on the right window**: Accessibility and the window server spell the

@@ -7,8 +7,9 @@ public final class SwitcherController {
     public static let shared = SwitcherController()
 
     private var state = SwitcherState()
-    /// Snapshot frozen at session start: stable ordering while the switcher is open.
-    /// Store changes remove or refresh entries but never reorder or add.
+    /// The session list: seeded at session start and kept in that order while the
+    /// switcher is open. Store changes remove or refresh entries in place and append
+    /// windows that appeared, but never reorder (see SessionListReconciler).
     private var items: [SwitcherItem] = []
     private let panel = SwitcherPanel()
     private var mouseMonitor: Any?
@@ -296,10 +297,22 @@ public final class SwitcherController {
         guard state.isActive else { return }
         let selectedId = state.selectedIndex < items.count ? items[state.selectedIndex].id : nil
         let fresh = WindowStore.shared.snapshot()
-        items = items.compactMap { item in
-            fresh.first { $0.id == item.id } ?? (shouldPreserveAcrossLocationRefresh(item)
-                ? item
-                : nil)
+        let freshById = Dictionary(fresh.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let sessionById = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let preserved = Set(items.lazy
+            .filter { freshById[$0.id] == nil && self.shouldPreserveAcrossLocationRefresh($0) }
+            .map(\.id))
+        let plan = SessionListReconciler.reconcile(sessionIds: items.map(\.id),
+                                                   freshIds: fresh.map(\.id),
+                                                   preserving: preserved)
+        items = plan.ids.compactMap { freshById[$0] ?? sessionById[$0] }
+        // a window that appeared mid-session has no capture in flight yet; without
+        // this its tile would stay a placeholder for the rest of the session
+        if !plan.appeared.isEmpty {
+            PreviewProvider.shared.extendSession(
+                items: plan.appeared.compactMap { freshById[$0] },
+                targetSize: SwitcherPanel.previewContentSize,
+                scale: NSScreen.main?.backingScaleFactor ?? 2)
         }
         expandedPreview.retainAvailable(Set(items.map(\.id)))
         let preferredIndex = selectedId.flatMap { id in

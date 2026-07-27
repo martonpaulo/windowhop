@@ -95,6 +95,24 @@ public final class PreviewProvider {
         }
     }
 
+    /// Captures previews for windows that joined the list while the switcher is
+    /// open. Scoped to the newcomers and to the session generation already in
+    /// flight, so the tiles that are still filling in are left alone. No-op
+    /// outside an active Window Previews session.
+    public func extendSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
+        guard Preferences.shared.appearanceMode == .windowPreviews,
+              ScreenRecordingPermission.status.isAuthorized,
+              let sessionGeneration = activeSessionGeneration else { return }
+        let requests = items.compactMap(makeCaptureRequest)
+        guard !requests.isEmpty else { return }
+        ledger.extendSession(ids: requests.map { $0.id })
+        let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
+        Task { [weak self] in
+            await self?.capture(requests, generation: sessionGeneration,
+                                pixelTarget: pixelTarget)
+        }
+    }
+
     /// Stops live delivery; the cache stays warm for an instant next open.
     /// In-flight captures may still finish into the cache (free freshness),
     /// but no further capture work starts while the switcher is closed.

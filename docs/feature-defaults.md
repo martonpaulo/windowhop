@@ -21,10 +21,16 @@ fails when a new configurable key is omitted from Restore Defaults.
 Existing preferences are never overwritten during an upgrade. Missing keys receive the
 centralized default through the registration domain; migrations are explicit and tested.
 
-## Unreleased decisions
+## WindowHop 1.4.0 decisions
 
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
 |---|---|---|---|
 | Uniform Settings pane size | Enabled | No | One intended presentation behavior: every pane shares `DesignTokens.settingsPaneWidth`/`settingsPaneHeight`, so selecting a pane never resizes the window. No persistence or reset entry. |
 | Selected Settings pane | General | No | Window-state restoration, not a preference: the pane identifier is stored in `UserDefaults` and ignored when unknown. Not part of `configurableKeys`; Restore Defaults leaves it untouched. |
 | Unambiguous preview matching | Enabled | No | Correctness fix: a preview is shown only for the window it belongs to, otherwise the tile keeps its placeholder. No persistence or reset entry. |
+
+## Unreleased decisions
+
+| Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
+|---|---|---|---|
+| Windows appearing mid-session | Shown | No | Correctness fix: a window the user cannot see is a window they cannot reach, and the existing inclusion policy already decides what qualifies. The stability concern that motivated the frozen list is met by appending instead of reordering (see `SessionListReconciler`), so no legitimate "hide new windows" state remains. No persistence or reset entry. |

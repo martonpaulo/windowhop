@@ -43,6 +43,31 @@ final class PreviewLedgerTests: XCTestCase {
         XCTAssertTrue(ledger.shouldDeliver("a", capturedIn: third))
     }
 
+    func testExtendingASessionDeliversToTheNewWindow() {
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a"])
+        ledger.extendSession(ids: ["b"])
+        XCTAssertTrue(ledger.shouldDeliver("b", capturedIn: generation))
+    }
+
+    func testExtendingASessionKeepsInFlightCapturesDeliverable() {
+        // a window appearing mid-session must not blank the tiles that are still
+        // filling in: extending may never invalidate the running generation
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a"])
+        ledger.extendSession(ids: ["b"])
+        XCTAssertTrue(ledger.shouldDeliver("a", capturedIn: generation))
+    }
+
+    func testExtendedWindowLosesDeliveryOnceTheSessionEnds() {
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a"])
+        ledger.extendSession(ids: ["b"])
+        ledger.endSession()
+        XCTAssertTrue(ledger.shouldStore("b"))
+        XCTAssertFalse(ledger.shouldDeliver("b", capturedIn: generation))
+    }
+
     func testEvictAllDiscardsEveryInFlightResult() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a", "b"])
