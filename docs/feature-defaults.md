@@ -29,7 +29,13 @@ centralized default through the registration domain; migrations are explicit and
 | Selected Settings pane | General | No | Window-state restoration, not a preference: the pane identifier is stored in `UserDefaults` and ignored when unknown. Not part of `configurableKeys`; Restore Defaults leaves it untouched. |
 | Unambiguous preview matching | Enabled | No | Correctness fix: a preview is shown only for the window it belongs to, otherwise the tile keeps its placeholder. No persistence or reset entry. |
 
-## Unreleased decisions
+## WindowHop 1.5.0 decisions
+
+| Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
+|---|---|---|---|
+| Windows appearing mid-session | Shown | No | Correctness fix: a window the user cannot see is a window they cannot reach, and the existing inclusion policy already decides what qualifies. The stability concern that motivated the frozen list is met by appending instead of reordering (see `SessionListReconciler`), so no legitimate "hide new windows" state remains. No persistence or reset entry. |
+
+## WindowHop 1.6.0 decisions
 
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
 |---|---|---|---|
@@ -37,9 +43,3 @@ centralized default through the registration domain; migrations are explicit and
 | Chosen display for "a specific display" | None | Yes | Windows pane; typed `UserDefaults` (`switcherDisplayID`), a display UUID from `CGDisplayCreateUUIDFromDisplayID` so it survives reconnect and reboot. A disconnected choice is kept verbatim, shown in the picker as disconnected, and falls back to the pointer display until it returns; resets to none. |
 | Pointer display rather than keyboard focus | Pointer | No | One valid outcome: `NSScreen.main` is documented to misreport the active screen (fullscreen app, or `screensHaveSeparateSpaces` off), and the pointer is what tracks where the user is looking. No persistence or reset entry. See `UPSTREAM.md`. |
 | Identical grid on mirrored panels | Enabled | No | Correctness constraint: `SwitcherState` holds one column count for arrow navigation, so per-display grids would make the arrow keys ambiguous. The shared grid comes from the most constrained target display. No persistence or reset entry. |
-
-## WindowHop 1.5.0 decisions
-
-| Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
-|---|---|---|---|
-| Windows appearing mid-session | Shown | No | Correctness fix: a window the user cannot see is a window they cannot reach, and the existing inclusion policy already decides what qualifies. The stability concern that motivated the frozen list is met by appending instead of reordering (see `SessionListReconciler`), so no legitimate "hide new windows" state remains. No persistence or reset entry. |

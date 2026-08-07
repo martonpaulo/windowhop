@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0 — 2026-08-07
+
+- **Choose which displays the switcher appears on**: WindowHop now opens on every display
+  by default, instead of picking one for you. Settings → Windows also offers the display
+  with the pointer — the one you are actually looking at — or one specific display you
+  choose. A chosen display is remembered by a stable identifier, so unplugging it falls
+  back to the display with the pointer and reconnecting restores your choice without
+  reconfiguring anything. Single-display Macs are unaffected.
+
 ## 1.5.0 — 2026-07-27
 
 - **Windows that open while the switcher is up now show up**: the list used to be frozen
