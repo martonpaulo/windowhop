@@ -31,6 +31,8 @@
   only during an explicitly requested release, together with the `CHANGELOG.md` entry, the
   `vX.Y.Z` tag, the appcast entry, and the published artifacts. Finishing a feature never
   bumps a version.
+- Merge policy: merge commits only, every commit of the branch preserved. Never squash.
+- Commit subject: a commit made for an issue ends with `(#<issue number>)`.
 - Delete branches after merge: enabled on GitHub.
 - Release, signing, and secret-storage policy: distributed as a signed, notarized, stapled
   `.app` in a DMG plus ZIP on GitHub Releases, updated in place by Sparkle from
@@ -165,6 +167,7 @@ notes. A missing configurability decision is a review failure.
   authorization.
 - Be direct and evidence-based. State assumptions, uncertainty, risks, tradeoffs, and
   blockers. Ask only when a material decision cannot be discovered safely.
+- Give concise progress updates during long-running work.
 
 ## Before editing
 
@@ -184,6 +187,11 @@ notes. A missing configurability decision is a review failure.
 - Preserve behavior outside the task and preserve unrelated or uncommitted user changes.
 - Search for existing components, services, types, helpers, tokens, configuration, tests, and
   platform capabilities before creating new ones.
+- Follow the patterns this project already repeats — the layer boundaries above, `DesignTokens`,
+  `ShortcutFormatter`, `Preferences.Defaults`, the pooled-tile panel, the `SwitcherState` machine.
+  When a change would break one of them or establish a new pattern, stop and ask first, naming the
+  existing pattern, the proposed one, and why the existing one does not fit. Deviating is allowed;
+  deviating silently is not.
 - Prefer the smallest correct, readable, reversible, and low-operational-cost solution.
 - Maintain one owner and one source of truth for each business rule, state, mapping, default,
   and copy value.
@@ -284,6 +292,8 @@ notes. A missing configurability decision is a review failure.
 
 ## Agent skill paths
 
+- Product definition: `docs/product.md` — what WindowHop is for and what it will never do. A
+  proposal that contradicts a non-goal there loses until that document changes.
 - Domain glossary: `CONTEXT.md` (optional; create only when a term is genuinely ambiguous
   across `Core/`, `Engine/`, `Input/`, and `UI/`)
 - Architecture decision records: `docs/adr/` (create only when a decision needs its rationale
@@ -295,6 +305,12 @@ notes. A missing configurability decision is a review failure.
 - Follow the branch, commit, push, and versioning policies recorded above.
 - Check status and branch before editing and before the final report. Work only on task files
   and leave unrelated changes untouched.
+- End a commit subject with its issue number when the commit belongs to one:
+  `feat: add the export button (#54)`. Use the issue number, never the pull request's, and
+  leave the suffix off when there is no issue.
+- Merge a branch with all of its commits: `gh pr merge <number> --merge --delete-branch`.
+  Never squash — it discards the one-commit-per-concern history and every issue suffix but one.
+  This covers bot pull requests too.
 - Inspect the diff before committing. Never commit secrets, caches, generated logs, temporary
   artifacts, or unrelated formatting churn.
 - If a commit or push fails, report the exact failure without claiming success.
