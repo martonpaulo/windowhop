@@ -75,6 +75,38 @@ through plain AppKit.
    recover from missed key-up events. Sticky sessions have no such timer — modifier
    release means nothing there; only Return/Space/click/Escape end them.
 
+## Placement across displays
+
+Where the panel is drawn is display *behavior*, not appearance, and is owned by three
+pieces with one responsibility each:
+
+- `Core/PanelPlacement.swift` — the pure rule. `PanelDisplayResolver` maps
+  (placement preference, chosen display, connected displays, pointer display) to the
+  ordered target set, and every fallback lives here: a chosen display that is not
+  connected resolves to the pointer display, and the result is never empty while any
+  display exists. `SwitcherGridCapacity` owns the grid math both a single panel and a
+  mirrored group need.
+- `Engine/DisplayRegistry.swift` — the only code touching `NSScreen`/CoreGraphics.
+  Displays are read live at session start, so nothing is cached and nothing observes
+  them while WindowHop is idle. Identity is the display UUID rather than
+  `CGDirectDisplayID`, which is reassigned across reconnects. `NSScreen.main` is
+  deliberately unused: it misreports the active screen with a fullscreen app or when
+  `screensHaveSeparateSpaces` is off (see `UPSTREAM.md`).
+- `UI/SwitcherPanelGroup.swift` — one `SwitcherPanel` per target display, presenting
+  the same command surface `SwitcherController` used against a single panel. Callbacks
+  are index-based, so which panel a click came from never reaches the controller.
+
+Mirrored panels are identical by construction. They share one grid derived from the
+most constrained target display, because `SwitcherState` tracks a single column count
+for arrow navigation and per-display grids would make ↑/↓ mean different things
+depending on which display the user is looking at. One capture per window feeds every
+panel, sized for the sharpest target scale, so mirroring does not multiply
+ScreenCaptureKit work.
+
+`Include windows from other displays` is a different concern with a different owner:
+it decides which *windows* are listed, through `WindowInclusionPolicy`, and is
+unaffected by placement.
+
 ## Presentation
 
 Fixed-size tiles in one of two appearances (Settings → Appearance; changing it

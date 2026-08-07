@@ -27,6 +27,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
         XCTAssertEqual(preferences.expandedPreviewDelay.duration, 3)
+        XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
+        XCTAssertNil(preferences.switcherDisplayID)
         XCTAssertTrue(preferences.includeOtherSpaces)
         XCTAssertTrue(preferences.includeOtherDisplays)
         XCTAssertFalse(preferences.includeMinimizedWindows)
@@ -47,6 +49,8 @@ final class PreferencesTests: XCTestCase {
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.appearanceMode = .windowPreviews
         preferences.expandedPreviewDelay = .fiveSeconds
+        preferences.switcherDisplayPlacement = .specificDisplay
+        preferences.switcherDisplayID = "UUID-EXTERNAL"
         preferences.includeOtherSpaces = false
         preferences.includeOtherDisplays = false
         preferences.includeMinimizedWindows = true
@@ -66,6 +70,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.persistentShortcut, preferences.persistentShortcut)
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
         XCTAssertEqual(restored.expandedPreviewDelay, .fiveSeconds)
+        XCTAssertEqual(restored.switcherDisplayPlacement, .specificDisplay)
+        XCTAssertEqual(restored.switcherDisplayID, "UUID-EXTERNAL")
         XCTAssertFalse(restored.includeOtherSpaces)
         XCTAssertFalse(restored.includeOtherDisplays)
         XCTAssertTrue(restored.includeMinimizedWindows)
@@ -200,6 +206,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
+        XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
+        XCTAssertNil(preferences.switcherDisplayID)
         XCTAssertTrue(preferences.includeOtherSpaces)
         XCTAssertTrue(preferences.includeOtherDisplays)
         XCTAssertFalse(preferences.includeMinimizedWindows)
@@ -211,6 +219,48 @@ final class PreferencesTests: XCTestCase {
         XCTAssertTrue(preferences.automaticUpdateChecks)
         XCTAssertTrue(preferences.firstLaunchCompleted,
                       "Restore Defaults must not repeat first-run state")
+    }
+
+    func testInvalidStoredPlacementFallsBackToTheDocumentedDefault() {
+        defaults.set("mirrored-onto-the-ceiling",
+                     forKey: Preferences.Key.switcherDisplayPlacement.rawValue)
+
+        let restored = Preferences(defaults: defaults)
+
+        XCTAssertEqual(restored.switcherDisplayPlacement, .allDisplays)
+    }
+
+    func testAnUpgradeWithoutAStoredPlacementReceivesTheNewDefault() {
+        // an installation that predates the preference has nothing in its
+        // persistent domain and must land on All displays with no migration step
+        let suite = "windowhop-tests-\(UUID().uuidString)"
+        let clean = UserDefaults(suiteName: suite)!
+        defer { clean.removePersistentDomain(forName: suite) }
+        XCTAssertNil(clean.persistentDomain(forName: suite)?[
+            Preferences.Key.switcherDisplayPlacement.rawValue])
+
+        let restored = Preferences(defaults: clean)
+
+        XCTAssertEqual(restored.switcherDisplayPlacement, .allDisplays)
+        XCTAssertNil(restored.switcherDisplayID)
+    }
+
+    func testAChosenDisplaySurvivesBeingUnplugged() {
+        // the id is the user's choice, not a cache of connected hardware: it is
+        // kept verbatim so reconnecting the display restores the behavior
+        preferences.switcherDisplayPlacement = .specificDisplay
+        preferences.switcherDisplayID = "UUID-UNPLUGGED"
+
+        let restored = Preferences(defaults: defaults)
+
+        XCTAssertEqual(restored.switcherDisplayID, "UUID-UNPLUGGED")
+    }
+
+    func testClearingTheChosenDisplayPersistsAsNoChoice() {
+        preferences.switcherDisplayID = "UUID-EXTERNAL"
+        preferences.switcherDisplayID = nil
+
+        XCTAssertNil(Preferences(defaults: defaults).switcherDisplayID)
     }
 
     func testEveryNonInternalKeyParticipatesInRestoreDefaults() {

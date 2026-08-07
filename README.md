@@ -134,6 +134,14 @@ an explanation instead of being stored.
 - Include minimized windows — **off**
 - Include windows from hidden applications — **off**
 - Include Picture-in-Picture windows — **off**
+- Show the switcher on — **All displays**, the display with the pointer, or a specific display
+
+The switcher appears on every display by default; on a single-display Mac nothing changes.
+"The display with the pointer" is the one you are looking at, which is not always the one
+holding keyboard focus. A specific display is remembered by a stable identifier, so
+unplugging it falls back to the display with the pointer and reconnecting restores your
+choice without reconfiguring anything. This setting controls *where the switcher appears*;
+"Include windows from other displays" above controls *which windows it lists*.
 
 The default is intentionally a curated set of normal windows. Inclusion toggles are
 explicit opt-ins, rebuild the available list, and do not weaken the invariants that

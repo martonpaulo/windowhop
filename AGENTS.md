@@ -91,8 +91,11 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 - The bundle identifier is `com.perso.windowhop` — everywhere, always.
 - Closing a window always goes through the confirmation dialog (Cancel is default);
   Quit is graceful termination only; Force Quit requires its own second confirmation.
-- Icon size is fixed Large; the only appearance options are App Icons (default) and
-  Window Previews; system Light/Dark only. No other presentation settings.
+- **Appearance is fixed**: icon size is Large, the only appearance options are App Icons
+  (default) and Window Previews, and theming is system Light/Dark only. No themes, no
+  custom sizes, no layout or opacity options. This rule governs how the panel *looks*.
+  Where the panel is drawn is display behavior, not appearance, and lives with the other
+  display settings in Settings → Windows (see `Core/PanelPlacement.swift`).
 - All shortcut strings render through `Core/ShortcutFormatter` — never hardcode a
   second representation of the same key.
 - All UI dimensions come from `UI/DesignTokens.swift` — no hardcoded sizes,

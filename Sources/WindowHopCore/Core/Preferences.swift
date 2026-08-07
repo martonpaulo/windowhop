@@ -67,6 +67,9 @@ public final class Preferences: ObservableObject {
         /// Kept only to migrate 1.1.2 dwell presets.
         case navigationPreviewDelay
         case expandedPreviewDelay
+        case switcherDisplayPlacement
+        /// The persistent UUID of the display chosen for `.specificDisplay`.
+        case switcherDisplayID
         case includeOtherSpaces
         case includeOtherDisplays
         case includeMinimizedWindows
@@ -88,6 +91,8 @@ public final class Preferences: ObservableObject {
         public static let persistentShortcut: PersistentShortcut? = .optionTab
         public static let appearanceMode = AppearanceMode.appIcons
         public static let expandedPreviewDelay = ExpandedPreviewDelay.threeSeconds
+        public static let switcherDisplayPlacement = SwitcherDisplayPlacement.allDisplays
+        public static let switcherDisplayID: String? = nil
         public static let includeOtherSpaces = true
         public static let includeOtherDisplays = true
         public static let includeMinimizedWindows = false
@@ -110,6 +115,8 @@ public final class Preferences: ObservableObject {
         .persistentShortcut,
         .appearanceMode,
         .expandedPreviewDelay,
+        .switcherDisplayPlacement,
+        .switcherDisplayID,
         .includeOtherSpaces,
         .includeOtherDisplays,
         .includeMinimizedWindows,
@@ -128,6 +135,10 @@ public final class Preferences: ObservableObject {
         Key.persistentShortcut.rawValue: Defaults.persistentShortcut?.encoded ?? "",
         Key.appearanceMode.rawValue: Defaults.appearanceMode.rawValue,
         Key.expandedPreviewDelay.rawValue: Defaults.expandedPreviewDelay.rawValue,
+        Key.switcherDisplayPlacement.rawValue: Defaults.switcherDisplayPlacement.rawValue,
+        // an absent chosen display is the empty string, matching persistentShortcut:
+        // the registration domain cannot hold nil
+        Key.switcherDisplayID.rawValue: Defaults.switcherDisplayID ?? "",
         Key.includeOtherSpaces.rawValue: Defaults.includeOtherSpaces,
         Key.includeOtherDisplays.rawValue: Defaults.includeOtherDisplays,
         Key.includeMinimizedWindows.rawValue: Defaults.includeMinimizedWindows,
@@ -168,6 +179,22 @@ public final class Preferences: ObservableObject {
         didSet {
             defaults.set(expandedPreviewDelay.rawValue,
                          forKey: Key.expandedPreviewDelay.rawValue)
+        }
+    }
+
+    @Published public var switcherDisplayPlacement: SwitcherDisplayPlacement {
+        didSet {
+            defaults.set(switcherDisplayPlacement.rawValue,
+                         forKey: Key.switcherDisplayPlacement.rawValue)
+        }
+    }
+
+    /// nil when no specific display has been chosen. A chosen display that is
+    /// currently disconnected keeps its id here, so unplugging a monitor never
+    /// destroys the choice.
+    @Published public var switcherDisplayID: String? {
+        didSet {
+            defaults.set(switcherDisplayID ?? "", forKey: Key.switcherDisplayID.rawValue)
         }
     }
 
@@ -254,6 +281,10 @@ public final class Preferences: ObservableObject {
         expandedPreviewDelay = restoredExpandedPreviewDelay
         defaults.set(restoredExpandedPreviewDelay.rawValue,
                      forKey: Key.expandedPreviewDelay.rawValue)
+        switcherDisplayPlacement = SwitcherDisplayPlacement(
+            rawValue: Self.string(defaults, .switcherDisplayPlacement) ?? "")
+            ?? Defaults.switcherDisplayPlacement
+        switcherDisplayID = Self.optionalString(defaults, .switcherDisplayID)
         includeOtherSpaces = Self.bool(
             defaults, .includeOtherSpaces, fallback: Defaults.includeOtherSpaces)
         includeOtherDisplays = Self.bool(
@@ -287,6 +318,13 @@ public final class Preferences: ObservableObject {
 
     private static func string(_ defaults: UserDefaults, _ key: Key) -> String? {
         defaults.object(forKey: key.rawValue) as? String
+    }
+
+    /// An empty stored string means "no value", matching how the registration
+    /// domain has to represent nil.
+    private static func optionalString(_ defaults: UserDefaults, _ key: Key) -> String? {
+        guard let value = string(defaults, key), !value.isEmpty else { return nil }
+        return value
     }
 
     private static func persistentShortcut(from storedValue: Any?) -> PersistentShortcut? {
@@ -337,6 +375,9 @@ public final class Preferences: ObservableObject {
             case .appearanceMode: appearanceMode = Defaults.appearanceMode
             case .expandedPreviewDelay:
                 expandedPreviewDelay = Defaults.expandedPreviewDelay
+            case .switcherDisplayPlacement:
+                switcherDisplayPlacement = Defaults.switcherDisplayPlacement
+            case .switcherDisplayID: switcherDisplayID = Defaults.switcherDisplayID
             case .includeOtherSpaces: includeOtherSpaces = Defaults.includeOtherSpaces
             case .includeOtherDisplays: includeOtherDisplays = Defaults.includeOtherDisplays
             case .includeMinimizedWindows:

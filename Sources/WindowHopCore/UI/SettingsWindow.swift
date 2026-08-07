@@ -271,6 +271,33 @@ struct ShortcutsPane: View {
 
 struct WindowsPane: View {
     @ObservedObject private var preferences = Preferences.shared
+    @StateObject private var connectedDisplays = ConnectedDisplaysModel()
+
+    /// One entry per selectable display. A chosen display that is currently
+    /// disconnected stays in the list, named as such: dropping it would destroy
+    /// the user's choice every time a monitor is unplugged.
+    private struct DisplayOption: Identifiable, Hashable {
+        let id: String
+        let label: String
+    }
+
+    private var displayOptions: [DisplayOption] {
+        var options = connectedDisplays.displays.map {
+            DisplayOption(id: $0.id, label: $0.name)
+        }
+        if let chosen = preferences.switcherDisplayID,
+           !connectedDisplays.displays.contains(where: { $0.id == chosen }) {
+            options.append(DisplayOption(id: chosen, label: "Selected display (disconnected)"))
+        }
+        return options
+    }
+
+    /// UserDefaults cannot hold nil, and a Picker cannot select it either; the
+    /// empty string is the single representation of "no display chosen".
+    private var chosenDisplay: Binding<String> {
+        Binding(get: { preferences.switcherDisplayID ?? "" },
+                set: { preferences.switcherDisplayID = $0.isEmpty ? nil : $0 })
+    }
 
     var body: some View {
         Form {
@@ -289,8 +316,39 @@ struct WindowsPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                Picker("Show the switcher on",
+                       selection: $preferences.switcherDisplayPlacement) {
+                    ForEach(SwitcherDisplayPlacement.allCases) { placement in
+                        Text(placement.displayName).tag(placement)
+                    }
+                }
+                if preferences.switcherDisplayPlacement == .specificDisplay {
+                    Picker("Display", selection: chosenDisplay) {
+                        ForEach(displayOptions) { option in
+                            Text(option.label).tag(option.id)
+                        }
+                    }
+                }
+            } header: {
+                Text("Switcher placement")
+            } footer: {
+                Text("This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
         .settingsPane()
+        .onAppear { connectedDisplays.startObserving() }
+        .onDisappear { connectedDisplays.stopObserving() }
+        .onChange(of: preferences.switcherDisplayPlacement) { _, placement in
+            // choosing "a specific display" with nothing stored would show an
+            // empty picker; preselect the display the pointer is on
+            guard placement == .specificDisplay, preferences.switcherDisplayID == nil else { return }
+            preferences.switcherDisplayID = DisplayRegistry.pointerDisplayID()
+                ?? connectedDisplays.displays.first?.id
+        }
     }
 }
 

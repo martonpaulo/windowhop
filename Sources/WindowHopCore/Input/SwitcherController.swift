@@ -11,7 +11,7 @@ public final class SwitcherController {
     /// switcher is open. Store changes remove or refresh entries in place and append
     /// windows that appeared, but never reorder (see SessionListReconciler).
     private var items: [SwitcherItem] = []
-    private let panel = SwitcherPanel()
+    private let panels = SwitcherPanelGroup()
     private var mouseMonitor: Any?
     private var heldModifierGuard: Timer?
     private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
@@ -23,31 +23,31 @@ public final class SwitcherController {
     public func wire() {
         EventTap.shared.onEvent = { [weak self] event in self?.handle(event) }
         WindowStore.shared.onChange = { [weak self] in self?.storeChanged() }
-        panel.onItemClicked = { [weak self] index in
+        panels.onItemClicked = { [weak self] index in
             guard let self else { return }
             self.perform(self.state.itemClicked(index: index))
         }
-        panel.onItemCloseRequested = { [weak self] index in
+        panels.onItemCloseRequested = { [weak self] index in
             guard let self else { return }
             self.perform(self.state.closeRequested(index: index))
         }
-        panel.onSettingsRequested = { [weak self] in
+        panels.onSettingsRequested = { [weak self] in
             self?.openSettingsFromSession()
         }
-        panel.onPreviewPermissionRequested = { [weak self] in
+        panels.onPreviewPermissionRequested = { [weak self] in
             self?.openScreenRecordingSettingsFromSession()
         }
         PreviewProvider.shared.onPreview = { [weak self] id, image in
-            self?.panel.updatePreview(id: id, image: image)
+            self?.panels.updatePreview(id: id, image: image)
         }
         PreviewProvider.shared.onPreviewUnavailable = { [weak self] id in
-            self?.panel.updatePreviewUnavailable(id: id)
+            self?.panels.updatePreviewUnavailable(id: id)
         }
         PreviewProvider.shared.onPermissionRequired = { [weak self] status in
-            self?.panel.setPreviewPermissionStatus(status)
+            self?.panels.setPreviewPermissionStatus(status)
         }
         PreviewProvider.shared.onExpandedPreview = { [weak self] id, image in
-            self?.panel.updateExpandedPreview(id: id, image: image)
+            self?.panels.updateExpandedPreview(id: id, image: image)
         }
     }
 
@@ -153,26 +153,27 @@ public final class SwitcherController {
             break
         case .show(let selectedIndex):
             let request = expandedPreview.begin(targetedWindowID: itemID(at: selectedIndex))
-            panel.show(
+            preparePanels(tileCount: items.count)
+            panels.show(
                 items: items,
                 selectedIndex: selectedIndex,
                 presentationMode: state.phase == .sticky ? .persistent : .cycling)
-            state.updateColumns(panel.columnsPerRow)
+            state.updateColumns(panels.columnsPerRow)
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
-            panel.setPreviewPermissionStatus(ScreenRecordingPermission.status)
+            panels.setPreviewPermissionStatus(ScreenRecordingPermission.status)
             scheduleExpandedPreview(request)
             // previews (cached ones already showed instantly) refresh live,
             // asynchronously, never gating panel presentation
             PreviewProvider.shared.beginSession(
                 items: items,
                 targetSize: SwitcherPanel.previewContentSize,
-                scale: NSScreen.main?.backingScaleFactor ?? 2)
+                scale: panels.captureScale)
             // a missed destroy notification once produced a duplicate entry;
             // validate the visible windows in the background and prune the dead
             WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
         case .select(let index):
-            panel.select(index)
+            panels.select(index)
             targetExpandedPreview(at: index)
         case .activate(let index):
             cancelExpandedPreviewTimer()
@@ -207,9 +208,9 @@ public final class SwitcherController {
     private func runCloseConfirmation(for item: SwitcherItem) {
         cancelExpandedPreviewTimer()
         expandedPreview.reset()
-        panel.hideExpandedPreview()
+        panels.hideExpandedPreview()
         EventTap.shared.mode = .passthrough
-        panel.hide()
+        panels.hide()
         WindowActions.afterPendingActions { [weak self] in
             guard let self, self.state.phase == .confirming else { return }
             self.presentCloseConfirmation(for: item)
@@ -266,7 +267,7 @@ public final class SwitcherController {
         }
         refreshDuringSession()
         if state.isActive {
-            panel.presentAgain(presentationMode: .persistent)
+            panels.presentAgain(presentationMode: .persistent)
         }
     }
 
@@ -313,7 +314,7 @@ public final class SwitcherController {
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
                 targetSize: SwitcherPanel.previewContentSize,
-                scale: NSScreen.main?.backingScaleFactor ?? 2)
+                scale: panels.captureScale)
         }
         expandedPreview.retainAvailable(Set(items.map(\.id)))
         let preferredIndex = selectedId.flatMap { id in
@@ -321,8 +322,8 @@ public final class SwitcherController {
         } ?? state.selectedIndex
         let command = state.listChanged(itemCount: items.count, preferredIndex: preferredIndex)
         if state.isActive {
-            panel.update(items: items, selectedIndex: state.selectedIndex)
-            state.updateColumns(panel.columnsPerRow)
+            panels.update(items: items, selectedIndex: state.selectedIndex)
+            state.updateColumns(panels.columnsPerRow)
             targetExpandedPreview(at: state.selectedIndex)
         }
         if case .cancel = command {
@@ -375,14 +376,36 @@ public final class SwitcherController {
         }
     }
 
+    /// Resolves this session's target displays and rebuilds the panel set.
+    ///
+    /// Displays are read live at session start: nothing is cached, and nothing
+    /// observes them while WindowHop is idle. A display unplugged between two
+    /// sessions is therefore accounted for by the next open, with no invalidation
+    /// path to get wrong.
+    private func preparePanels(tileCount: Int) {
+        let connected = DisplayRegistry.connectedDisplays()
+        let targetIDs = Set(PanelDisplayResolver.targets(
+            placement: Preferences.shared.switcherDisplayPlacement,
+            chosenDisplayID: Preferences.shared.switcherDisplayID,
+            available: connected.map(\.descriptor),
+            pointerDisplayID: DisplayRegistry.pointerDisplayID()).map(\.id))
+        let targets = connected.filter { targetIDs.contains($0.descriptor.id) }
+        let metrics = SwitcherTileView.Metrics.metrics(
+            for: Preferences.shared.appearanceMode,
+            showTabCounts: Preferences.shared.showTabCounts)
+        panels.prepare(for: targets, tileCount: tileCount, tileSize: metrics.tileSize)
+        DebugLog.log("panels prepared: \(targets.count) display(s), "
+            + "placement \(Preferences.shared.switcherDisplayPlacement.rawValue)")
+    }
+
     private func sessionTapMode() -> TapMode {
         state.phase == .held ? .sessionHeld : .sessionSticky
     }
 
     private func endSession() {
         cancelExpandedPreviewTimer()
-        panel.hideExpandedPreview()
-        panel.hide()
+        panels.hideExpandedPreview()
+        panels.hide()
         // capture is session-scoped: pending results stop delivering live, but
         // the memory-only cache remains warm for the next instant open
         PreviewProvider.shared.endSession()
@@ -403,7 +426,7 @@ public final class SwitcherController {
 
     private func targetExpandedPreview(at index: Int) {
         cancelExpandedPreviewTimer()
-        panel.hideExpandedPreview()
+        panels.hideExpandedPreview()
         PreviewProvider.shared.cancelExpandedPreview()
         scheduleExpandedPreview(expandedPreview.target(itemID(at: index)))
     }
@@ -432,12 +455,12 @@ public final class SwitcherController {
               let item = items.first(where: { $0.id == id }),
               item.window != nil else { return }
         if let image = PreviewProvider.shared.cachedPreview(for: id) {
-            panel.showExpandedPreview(id: id, image: image)
+            panels.showExpandedPreview(id: id, image: image)
         }
         PreviewProvider.shared.requestExpandedPreview(
             item: item,
             targetSize: SwitcherPanel.expandedPreviewContentSize,
-            scale: NSScreen.main?.backingScaleFactor ?? 2)
+            scale: panels.captureScale)
     }
 
     private func cancelExpandedPreviewTimer() {

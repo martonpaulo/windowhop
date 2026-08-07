@@ -99,6 +99,21 @@ public final class SwitcherPanel: NSPanel {
     /// Grid geometry of the current layout, for 2D arrow-key navigation.
     public private(set) var columnsPerRow = 1
 
+    /// The display this panel draws on. `SwitcherPanelGroup` sets it for every
+    /// session; nil falls back to the first screen, which is what the offscreen
+    /// render harness uses and what a single-display Mac resolves to anyway.
+    /// `NSScreen.main` is deliberately not the fallback: it is documented to
+    /// misreport the active screen (see `DisplayRegistry.pointerDisplayID`).
+    public var placementScreen: NSScreen?
+
+    /// Grid limits shared by every mirrored panel, so all of them show an
+    /// identical grid and `columnsPerRow` stays one authoritative value for
+    /// arrow-key navigation. nil means "use this display's own capacity".
+    public var sharedColumnLimit: Int?
+    public var sharedRowLimit: Int?
+
+    private var layoutScreen: NSScreen? { placementScreen ?? NSScreen.screens.first }
+
     /// The preview area a tile offers in Window Previews mode, for capture sizing.
     public static var previewContentSize: NSSize {
         let metrics = SwitcherTileView.Metrics.metrics(
@@ -290,7 +305,7 @@ public final class SwitcherPanel: NSPanel {
         selectedIndex = index
         itemIds = items.map { $0.id }
         rebuildTiles(items: items)
-        layoutOnActiveScreen(tileCount: items.count)
+        layoutOnPlacementScreen(tileCount: items.count)
         applySelection()
     }
 
@@ -357,7 +372,7 @@ public final class SwitcherPanel: NSPanel {
         expandedPreviewID = nil
         expandedPreviewView.isHidden = true
         scrollView.isHidden = false
-        layoutOnActiveScreen(tileCount: visibleTileCount)
+        layoutOnPlacementScreen(tileCount: visibleTileCount)
     }
 
     public func hide() {
@@ -392,9 +407,8 @@ public final class SwitcherPanel: NSPanel {
         visibleTileCount = items.count
     }
 
-    private func layoutOnActiveScreen(tileCount: Int) {
-        // the active display is the one with keyboard focus
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+    private func layoutOnPlacementScreen(tileCount: Int) {
+        guard let screen = layoutScreen else { return }
         let padding = DesignTokens.panelPadding
         let spacing = DesignTokens.tileSpacing
         let rowSpacing = DesignTokens.tileRowSpacing
@@ -406,9 +420,16 @@ public final class SwitcherPanel: NSPanel {
         // tiles wrap into rows instead of scrolling horizontally (the AltTab
         // layout model); tiles never shrink. Only an extreme window count
         // exceeds the height budget and falls back to vertical scrolling.
-        let maxGridWidth = visibleFrame.width * DesignTokens.panelMaxWidthFraction - padding * 2
-        let columns = max(1, min(tileCount,
-            Int((maxGridWidth + spacing) / (tileSize.width + spacing))))
+        let capacity = SwitcherGridCapacity.columns(
+            visibleWidth: visibleFrame.width,
+            tileWidth: tileSize.width,
+            spacing: spacing,
+            padding: padding,
+            maxWidthFraction: DesignTokens.panelMaxWidthFraction,
+            tileCount: tileCount)
+        // a mirrored group imposes the most constrained display's grid on every
+        // panel, so the same layout is guaranteed to fit on all of them
+        let columns = max(1, min(capacity, sharedColumnLimit ?? capacity))
         let rows = tileCount == 0 ? 1 : Int(ceil(Double(tileCount) / Double(columns)))
         columnsPerRow = columns
 
@@ -437,10 +458,13 @@ public final class SwitcherPanel: NSPanel {
                                 width: tileSize.width, height: tileSize.height)
         }
 
-        let availableHeight = visibleFrame.height * DesignTokens.panelMaxHeightFraction
-            - padding * 2
-        let maxVisibleRows = max(1, Int((availableHeight + rowSpacing)
-            / (tileSize.height + rowSpacing)))
+        let rowCapacity = SwitcherGridCapacity.maxVisibleRows(
+            visibleHeight: visibleFrame.height,
+            tileHeight: tileSize.height,
+            rowSpacing: rowSpacing,
+            padding: padding,
+            maxHeightFraction: DesignTokens.panelMaxHeightFraction)
+        let maxVisibleRows = max(1, min(rowCapacity, sharedRowLimit ?? rowCapacity))
         let visibleRows = min(rows, maxVisibleRows)
         let visibleGridHeight = CGFloat(visibleRows) * tileSize.height
             + CGFloat(max(0, visibleRows - 1)) * rowSpacing
@@ -476,7 +500,7 @@ public final class SwitcherPanel: NSPanel {
     }
 
     private func layoutExpandedPreview() {
-        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        guard let screen = layoutScreen else { return }
         let visibleFrame = screen.visibleFrame
         let currentSize = panelBackgroundView.frame.size
         let panelSize = NSSize(
@@ -540,6 +564,8 @@ public final class SwitcherPanel: NSPanel {
 
     /// Explicit offscreen-render hook used by the documentation harness.
     /// Production close visibility remains hover-driven.
+    var selectedIndexForTesting: Int { selectedIndex }
+
     public func prepareCloseForRendering(at index: Int?) {
         for tile in tilePool.prefix(visibleTileCount) {
             tile.prepareCloseControlForRendering(visible: false)
