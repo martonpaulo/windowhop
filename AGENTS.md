@@ -178,10 +178,14 @@ notes. A missing configurability decision is a review failure.
    machine between sessions, so re-verify Git state rather than assuming the last known one.
 2. Search for the behavior, callers, tests, contracts, and nearby patterns before adding
    anything.
-3. Read only the files and chunks required to understand the affected behavior.
-4. Distinguish verified facts, reasonable inferences, and unknowns.
-5. Define the source of truth and ownership before changing data or state.
-6. Make a short plan only for complex, risky, ambiguous, or multi-file work.
+3. **Check the upstream before planning an issue.** AltTab solved most of these problems
+   first, and its full history lives in this repository — read it directly with
+   `git show 317a485b:src/...`, no network needed. It routinely contains a macOS quirk that
+   is not in Apple's documentation. `UPSTREAM.md` owns the procedure and what to record.
+4. Read only the files and chunks required to understand the affected behavior.
+5. Distinguish verified facts, reasonable inferences, and unknowns.
+6. Define the source of truth and ownership before changing data or state.
+7. Make a short plan only for complex, risky, ambiguous, or multi-file work.
 
 ## Scope, reuse, and implementation
 

@@ -56,6 +56,32 @@ The full upstream history up to that commit is preserved in this repository
 - Localization files (first release is English), preferences UI framework (~40 settings
   reduced to 8), update/feedback/crash windows, CI/release tooling, CocoaPods.
 
+## Consulting the upstream when planning
+
+Check AltTab **before planning any issue that touches window discovery, screens, input,
+focus, permissions, or AX behavior**. It shipped these problems years ago and its source
+records macOS quirks that Apple's documentation does not.
+
+The base revision's full tree is in this repository, so no network or checkout is needed:
+
+```sh
+git show 317a485b:src/logic/Screens.swift        # read one upstream file
+git grep -l -i "<term>" 317a485b -- src          # find where upstream handles something
+```
+
+What to do with what you find:
+
+- **A quirk or workaround** — port the *rule* into the matching WindowHop file with a comment
+  naming the constraint, and add a row to the Retained table below.
+- **A feature WindowHop removed on purpose** — leave it removed. The Removed list is a set of
+  decisions, not a backlog.
+- **A different default** — note it in the issue and let the owner decide. AltTab's default is
+  evidence, not authority.
+
+Record ported rules in the Retained table and cite the upstream commit hash in the commit
+message. Never copy code verbatim without checking it still applies to a public-API-only,
+AX-based engine.
+
 ## Evaluating upstream fixes later
 
 1. `git fetch upstream` and review `git log upstream/master -- src/` since `v10.12.0`.
