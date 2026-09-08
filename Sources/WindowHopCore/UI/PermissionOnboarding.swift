@@ -1,7 +1,9 @@
 import AppKit
 import SwiftUI
 
-/// First-run explanation of the single permission WindowHop needs.
+/// First-run explanation of the one permission WindowHop always needs, and an
+/// honest account of the two things that are optional: Screen Recording for
+/// Window Previews, and network access for software updates.
 /// Polls only while this window is visible; closes itself once access is granted.
 public final class PermissionOnboardingController {
     public static let shared = PermissionOnboardingController()
@@ -72,7 +74,7 @@ struct PermissionOnboardingView: View {
                 }
                 .font(.callout)
             }
-            Text("macOS requires this permission to list your windows and to switch between them with the keyboard. WindowHop uses no other permission — it never records your screen and never connects to the network.")
+            Text("macOS requires this permission to list your windows and to switch between them with the keyboard. It is the only permission WindowHop always needs: the default App Icons appearance works without Screen Recording. If you turn on Window Previews, WindowHop asks for Screen Recording and takes snapshots only while the switcher is open, keeping them in memory — they are never saved or sent anywhere. The only time WindowHop uses the network is to check for and download its own updates.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
