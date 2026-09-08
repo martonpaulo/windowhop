@@ -50,8 +50,11 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 88px); line-height: 0.98; letter-spa
 .button.primary:hover { background: var(--button-primary-bg-hover); }
 .button.secondary { background: var(--surface-strong); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
 .compatibility { margin: 18px 0 0; color: var(--secondary); font-size: 14px; }
-.hero-visual { display: block; width: min(1134px, 116%); margin: 62px 50% 0; transform: translateX(-50%); filter: drop-shadow(var(--shadow)); }
-.hero-visual img { border-radius: 24px; }
+/* Screenshots are captured with `screencapture -l`, so each PNG already carries
+   the window's own corner radius, drop shadow and transparent elevation. Adding
+   a CSS radius on top clips those corners a second time at a different radius,
+   and a CSS shadow doubles the one in the image. */
+.hero-visual { display: block; width: min(1134px, 100%); margin: 62px auto 0; }
 
 .section { padding: 120px 0; border-top: 1px solid var(--line); }
 .section h2 { max-width: 850px; margin: 0; font-size: clamp(38px, 5vw, 64px); line-height: 1.04; letter-spacing: -0.045em; }
@@ -60,7 +63,6 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 88px); line-height: 0.98; letter-spa
 .overview > p:not(.eyebrow) { margin: 22px 0 48px; }
 .overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 figure { margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-figure img { border-radius: 16px; }
 figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: 14px; }
 
 .features h2 { margin-bottom: 48px; }
@@ -71,7 +73,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: 14px; }
 .feature-grid p { margin: 0; color: var(--secondary); }
 
 .settings-showcase { display: grid; grid-template-columns: 1fr minmax(340px, 520px); align-items: center; gap: 72px; }
-.settings-showcase img { max-height: 650px; justify-self: end; border-radius: 26px; box-shadow: var(--shadow); }
+.settings-showcase img { max-height: 650px; justify-self: end; }
 
 .download { text-align: center; }
 .download > img { margin: 0 auto 20px; }
@@ -110,7 +112,7 @@ a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white
   main, footer { width: min(100% - 28px, 1180px); }
   .hero { padding-top: 68px; min-height: auto; }
   .hero-icon { width: 116px; height: 116px; }
-  .hero-visual { width: 150%; margin-top: 44px; }
+  .hero-visual { width: 100%; margin-top: 44px; }
   .section { padding: 86px 0; }
   .overview-visuals, .feature-grid, .settings-showcase { grid-template-columns: 1fr; }
   .settings-showcase { gap: 44px; }
@@ -124,7 +126,7 @@ a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white
   .hero-summary, .section > p:not(.eyebrow), .settings-showcase p:not(.eyebrow), .download > p:not(.eyebrow) { font-size: 18px; }
   .actions { align-items: stretch; flex-direction: column; }
   .button { width: 100%; }
-  .hero-visual { width: 190%; }
+  .hero-visual { width: 100%; }
   .feature-grid article { padding: 24px; }
 }
 
