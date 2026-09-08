@@ -126,6 +126,10 @@ enum DebugHarness {
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let previewPanel = SwitcherPanel(rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
+            // Wrapping otherwise follows whatever display the developer has, so
+            // the published preview image would be one long strip on an
+            // ultrawide and two rows on a laptop. Fix the grid instead.
+            previewPanel.sharedColumnLimit = 4
             let previewItems = demoItems()
             previewPanel.show(
                 items: previewItems,
@@ -170,6 +174,8 @@ enum DebugHarness {
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let panel = SwitcherPanel(rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
+            // one row, regardless of the developer's display width
+            panel.sharedColumnLimit = demoItems().count
             panel.show(
                 items: demoItems(),
                 selectedIndex: 1,
