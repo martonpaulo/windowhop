@@ -57,9 +57,9 @@ struct PermissionOnboardingView: View {
     @State private var didResetGrant = false
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: DesignTokens.onboardingStackSpacing) {
             Image(systemName: "rectangle.on.rectangle")
-                .font(.system(size: 44, weight: .light))
+                .font(.system(size: DesignTokens.onboardingSymbolSize, weight: .light))
                 .foregroundStyle(.tint)
             Text("WindowHop needs Accessibility access")
                 .font(.title3.weight(.semibold))
@@ -100,7 +100,7 @@ struct PermissionOnboardingView: View {
             }
             .disabled(didResetGrant)
         }
-        .padding(28)
-        .frame(width: 460)
+        .padding(DesignTokens.onboardingPadding)
+        .frame(width: DesignTokens.onboardingWidth)
     }
 }

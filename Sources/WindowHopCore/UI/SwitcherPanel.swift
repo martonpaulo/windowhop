@@ -201,7 +201,7 @@ public final class SwitcherPanel: NSPanel {
             systemSymbolName: "lock.shield.fill",
             accessibilityDescription: "Screen Recording permission required")?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(
-                pointSize: DesignTokens.chromeButtonSymbolSize * 0.72,
+                pointSize: DesignTokens.permissionGlyphSymbolSize,
                 weight: .semibold)
                 .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
                                                 DesignTokens.overlayCircleColor])))

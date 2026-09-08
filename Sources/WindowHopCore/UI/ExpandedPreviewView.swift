@@ -28,7 +28,8 @@ final class ExpandedPreviewView: NSView {
         badgeView.imageScaling = .scaleProportionallyUpOrDown
         addSubview(badgeView)
 
-        titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize, weight: .medium)
+        titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize,
+                                      weight: DesignTokens.titleFontWeight)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         titleLabel.lineBreakMode = .byTruncatingTail

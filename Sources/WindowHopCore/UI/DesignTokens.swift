@@ -15,6 +15,9 @@ enum DesignTokens {
     /// outer top-right corner.
     static let chromeButtonHitSize: CGFloat = 44
     static let chromeButtonSymbolSize: CGFloat = 32
+    /// The permission glyph sits inside the same chrome control as the gear but
+    /// reads as a status badge, so it is deliberately smaller.
+    static let permissionGlyphSymbolSize: CGFloat = chromeButtonSymbolSize * 0.72
     static let chromeButtonOutsideOverlap: CGFloat = 10
 
     // MARK: Settings window
@@ -219,4 +222,10 @@ enum DesignTokens {
     /// close): a filled gray circle with a white glyph — legible on any content.
     static var overlayGlyphColor: NSColor { .white }
     static var overlayCircleColor: NSColor { NSColor(white: 0.3, alpha: 0.85) }
+
+    // MARK: First-run permission onboarding
+    static let onboardingStackSpacing: CGFloat = 16
+    static let onboardingSymbolSize: CGFloat = 44
+    static let onboardingPadding: CGFloat = 28
+    static let onboardingWidth: CGFloat = 460
 }
