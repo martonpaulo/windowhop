@@ -69,8 +69,14 @@ through plain AppKit.
    inside WindowHop; it never calls the AX activation/raise path or changes MRU. Only the
    state machine's final confirm command activates the selected real window. Cancellation
    performs no desktop action because navigation never changed the desktop.
-5. The switcher list is **frozen at session start**; store changes while open only remove
-   or refresh entries (nearby selection preserved), never reorder or add.
+5. While a session is open the list is **reconciled, not reordered**: surviving eligible
+   entries keep their session order, entries that disappear are removed in place (nearby
+   selection preserved), and newly eligible windows are appended in fresh-store order —
+   session `[A, B]` with a fresh store of `[C, B, A]` becomes `[A, B, C]`. The selected
+   window's identity is preserved whenever it survives. An entry that briefly loses its
+   location metadata while Spaces update is retained rather than removed, which is distinct
+   from appending a new one (`Core/SessionListReconciler.swift`, and
+   `SwitcherController.shouldPreserveAcrossLocationRefresh`).
 6. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
    recover from missed key-up events. Sticky sessions have no such timer — modifier
    release means nothing there; only Return/Space/click/Escape end them.
