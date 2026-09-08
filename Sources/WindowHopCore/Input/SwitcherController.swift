@@ -47,7 +47,7 @@ public final class SwitcherController {
             self?.panels.setPreviewPermissionStatus(status)
         }
         PreviewProvider.shared.onExpandedPreview = { [weak self] id, image in
-            self?.panels.updateExpandedPreview(id: id, image: image)
+            self?.deliverExpandedPreview(id: id, image: image)
         }
     }
 
@@ -425,10 +425,21 @@ public final class SwitcherController {
     }
 
     private func targetExpandedPreview(at index: Int) {
+        let id = itemID(at: index)
+        // Re-targeting the same window is idempotent: a refresh that preserves
+        // the selection must not collapse the presentation or restart dwell.
+        guard expandedPreview.targetedWindowID != id else { return }
         cancelExpandedPreviewTimer()
         panels.hideExpandedPreview()
         PreviewProvider.shared.cancelExpandedPreview()
-        scheduleExpandedPreview(expandedPreview.target(itemID(at: index)))
+        scheduleExpandedPreview(expandedPreview.target(id))
+    }
+
+    /// A capture for the settled dwell target arrived. This is also the path
+    /// that opens the presentation when the cache was still empty at dwell.
+    private func deliverExpandedPreview(id: AnyHashable, image: NSImage) {
+        guard state.isActive, expandedPreview.expandedWindowID == id else { return }
+        panels.showExpandedPreview(id: id, image: image)
     }
 
     private func scheduleExpandedPreview(

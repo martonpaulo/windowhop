@@ -93,7 +93,8 @@ public final class SwitcherPanel: NSPanel {
     private var mode = AppearanceMode.appIcons
     private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
-    private var expandedPreviewID: AnyHashable?
+    /// The window whose expanded preview is on screen, or nil for the grid.
+    public private(set) var expandedPreviewID: AnyHashable?
     private var presentationMode = SwitcherPresentationMode.cycling
     private var accessibilityDisplayObserver: NSObjectProtocol?
     /// Grid geometry of the current layout, for 2D arrow-key navigation.
@@ -295,17 +296,25 @@ public final class SwitcherPanel: NSPanel {
     }
 
     public func update(items: [SwitcherItem], selectedIndex index: Int) {
-        if expandedPreviewID != nil {
-            expandedPreviewID = nil
-            expandedPreviewView.isHidden = true
-            scrollView.isHidden = false
-        }
         mode = Preferences.shared.appearanceMode
+        // An unrelated metadata or list refresh must not collapse an expanded
+        // preview: only losing the window, the selection or the mode does.
+        let selectedID = index >= 0 && index < items.count ? items[index].id : nil
+        let stillExpanded = expandedPreviewID.flatMap { id -> SwitcherItem? in
+            guard mode == .windowPreviews, id == selectedID else { return nil }
+            return items.first { $0.id == id }
+        }
         self.items = items
         selectedIndex = index
         itemIds = items.map { $0.id }
         rebuildTiles(items: items)
-        layoutOnPlacementScreen(tileCount: items.count)
+        if let stillExpanded {
+            expandedPreviewView.updateMetadata(item: stillExpanded)
+            layoutExpandedPreview()
+        } else {
+            collapseExpandedPreview()
+            layoutOnPlacementScreen(tileCount: items.count)
+        }
         applySelection()
     }
 
@@ -349,30 +358,33 @@ public final class SwitcherPanel: NSPanel {
         }
     }
 
-    /// Shows the latest available snapshot at a larger size inside WindowHop.
-    /// This method performs no application/window action.
+    /// Shows the latest available snapshot at a larger size inside WindowHop,
+    /// or repaints the one already showing. This method performs no
+    /// application/window action.
     public func showExpandedPreview(id: AnyHashable, image: NSImage) {
         guard mode == .windowPreviews,
               let item = items.first(where: { $0.id == id }) else { return }
+        let wasShowing = expandedPreviewID == id
         expandedPreviewID = id
         expandedPreviewView.configure(item: item, image: image)
+        guard !wasShowing else { return }
         expandedPreviewView.isHidden = false
         scrollView.isHidden = true
         layoutExpandedPreview()
     }
 
-    public func updateExpandedPreview(id: AnyHashable, image: NSImage) {
-        guard expandedPreviewID == id,
-              let item = items.first(where: { $0.id == id }) else { return }
-        expandedPreviewView.configure(item: item, image: image)
-    }
-
     public func hideExpandedPreview() {
         guard expandedPreviewID != nil else { return }
+        collapseExpandedPreview()
+        layoutOnPlacementScreen(tileCount: visibleTileCount)
+    }
+
+    /// Returns to the grid without re-laying out the window; callers pick the
+    /// layout that suits them.
+    private func collapseExpandedPreview() {
         expandedPreviewID = nil
         expandedPreviewView.isHidden = true
         scrollView.isHidden = false
-        layoutOnPlacementScreen(tileCount: visibleTileCount)
     }
 
     public func hide() {

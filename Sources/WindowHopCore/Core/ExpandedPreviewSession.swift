@@ -21,12 +21,11 @@ public struct ExpandedPreviewSession<ID: Hashable> {
         return target(targetedWindowID)
     }
 
+    /// Re-targeting the window that is already targeted is a no-op: a store
+    /// refresh that preserves the selection must neither restart dwell nor
+    /// invalidate the request already in flight.
     public mutating func target(_ windowID: ID?) -> Request? {
-        if targetedWindowID == windowID {
-            guard let windowID, windowID != expandedWindowID else { return nil }
-            generation += 1
-            return Request(windowID: windowID, generation: generation)
-        }
+        if targetedWindowID == windowID { return nil }
         targetedWindowID = windowID
         expandedWindowID = nil
         generation += 1

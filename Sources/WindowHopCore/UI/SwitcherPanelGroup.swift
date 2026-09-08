@@ -133,9 +133,9 @@ public final class SwitcherPanelGroup {
         panels.forEach { $0.showExpandedPreview(id: id, image: image) }
     }
 
-    public func updateExpandedPreview(id: AnyHashable, image: NSImage) {
-        panels.forEach { $0.updateExpandedPreview(id: id, image: image) }
-    }
+    /// The window expanded on the panels, or nil while they show the grid.
+    /// Mirrored panels stay identical, so the first panel answers for all.
+    public var expandedPreviewID: AnyHashable? { panels.first?.expandedPreviewID }
 
     public func hideExpandedPreview() {
         panels.forEach { $0.hideExpandedPreview() }

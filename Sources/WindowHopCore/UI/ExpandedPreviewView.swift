@@ -45,6 +45,12 @@ final class ExpandedPreviewView: NSView {
 
     func configure(item: SwitcherItem, image: NSImage) {
         imageView.image = image
+        updateMetadata(item: item)
+    }
+
+    /// Refreshes everything but the snapshot, so a metadata-only store refresh
+    /// keeps the image that is already on screen.
+    func updateMetadata(item: SwitcherItem) {
         badgeView.image = item.icon
         titleLabel.stringValue = item.title
         setAccessibilityValue("Expanded preview of \(item.title), \(item.appName)")
