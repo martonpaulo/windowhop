@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.6.1 — 2026-09-08
+
+- **Window previews are readable again on wide displays**: every preview card took its
+  shape from the monitor, so on an ultrawide screen the snapshot shrank to a thin strip
+  exactly where previews are hardest to recognize. Cards now use one fixed 16:10 canvas on
+  every Mac. The expanded preview shown after pausing goes further and takes the shape of
+  the window it is showing, so the snapshot fills it instead of floating in empty space.
+- **The expanded preview stays put**: an unrelated window changing its title, moving, or
+  appearing used to collapse an open expanded preview for the rest of the session. It now
+  survives anything that does not change the selected window. If the first snapshot is
+  still being captured when the pause elapses, the preview opens as soon as it arrives
+  instead of never appearing.
+- **VoiceOver can activate a window**: window tiles announced themselves as buttons but did
+  nothing when activated through VoiceOver. Pressing one now switches to that window, and
+  it can no longer be confused with the separate Close action.
+- **Two tab groups in one app stay collapsed**: refreshing one native tab group dissolved
+  the others in the same application, so their hidden tabs reappeared as separate entries.
+  Each group is now independent.
+- **Settings is listed on the display it is actually on**: dragging the Settings window to
+  another display left it filed under the display it opened on while
+  "Include windows from other displays" was off.
+- **A conflicting Open WindowHop shortcut is rejected again**: after changing the switcher
+  shortcut, recording a chord that collided with the new one was saved silently and then
+  opened the wrong kind of session.
+- **No terminal window at login for development builds**: enabling "Launch at login" from a
+  build that is not a real app bundle registered that bare executable, which opened a
+  terminal window at the next login. It is now refused, with the existing explanation.
+- **Honest permission onboarding**: the first-run screen claimed WindowHop never records the
+  screen and never uses the network. It now explains that Accessibility is the only
+  permission always required, that Window Previews asks for Screen Recording and keeps its
+  snapshots in memory, and that the network is used only for updates.
+- **Readable download buttons on the website**: the primary download buttons did not meet
+  the minimum text contrast, in Light Mode and much less in Dark Mode.
+- Preview snapshots of a window are released on every path that removes it, so repeatedly
+  opening and closing Settings no longer leaves stale images in memory.
+- Updated Sparkle to 2.9.6.
+
 ## 1.6.0 — 2026-08-07
 
 - **Choose which displays the switcher appears on**: WindowHop now opens on every display

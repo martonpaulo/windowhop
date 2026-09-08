@@ -21,9 +21,9 @@ Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
 
 ## Download and install
 
-1. Download **[WindowHop 1.6.0](https://github.com/martonpaulo/windowhop/releases/latest)**.
-   The `WindowHop-1.6.0-Installer.zip` asset preserves the branded Finder icon; the
-   release also provides the raw `WindowHop-1.6.0.dmg`.
+1. Download **[WindowHop 1.6.1](https://github.com/martonpaulo/windowhop/releases/latest)**.
+   The `WindowHop-1.6.1-Installer.zip` asset preserves the branded Finder icon; the
+   release also provides the raw `WindowHop-1.6.1.dmg`.
 2. Unzip the installer if needed, open the DMG, and drag WindowHop onto the Applications
    alias in the branded installer window.
 3. Open WindowHop from Applications and grant
@@ -229,8 +229,8 @@ git clone https://github.com/martonpaulo/windowhop
 cd windowhop
 swift build && swift test
 scripts/validate.sh
-scripts/package-app.sh 1.6.0 10600
-scripts/make-dmg.sh 1.6.0
+scripts/package-app.sh 1.6.1 10601
+scripts/make-dmg.sh 1.6.1
 ```
 
 Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved
