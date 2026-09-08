@@ -306,13 +306,26 @@ enum DebugHarness {
         }
     }
 
+    /// Shows the real switcher panel on screen and keeps it up.
+    /// `--previews` uses the Window Previews appearance with synthetic snapshots,
+    /// `--expanded` adds the dwell presentation, and `--columns N` pins the grid.
+    /// `scripts/capture-screenshots.sh` drives this for the published images.
     private static func runPanelDemo(dark: Bool) {
+        let arguments = CommandLine.arguments
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        let previews = arguments.contains("--previews")
+        let expanded = arguments.contains("--expanded")
+        Preferences.shared.appearanceMode = previews ? .windowPreviews : .appIcons
         let panel = SwitcherPanel()
+        panel.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+        if let index = arguments.firstIndex(of: "--columns"), arguments.count > index + 1,
+           let columns = Int(arguments[index + 1]) {
+            panel.sharedColumnLimit = columns
+        }
         DispatchQueue.main.async {
-            let items = CommandLine.arguments.contains("--many") ? manyDemoItems() : demoItems()
+            let items = arguments.contains("--many") ? manyDemoItems() : demoItems()
             let showStart = CFAbsoluteTimeGetCurrent()
             panel.show(
                 items: items,
@@ -320,6 +333,25 @@ enum DebugHarness {
                 presentationMode: .cycling)
             let showMs = (CFAbsoluteTimeGetCurrent() - showStart) * 1000
             print("demo panel: \(items.count) tiles in \(String(format: "%.1f", showMs))ms, frame \(panel.frame)")
+            if previews {
+                for (index, item) in items.enumerated() where index != 4 && index != 5 {
+                    let wide = index % 3 != 2
+                    let size = wide ? NSSize(width: 456, height: 286)
+                                    : NSSize(width: 240, height: 380)
+                    panel.updatePreview(id: item.id,
+                                        image: syntheticWindowImage(size: size, seed: index))
+                }
+                panel.updatePreviewUnavailable(id: items[4].id)
+                if expanded {
+                    panel.showExpandedPreview(
+                        id: items[1].id,
+                        image: syntheticWindowImage(size: NSSize(width: 760, height: 480), seed: 1))
+                } else {
+                    panel.prepareCloseForRendering(at: 2)
+                }
+            }
+            print("demo panel window number \(panel.windowNumber)")
+            fflush(stdout)
         }
         app.run()
     }
@@ -366,11 +398,18 @@ enum DebugHarness {
         window.center()
         app.activate()
         window.makeKeyAndOrderFront(nil)
-        print("settings window number \(window.windowNumber) "
-            + "(\(Int(window.frame.width))x\(Int(window.frame.height)))")
-        // the process stays alive for the capture, so a redirected stdout must
-        // not hold the window number in its buffer
-        fflush(stdout)
+        // A capture taken while the window is not key documents a greyed-out
+        // title bar and inactive controls, so claim focus once more after the
+        // first run-loop turns and only then announce readiness.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            print("settings window number \(window.windowNumber) "
+                + "(\(Int(window.frame.width))x\(Int(window.frame.height)))")
+            // the process stays alive for the capture, so a redirected stdout
+            // must not hold the window number in its buffer
+            fflush(stdout)
+        }
         app.run()
     }
 

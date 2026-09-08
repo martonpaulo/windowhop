@@ -111,6 +111,35 @@ with `verify-update-continuity.sh`, sign the candidate ZIP with Sparkle's `sign_
 serve a local appcast, and run the old bundle's `--updater-e2e` binary. Never put an
 ad-hoc or development-signed app in the update feed.
 
+## Published screenshots
+
+`scripts/capture-screenshots.sh` produces everything under `docs/screenshots/`. It launches
+`--demo-switcher` / `--demo-settings`, waits for the demo to print its window number, and
+captures that one window with `screencapture -l<windowid>`.
+
+Capturing an on-screen window is what makes those images look like macOS: `screencapture`
+records the window as the compositor draws it, so the PNG keeps the rounded corners, the
+real glass material, the window's own drop shadow, and transparent elevation around it, at
+the display's backing scale. The offscreen `--render-ui` harness cannot: it rasterizes the
+view tree into a flat bitmap with square corners, no shadow, and the non-glass fallback
+background. `--render-ui` remains the layout and regression harness; it is not a source of
+published images.
+
+Requirements and constraints:
+
+- **Run it on a Retina (2x) display.** The capture inherits the backing scale, so a 1x
+  screen silently halves the resolution of every published image.
+- Screen Recording permission for the process running the script.
+- `-l<windowid>` captures exactly the demo's own window, so no personal window can appear;
+  `-o` is deliberately not passed, because it would drop the shadow.
+- `--columns` pins the switcher grid, so wrapping does not follow whatever display the
+  operator happens to use.
+- The Settings demo re-activates its window before announcing readiness; a capture taken
+  while it is not key documents a greyed-out title bar and inactive controls.
+- The `width`/`height` attributes in `docs/index.html` are the captured pixels halved. Update
+  them whenever the captures change size, or the site reserves the wrong box and the hero
+  image lands misaligned.
+
 ## Release publication order
 
 The updater feed may only ever advertise files that already exist, so

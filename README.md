@@ -167,10 +167,11 @@ website, source, issue tracker, GPL-3.0 license, and AltTab acknowledgement.
 
 ## Interface gallery
 
-Every image comes from the app's own render harness (`--render-ui`) at 3×, so they are
-sharp on any display and reproducible on any machine: the switcher with synthetic titles
-and preview content, and the real Settings window with its own title bar and pane
-toolbar. Nothing here shows a personal window or any Screen Recording data.
+Every image is a real capture of WindowHop's own window
+(`scripts/capture-screenshots.sh`), so it keeps the rounded corners, glass material, and
+shadow macOS actually draws: the switcher with synthetic titles and preview content, and
+the real Settings window with its title bar and pane toolbar. Nothing here shows a personal
+window or any Screen Recording data.
 
 ![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.png)
 

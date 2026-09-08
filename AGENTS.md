@@ -67,6 +67,7 @@ effects.
 ```sh
 swift build && swift test        # must pass, zero warnings
 scripts/validate.sh              # repository invariants (must pass)
+scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [ver] [build]  # release .app with Sparkle embedded + zip
 scripts/make-dmg.sh [ver]        # DMG (expects build/WindowHop.app)
 ```
@@ -270,8 +271,13 @@ notes. A missing configurability decision is a review failure.
   on-demand, bounded, incremental, and cancelable work.
 - Measure before claiming a performance problem, and optimize measured user-visible
   bottlenecks.
-- Published screenshots must never show the user's personal windows: switcher images come from
-  `--render-ui`, Settings images from `--demo-settings` plus `screencapture -l`.
+- Published screenshots come from `scripts/capture-screenshots.sh` and must never show the
+  user's personal windows. It drives `--demo-switcher` / `--demo-settings` on screen and
+  captures each window with `screencapture -l<windowid>`, which is what gives the published
+  images their rounded corners, real glass material, drop shadow, and elevation. Run it on a
+  Retina display: the capture is taken at the display's backing scale, so a 1x screen halves
+  the resolution. `--render-ui` stays the offscreen layout/regression harness — it has no
+  shadow and no rounded corners, so it is not a source of published images.
 
 ## Code, comments, and documentation
 
