@@ -9,7 +9,49 @@ permissions:
   contents: read
 
 jobs:
+  # Repository invariants cover markdown, the site and screenshots too, so this
+  # runs for every change. It is seconds of shell.
+  validate:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Repository validation
+        run: scripts/validate.sh
+
+  # A release build plus the full suite costs minutes of macOS runner time, so
+  # it only runs when something it could actually observe changed. Documentation
+  # and website commits are covered by `validate` alone.
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      swift: ${{ steps.check.outputs.swift }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Detect Swift-relevant changes
+        id: check
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # A first push to a branch, a force push, or an unresolvable base
+          # reports the null SHA: build rather than guess.
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ] \
+              || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "swift=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
+          echo "changed files:"; echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(Sources/|Tests/|Support/|scripts/|Package\.swift|Package\.resolved|\.github/workflows/ci\.yml)'; then
+            echo "swift=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "swift=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-test:
+    needs: scope
+    if: needs.scope.outputs.swift == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -17,5 +59,3 @@ jobs:
         run: swift build -c release
       - name: Tests
         run: swift test
-      - name: Repository validation
-        run: scripts/validate.sh
