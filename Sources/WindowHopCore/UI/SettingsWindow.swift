@@ -149,20 +149,28 @@ struct GeneralPane: View {
     @State private var restoreFailed = false
     @State private var quitConfirmationShown = false
 
+    /// Only a user-initiated change registers a login item.
+    private func applyLaunchAtLogin(_ newValue: Bool) {
+        guard LoginItem.set(newValue) else {
+            launchAtLoginFailed = true
+            launchAtLogin = LoginItem.isEnabled
+            return
+        }
+        launchAtLogin = newValue
+        launchAtLoginFailed = false
+        preferences.launchAtLogin = newValue
+    }
+
     var body: some View {
         Form {
             Section {
                 Toggle("Enable WindowHop", isOn: $preferences.switcherEnabled)
-                Toggle("Launch at login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, newValue in
-                        let succeeded = LoginItem.set(newValue)
-                        launchAtLoginFailed = !succeeded
-                        if succeeded {
-                            preferences.launchAtLogin = newValue
-                        } else {
-                            launchAtLogin = LoginItem.isEnabled
-                        }
-                    }
+                // The binding, not onChange: the rollback assigns the state
+                // directly, and an onChange would re-enter with the rolled-back
+                // value and immediately erase the failure message.
+                Toggle("Launch at login",
+                       isOn: Binding(get: { launchAtLogin },
+                                     set: applyLaunchAtLogin))
                 if launchAtLoginFailed {
                     Text("Launch at login could not be configured. Run WindowHop from the Applications folder and try again.")
                         .font(.callout)
