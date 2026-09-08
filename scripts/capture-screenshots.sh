@@ -11,7 +11,8 @@
 # Requirements:
 #   * a Retina (2x) display, or the images come out at half resolution;
 #   * Screen Recording permission for the terminal running this;
-#   * `swift build` already done.
+#   * `swift build` already done;
+#   * `cwebp` (brew install webp) for the lossless WebP the site publishes.
 #
 # Usage: scripts/capture-screenshots.sh [output-directory]
 set -euo pipefail
@@ -54,8 +55,13 @@ capture() {
     screencapture -x -l"$window_number" -t png "$OUTPUT/$name.png"
     kill "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
-    printf '%-32s %s\n' "$name.png" "$(sips -g pixelWidth -g pixelHeight "$OUTPUT/$name.png" \
-        | tail -2 | tr -d ' \n')"
+    # Published as lossless WebP: identical pixels, about a third of the bytes.
+    # The alpha the shadow needs survives, and every macOS 14 browser reads it.
+    cwebp -quiet -lossless -z 9 -metadata none "$OUTPUT/$name.png" -o "$OUTPUT/$name.webp"
+    rm -f "$OUTPUT/$name.png"
+    printf '%-32s %s  %sKB\n' "$name.webp" \
+        "$(sips -g pixelWidth -g pixelHeight "$OUTPUT/$name.webp" | tail -2 | tr -d ' \n')" \
+        "$(( $(stat -f%z "$OUTPUT/$name.webp") / 1024 ))"
 }
 
 capture switcher-light            --demo-switcher --columns 8

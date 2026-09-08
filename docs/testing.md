@@ -139,6 +139,11 @@ Requirements and constraints:
 - The `width`/`height` attributes in `docs/index.html` are the captured pixels halved. Update
   them whenever the captures change size, or the site reserves the wrong box and the hero
   image lands misaligned.
+- Screenshots are published as **lossless WebP**, converted by the script with
+  `cwebp -lossless`. The pixels are identical to the PNG, the alpha the shadow depends on
+  survives, and the set drops from about 2.9 MB to 1.2 MB. Every browser on the supported
+  macOS versions reads WebP, and GitHub renders it in the README, so no PNG fallback is kept
+  — a second copy would only be an unreferenced file the repository validator rejects.
 
 ## Release publication order
 

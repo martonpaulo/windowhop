@@ -7,17 +7,17 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 
-**[Visit the WindowHop website](https://martonpaulo.github.io/windowhop/)**
+**[Visit the WindowHop website](https://martonpaulo.com/windowhop/)**
 
 macOS Command-Tab switches between *apps*. WindowHop gives every top-level window its
 own tile, then lands on the exact window you select — including windows on another Space
 or display. It is native, free, open source, and contains no telemetry.
 
-![WindowHop App Icons in Light Mode with a borderless selected background](docs/screenshots/switcher-light.png)
+![WindowHop App Icons in Light Mode with a borderless selected background](docs/screenshots/switcher-light.webp)
 
 Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
 
-![WindowHop previews in Light Mode with semantic surfaces, selected treatment, tall-window letterboxing, loading and unavailable states](docs/screenshots/switcher-previews-light.png)
+![WindowHop previews in Light Mode with semantic surfaces, selected treatment, tall-window letterboxing, loading and unavailable states](docs/screenshots/switcher-previews-light.webp)
 
 ## Download and install
 
@@ -63,7 +63,7 @@ moving to another tile closes the expanded view and starts a new delay. Confirmi
 activates the current target immediately. Cancelling leaves the originally focused
 window and desktop stacking unchanged.
 
-![Expanded in-panel preview in Light Mode](docs/screenshots/switcher-expanded-light.png)
+![Expanded in-panel preview in Light Mode](docs/screenshots/switcher-expanded-light.webp)
 
 ### One entry per window
 
@@ -116,7 +116,7 @@ immediately when safe; invalid stored values restore documented defaults.
 - Restore Defaults… — confirmed action that restores every configurable preference
 - Quit WindowHop… — confirmed graceful termination
 
-![The Settings window on General, with the six same-size panes in its toolbar](docs/screenshots/settings-general.png)
+![The Settings window on General, with the six same-size panes in its toolbar](docs/screenshots/settings-general.webp)
 
 ### Shortcuts
 
@@ -146,7 +146,7 @@ The default is intentionally a curated set of normal windows. Inclusion toggles 
 explicit opt-ins, rebuild the available list, and do not weaken the invariants that
 exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helper UI.
 
-![The Windows pane with the opt-in window categories](docs/screenshots/settings-windows.png)
+![The Windows pane with the opt-in window categories](docs/screenshots/settings-windows.webp)
 
 ### Appearance
 
@@ -156,7 +156,7 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
   **3 seconds**
 - Screen Recording status and the single permission action for Window Previews
 
-![The Appearance pane with the expanded-preview and Screen Recording controls](docs/screenshots/settings-appearance.png)
+![The Appearance pane with the expanded-preview and Screen Recording controls](docs/screenshots/settings-appearance.webp)
 
 ### Updates and About
 
@@ -173,9 +173,9 @@ shadow macOS actually draws: the switcher with synthetic titles and preview cont
 the real Settings window with its title bar and pane toolbar. Nothing here shows a personal
 window or any Screen Recording data.
 
-![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.png)
+![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.webp)
 
-![WindowHop previews in Dark Mode with selected, letterboxed, loading and unavailable cards](docs/screenshots/switcher-previews-dark.png)
+![WindowHop previews in Dark Mode with selected, letterboxed, loading and unavailable cards](docs/screenshots/switcher-previews-dark.webp)
 
 ## Updates, signing, and privacy
 
