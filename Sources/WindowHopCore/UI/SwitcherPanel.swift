@@ -367,9 +367,12 @@ public final class SwitcherPanel: NSPanel {
         let wasShowing = expandedPreviewID == id
         expandedPreviewID = id
         expandedPreviewView.configure(item: item, image: image)
-        guard !wasShowing else { return }
-        expandedPreviewView.isHidden = false
-        scrollView.isHidden = true
+        if !wasShowing {
+            expandedPreviewView.isHidden = false
+            scrollView.isHidden = true
+        }
+        // a repaint can bring a differently shaped snapshot, and the canvas
+        // takes its shape from the image
         layoutExpandedPreview()
     }
 
@@ -514,12 +517,9 @@ public final class SwitcherPanel: NSPanel {
     private func layoutExpandedPreview() {
         guard let screen = layoutScreen else { return }
         let visibleFrame = screen.visibleFrame
-        let currentSize = panelBackgroundView.frame.size
-        let panelSize = NSSize(
-            width: min(max(currentSize.width, DesignTokens.expandedPreviewMinimumWidth),
-                       visibleFrame.width * DesignTokens.panelMaxWidthFraction),
-            height: min(max(currentSize.height, DesignTokens.expandedPreviewMinimumHeight),
-                        visibleFrame.height * DesignTokens.panelMaxHeightFraction))
+        let panelSize = DesignTokens.expandedPreviewPanelSize(
+            imageSize: expandedPreviewView.imageSize,
+            visibleFrame: visibleFrame.size)
         panelBackgroundView.frame = NSRect(origin: .zero, size: panelSize)
         chromeView.frame = panelBackgroundView.bounds
         expandedPreviewView.frame = panelBackgroundView.bounds.insetBy(

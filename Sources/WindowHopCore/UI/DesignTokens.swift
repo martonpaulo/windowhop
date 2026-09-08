@@ -173,6 +173,44 @@ enum DesignTokens {
     static let expandedPreviewBadgeSize: CGFloat = 56
     static let expandedPreviewBadgeInset: CGFloat = 10
     static let expandedPreviewCornerRadius: CGFloat = 16
+
+    /// The expanded dwell presentation wraps its snapshot: the canvas takes the
+    /// captured window's own shape, so the image fills it with no wasted
+    /// surface and is never upscaled. Sizing it from the grid panel's measured
+    /// frame instead made it a letterbox on wide displays, and a fixed ratio
+    /// left a small image floating in a screen-sized panel.
+    ///
+    /// `imageSize` nil (nothing captured yet) falls back to the shared
+    /// `previewCanvasAspect`, so the panel never jumps between shapes for the
+    /// same window once its image arrives.
+    static func expandedPreviewPanelSize(imageSize: CGSize?,
+                                         visibleFrame: CGSize) -> CGSize {
+        let chrome = CGSize(width: expandedPreviewPanelInset * 2,
+                            height: expandedPreviewPanelInset * 2 + expandedPreviewTitleHeight)
+        let aspect: CGFloat
+        if let imageSize, imageSize.width > 0, imageSize.height > 0 {
+            aspect = imageSize.width / imageSize.height
+        } else {
+            aspect = previewCanvasAspect
+        }
+        // the canvas may grow to the image's own points, but never past the
+        // screen fractions or below the documented minimum
+        let maxCanvas = CGSize(
+            width: max(1, visibleFrame.width * panelMaxWidthFraction - chrome.width),
+            height: max(1, visibleFrame.height * panelMaxHeightFraction - chrome.height))
+        let minCanvas = CGSize(width: expandedPreviewMinimumWidth - chrome.width,
+                               height: expandedPreviewMinimumHeight - chrome.height)
+        var canvasWidth = min(imageSize?.width ?? maxCanvas.width, maxCanvas.width)
+        canvasWidth = max(canvasWidth, min(minCanvas.width, maxCanvas.width))
+        canvasWidth = min(canvasWidth, maxCanvas.height * aspect)
+        var canvasHeight = canvasWidth / aspect
+        if canvasHeight < minCanvas.height {
+            canvasHeight = min(minCanvas.height, maxCanvas.height)
+            canvasWidth = min(canvasHeight * aspect, maxCanvas.width)
+        }
+        return CGSize(width: canvasWidth + chrome.width,
+                      height: canvasHeight + chrome.height)
+    }
     /// Fallback panel material for macOS 14/15, close to the pre-Tahoe native
     /// switcher; on macOS 26+ the panel uses the system glass effect instead
     /// (see SwitcherPanel), which is what the native switcher draws with.

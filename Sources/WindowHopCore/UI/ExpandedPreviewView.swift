@@ -43,6 +43,9 @@ final class ExpandedPreviewView: NSView {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
+    /// The snapshot's own size, which the panel's canvas takes its shape from.
+    var imageSize: CGSize? { imageView.image?.size }
+
     func configure(item: SwitcherItem, image: NSImage) {
         imageView.image = image
         updateMetadata(item: item)
