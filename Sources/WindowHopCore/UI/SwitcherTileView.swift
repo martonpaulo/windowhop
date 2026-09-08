@@ -158,13 +158,11 @@ final class SwitcherTileView: NSView {
                 contentHeight: DesignTokens.appIconsContentHeight)
         }
 
-        /// Preview containers share the presenting display's aspect ratio, so
-        /// every card is identical and any window aspect-fits without cropping.
-        static func windowPreviews(displayAspect: CGFloat,
-                                   showTabCounts: Bool) -> Metrics {
+        /// Preview containers share one fixed canvas shape, so every card is
+        /// identical and any window aspect-fits without cropping.
+        static func windowPreviews(showTabCounts: Bool) -> Metrics {
             let contentHeight = DesignTokens.previewContentHeight(
-                width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2,
-                displayAspect: displayAspect)
+                width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2)
             return Metrics(
                 tileSize: NSSize(width: DesignTokens.previewsTileWidth,
                                  height: DesignTokens.tileHeight(
@@ -177,15 +175,7 @@ final class SwitcherTileView: NSView {
                             showTabCounts: Bool) -> Metrics {
             mode == .appIcons
                 ? .appIcons(showTabCounts: showTabCounts)
-                : .windowPreviews(displayAspect: mainDisplayAspect,
-                                  showTabCounts: showTabCounts)
-        }
-
-        /// Aspect ratio of the display the switcher is presented on.
-        static var mainDisplayAspect: CGFloat {
-            guard let frame = (NSScreen.main ?? NSScreen.screens.first)?.frame,
-                  frame.height > 0 else { return 16.0 / 10.0 }
-            return frame.width / frame.height
+                : .windowPreviews(showTabCounts: showTabCounts)
         }
     }
 

@@ -16,6 +16,42 @@ final class SwitcherLayoutTests: XCTestCase {
         super.tearDown()
     }
 
+    // MARK: - Preview canvas geometry (issue #13)
+
+    /// The canvas is fixed at 16:10 regardless of the monitor. Deriving it from
+    /// the display turned every card into a shallow strip on an ultrawide
+    /// screen, which is exactly where previews are hardest to recognize.
+    func testPreviewCanvasIsFixedAtSixteenByTen() {
+        let contentWidth = DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2
+
+        XCTAssertEqual(DesignTokens.previewContentHeight(width: contentWidth), 118)
+        XCTAssertEqual(DesignTokens.previewCanvasAspect, 16.0 / 10.0)
+    }
+
+    /// The same rule, at the real configured-tile seam.
+    func testConfiguredTileUsesTheFixedCanvasHeight() {
+        let tile = configuredTile(imageSize: NSSize(width: 3440, height: 1440))
+
+        XCTAssertEqual(tile.previewCanvasFrameForTesting.height, 118)
+        XCTAssertEqual(tile.previewCanvasFrameForTesting.width, 188)
+    }
+
+    /// Source images of any shape stay inside that canvas without cropping.
+    func testEverySourceAspectFitsInsideTheCanvas() {
+        for size in [NSSize(width: 3440, height: 1440), NSSize(width: 100, height: 900),
+                     NSSize(width: 4, height: 4), NSSize(width: 1, height: 1)] {
+            let tile = configuredTile(imageSize: size)
+            let canvas = tile.previewCanvasFrameForTesting
+            let image = tile.previewImageFrameForTesting
+
+            // a whole-pixel tolerance: proportional scaling lands on fractions
+            XCTAssertTrue(canvas.insetBy(dx: -1, dy: -1).contains(image),
+                          "\(size) overflows the canvas")
+            XCTAssertLessThanOrEqual(image.width, canvas.width + 1)
+            XCTAssertLessThanOrEqual(image.height, canvas.height + 1)
+        }
+    }
+
     func testOverlaysStayCanvasAlignedAcrossSourceAspectRatios() {
         let wide = configuredTile(imageSize: NSSize(width: 400, height: 100))
         let tall = configuredTile(imageSize: NSSize(width: 100, height: 400))

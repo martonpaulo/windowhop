@@ -89,12 +89,15 @@ enum DesignTokens {
 
     // MARK: Window Previews appearance
     static let previewsTileWidth: CGFloat = 204
-    /// Preview containers all share the aspect ratio of the display the
-    /// switcher is presented on, so every card has identical dimensions and
-    /// any window fits inside without cropping (unused area uses the semantic
-    /// preview surface instead of exposing content behind the panel).
-    static func previewContentHeight(width: CGFloat, displayAspect: CGFloat) -> CGFloat {
-        (width / max(displayAspect, 0.2)).rounded()
+    /// Every preview canvas is this fixed shape, so all cards have identical
+    /// dimensions and any window aspect-fits inside without cropping (unused
+    /// area uses the semantic preview surface instead of exposing content
+    /// behind the panel). It is deliberately independent of the monitor:
+    /// deriving it from the display made every card a shallow strip on an
+    /// ultrawide screen, where previews are hardest to recognize.
+    static let previewCanvasAspect: CGFloat = 16.0 / 10.0
+    static func previewContentHeight(width: CGFloat) -> CGFloat {
+        (width / previewCanvasAspect).rounded()
     }
     static let previewCornerRadius = cardCornerRadius
     /// The badge is 60% of its previous rendered size and overlaps the fixed

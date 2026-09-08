@@ -115,8 +115,11 @@ applies on the next session, no restart):
 - **App Icons** (default): a large application icon dominates a compact tile.
 - **Window Previews**: an aspect-fit window snapshot with the app icon as a
   bottom-right badge overlapping the fixed preview canvas by the same amount on both
-  edges. Every canvas shares the display aspect ratio, so the snapshot can center and
-  aspect-fit without cropping or distortion. Unused space is an intentional semantic
+  edges. Every canvas is the same fixed 16:10 shape
+  (`DesignTokens.previewCanvasAspect`), so the snapshot can center and aspect-fit
+  without cropping or distortion. The canvas deliberately ignores the monitor:
+  deriving it from the display made every card a shallow strip on an ultrawide
+  screen. Unused space is an intentional semantic
   surface rather than transparent letterboxing. Loading, permission-required, failure,
   and loaded content all reuse that surface, geometry, badge anchor, and corner radius.
 
@@ -191,7 +194,7 @@ window that was ambiguous a moment earlier; whatever stays ambiguous — same ap
 frame, same title — is left unassigned, so the tile keeps its placeholder instead of
 showing another window's content.
 
-Source images aspect-fit and center inside a display-ratio canvas over the semantic
+Source images aspect-fit and center inside that fixed 16:10 canvas over the semantic
 preview surface. The app badge, Close control, selection plate, shadow, hit testing, and
 title position all anchor to that canvas rather than the fitted source-image bounds.
 
