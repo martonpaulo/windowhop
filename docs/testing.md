@@ -111,6 +111,35 @@ with `verify-update-continuity.sh`, sign the candidate ZIP with Sparkle's `sign_
 serve a local appcast, and run the old bundle's `--updater-e2e` binary. Never put an
 ad-hoc or development-signed app in the update feed.
 
+## Release publication order
+
+The updater feed may only ever advertise files that already exist, so
+publication is strictly ordered:
+
+1. `scripts/publish-release.sh <tag> <notes> <artifacts…>` stages every artifact in a
+   **draft** release, verifies the complete set against the local files by name and byte
+   count, publishes, and verifies once more against the now-public release.
+2. Only then does `scripts/make-appcast.sh` add the entry and push it to `main`.
+
+Both steps are idempotent under retry, and neither is idempotent by assumption:
+
+- A complete, matching public release is a read-only no-op. An **incomplete** one — a
+  missing asset, or one whose size differs — fails and is left to an operator. A public
+  asset is never overwritten.
+- An incomplete **draft** is completed rather than recreated.
+- A `gh` failure that is not "release not found" (auth, network) is fatal, never read as
+  "no release yet".
+- An existing appcast entry for the version is a no-op only when its build number,
+  enclosure URL, signature and length all match. Any mismatch fails and prints the
+  conflicting entry.
+
+Because the feed is written last, every failure before it leaves `main` unmoved, so the
+workflow's `tag commit == current origin/main` gate still holds for a normal rerun.
+
+`scripts/tests/publish-release-tests.sh` and `scripts/tests/make-appcast-tests.sh` exercise
+this against a fake `gh` and throwaway repositories — no network, no token, no signing
+material, no real release. `scripts/validate.sh` runs both.
+
 ## Manual release checklist
 
 Run from a clean copy under Applications with real Accessibility and, where applicable,

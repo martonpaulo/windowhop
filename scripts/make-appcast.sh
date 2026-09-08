@@ -40,8 +40,33 @@ if [ ! -f appcast.xml ]; then
 EOF
 fi
 
+# An entry for this version already exists. That is an idempotent no-op only
+# when it advertises exactly what is being published; a mismatch means the feed
+# describes a different build and must be resolved by an operator, not
+# silently accepted as success.
 if grep -q "<sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>" appcast.xml; then
-    echo "appcast.xml already contains $VERSION; leaving unchanged"
+    EXISTING_ITEM=$(awk -v version="$VERSION" '
+        /<item>/ { buffer = ""; inside = 1 }
+        inside { buffer = buffer $0 "\n" }
+        inside && $0 ~ "<sparkle:shortVersionString>" version "</sparkle:shortVersionString>" { match_found = 1 }
+        /<\/item>/ { if (inside && match_found) { printf "%s", buffer; exit } ; inside = 0; match_found = 0 }
+    ' appcast.xml)
+    MISMATCH=""
+    printf '%s' "$EXISTING_ITEM" | grep -q "<sparkle:version>$BUILD_NUMBER</sparkle:version>" \
+        || MISMATCH="build number"
+    printf '%s' "$EXISTING_ITEM" | grep -qF "url=\"$URL\"" \
+        || MISMATCH="${MISMATCH:-enclosure URL}"
+    for attribute in $SIGNATURE_ATTRS; do
+        printf '%s' "$EXISTING_ITEM" | grep -qF "$attribute" \
+            || MISMATCH="${MISMATCH:-signature or length}"
+    done
+    if [ -n "$MISMATCH" ]; then
+        echo "appcast.xml already advertises $VERSION with a different $MISMATCH." >&2
+        echo "Existing entry:" >&2
+        printf '%s\n' "$EXISTING_ITEM" >&2
+        exit 1
+    fi
+    echo "appcast.xml already advertises this exact $VERSION build; leaving unchanged"
     exit 0
 fi
 
@@ -53,5 +78,5 @@ awk -v itemfile="$ITEM_FILE" '
         close(itemfile)
     }
 ' appcast.xml > appcast.xml.new
-mv appcast.xml.new appcast.xml
+mv -f appcast.xml.new appcast.xml
 echo "appcast.xml updated with $VERSION (build $BUILD_NUMBER)"

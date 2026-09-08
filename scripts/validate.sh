@@ -113,6 +113,18 @@ else
     fail "GitHub Pages static site validation failed"
 fi
 
+# --- release publication behaves as specified --------------------------------
+# These run the real publication scripts against a fake `gh` and throwaway
+# repositories: no network, no token, no signing material, no real release.
+for fixture in scripts/tests/publish-release-tests.sh scripts/tests/make-appcast-tests.sh; do
+    if output=$("$fixture" 2>&1); then
+        pass "$(printf '%s' "$output" | tail -1)"
+    else
+        printf '%s\n' "$output"
+        fail "$(basename "$fixture") reported failures"
+    fi
+done
+
 # --- secrets must never be committed -----------------------------------------
 if git ls-files | grep -iE "private.?key|\.p12$|\.pem$"; then
     fail "potential secret file tracked in git"
