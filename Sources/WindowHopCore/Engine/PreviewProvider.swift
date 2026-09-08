@@ -67,6 +67,17 @@ public final class PreviewProvider {
         ledger.evict(id)
     }
 
+    /// Whether a capture completing now would still be stored for this id.
+    func ledgerShouldStoreForTesting(_ id: AnyHashable) -> Bool {
+        ledger.shouldStore(id)
+    }
+
+    /// Seeds the cache the way a completed capture would, so lifetime tests can
+    /// observe eviction without taking a real screenshot.
+    func storeForTesting(_ image: NSImage, for id: AnyHashable) {
+        cache[id] = image
+    }
+
     /// Used when the user switches back to App Icons: nothing to retain.
     public func evictAll() {
         cache.removeAll()

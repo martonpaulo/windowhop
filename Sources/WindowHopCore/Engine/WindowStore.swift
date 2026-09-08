@@ -63,6 +63,7 @@ public final class WindowStore {
         NSWorkspace.shared.notificationCenter.removeObserver(self)
         apps.values.forEach { $0.stopObserving() }
         apps = [:]
+        discardPreviews(of: windows)
         windows = []
         onChange?()
     }
@@ -83,7 +84,7 @@ public final class WindowStore {
         let removed = windows.filter { $0.app === app }
         windows.removeAll { $0.app === app }
         if !removed.isEmpty {
-            removed.forEach { PreviewProvider.shared.evict($0.stableId) }
+            discardPreviews(of: removed)
             onChange?()
         }
     }
@@ -169,7 +170,7 @@ public final class WindowStore {
     func removeWindow(_ element: AXUIElement) {
         guard let index = windows.firstIndex(where: { $0.ax == element }) else { return }
         let removed = windows.remove(at: index)
-        PreviewProvider.shared.evict(removed.stableId)
+        discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
             let remaining = windows.filter { $0.app === removed.app }
             applyTabStates(TabGroupResolver.resolveRemoval(
@@ -214,6 +215,14 @@ public final class WindowStore {
         onChange?()
     }
 
+    /// The one removal-to-retention handoff. Every path that drops a window
+    /// goes through it, so a removed stable id can never outlive its window in
+    /// the preview cache — reopening Settings mints a fresh id each time, and
+    /// the old ones would otherwise survive until the appearance changed.
+    private func discardPreviews(of removed: [TrackedWindow]) {
+        removed.forEach { PreviewProvider.shared.evict($0.stableId) }
+    }
+
     private func ownEntry(for window: NSWindow) -> TrackedWindow? {
         windows.first { $0.isOwnSettingsEntry && $0.nativeWindow === window }
     }
@@ -223,6 +232,7 @@ public final class WindowStore {
               let entry = ownEntry(for: window) else { return }
         NotificationCenter.default.removeObserver(self, name: nil, object: window)
         windows.removeAll { $0 === entry }
+        discardPreviews(of: [entry])
         onChange?()
     }
 
