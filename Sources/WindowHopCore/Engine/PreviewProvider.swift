@@ -215,23 +215,39 @@ public final class PreviewProvider {
                                  sessionGeneration: Int,
                                  requestGeneration: Int,
                                  pixelTarget: CGSize) async {
-        guard let content = try? await SCShareableContent
-            .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return }
-        guard let candidateIndex = PreviewMatcher.assign(
-            requests: [Self.matchRequest(request)],
-            candidates: Self.matchCandidates(in: content.windows))[request.id],
-              let image = await captureImage(content.windows[candidateIndex],
-                                             pixelTarget: pixelTarget) else { return }
         let identity = SendableIdentity(value: request.id)
-        await MainActor.run {
-            guard self.activeSessionGeneration == sessionGeneration,
-                  self.ledger.shouldDeliver(identity.value,
-                                            capturedIn: sessionGeneration),
-                  self.expandedGeneration == requestGeneration else { return }
-            self.cache[identity.value] = image
-            self.onPreview?(identity.value, image)
-            self.onExpandedPreview?(identity.value, image)
-        }
+        await ExpandedCaptureFlow.run(
+            lookup: { () -> SCWindow? in
+                guard let content = try? await SCShareableContent
+                    .excludingDesktopWindows(false, onScreenWindowsOnly: false),
+                    let candidateIndex = PreviewMatcher.assign(
+                        requests: [Self.matchRequest(request)],
+                        candidates: Self.matchCandidates(in: content.windows))[request.id]
+                else { return nil }
+                return content.windows[candidateIndex]
+            },
+            isCurrent: {
+                self.isExpandedRequestCurrent(identity.value,
+                                              sessionGeneration: sessionGeneration,
+                                              requestGeneration: requestGeneration)
+            },
+            capture: { await self.captureImage($0, pixelTarget: pixelTarget) },
+            deliver: { image in
+                self.cache[identity.value] = image
+                self.onPreview?(identity.value, image)
+                self.onExpandedPreview?(identity.value, image)
+            })
+    }
+
+    /// True while this expanded request may still spend capture work and
+    /// deliver: same session, same request, and a target the ledger still owns.
+    @MainActor
+    private func isExpandedRequestCurrent(_ id: AnyHashable,
+                                          sessionGeneration: Int,
+                                          requestGeneration: Int) -> Bool {
+        activeSessionGeneration == sessionGeneration
+            && expandedGeneration == requestGeneration
+            && ledger.shouldDeliver(id, capturedIn: sessionGeneration)
     }
 
     private func captureImage(_ scWindow: SCWindow,
