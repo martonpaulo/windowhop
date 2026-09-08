@@ -8,8 +8,10 @@ permissions:
   contents: write
 
 env:
-  SPARKLE_VERSION: 2.9.4
-  SPARKLE_SHA256: ce89daf967db1e1893ed3ebd67575ed82d3902563e3191ca92aaec9164fbdef9
+  # Only supplies the sign_update tool; the embedded framework comes from
+  # Package.resolved. Keep this in step with that resolved version.
+  SPARKLE_VERSION: 2.9.6
+  SPARKLE_SHA256: 52bf9e88cdd972fc0c81501377a880e90d47031bd8ca5462488f843e2609e192
 
 jobs:
   release:
