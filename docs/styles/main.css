@@ -7,6 +7,11 @@
   --secondary: #6e6e73;
   --line: rgba(0, 0, 0, 0.08);
   --accent: #0675e8;
+  /* Filled buttons carry their own foreground/background pair: the link accent
+     alone gives white text only 4.45:1 in light and 2.46:1 in dark. */
+  --button-primary-fg: #ffffff;
+  --button-primary-bg: #0a66c8;
+  --button-primary-bg-hover: #0b5fbb;
   --accent-hover: #0067d6;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
   --radius: 28px;
@@ -41,8 +46,8 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 88px); line-height: 0.98; letter-spa
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 999px; text-decoration: none; font-size: 16px; font-weight: 650; transition: transform 160ms ease, background-color 160ms ease, color 160ms ease; }
 .button [data-site-version]::before { content: "\00a0"; }
 .button:hover { transform: translateY(-1px); }
-.button.primary { background: var(--accent); color: #fff; }
-.button.primary:hover { background: var(--accent-hover); }
+.button.primary { background: var(--button-primary-bg); color: var(--button-primary-fg); }
+.button.primary:hover { background: var(--button-primary-bg-hover); }
 .button.secondary { background: var(--surface-strong); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
 .compatibility { margin: 18px 0 0; color: var(--secondary); font-size: 14px; }
 .hero-visual { display: block; width: min(1134px, 116%); margin: 62px 50% 0; transform: translateX(-50%); filter: drop-shadow(var(--shadow)); }
@@ -91,6 +96,9 @@ a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white
     --secondary: #a1a1a6;
     --line: rgba(255, 255, 255, 0.11);
     --accent: #57a9ff;
+    --button-primary-fg: #07111f;
+    --button-primary-bg: #57a9ff;
+    --button-primary-bg-hover: #79baff;
     --accent-hover: #79baff;
     --shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
   }
