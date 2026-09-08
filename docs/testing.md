@@ -139,6 +139,13 @@ Requirements and constraints:
 - The `width`/`height` attributes in `docs/index.html` are the captured pixels halved. Update
   them whenever the captures change size, or the site reserves the wrong box and the hero
   image lands misaligned.
+- Each capture declares a **maximum published width**, or `native`. A capture is taken at
+  the display's backing scale, which is only the right size if the image is shown at half
+  those pixels somewhere. The switcher panel is 1206 pt wide, so its capture is 2412 px,
+  while the site shows it in a 434 pt slot and the README at about 830 pt. Capping it at
+  twice the largest slot keeps it sharp everywhere and stops visitors paying for pixels
+  nobody displays. Resampling uses `sips`, which is built into macOS and indistinguishable
+  here from ImageMagick's Lanczos.
 - Screenshots are published as **lossless WebP**, converted by the script with
   `cwebp -lossless`. The pixels are identical to the PNG, the alpha the shadow depends on
   survives, and the set drops from about 2.9 MB to 1.2 MB. Every browser on the supported

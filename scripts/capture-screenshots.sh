@@ -26,9 +26,20 @@ mkdir -p "$OUTPUT"
 
 # Runs the demo binary with the given arguments, waits for it to print its
 # window number, captures that window with its shadow, and stops it.
+#
+#   capture <name> <max-width|native> <demo arguments...>
+#
+# `max-width` caps the published pixel width. A capture is taken at the
+# display's backing scale, which is the right size only if the image is shown
+# at half those pixels somewhere. The switcher panel is 1206 pt wide, so its
+# capture is 2412 px, while the site shows it in a 434 pt slot and the README at
+# about 830 pt — more than 5x and 1.5x oversampled. Capping it at twice the
+# largest slot keeps it sharp everywhere and stops the page paying for pixels
+# nobody displays. `native` means the image is already at or below 2x of its
+# largest slot.
 capture() {
-    local name=$1
-    shift
+    local name=$1 max_width=$2
+    shift 2
     local log
     log=$(mktemp)
     "$BINARY" "$@" > "$log" 2>&1 &
@@ -55,6 +66,15 @@ capture() {
     screencapture -x -l"$window_number" -t png "$OUTPUT/$name.png"
     kill "$pid" 2>/dev/null || true
     wait "$pid" 2>/dev/null || true
+    if [ "$max_width" != native ]; then
+        local width
+        width=$(sips -g pixelWidth "$OUTPUT/$name.png" | tail -1 | awk '{print $2}')
+        if [ "$width" -gt "$max_width" ]; then
+            # sips is built into macOS and its resampling is indistinguishable
+            # here from ImageMagick's Lanczos, so the script stays dependency-free
+            sips --resampleWidth "$max_width" "$OUTPUT/$name.png" >/dev/null
+        fi
+    fi
     # Published as lossless WebP: identical pixels, about a third of the bytes.
     # The alpha the shadow needs survives, and every macOS 14 browser reads it.
     cwebp -quiet -lossless -z 9 -metadata none "$OUTPUT/$name.png" -o "$OUTPUT/$name.webp"
@@ -64,13 +84,13 @@ capture() {
         "$(( $(stat -f%z "$OUTPUT/$name.webp") / 1024 ))"
 }
 
-capture switcher-light            --demo-switcher --columns 8
-capture switcher-dark             --demo-switcher --dark --columns 8
-capture switcher-previews-light   --demo-switcher --previews --columns 4
-capture switcher-previews-dark    --demo-switcher --previews --dark --columns 4
-capture switcher-expanded-light   --demo-switcher --previews --expanded --columns 4
-capture settings-general          --demo-settings general
-capture settings-windows          --demo-settings windows
-capture settings-appearance       --demo-settings appearance
+capture switcher-light            1660 --demo-switcher --columns 8
+capture switcher-dark             1660 --demo-switcher --dark --columns 8
+capture switcher-previews-light   native --demo-switcher --previews --columns 4
+capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
+capture switcher-expanded-light   native --demo-switcher --previews --expanded --columns 4
+capture settings-general          native --demo-settings general
+capture settings-windows          native --demo-settings windows
+capture settings-appearance       native --demo-settings appearance
 
 echo "captured into $OUTPUT"
