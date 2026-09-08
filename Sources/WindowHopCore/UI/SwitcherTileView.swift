@@ -651,6 +651,15 @@ final class SwitcherTileView: NSView {
         onCloseRequest?()
     }
 
+    /// The exposed AXButton role promises a standard Press action, so assistive
+    /// technology must reach the same activation path as a pointer click.
+    /// Apple: Implementing Accessibility for Custom Controls.
+    override func accessibilityPerformPress() -> Bool {
+        guard let onClick else { return false }
+        onClick()
+        return true
+    }
+
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
     override func mouseDown(with event: NSEvent) {
