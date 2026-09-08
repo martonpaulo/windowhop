@@ -1,7 +1,7 @@
 # WindowHop website deployment
 
 The static product site lives directly in `docs/` and is served at
-<https://martonpaulo.github.io/windowhop/>. It has no backend, package manager, generated
+<https://martonpaulo.com/windowhop/>. It has no backend, package manager, generated
 bundle, analytics, or runtime dependency.
 
 ## Local preview

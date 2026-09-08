@@ -1,6 +1,6 @@
 const WINDOWHOP_SITE = Object.freeze({
   version: "1.6.1",
-  website: "https://martonpaulo.github.io/windowhop/",
+  website: "https://martonpaulo.com/windowhop/",
   github: "https://github.com/martonpaulo/windowhop",
   issues: "https://github.com/martonpaulo/windowhop/issues",
   releases: "https://github.com/martonpaulo/windowhop/releases",
