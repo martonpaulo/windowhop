@@ -17,6 +17,14 @@
 - Development language: English.
 - Product copy: English only, authored inline. There is no localization layer, no `.lproj`
   bundle, and no fallback locale; adding one is a migration, not an incidental change.
+- Browser engine families: Chromium and WebKit for the website. `docs/website.md` owns
+  the validation procedure and the distinction between static CI and browser checks.
+- Agent automation: `disabled`. Implementation and review run only when requested;
+  do not install an automated issue-intake or execution integration.
+- Agent guidance: `AGENTS.md` is canonical; Codex reads it directly and
+  `CLAUDE.md -> AGENTS.md` is the Claude adapter. Gemini and Antigravity require explicit
+  client selection and functional readback before configuration. The legacy
+  `.gemini/rules/agents.md` link is retained, not treated as verified active guidance.
 - Branch policy: work directly on `main`. Use a branch and pull request only when the user
   asks for one; bot PRs (Dependabot, ImgBot) still merge through GitHub.
 - Commit policy: automatic. When a task is complete and its validation has passed, commit it
@@ -34,6 +42,10 @@
 - Merge policy: merge commits only, every commit of the branch preserved. Never squash.
 - Commit subject: a commit made for an issue ends with `(#<issue number>)`.
 - Delete branches after merge: enabled on GitHub.
+- Default-branch approving review: not required under the direct-to-`main` policy.
+  Do not add a pull-request-only protection rule without reopening that policy.
+- Secret protection: GitHub secret scanning and push protection enabled. These are
+  backstops, not substitutes for inspecting the exact publication payload.
 - Release, signing, and secret-storage policy: distributed as a signed, notarized, stapled
   `.app` in a DMG plus ZIP on GitHub Releases, updated in place by Sparkle from
   `appcast.xml` on `raw.githubusercontent.com`. Tag `vX.Y.Z` triggers
@@ -42,6 +54,8 @@
   secrets; the Sparkle EdDSA private key lives in the login Keychain and the
   `SPARKLE_PRIVATE_KEY` secret. No key material, certificate password, or signing log ever
   enters the repository.
+- Skills baseline revision: `7cfc324fcded57145c36cc678977c070ed800692`
+- Skills baseline applied: `2026-09-08`
 
 Treat these values as stable project decisions. Change an established identifier, license,
 visibility, branch policy, versioning model, localization strategy, landing-page contract, or
@@ -172,6 +186,18 @@ notes. A missing configurability decision is a review failure.
   blockers. Ask only when a material decision cannot be discovered safely.
 - Give concise progress updates during long-running work.
 
+## Long-running operations
+
+- Use bounded yield, timeout, or status mechanisms and observable completion conditions.
+  Keep progress commentary at least once per minute when the client supports it.
+- Distinguish slow progress from a stall using output, state, resource activity, or a
+  task-specific deadline; elapsed time alone is not evidence of a stall.
+- Inspect current output before interruption or retry. Interrupt only when useful progress
+  has stopped, a deadline expired, or continued cost or risk is no longer justified.
+- After interruption, explain the preserved state and choose a narrower retry, a different
+  approach, or an explicit blocker. Never repeat the same unchanged failure.
+- Do not add polling services or infrastructure merely to monitor an operation.
+
 ## Before editing
 
 1. Check applicable instructions, Git status, and the current branch. The user works on this
@@ -264,6 +290,32 @@ notes. A missing configurability decision is a review failure.
   privacy, limitations, landing page, download. Use badges, real screenshots, and statistics
   only when they improve comprehension and can stay current.
 - Maintain `CHANGELOG.md` — every public release gets a user-facing entry.
+- Preserve the approved `WindowHop` README heading. Give every new or materially edited
+  fenced block an explicit language; leave unrelated historical formatting alone.
+
+## Durable project learning
+
+At completion, compare verified, project-specific, recurring lessons with their existing
+canonical owner. Do nothing when already recorded. Required task documentation belongs in
+the task; adjacent learning is proposal-only until explicitly approved.
+
+An adjacent proposal names `Evidence`, `Canonical owner`, `Smallest change`, `Draft`, and
+`Decision requested: Approve, reject, or revise.` Do not create another file when an existing
+section or script can own it. Do not persist hypotheses, raw logs, personal data, transient
+machine state, or issue-specific implementation details as general guidance. Behavior-changing
+scripts or configuration require their own authorized scope.
+
+## User attention
+
+Use the client's structured-question facility when a response is required, together with one
+concise attention card in the user's language. Surround the card with horizontal rules; name
+the category (decision, approval, external action, or proposed issue), the evidence and impact,
+the exact requested response, and a recommendation. A choice includes meaningful tradeoffs;
+an approval names its target, change, reversibility, and recovery; an external action states
+the observable condition for resuming. Without a question tool, use the card alone.
+
+Keep unrelated work moving while a question is pending. A proposed follow-up is not permission
+to publish an issue or change code. Do not ask again for a decision already recorded here.
 
 ## Configuration and repository hygiene
 
@@ -320,6 +372,11 @@ notes. A missing configurability decision is a review failure.
   This covers bot pull requests too.
 - Inspect the diff before committing. Never commit secrets, caches, generated logs, temporary
   artifacts, or unrelated formatting churn.
+- Inspect only the exact intended payload before each GitHub publication, including the
+  outgoing commit range before pushing. Never publish credentials or sensitive personal data;
+  a suspected value stops that mutation and is described without printing it. If a credential
+  may already be public, stop its spread and require revocation or rotation before considering
+  cleanup; deleting it from the latest tree does not remove the exposure.
 - If a commit or push fails, report the exact failure without claiming success.
 - Release flow: bump the version and build number, update `CHANGELOG.md`, build and validate
   from a clean tree, sign and notarize, verify the install and Sparkle update paths, then tag
