@@ -24,14 +24,13 @@ Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
 1. Download **[WindowHop 1.6.0](https://github.com/martonpaulo/windowhop/releases/latest)**.
    The `WindowHop-1.6.0-Installer.zip` asset preserves the branded Finder icon; the
    release also provides the raw `WindowHop-1.6.0.dmg`.
-2. Unzip the installer if needed, open the DMG, and drag WindowHop to Applications.
+2. Unzip the installer if needed, open the DMG, and drag WindowHop onto the Applications
+   alias in the branded installer window.
 3. Open WindowHop from Applications and grant
    **System Settings → Privacy & Security → Accessibility**.
 
 Official releases are signed with WindowHop's stable Developer ID identity, notarized
 by Apple, stapled, and Gatekeeper-validated before publication.
-
-![Branded WindowHop DMG with the app and real Applications alias](docs/screenshots/installer-dmg.png)
 
 ## Using WindowHop
 
@@ -85,7 +84,7 @@ Previews** uses ScreenCaptureKit only while the switcher is open. Captures remai
 memory and are never written to disk or transmitted. A cached preview may appear first;
 a fresh capture replaces it in place.
 
-Every preview keeps one fixed display-ratio canvas. Wide, tall, and narrow windows are
+Every preview keeps one fixed 16:10 canvas, the same on every monitor. Wide, tall, and narrow windows are
 scaled proportionally and centered over an adaptive semantic surface — never stretched,
 cropped, or left as a transparent hole. The app badge remains attached to the canvas's
 bottom-right corner in every state.
@@ -168,9 +167,10 @@ website, source, issue tracker, GPL-3.0 license, and AltTab acknowledgement.
 
 ## Interface gallery
 
-Switcher images come from the app's release-equivalent render harness with synthetic
-titles and preview content; the Settings images are the real window. Neither shows a
-personal window or any Screen Recording data.
+Every image comes from the app's own render harness (`--render-ui`) at 3×, so they are
+sharp on any display and reproducible on any machine: the switcher with synthetic titles
+and preview content, and the real Settings window with its own title bar and pane
+toolbar. Nothing here shows a personal window or any Screen Recording data.
 
 ![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.png)
 

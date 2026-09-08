@@ -55,12 +55,32 @@ enum DebugHarness {
         let outputURL = URL(fileURLWithPath: directory)
         try? FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
 
+        // Offscreen panels have no screen, so they would otherwise rasterize at
+        // 1x and every published screenshot would be soft. Drawing into an
+        // explicitly oversized bitmap whose logical size stays in points makes
+        // AppKit render text, icons and strokes at this scale natively.
+        let renderScale: CGFloat = 3
+
         func write(_ view: NSView, _ name: String) {
-            guard let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
-            view.cacheDisplay(in: view.bounds, to: rep)
+            let size = view.bounds.size
+            guard size.width > 0, size.height > 0,
+                  let rep = NSBitmapImageRep(
+                    bitmapDataPlanes: nil,
+                    pixelsWide: Int((size.width * renderScale).rounded()),
+                    pixelsHigh: Int((size.height * renderScale).rounded()),
+                    bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                    colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+                  let context = NSGraphicsContext(bitmapImageRep: rep) else { return }
+            rep.size = size
+            NSGraphicsContext.saveGraphicsState()
+            NSGraphicsContext.current = context
+            context.cgContext.scaleBy(x: renderScale, y: renderScale)
+            view.displayIgnoringOpacity(view.bounds, in: context)
+            NSGraphicsContext.restoreGraphicsState()
             if let png = rep.representation(using: .png, properties: [:]) {
                 try? png.write(to: outputURL.appendingPathComponent("\(name).png"))
-                print("wrote \(name).png (\(Int(view.bounds.width))x\(Int(view.bounds.height)))")
+                print("wrote \(name).png (\(rep.pixelsWide)x\(rep.pixelsHigh) px, "
+                    + "\(Int(size.width))x\(Int(size.height)) pt)")
             }
         }
 
@@ -165,13 +185,42 @@ enum DebugHarness {
                 finishOne()
             }
         }
-        for (name, viewController) in SettingsWindowController.makePaneViewControllers() {
+        // The real multi-pane controller, so every render carries the window's
+        // own title bar and pane toolbar rather than a bare content view.
+        let settingsContent = SettingsWindowController.makeContentViewController()
+        let paneNames = SettingsWindowController.makePaneViewControllers().map { $0.name }
+        if let tabs = settingsContent as? NSTabViewController {
+            let settingsWindow = NSWindow(contentViewController: tabs)
+            settingsWindow.styleMask.insert([.titled, .closable])
+            settingsWindow.appearance = NSAppearance(named: .aqua)
+            settingsWindow.orderBack(nil)
+            pending += 1
+            var index = 0
+            func renderNextPane() {
+                guard index < paneNames.count else {
+                    settingsWindow.orderOut(nil)
+                    finishOne()
+                    return
+                }
+                let name = paneNames[index]
+                tabs.selectedTabViewItemIndex = index
+                index += 1
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+                    if let frameView = settingsWindow.contentView?.superview {
+                        write(frameView, "settings-\(name)")
+                    }
+                    renderNextPane()
+                }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: renderNextPane)
+        }
+        for (name, viewController) in [(String, NSViewController)]() {
             let window = NSWindow(contentViewController: viewController)
             window.appearance = NSAppearance(named: .aqua)
             window.orderBack(nil)
             pending += 1
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                if let contentView = window.contentView {
+                if let contentView = window.contentView?.superview ?? window.contentView {
                     write(contentView, "settings-\(name)")
                 }
                 window.orderOut(nil)
