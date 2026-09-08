@@ -34,6 +34,14 @@ The full upstream history up to that commit is preserved in this repository
 | Window/screen coordinate conversion (`Window.isOnScreen`) | `Engine/TrackedWindow.swift` | Quartz↔Cocoa frame conversion |
 | `src/logic/Screens.swift` (`withMouse()`, `uuid()`) | `Engine/DisplayRegistry.swift` | pointer-display detection via `NSMouseInRect`; stable display identity via `CGDisplayCreateUUIDFromDisplayID` with the nil checks those implicitly-unwrapped APIs actually need; the documented unreliability of `NSScreen.main` |
 
+## Corrected (ported rule intentionally diverges from upstream)
+
+- `src/logic/TabGroup.swift` (`updateState`) clears the group membership of *every*
+  same-app window that is not in the refreshed group. When one app owns two native tab
+  groups, refreshing either one dissolves the other and its inactive tabs reappear as
+  separate entries. `Core/TabGroupResolver.resolve` narrows that cleanup to windows whose
+  recorded membership actually contains the refreshing window (WindowHop issue #18).
+
 ## Removed
 
 - Pro/licensing/trial/upgrade code (never present in v10.12.0; the base was chosen for that).

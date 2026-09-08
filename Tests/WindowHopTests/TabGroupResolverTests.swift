@@ -107,6 +107,81 @@ final class TabGroupResolverTests: XCTestCase {
         XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: nil))
     }
 
+    // MARK: - Independent groups in one app
+
+    /// Two established native tab groups in one app: refreshing one must not
+    /// dissolve the other, or its inactive tab reappears as its own entry.
+    func testRefreshingOneGroupPreservesAnotherGroupInTheSameApp() {
+        let groupOne = ["A", "B"]
+        let groupTwo = ["C", "D"]
+        let activeOne = window("A", "A", groupIds: groupOne)
+        let inactiveOne = window("B", "B", isTabbed: true, groupIds: groupOne)
+        let activeTwo = window("C", "C", groupIds: groupTwo)
+        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
+
+        let changes = TabGroupResolver.resolve(
+            active: activeOne,
+            tabTitles: ["A", "B"],
+            sameAppWindows: [inactiveOne, activeTwo, inactiveTwo])
+
+        XCTAssertEqual(changes["B"], State(isTabbed: true, groupIds: groupOne))
+        XCTAssertNil(changes["C"], "the other group's active tab must be untouched")
+        XCTAssertNil(changes["D"], "the other group's inactive tab must stay hidden")
+        XCTAssertFalse(isDisplayed(inactiveTwo, applying: changes),
+                       "D must remain excluded as an inactive tab")
+    }
+
+    /// The symmetric refresh must hold too, so neither group wins by ordering.
+    func testRefreshingTheOtherGroupPreservesTheFirst() {
+        let groupOne = ["A", "B"]
+        let groupTwo = ["C", "D"]
+        let inactiveOne = window("B", "B", isTabbed: true, groupIds: groupOne)
+        let activeTwo = window("C", "C", groupIds: groupTwo)
+        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
+
+        let changes = TabGroupResolver.resolve(
+            active: activeTwo,
+            tabTitles: ["C", "D"],
+            sameAppWindows: [window("A", "A", groupIds: groupOne), inactiveOne, inactiveTwo])
+
+        XCTAssertEqual(changes["D"], State(isTabbed: true, groupIds: groupTwo))
+        XCTAssertNil(changes["A"])
+        XCTAssertNil(changes["B"])
+        XCTAssertFalse(isDisplayed(inactiveOne, applying: changes))
+    }
+
+    /// A window that truly leaves the refreshed group still gets cleared, while
+    /// an unrelated group in the same app survives the same update.
+    func testFormerMemberIsClearedWithoutDisturbingAnotherGroup() {
+        let groupOne = ["A", "B"]
+        let groupTwo = ["C", "D"]
+        let formerSibling = window("B", "B", isTabbed: true, groupIds: groupOne)
+        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
+
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "A", groupIds: groupOne),
+            tabTitles: ["A"],
+            sameAppWindows: [formerSibling, window("C", "C", groupIds: groupTwo), inactiveTwo])
+
+        XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: nil))
+        XCTAssertTrue(isDisplayed(formerSibling, applying: changes),
+                      "B left the group and must become its own entry")
+        XCTAssertNil(changes["D"])
+        XCTAssertFalse(isDisplayed(inactiveTwo, applying: changes))
+    }
+
+    /// Applies the resolver's sparse change map the way WindowStore does, then
+    /// asks the real eligibility rule whether the window becomes an entry.
+    private func isDisplayed(_ descriptor: Descriptor,
+                             applying changes: [String: State]) -> Bool {
+        let isTabbed = changes[descriptor.id]?.isTabbed ?? descriptor.isTabbed
+        return WindowEligibility.shouldDisplay(
+            WindowDisplayState(isMinimized: false, isAppHidden: false, isOwnWindow: false,
+                               isTabbed: isTabbed,
+                               isOnCurrentSpace: true, isOnActiveDisplay: true),
+            policy: .init())
+    }
+
     // MARK: - Removal
 
     func testRemovalShrinksGroup() {

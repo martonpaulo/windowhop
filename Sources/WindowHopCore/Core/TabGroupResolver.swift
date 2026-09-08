@@ -74,11 +74,15 @@ public enum TabGroupResolver {
         for sibling in matched {
             changes[sibling.id] = WindowTabState(isTabbed: true, groupIds: groupIds)
         }
-        // windows that used to be in a group with the active window but no longer are
+        // Windows that used to be in *this* group but no longer are. Membership is
+        // read from the candidate, not from `active.groupIds`, because the active
+        // window's own membership may not have been recorded yet. AltTab v10.12.0
+        // cleared every same-app window with any group, which also dissolved the
+        // app's other, unrelated tab groups.
         for window in sameAppWindows
         where window.id != active.id
             && !matched.contains(where: { $0.id == window.id })
-            && window.groupIds != nil {
+            && window.groupIds?.contains(active.id) == true {
             changes[window.id] = WindowTabState(isTabbed: false, groupIds: nil)
         }
         return changes
