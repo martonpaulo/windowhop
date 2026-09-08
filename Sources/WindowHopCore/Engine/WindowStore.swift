@@ -203,6 +203,14 @@ public final class WindowStore {
                            name: NSWindow.didDeminiaturizeNotification, object: window)
         center.addObserver(self, selector: #selector(ownWindowFocused(_:)),
                            name: NSWindow.didBecomeKeyNotification, object: window)
+        // Dragging Settings to another display can change whether it belongs in
+        // an open session's list. The frame itself is read live on snapshot;
+        // these only say "look again". Scoped to this one window, removed with
+        // the rest on close, and they never poll.
+        center.addObserver(self, selector: #selector(ownWindowGeometryChanged(_:)),
+                           name: NSWindow.didMoveNotification, object: window)
+        center.addObserver(self, selector: #selector(ownWindowGeometryChanged(_:)),
+                           name: NSWindow.didResizeNotification, object: window)
         onChange?()
     }
 
@@ -222,6 +230,12 @@ public final class WindowStore {
         guard let window = notification.object as? NSWindow,
               let entry = ownEntry(for: window) else { return }
         entry.isMinimized = notification.name == NSWindow.didMiniaturizeNotification
+        onChange?()
+    }
+
+    @objc private func ownWindowGeometryChanged(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow,
+              ownEntry(for: window) != nil else { return }
         onChange?()
     }
 

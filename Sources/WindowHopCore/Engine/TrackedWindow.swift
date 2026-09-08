@@ -95,10 +95,23 @@ public final class TrackedWindow {
     /// Window frames from AX use Quartz coordinates (top-left origin of the primary
     /// display); NSScreen frames use Cocoa coordinates (bottom-left). Ported from
     /// AltTab's Window.isOnScreen.
+    ///
+    /// The registered Settings window is the one entry backed by a live NSWindow.
+    /// Its frame is already Cocoa and changes whenever the user drags it, so it
+    /// is read live and compared without conversion; the stored frame captured
+    /// at registration would answer for the display it opened on forever.
     public func isOn(screen: NSScreen) -> Bool {
+        if let nativeWindow {
+            return nativeWindow.frame.intersects(screen.frame)
+        }
         guard let frame, let primary = NSScreen.screens.first else { return true }
-        var screenFrameInQuartz = screen.frame
-        screenFrameInQuartz.origin.y = primary.frame.maxY - screen.frame.maxY
-        return frame.intersects(screenFrameInQuartz)
+        return frame.intersects(TrackedWindow.quartzFrame(of: screen, primary: primary))
+    }
+
+    /// A screen's frame in the Quartz coordinates AX reports windows in.
+    static func quartzFrame(of screen: NSScreen, primary: NSScreen) -> CGRect {
+        var quartz = screen.frame
+        quartz.origin.y = primary.frame.maxY - screen.frame.maxY
+        return quartz
     }
 }

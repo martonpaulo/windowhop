@@ -82,4 +82,77 @@ final class SettingsWindowEntryTests: XCTestCase {
         XCTAssertNil(entry.app)
         XCTAssertNotNil(entry.nativeWindow)
     }
+
+    // MARK: - Live display membership (issue #22)
+
+    /// The entry stored the frame it was registered with, so moving Settings to
+    /// another display left it filed under the display it opened on.
+    func testMovingTheWindowUpdatesItsDisplayMembership() throws {
+        let screen = try XCTUnwrap(NSScreen.screens.first)
+        window.setFrame(NSRect(x: screen.frame.midX, y: screen.frame.midY,
+                               width: 400, height: 300), display: false)
+        store.registerOwnWindow(window)
+        let entry = try XCTUnwrap(store.windows.first)
+        XCTAssertTrue(entry.isOn(screen: screen))
+
+        window.setFrame(NSRect(x: screen.frame.maxX + 2000, y: screen.frame.midY,
+                               width: 400, height: 300), display: false)
+
+        XCTAssertFalse(entry.isOn(screen: screen),
+                       "the entry must follow the window's live location")
+    }
+
+    func testResizingBackOntoTheScreenRestoresMembership() throws {
+        let screen = try XCTUnwrap(NSScreen.screens.first)
+        window.setFrame(NSRect(x: screen.frame.maxX + 2000, y: screen.frame.midY,
+                               width: 400, height: 300), display: false)
+        store.registerOwnWindow(window)
+        let entry = try XCTUnwrap(store.windows.first)
+        XCTAssertFalse(entry.isOn(screen: screen))
+
+        window.setFrame(NSRect(x: screen.frame.midX, y: screen.frame.midY,
+                               width: 400, height: 300), display: false)
+
+        XCTAssertTrue(entry.isOn(screen: screen))
+    }
+
+    /// An open session must be told to look again when Settings is dragged.
+    func testMoveAndResizeNotifyAnOpenSession() {
+        store.registerOwnWindow(window)
+        var changes = 0
+        store.onChange = { changes += 1 }
+
+        NotificationCenter.default.post(name: NSWindow.didMoveNotification, object: window)
+        NotificationCenter.default.post(name: NSWindow.didResizeNotification, object: window)
+
+        XCTAssertEqual(changes, 2)
+    }
+
+    /// Closing removes every observation, including the new geometry ones.
+    func testClosingStopsGeometryNotifications() {
+        store.registerOwnWindow(window)
+        window.close()
+        var changes = 0
+        store.onChange = { changes += 1 }
+
+        NotificationCenter.default.post(name: NSWindow.didMoveNotification, object: window)
+
+        XCTAssertEqual(changes, 0)
+    }
+
+    /// External AX windows keep the Quartz conversion: a screen below the
+    /// primary one has a positive Quartz origin, not a negative Cocoa one.
+    func testScreenQuartzFrameFlipsAroundThePrimaryDisplay() {
+        let primaryFrame = CGRect(x: 0, y: 0, width: 1920, height: 1080)
+        let belowFrame = CGRect(x: 0, y: -1080, width: 1920, height: 1080)
+        // mirrors TrackedWindow.quartzFrame's arithmetic on plain rectangles
+        func quartz(_ frame: CGRect) -> CGRect {
+            CGRect(x: frame.origin.x, y: primaryFrame.maxY - frame.maxY,
+                   width: frame.width, height: frame.height)
+        }
+
+        XCTAssertEqual(quartz(primaryFrame).origin.y, 0)
+        XCTAssertEqual(quartz(belowFrame).origin.y, 1080)
+        XCTAssertFalse(quartz(primaryFrame).intersects(quartz(belowFrame)))
+    }
 }
