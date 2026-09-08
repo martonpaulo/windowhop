@@ -101,6 +101,20 @@ struct ShortcutRecorderField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> ShortcutRecorderControl {
         let control = ShortcutRecorderControl()
+        applyConfiguration(to: control)
+        return control
+    }
+
+    func updateNSView(_ control: ShortcutRecorderControl, context: Context) {
+        control.shortcut = shortcut
+        // SwiftUI reuses this native control across updates, so the callbacks
+        // must be re-bound: otherwise they keep validating against the primary
+        // shortcut and writing to the bindings that existed at creation time,
+        // and a chord conflicting with the *current* primary is saved silently.
+        applyConfiguration(to: control)
+    }
+
+    private func applyConfiguration(to control: ShortcutRecorderControl) {
         control.onCapture = { captured in
             if let error = captured.validate(against: switcherShortcut) {
                 validationMessage = error.explanation
@@ -113,10 +127,5 @@ struct ShortcutRecorderField: NSViewRepresentable {
             validationMessage = nil
             shortcut = nil
         }
-        return control
-    }
-
-    func updateNSView(_ control: ShortcutRecorderControl, context: Context) {
-        control.shortcut = shortcut
     }
 }
