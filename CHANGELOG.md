@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6.2 — 2026-09-09
+
+- **The website moved to windowhop.martonpaulo.com**: the About window and the website link
+  now open <https://windowhop.martonpaulo.com/>.
+
 ## 1.6.1 — 2026-09-08
 
 - **Window previews are readable again on wide displays**: every preview card took its
