@@ -10,10 +10,19 @@ required=(
   docs/assets/favicon.png
   docs/assets/social-preview.png
   docs/.nojekyll
+  docs/CNAME
+  docs/robots.txt
+  docs/sitemap.xml
+  docs/404.html
 )
 for path in "${required[@]}"; do
   test -f "$path" || { echo "missing GitHub Pages file: $path" >&2; exit 1; }
 done
+
+grep -Fxq "windowhop.martonpaulo.com" docs/CNAME || {
+  echo "docs/CNAME does not name the published host" >&2
+  exit 1
+}
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
 grep -Fq "version: \"$VERSION\"" docs/scripts/main.js || {

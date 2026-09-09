@@ -7,7 +7,7 @@
 [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
 ![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
 
-**[Visit the WindowHop website](https://martonpaulo.com/windowhop/)**
+**[Visit the WindowHop website](https://windowhop.martonpaulo.com/)**
 
 macOS Command-Tab switches between *apps*. WindowHop gives every top-level window its
 own tile, then lands on the exact window you select — including windows on another Space
