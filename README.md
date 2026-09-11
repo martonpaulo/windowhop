@@ -19,6 +19,7 @@ It is **native, free, open source, and contains no telemetry**. Sparkle update c
 network activity; there are no accounts, no analytics, and no advertising. App Icons is the default
 and needs no Screen Recording permission — **Window Previews** is an explicit opt-in whose captures
 stay in memory and are never written to disk or transmitted.
+
 <br />
 
 ---
@@ -96,6 +97,7 @@ Names only — no value ever enters the repository, a commit message, an issue, 
 
 The Sparkle EdDSA private key lives in the login Keychain and in the `SPARKLE_PRIVATE_KEY` secret.
 Never tag a release to test credentials; use the local packaging commands and Apple tooling directly.
+
 <br />
 
 ---
@@ -294,6 +296,7 @@ and Screen Recording in System Settings.
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to report a bug or propose a change |
 | [`UPSTREAM.md`](UPSTREAM.md) | Upstream attribution and the base tag this work derives from |
 | [`CHANGELOG.md`](CHANGELOG.md) | Every released version |
+
 <br />
 
 ---
