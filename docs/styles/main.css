@@ -55,6 +55,9 @@ h1 { margin: 0; font-size: clamp(48px, 7vw, 88px); line-height: 0.98; letter-spa
    a CSS radius on top clips those corners a second time at a different radius,
    and a CSS shadow doubles the one in the image. */
 .hero-visual { display: block; width: min(1134px, 100%); margin: 62px auto 0; }
+/* The capture draws at 958px inside a box up to 1134px wide; as a block it would
+   sit against the left edge of that box, so it is centred in it. */
+.hero-visual img { margin-inline: auto; }
 
 .section { padding: 120px 0; border-top: 1px solid var(--line); }
 .section h2 { max-width: 850px; margin: 0; font-size: clamp(38px, 5vw, 64px); line-height: 1.04; letter-spacing: -0.045em; }
