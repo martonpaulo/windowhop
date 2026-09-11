@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- WindowHop social card. Source of truth for docs/social-card.png, served at
+     https://windowhop.martonpaulo.com/social-card.png (1200x630). Never edit the PNG.
+     Render from the repository root:
+       npx --yes playwright@1.63.0 screenshot --viewport-size="1200,630" \
+         "file://$PWD/design/social-card/social-card.html" docs/social-card.png
+       magick docs/social-card.png -strip -colors 256 -define png:compression-level=9 PNG8:docs/social-card.png
+     Layout, safe area and rules: the social card standard (skill-deck#261). Fonts: Inter, OFL (fonts/OFL.txt). -->
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Inter Display"; font-weight: 700; src: url(fonts/Inter_28pt-Bold.ttf); }
+  @font-face { font-family: "Inter"; font-weight: 400; src: url(fonts/Inter_18pt-Regular.ttf); }
+  @font-face { font-family: "Inter"; font-weight: 500; src: url(fonts/Inter_24pt-Medium.ttf); }
+  @font-face { font-family: "Inter"; font-weight: 600; src: url(fonts/Inter_24pt-SemiBold.ttf); }
+  html, body { margin: 0; }
+  .card {
+    position: relative; width: 1200px; height: 630px; overflow: hidden;
+    background:
+      radial-gradient(900px 520px at 88% 42%, rgba(6, 117, 232, .38), transparent 62%),
+      radial-gradient(700px 400px at 0% 100%, rgba(6, 117, 232, .10), transparent 70%),
+      linear-gradient(160deg, #0d1322 0%, #070a12 100%);
+    color: #f5f7fb; font-family: "Inter", sans-serif;
+  }
+  .copy { position: absolute; left: 96px; top: 50%; transform: translateY(-54%); width: 470px; }
+  .icon { width: 104px; height: 104px; display: block; margin-bottom: 30px;
+          filter: drop-shadow(0 18px 30px rgba(6, 117, 232, .35)); }
+  .eyebrow { margin: 0 0 18px; font-weight: 600; font-size: 22px; letter-spacing: .12em;
+             text-transform: uppercase; color: #5aa8ff; }
+  h1 { margin: 0; font: 700 84px/1 "Inter Display", sans-serif; letter-spacing: -0.035em; }
+  .promise { margin: 22px 0 0; font-weight: 500; font-size: 38px; line-height: 1.18;
+             letter-spacing: -0.015em; color: #c9d6ea; }
+  .domain { position: absolute; left: 96px; bottom: 62px; font-size: 24px; color: #6f7b90; }
+  .shot { position: absolute; left: 596px; top: 120px; width: 760px;
+          filter: drop-shadow(0 30px 60px rgba(0, 0, 0, .55)); }
+</style>
+<div class="card">
+  <div class="copy">
+    <img class="icon" src="../../docs/assets/app-icon.png" alt="">
+    <p class="eyebrow">Free for Mac · Open source</p>
+    <h1>WindowHop</h1>
+    <p class="promise">Switch between windows on your Mac, not just apps</p>
+  </div>
+  <img class="shot" src="../../docs/screenshots/switcher-previews-dark.webp" alt="">
+  <div class="domain">windowhop.martonpaulo.com</div>
+</div>

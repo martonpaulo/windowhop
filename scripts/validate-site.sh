@@ -8,7 +8,7 @@ required=(
   docs/scripts/main.js
   docs/assets/app-icon.png
   docs/assets/favicon.png
-  docs/assets/social-preview.png
+  docs/social-card.png
   docs/.nojekyll
   docs/CNAME
   docs/robots.txt
