@@ -28,10 +28,18 @@
   <meta name="twitter:image" content="https://windowhop.martonpaulo.com/assets/social-preview.png">
   <link rel="stylesheet" href="styles/main.css">
   <!-- The hero is the largest contentful paint; without this it is only
-       discovered after the stylesheet resolves which of the two it needs. -->
+       discovered after the stylesheet resolves which of the two it needs.
+       imagesrcset/imagesizes must stay identical to the <picture> below, or the
+       preload fetches a different width than the one the page then draws.
+       sizes follows styles/main.css: the image is 958px wide, capped by main's
+       100% - 28px gutter up to 820px and 100% - 40px above it. -->
   <link rel="preload" as="image" href="screenshots/switcher-previews-light.webp"
+        imagesrcset="screenshots/switcher-previews-light-480.webp 480w, screenshots/switcher-previews-light-720.webp 720w, screenshots/switcher-previews-light-958.webp 958w, screenshots/switcher-previews-light-1200.webp 1200w, screenshots/switcher-previews-light.webp 1916w"
+        imagesizes="(max-width: 820px) calc(100vw - 28px), (max-width: 998px) calc(100vw - 40px), 958px"
         media="(prefers-color-scheme: light)" fetchpriority="high">
   <link rel="preload" as="image" href="screenshots/switcher-previews-dark.webp"
+        imagesrcset="screenshots/switcher-previews-dark-480.webp 480w, screenshots/switcher-previews-dark-720.webp 720w, screenshots/switcher-previews-dark-958.webp 958w, screenshots/switcher-previews-dark-1200.webp 1200w, screenshots/switcher-previews-dark.webp 1916w"
+        imagesizes="(max-width: 820px) calc(100vw - 28px), (max-width: 998px) calc(100vw - 40px), 958px"
         media="(prefers-color-scheme: dark)" fetchpriority="high">
   <script src="scripts/main.js" defer></script>
   <script type="application/ld+json">
@@ -80,8 +88,13 @@
         <p class="compatibility">Free and open source · macOS 14 or later</p>
       </div>
       <picture class="hero-visual">
-        <source media="(prefers-color-scheme: dark)" srcset="screenshots/switcher-previews-dark.webp">
-        <img src="screenshots/switcher-previews-light.webp" alt="WindowHop showing individual window previews with one selected card" width="958" height="482">
+        <source media="(prefers-color-scheme: dark)"
+                srcset="screenshots/switcher-previews-dark-480.webp 480w, screenshots/switcher-previews-dark-720.webp 720w, screenshots/switcher-previews-dark-958.webp 958w, screenshots/switcher-previews-dark-1200.webp 1200w, screenshots/switcher-previews-dark.webp 1916w"
+                sizes="(max-width: 820px) calc(100vw - 28px), (max-width: 998px) calc(100vw - 40px), 958px">
+        <img src="screenshots/switcher-previews-light.webp"
+             srcset="screenshots/switcher-previews-light-480.webp 480w, screenshots/switcher-previews-light-720.webp 720w, screenshots/switcher-previews-light-958.webp 958w, screenshots/switcher-previews-light-1200.webp 1200w, screenshots/switcher-previews-light.webp 1916w"
+             sizes="(max-width: 820px) calc(100vw - 28px), (max-width: 998px) calc(100vw - 40px), 958px"
+             alt="WindowHop showing individual window previews with one selected card" width="958" height="482">
       </picture>
     </section>
 

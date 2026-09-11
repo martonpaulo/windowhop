@@ -43,6 +43,14 @@ for marker in 'id="features"' 'id="download"' 'data-link="download"' \
   }
 done
 
+# Every local path the page names: src and href values, plus each candidate of a
+# srcset or imagesrcset list with its width descriptor dropped.
+local_references() {
+  grep -oE '(src|href)="[^"]+"' docs/index.html | sed -E 's/^(src|href)="//; s/"$//'
+  grep -oE '(srcset|imagesrcset)="[^"]+"' docs/index.html \
+    | sed -E 's/^(srcset|imagesrcset)="//; s/"$//' | tr ',' '\n' | awk '{print $1}'
+}
+
 while IFS= read -r reference; do
   case "$reference" in
     http:*|https:*|'#'*|'') continue ;;
@@ -51,9 +59,7 @@ while IFS= read -r reference; do
     echo "website references missing local file: docs/$reference" >&2
     exit 1
   }
-done < <(grep -oE '(src|href)="[^"]+"' docs/index.html \
-  | sed -E 's/^(src|href)="//; s/"$//' \
-  | grep -vE '^styles/main\.css$|^scripts/main\.js$' || true)
+done < <(local_references | grep -vE '^styles/main\.css$|^scripts/main\.js$' || true)
 
 if grep -RinE 'codex-clipboard|annotation|red arrow|private repository' docs/index.html docs/styles docs/scripts; then
   echo "website contains development-only or sensitive wording" >&2

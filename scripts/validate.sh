@@ -94,9 +94,13 @@ while IFS= read -r markdown; do
     done < <(grep -oE '\]\([^)]+\)' "$markdown" 2>/dev/null | sed 's/^](//; s/)$//')
 done <<< "$MARKDOWN_FILES"
 
+# A screenshot is in use when Markdown links it or the site names it, as a src
+# or as a srcset candidate (the hero's narrower widths appear nowhere else).
 while IFS= read -r screenshot; do
     [ -n "$screenshot" ] || continue
-    if grep -qF "($screenshot)" $MARKDOWN_FILES; then
+    site_path=${screenshot#docs/}
+    if grep -qF "($screenshot)" $MARKDOWN_FILES \
+        || grep -qF -e "\"$site_path\"" -e "$site_path " docs/index.html; then
         :
     else
         fail "unreferenced screenshot is tracked: $screenshot"

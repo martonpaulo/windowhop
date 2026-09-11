@@ -12,7 +12,7 @@
 #   * a Retina (2x) display, or the images come out at half resolution;
 #   * Screen Recording permission for the terminal running this;
 #   * `swift build` already done;
-#   * `cwebp` (brew install webp) for the lossless WebP the site publishes.
+#   * `cwebp` and `dwebp` (brew install webp) for the WebP the site publishes.
 #
 # Usage: scripts/capture-screenshots.sh [output-directory]
 set -euo pipefail
@@ -84,6 +84,30 @@ capture() {
         "$(( $(stat -f%z "$OUTPUT/$name.webp") / 1024 ))"
 }
 
+# Writes the narrower widths of an image the page serves through srcset, as
+# <name>-<width>.webp next to <name>.webp. Each width is resampled once from the
+# lossless capture. They are near-lossless rather than lossless because a
+# resampled screenshot compresses so much worse losslessly that a smaller width
+# can outweigh the full-size file; near-lossless keeps every pixel within a few
+# levels of the resample, which leaves text edges visibly identical.
+#
+#   variants <name> <width...>
+variants() {
+    local name=$1
+    shift
+    local tmp
+    tmp=$(mktemp -d)
+    dwebp -quiet "$OUTPUT/$name.webp" -o "$tmp/full.png"
+    local width
+    for width in "$@"; do
+        cp "$tmp/full.png" "$tmp/$width.png"
+        sips --resampleWidth "$width" "$tmp/$width.png" >/dev/null
+        cwebp -quiet -near_lossless 60 -z 9 -metadata none "$tmp/$width.png" -o "$OUTPUT/$name-$width.webp"
+        printf '%-32s %sKB\n' "$name-$width.webp" "$(( $(stat -f%z "$OUTPUT/$name-$width.webp") / 1024 ))"
+    done
+    rm -rf "$tmp"
+}
+
 capture switcher-light            1660 --demo-switcher --columns 8
 capture switcher-dark             1660 --demo-switcher --dark --columns 8
 capture switcher-previews-light   native --demo-switcher --previews --columns 4
@@ -92,5 +116,9 @@ capture switcher-expanded-light   native --demo-switcher --previews --expanded -
 capture settings-general          native --demo-settings general
 capture settings-windows          native --demo-settings windows
 capture settings-appearance       native --demo-settings appearance
+
+# The hero's srcset and imagesrcset in docs/index.html list exactly these widths.
+variants switcher-previews-light 480 720 958 1200
+variants switcher-previews-dark  480 720 958 1200
 
 echo "captured into $OUTPUT"

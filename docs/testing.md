@@ -151,6 +151,12 @@ Requirements and constraints:
   survives, and the set drops from about 2.9 MB to 1.2 MB. Every browser on the supported
   macOS versions reads WebP, and GitHub renders it in the README, so no PNG fallback is kept
   — a second copy would only be an unreferenced file the repository validator rejects.
+- The hero is also published in narrower widths, `switcher-previews-{light,dark}-<width>.webp`
+  (480, 720, 958, 1200), which the site's `srcset` and preload `imagesrcset` list next to the
+  full-size file so a phone does not download 1916 px to draw about 350. The script resamples
+  them from the lossless capture and encodes them `-near_lossless 60`: plain lossless makes a
+  resampled screenshot so much larger that a narrower width can outweigh the full one.
+  `scripts/validate-site.sh` checks that every `srcset` candidate exists.
 
 ## Release publication order
 
