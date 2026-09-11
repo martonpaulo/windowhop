@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- WindowHop social card. Source of truth for docs/social-card.png, served at
-     https://windowhop.martonpaulo.com/social-card.png (1200x630). Never edit the PNG.
-     Render on a Mac (the drawn interface uses the system font): npx --yes playwright@1.63.0 screenshot --viewport-size="1200,630" "file://$PWD/design/social-card/social-card.html" docs/social-card.png, then magick docs/social-card.png -strip -colors 256 -define png:compression-level=9 PNG8:docs/social-card.png
+<!-- WindowHop social card. Source of truth for docs/social-card.jpg, served at
+     https://windowhop.martonpaulo.com/social-card.jpg (1200x630). Never edit the PNG.
+     Render on a Mac (the drawn interface uses the system font): npx --yes playwright@1.63.0 screenshot --viewport-size="1200,630" "file://$PWD/design/social-card/social-card.html" /tmp/card.png, then magick /tmp/card.png -strip -quality 92 -sampling-factor 4:4:4 -interlace Plane docs/social-card.jpg
      System, grid and contrast rules: the social card standard (skill-deck#261).
      Fonts: Gabarito and Figtree (OFL, fonts/*-OFL.txt), the typefaces of martonpaulo.com. -->
 <meta charset="utf-8">
