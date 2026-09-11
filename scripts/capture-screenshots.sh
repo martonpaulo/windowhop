@@ -112,10 +112,7 @@ capture switcher-light            1660 --demo-switcher --columns 8
 capture switcher-dark             1660 --demo-switcher --dark --columns 8
 capture switcher-previews-light   native --demo-switcher --previews --columns 4
 capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
-capture switcher-expanded-light   native --demo-switcher --previews --expanded --columns 4
-capture settings-general          native --demo-settings general --light
 capture settings-windows          native --demo-settings windows --light
-capture settings-appearance       native --demo-settings appearance --light
 
 # The hero's srcset and imagesrcset in docs/index.html list exactly these widths.
 variants switcher-previews-light 480 720 958 1200

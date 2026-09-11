@@ -85,8 +85,8 @@ The published Settings images instead capture the real window, because its toolb
 only on a real window:
 
 ```sh
-build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings general   # prints its window number
-screencapture -x -l<window-number> docs/screenshots/settings-general.png
+build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings windows   # prints its window number
+screencapture -x -l<window-number> docs/screenshots/settings-windows.png
 ```
 
 `--demo-settings` shows the running user's real preferences, so set the documented
