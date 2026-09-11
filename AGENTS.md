@@ -294,8 +294,9 @@ notes. A missing configurability decision is a review failure.
 - Update the smallest canonical documentation section when a durable contract changes. Do not
   create empty documentation for possible future use.
 - Keep the README easy to scan: benefit, behavior, requirements, install, usage, validation,
-  privacy, limitations, landing page, download. Use badges, real screenshots, and statistics
-  only when they improve comprehension and can stay current.
+  privacy, limitations, landing page, download. It opens with the social card
+  (`docs/social-card.jpg`) and shows no screenshots; screenshots belong to the landing page.
+  Use badges and statistics only when they improve comprehension and can stay current.
 - Maintain `CHANGELOG.md` — every public release gets a user-facing entry.
 - Preserve the approved `WindowHop` README heading. Give every new or materially edited
   fenced block an explicit language; leave unrelated historical formatting alone.

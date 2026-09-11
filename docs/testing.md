@@ -94,7 +94,7 @@ defaults before capturing and restore them afterwards.
 
 Development comparison captures should retain the previous design plus the selected
 borderless/near-borderless, separator, and focus-plate candidates under `artifacts/`.
-Only the selected coherent implementation belongs in runtime code and README images.
+Only the selected coherent implementation belongs in runtime code and published images.
 
 ## Sparkle end-to-end
 

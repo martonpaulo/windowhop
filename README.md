@@ -1,5 +1,7 @@
 # WindowHop
 
+![WindowHop — switch between windows, not just apps: a fast, native macOS window switcher](docs/social-card.jpg)
+
 **Switch between windows, not just apps.**
 
 [![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop)](https://github.com/martonpaulo/windowhop/releases/latest)
@@ -13,11 +15,7 @@ macOS Command-Tab switches between *apps*. WindowHop gives every top-level windo
 own tile, then lands on the exact window you select — including windows on another Space
 or display. It is native, free, open source, and contains no telemetry.
 
-![WindowHop App Icons in Light Mode with a borderless selected background](docs/screenshots/switcher-light.webp)
-
 Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
-
-![WindowHop previews in Light Mode with semantic surfaces, selected treatment, tall-window letterboxing, loading and unavailable states](docs/screenshots/switcher-previews-light.webp)
 
 ## Download and install
 
@@ -62,8 +60,6 @@ raises, focuses, reorders, or moves the real window. Navigation remains availabl
 moving to another tile closes the expanded view and starts a new delay. Confirming
 activates the current target immediately. Cancelling leaves the originally focused
 window and desktop stacking unchanged.
-
-![Expanded in-panel preview in Light Mode](docs/screenshots/switcher-expanded-light.webp)
 
 ### One entry per window
 
@@ -116,8 +112,6 @@ immediately when safe; invalid stored values restore documented defaults.
 - Restore Defaults… — confirmed action that restores every configurable preference
 - Quit WindowHop… — confirmed graceful termination
 
-![The Settings window on General, with the six same-size panes in its toolbar](docs/screenshots/settings-general.webp)
-
 ### Shortcuts
 
 - Switcher shortcut — **⌘Tab**
@@ -146,8 +140,6 @@ The default is intentionally a curated set of normal windows. Inclusion toggles 
 explicit opt-ins, rebuild the available list, and do not weaken the invariants that
 exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helper UI.
 
-![The Windows pane with the opt-in window categories](docs/screenshots/settings-windows.webp)
-
 ### Appearance
 
 - Switcher shows — **App Icons** or Window Previews; default **App Icons**
@@ -156,26 +148,12 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
   **3 seconds**
 - Screen Recording status and the single permission action for Window Previews
 
-![The Appearance pane with the expanded-preview and Screen Recording controls](docs/screenshots/settings-appearance.webp)
-
 ### Updates and About
 
 Automatic checks are enabled by default. Sparkle verifies the EdDSA signature and Apple
 code signature before replacing the app in place; the Settings pane also offers a manual
 check. About identifies **Developed by Marton Paulo** and links to the official WindowHop
 website, source, issue tracker, GPL-3.0 license, and AltTab acknowledgement.
-
-## Interface gallery
-
-Every image is a real capture of WindowHop's own window
-(`scripts/capture-screenshots.sh`), so it keeps the rounded corners, glass material, and
-shadow macOS actually draws: the switcher with synthetic titles and preview content, and
-the real Settings window with its title bar and pane toolbar. Nothing here shows a personal
-window or any Screen Recording data.
-
-![WindowHop App Icons in Dark Mode](docs/screenshots/switcher-dark.webp)
-
-![WindowHop previews in Dark Mode with selected, letterboxed, loading and unavailable cards](docs/screenshots/switcher-previews-dark.webp)
 
 ## Updates, signing, and privacy
 
