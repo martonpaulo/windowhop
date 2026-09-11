@@ -10,9 +10,11 @@ import WindowHopCore
 ///   Screen Recording states without prompting.
 /// - `--dump-previews`: prints which window-server window each switcher entry is
 ///   matched to, without capturing any image. Requires both permissions.
-/// - `--demo-settings [pane]`: shows the real Settings window (the toolbar only
-///   exists on a real window, so it cannot be rasterized offscreen) and prints
-///   its window number for `screencapture -l`.
+/// - `--demo-settings [pane] [--light | --dark]`: shows the real Settings window
+///   (the toolbar only exists on a real window, so it cannot be rasterized
+///   offscreen) and prints its window number for `screencapture -l`. The
+///   appearance flag pins Light or Dark; without it the window follows the
+///   system, so a published capture would depend on the operator's setting.
 enum DebugHarness {
     static func runIfRequested(_ arguments: [String]) -> Bool {
         if arguments.contains("--demo-switcher") {
@@ -21,7 +23,9 @@ enum DebugHarness {
         }
         if let flagIndex = arguments.firstIndex(of: "--demo-settings") {
             let pane = arguments.count > flagIndex + 1 ? arguments[flagIndex + 1] : nil
-            runSettingsDemo(pane: pane?.hasPrefix("--") == true ? nil : pane)
+            let appearance: NSAppearance.Name? = arguments.contains("--light")
+                ? .aqua : arguments.contains("--dark") ? .darkAqua : nil
+            runSettingsDemo(pane: pane?.hasPrefix("--") == true ? nil : pane, appearance: appearance)
             return true
         }
         if arguments.contains("--dump-previews") {
@@ -385,9 +389,10 @@ enum DebugHarness {
 
     /// Shows the real Settings window and keeps it up. Used for documentation
     /// captures, which need the window's toolbar and title bar.
-    private static func runSettingsDemo(pane: String?) {
+    private static func runSettingsDemo(pane: String?, appearance: NSAppearance.Name?) {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+        if let appearance { app.appearance = NSAppearance(named: appearance) }
         let controller = SettingsWindowController.makeContentViewController()
         if let pane, let tabs = controller as? NSTabViewController,
            let index = tabs.tabViewItems.firstIndex(where: { $0.identifier as? String == pane }) {
