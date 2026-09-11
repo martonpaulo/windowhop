@@ -26,7 +26,7 @@ stay in memory and are never written to disk or transmitted.
 
 <br />
 
-## 🌱 Quick Start
+## Quick Start
 
 Requires **macOS 14+** and **Xcode 16+** command line tools. No paid Apple account is needed.
 
@@ -46,7 +46,7 @@ and GitHub Release workflow.
 
 <br />
 
-## 🛠 Commands
+## Commands
 
 | Command | What it does |
 | --- | --- |
@@ -74,7 +74,7 @@ WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavio
 
 <br />
 
-## 🔐 Secrets and variables
+## Secrets and variables
 
 The app itself reads **no secret**: it has no account, no API key, and no credential of its own.
 Everything below belongs to the **release pipeline** (`.github/workflows/release.yml`), which is
