@@ -1,45 +1,63 @@
 <!doctype html>
 <!-- WindowHop social card. Source of truth for docs/social-card.png, served at
      https://windowhop.martonpaulo.com/social-card.png (1200x630). Never edit the PNG.
-     Render from the repository root:
-       npx --yes playwright@1.63.0 screenshot --viewport-size="1200,630" \
-         "file://$PWD/design/social-card/social-card.html" docs/social-card.png
-       magick docs/social-card.png -strip -colors 256 -define png:compression-level=9 PNG8:docs/social-card.png
-     Layout, safe area and rules: the social card standard (skill-deck#261). Fonts: Inter, OFL (fonts/OFL.txt). -->
+     Render on a Mac (the drawn interface uses the system font): npx --yes playwright@1.63.0 screenshot --viewport-size="1200,630" "file://$PWD/design/social-card/social-card.html" docs/social-card.png, then magick docs/social-card.png -strip -colors 256 -define png:compression-level=9 PNG8:docs/social-card.png
+     System, grid and contrast rules: the social card standard (skill-deck#261).
+     Fonts: Gabarito and Figtree (OFL, fonts/*-OFL.txt), the typefaces of martonpaulo.com. -->
 <meta charset="utf-8">
+<title>WindowHop social card</title>
 <style>
-  @font-face { font-family: "Inter Display"; font-weight: 700; src: url(fonts/Inter_28pt-Bold.ttf); }
-  @font-face { font-family: "Inter"; font-weight: 400; src: url(fonts/Inter_18pt-Regular.ttf); }
-  @font-face { font-family: "Inter"; font-weight: 500; src: url(fonts/Inter_24pt-Medium.ttf); }
-  @font-face { font-family: "Inter"; font-weight: 600; src: url(fonts/Inter_24pt-SemiBold.ttf); }
-  html, body { margin: 0; }
-  .card {
-    position: relative; width: 1200px; height: 630px; overflow: hidden;
-    background:
-      radial-gradient(900px 520px at 88% 42%, rgba(6, 117, 232, .22), transparent 62%),
-      radial-gradient(700px 400px at 0% 100%, rgba(6, 117, 232, .08), transparent 70%),
-      linear-gradient(160deg, #fbfbfd 0%, #eceef3 100%);
-    color: #1d1d1f; font-family: "Inter", sans-serif;
-  }
-  .copy { position: absolute; left: 96px; top: 50%; transform: translateY(-54%); width: 470px; }
-  .icon { width: 104px; height: 104px; display: block; margin-bottom: 30px;
-          filter: drop-shadow(0 18px 30px rgba(6, 117, 232, .28)); }
-  .eyebrow { margin: 0 0 18px; font-weight: 600; font-size: 22px; letter-spacing: .12em;
-             text-transform: uppercase; color: #0a66c8; }
-  h1 { margin: 0; font: 700 84px/1 "Inter Display", sans-serif; letter-spacing: -0.035em; }
-  .promise { margin: 22px 0 0; font-weight: 500; font-size: 38px; line-height: 1.18;
-             letter-spacing: -0.015em; color: #3d4350; text-wrap: balance; }
-  .domain { position: absolute; left: 96px; bottom: 62px; font-size: 24px; color: #6e6e73; }
-  .shot { position: absolute; left: 596px; top: 120px; width: 760px;
-          filter: drop-shadow(0 30px 60px rgba(20, 40, 80, .22)); }
+@font-face { font-family: "Gabarito"; font-weight: 700; src: url(fonts/gabarito-latin-700-normal.woff2); }
+@font-face { font-family: "Figtree"; font-weight: 400; src: url(fonts/figtree-latin-400-normal.woff2); }
+@font-face { font-family: "Figtree"; font-weight: 500; src: url(fonts/figtree-latin-500-normal.woff2); }
+@font-face { font-family: "Figtree"; font-weight: 600; src: url(fonts/figtree-latin-600-normal.woff2); }
+@font-face { font-family: "Figtree"; font-weight: 700; src: url(fonts/figtree-latin-700-normal.woff2); }
+html, body { margin: 0; }
+.card { position: relative; width: 1200px; height: 630px; overflow: hidden; font-family: "Figtree", sans-serif;
+        color: var(--ink); background: var(--gradient); }
+.card::before { content: ""; position: absolute; inset: 0; background: var(--glow, none); }
+/* One grid for every card: the copy block is centred vertically in a 440px column at x=96;
+   the product visual always starts at x=600, a fixed gutter. */
+.copy { position: absolute; left: 96px; top: 50%; transform: translateY(-50%); width: 440px; z-index: 2; }
+.icon { width: 104px; height: 104px; display: block; margin-bottom: 30px; filter: drop-shadow(0 16px 26px rgba(0,0,0,.22)); }
+.eyebrow { display: inline-block; margin: 0 0 20px; padding: 8px 16px; border-radius: 999px;
+           background: var(--pill-bg); border: 1px solid var(--pill-line);
+           font-weight: 700; font-size: 19px; letter-spacing: .1em; text-transform: uppercase; }
+h1 { margin: 0; font: 700 88px/1 "Gabarito", sans-serif; letter-spacing: -0.03em; }
+.promise { margin: 20px 0 0; font-weight: 500; font-size: 38px; line-height: 1.2; letter-spacing: -0.01em;
+           color: var(--ink-soft); text-wrap: balance; }
+.domain { margin: 34px 0 0; font-size: 24px; font-weight: 500; color: var(--ink-soft); }
+/* The drawn interface: the system font, the way the real app renders. */
+.ui { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; color: #1f2937; }
+.win { position: absolute; background: #fff; border-radius: 22px;
+       box-shadow: 0 40px 80px rgba(15,23,42,.30), 0 8px 20px rgba(15,23,42,.12); }
+.bar { height: 11px; border-radius: 6px; background: #e5e7eb; }
+
+.card { --gradient: linear-gradient(135deg,#2563eb 0%,#1d4ed8 50%,#4338ca 100%); --glow: radial-gradient(620px 460px at 85% 30%,rgba(125,170,255,.40),transparent 65%); --ink: #fff; --ink-soft: rgba(255,255,255,.9);
+        --pill-bg: rgba(255,255,255,.16); --pill-line: rgba(255,255,255,.38); }
+
+.panel{left:600px;top:50%;transform:translateY(-50%);width:760px;padding:26px 26px 18px;box-sizing:border-box;border-radius:26px;background:rgba(246,246,248,.97);display:grid;grid-template-columns:repeat(4,168px);gap:16px 14px}
+.tile{position:relative;height:118px;border-radius:12px;padding:6px;box-sizing:border-box}
+.tile.sel{background:#dde3ec}
+.thumb{height:100%;border-radius:8px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12);padding:9px 10px;box-sizing:border-box;overflow:hidden}
+.thumb.narrow{margin:0 38px}
+.thumb .dots{display:flex;gap:4px;margin-bottom:7px}.thumb .dots i{width:6px;height:6px;border-radius:50%;background:#d1d5db}
+.thumb .dots i:nth-child(1){background:#f87171}.thumb .dots i:nth-child(2){background:#fbbf24}.thumb .dots i:nth-child(3){background:#34d399}
+.thumb .ln{height:5px;border-radius:3px;background:#d7dbe1;margin-bottom:6px}
+.thumb.doc{padding:0}.thumb.doc .titlebar{height:16px;background:#e5e7eb;display:flex;gap:4px;align-items:center;padding:0 8px;margin-bottom:10px}.thumb.doc .titlebar i{width:5px;height:5px;border-radius:50%;background:#9ca3af}.thumb.doc .ln{margin:0 10px 8px}
+.badge{position:absolute;right:-6px;bottom:-6px;width:34px;height:34px;border-radius:9px;box-shadow:0 3px 8px rgba(0,0,0,.2);border:1px solid rgba(0,0,0,.06)}
+.badge svg{width:100%;height:100%;display:block}.badge.img{background:none;border:none;box-shadow:none}.badge.img img{width:38px;height:38px;margin:-2px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}
+.x{position:absolute;left:-8px;top:-8px;width:22px;height:22px;border-radius:50%;background:#6b7280;color:#fff;font:600 16px/22px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;text-align:center;z-index:2}
+.name{margin-top:10px;text-align:center;font:600 15px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 </style>
 <div class="card">
   <div class="copy">
     <img class="icon" src="../../docs/assets/app-icon.png" alt="">
     <p class="eyebrow">Free for Mac · Open source</p>
     <h1>WindowHop</h1>
-    <p class="promise">Switch between windows on your Mac, not just apps</p>
+    <p class="promise">Switch between windows, not just apps</p>
+    <p class="domain">windowhop.martonpaulo.com</p>
   </div>
-  <img class="shot" src="../../docs/screenshots/switcher-previews-light.webp" alt="">
-  <div class="domain">windowhop.martonpaulo.com</div>
+  <div class="win panel ui"><div class="cell"><div class="tile"><div class="thumb"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:76%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:70%"></div><div class="ln" style="width:84%"></div></div><span class="badge" style="background:#facc15"><svg viewBox="0 0 34 34"><rect x="7" y="11" width="20" height="2.5" rx="1.2" fill="#fff"/><rect x="7" y="16" width="20" height="2.5" rx="1.2" fill="#fff"/><rect x="7" y="21" width="14" height="2.5" rx="1.2" fill="#fff"/></svg></span></div><div class="name">Project Plan</div></div><div class="cell"><div class="tile sel"><div class="thumb"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:76%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:70%"></div><div class="ln" style="width:84%"></div></div><span class="badge" style="background:#3b82f6"><svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="10" fill="none" stroke="#fff" stroke-width="2"/><path d="M21.5 12.5 18.5 18.5 12.5 21.5 15.5 15.5z" fill="#fff"/></svg></span></div><div class="name">Apple Design Resources</div></div><div class="cell"><div class="tile"><span class="x">×</span><div class="thumb narrow"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:70%"></div><div class="ln" style="width:55%"></div><div class="ln" style="width:62%"></div><div class="ln" style="width:48%"></div><div class="ln" style="width:66%"></div><div class="ln" style="width:52%"></div><div class="ln" style="width:60%"></div></div><span class="badge" style="background:#3b82f6"><svg viewBox="0 0 34 34"><circle cx="17" cy="17" r="10" fill="none" stroke="#fff" stroke-width="2"/><path d="M21.5 12.5 18.5 18.5 12.5 21.5 15.5 15.5z" fill="#fff"/></svg></span></div><div class="name">Window Management Guide</div></div><div class="cell"><div class="tile"><div class="thumb"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:76%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:70%"></div><div class="ln" style="width:84%"></div></div><span class="badge" style="background:#60a5fa"><svg viewBox="0 0 34 34"><rect x="8" y="9" width="18" height="16" rx="3" fill="#fff"/><circle cx="13.5" cy="15" r="1.3" fill="#3b82f6"/><circle cx="20.5" cy="15" r="1.3" fill="#3b82f6"/><path d="M12.5 19.5q4.5 3 9 0" stroke="#3b82f6" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg></span></div><div class="name">Downloads</div></div><div class="cell"><div class="tile"><div class="thumb doc"><div class="titlebar"><i></i><i></i><i></i></div><div class="ln" style="width:60%"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:50%"></div></div><span class="badge" style="background:#ffffff"><svg viewBox="0 0 34 34"><rect x="10" y="7" width="1.6" height="20" fill="#ef4444"/><rect x="14" y="11" width="12" height="1.6" fill="#d1d5db"/><rect x="14" y="16" width="12" height="1.6" fill="#d1d5db"/><rect x="14" y="21" width="9" height="1.6" fill="#d1d5db"/></svg></span></div><div class="name">Untitled</div></div><div class="cell"><div class="tile"><div class="thumb doc"><div class="titlebar"><i></i><i></i><i></i></div><div class="ln" style="width:60%"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:50%"></div></div><span class="badge" style="background:#ffffff"><svg viewBox="0 0 34 34"><rect x="10" y="7" width="1.6" height="20" fill="#ef4444"/><rect x="14" y="11" width="12" height="1.6" fill="#d1d5db"/><rect x="14" y="16" width="12" height="1.6" fill="#d1d5db"/><rect x="14" y="21" width="9" height="1.6" fill="#d1d5db"/></svg></span></div><div class="name">Untitled</div></div><div class="cell"><div class="tile"><div class="thumb"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:85%"></div><div class="ln" style="width:70%"></div><div class="ln" style="width:90%"></div><div class="ln" style="width:60%"></div><div class="ln" style="width:80%"></div><div class="ln" style="width:72%"></div></div><span class="badge" style="background:#111827"><svg viewBox="0 0 34 34"><text x="7" y="22" font-family="Menlo,monospace" font-size="12" font-weight="700" fill="#fff">&gt;_</text></svg></span></div><div class="name">Terminal</div></div><div class="cell"><div class="tile"><div class="thumb"><div class="dots"><i></i><i></i><i></i></div><div class="ln" style="width:40%"></div><div class="ln" style="width:88%"></div><div class="ln" style="width:76%"></div><div class="ln" style="width:92%"></div><div class="ln" style="width:70%"></div><div class="ln" style="width:84%"></div></div><span class="badge img"><img src="../../docs/assets/app-icon.png"></span></div><div class="name">WindowHop Settings</div></div></div>
 </div>
