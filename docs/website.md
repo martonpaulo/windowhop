@@ -30,7 +30,7 @@ development references never belong in `docs/`.
 
 ## GitHub Pages
 
-`.github/workflows/pages.yml` validates and uploads `docs/`, then deploys with GitHub's
+`.github/workflows/deploy.yml` validates and uploads `docs/`, then deploys with GitHub's
 official Pages actions whenever website content on `main` changes. The repository Pages
 source must be **GitHub Actions**. The workflow uses only read access to repository content
 plus the scoped `pages: write` and `id-token: write` permissions required for deployment.

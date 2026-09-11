@@ -10,7 +10,7 @@
 - Public identifiers: bundle identifier `com.perso.windowhop`; SwiftPM package, executable
   target, and app name `WindowHop`; library target `WindowHopCore`
 - Landing page: <https://windowhop.martonpaulo.com/> (custom domain in `docs/CNAME`),
-  published from `docs/` by `.github/workflows/pages.yml`. It lives in this repository;
+  published from `docs/` by `.github/workflows/deploy.yml`. It lives in this repository;
   there is no separate site repo.
 - License: `GPL-3.0-only`, with AltTab attribution recorded in `UPSTREAM.md`
 - Copyright: GPL-3.0. Derived from AltTab, © lwouis and contributors

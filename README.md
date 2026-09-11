@@ -6,7 +6,7 @@
 
 Switch between windows, not just apps — a fast, native macOS window switcher with large app icons or live previews, free and without telemetry.
 
-[![CI](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml) [![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 16](https://img.shields.io/badge/Xcode-16-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.6](https://img.shields.io/badge/Sparkle-2.6-1a1a1a)](https://sparkle-project.org/)
+[![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml) [![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 16](https://img.shields.io/badge/Xcode-16-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.6](https://img.shields.io/badge/Sparkle-2.6-1a1a1a)](https://sparkle-project.org/)
 
 </div>
 

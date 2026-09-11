@@ -1,4 +1,4 @@
-name: GitHub Pages
+name: Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths:
       - "docs/**"
       - "scripts/validate-site.sh"
-      - ".github/workflows/pages.yml"
+      - ".github/workflows/deploy.yml"
       - "Support/Info.plist"
   workflow_dispatch:
 
