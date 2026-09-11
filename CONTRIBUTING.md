@@ -3,6 +3,19 @@
 Thanks for helping! WindowHop is a small, focused tool — contributions that keep it
 small and focused are the most welcome.
 
+## Report a bug
+
+Open an [issue](https://github.com/martonpaulo/windowhop/issues) with your macOS version, the
+WindowHop version from Settings → About, whether the switcher is in App Icons or Window Previews
+mode, and what you did, expected, and got. For a missing window, say whether it is minimized,
+hidden, on another Space, or on another display — those are excluded by default and configurable
+under Settings → Windows.
+
+`WINDOWHOP_DEBUG=1 .build/debug/WindowHop` logs input and session behavior, which is the most useful
+attachment for a switching or shortcut bug. Report a vulnerability through the private channel in
+[SECURITY.md](SECURITY.md) rather than a public issue, and never paste certificate, notarization, or
+Sparkle key material anywhere.
+
 ## Build and test
 
 ```sh
@@ -50,12 +63,19 @@ to test credentials; use the local packaging commands and Apple tooling directly
 - See [AGENTS.md](AGENTS.md) and [docs/architecture.md](docs/architecture.md) for the
   complete product, layering, and threading rules.
 
-## Pull requests
+## Branches, commits and pull requests
 
-1. Keep changes focused; unrelated refactors make review slow.
-2. `swift test` and `scripts/validate.sh` must pass.
-3. Use [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, …).
-4. Update documentation when behavior changes.
+1. The owner commits validated work directly to `main`; outside contributors work on a branch and
+   open a pull request.
+2. Keep changes focused; unrelated refactors make review slow.
+3. `swift test` and `scripts/validate.sh` must pass, with zero warnings.
+4. Use [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, …),
+   one concern per commit, and end a commit made for an issue with `(#<issue number>)`.
+5. Update documentation when behavior changes, and never bump the version or edit `appcast.xml` as
+   part of an ordinary change — releases are their own deliberate step.
+
+Be respectful and assume good faith: behaviour that makes the project unpleasant for others is not
+welcome, whatever its technical merit.
 
 ## Out of scope
 

@@ -1,34 +1,102 @@
+<div align="center">
+
+<img src="docs/social-card.jpg" width="100%" alt="WindowHop — switch between windows, not just apps: a fast, native macOS window switcher">
+
 # WindowHop
 
-![WindowHop — switch between windows, not just apps: a fast, native macOS window switcher](docs/social-card.jpg)
+Switch between windows, not just apps — a fast, native macOS window switcher with large app icons or live previews, free and without telemetry.
 
-**Switch between windows, not just apps.**
+[![CI](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml) [![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 16](https://img.shields.io/badge/Xcode-16-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.6](https://img.shields.io/badge/Sparkle-2.6-1a1a1a)](https://sparkle-project.org/)
 
-[![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop)](https://github.com/martonpaulo/windowhop/releases/latest)
-[![CI](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/ci.yml)
-[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue)](LICENSE)
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
+</div>
 
-**[Visit the WindowHop website](https://windowhop.martonpaulo.com/)**
+macOS Command-Tab switches between **apps**. WindowHop gives **every top-level window its own tile**,
+then lands on the exact window you select — including windows on another Space or display. Tabs are
+never separate entries, and the native shortcut keeps working if WindowHop is not running: that is
+the fail-safe, not a fallback.
 
-macOS Command-Tab switches between *apps*. WindowHop gives every top-level window its
-own tile, then lands on the exact window you select — including windows on another Space
-or display. It is native, free, open source, and contains no telemetry.
+It is **native, free, open source, and contains no telemetry**. Sparkle update checks are its only
+network activity; there are no accounts, no analytics, and no advertising. App Icons is the default
+and needs no Screen Recording permission — **Window Previews** is an explicit opt-in whose captures
+stay in memory and are never written to disk or transmitted.
 
-Prefer snapshots? Enable **Window Previews** in Settings → Appearance.
+<br />
 
-## Download and install
+---
 
-1. Download **[WindowHop 1.6.2](https://github.com/martonpaulo/windowhop/releases/latest)**.
-   The `WindowHop-1.6.2-Installer.zip` asset preserves the branded Finder icon; the
-   release also provides the raw `WindowHop-1.6.2.dmg`.
-2. Unzip the installer if needed, open the DMG, and drag WindowHop onto the Applications
-   alias in the branded installer window.
-3. Open WindowHop from Applications and grant
-   **System Settings → Privacy & Security → Accessibility**.
+## 🌱 Quick Start
 
-Official releases are signed with WindowHop's stable Developer ID identity, notarized
-by Apple, stapled, and Gatekeeper-validated before publication.
+Requires **macOS 14+** and **Xcode 16+** command line tools. No paid Apple account is needed.
+
+```sh
+git clone https://github.com/martonpaulo/windowhop
+cd windowhop
+swift build && swift test
+scripts/validate.sh
+scripts/package-app.sh <version> <build>   # e.g. 1.6.2 10602
+scripts/make-dmg.sh <version>
+```
+
+Then open the packaged app and grant **System Settings → Privacy & Security → Accessibility**.
+Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved Developer ID
+identity; official tags run the fail-closed signing, notarization, stapling, Gatekeeper, Sparkle,
+and GitHub Release workflow.
+
+<br />
+
+## 🛠 Commands
+
+| Command | What it does |
+| --- | --- |
+| `swift build` / `swift build -c release` | Debug and release builds |
+| `swift test` | The unit suite — must pass with zero warnings |
+| `scripts/validate.sh` | Repository invariants: layering, ScreenCaptureKit confinement, docs, site |
+| `scripts/package-app.sh [version] [build]` | Assembles `build/WindowHop.app` with Sparkle embedded, plus its zip |
+| `scripts/make-dmg.sh [version]` | Builds the branded DMG from `build/WindowHop.app` |
+| `scripts/make-appcast.sh` | Regenerates `appcast.xml` for Sparkle |
+| `scripts/capture-screenshots.sh` | Published screenshots (a Retina display is required) |
+| `scripts/verify-release-identity.sh` | Compares code identity against the previous official release |
+| `scripts/verify-dmg-branding.sh` / `scripts/verify-update-continuity.sh` | Release gates for DMG branding and Sparkle continuity |
+| `scripts/publish-release.sh` | The publication step the tag workflow runs |
+
+Runtime checks on the debug binary (Accessibility permission is inherited from a trusted terminal):
+
+```sh
+.build/debug/WindowHop --dump-windows           # real discovery works?
+.build/debug/WindowHop --dump-previews          # entry → captured window pairing (no image)
+.build/debug/WindowHop --render-ui /tmp/shots   # switcher + settings, light/dark/overflow
+.build/debug/WindowHop --demo-switcher [--dark] [--many]
+.build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end
+WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
+```
+
+<br />
+
+## 🔐 Secrets and variables
+
+The app itself reads **no secret**: it has no account, no API key, and no credential of its own.
+Everything below belongs to the **release pipeline** (`.github/workflows/release.yml`), which is
+push-only on a `vX.Y.Z` tag, so these values are never exposed to pull requests or fork workflows.
+Names only — no value ever enters the repository, a commit message, an issue, or a log.
+
+| Secret | Purpose |
+| --- | --- |
+| `DEVELOPER_ID_CERT_P12` | Base64-encoded Apple-issued Developer ID Application certificate |
+| `DEVELOPER_ID_CERT_PASSWORD` | Import password for that P12 |
+| `NOTARIZATION_APPLE_ID` | Apple Developer account email used for notarization |
+| `NOTARIZATION_PASSWORD` | App-specific password for that Apple ID |
+| `NOTARIZATION_TEAM_ID` | Apple Developer team identifier |
+| `SPARKLE_PRIVATE_KEY` | EdDSA key that signs the update archive |
+
+| Local variable | Purpose |
+| --- | --- |
+| `DEVELOPER_ID_IDENTITY` | Names the approved Developer ID identity for a local package; without it, packaging is ad-hoc signed |
+| `WINDOWHOP_DEBUG` | Set to `1` to log input and session behavior while diagnosing |
+
+The Sparkle EdDSA private key lives in the login Keychain and in the `SPARKLE_PRIVATE_KEY` secret.
+Never tag a release to test credentials; use the local packaging commands and Apple tooling directly.
+
+<br />
 
 ## Using WindowHop
 
@@ -73,6 +141,8 @@ Use **⌥Tab** (configurable in Settings → Shortcuts) when you do not want to 
 It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space confirms;
 Escape cancels.
 
+<br />
+
 ## Preview behavior and permissions
 
 **App Icons** is the default and needs no Screen Recording permission. **Window
@@ -95,6 +165,8 @@ bottom-right corner in every state.
 Missing permission is checked before capture starts, so it cannot masquerade as loading
 or enter a retry loop. Returning from Privacy & Security refreshes the state; once
 permission exists, capture starts without moving the cards.
+
+<br />
 
 ## Settings and defaults
 
@@ -152,8 +224,10 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
 
 Automatic checks are enabled by default. Sparkle verifies the EdDSA signature and Apple
 code signature before replacing the app in place; the Settings pane also offers a manual
-check. About identifies **Developed by Marton Paulo** and links to the official WindowHop
-website, source, issue tracker, GPL-3.0 license, and AltTab acknowledgement.
+check. About identifies **Developed by Marton Paulo** and links to the project's source,
+issue tracker, GPL-3.0 license, and AltTab acknowledgement.
+
+<br />
 
 ## Updates, signing, and privacy
 
@@ -176,6 +250,8 @@ stale WindowHop entry from Privacy & Security → Accessibility, install the cur
 official build in Applications, and grant it once. Normal signed updates must not require
 this again.
 
+<br />
+
 ## Troubleshooting
 
 - **⌘Tab shows Apple's switcher** — WindowHop is not running, is disabled, or lacks
@@ -192,34 +268,32 @@ this again.
 - **Secure input is active** — password fields make WindowHop pass ⌘Tab through to the
   native switcher until secure input ends.
 
+<br />
+
 ## Uninstall
 
 Quit WindowHop, delete `/Applications/WindowHop.app`, and optionally run
 `defaults delete com.perso.windowhop`. You can also remove WindowHop from Accessibility
 and Screen Recording in System Settings.
 
-## Build from source
+<br />
 
-Requires macOS 14+ and Xcode 16+.
+## Documentation
 
-```sh
-git clone https://github.com/martonpaulo/windowhop
-cd windowhop
-swift build && swift test
-scripts/validate.sh
-scripts/package-app.sh 1.6.2 10602
-scripts/make-dmg.sh 1.6.2
-```
+| Document | What it covers |
+| --- | --- |
+| [`docs/architecture.md`](docs/architecture.md) | Layering, threading rules, and where each responsibility lives |
+| [`docs/testing.md`](docs/testing.md) | The suite, the runtime checks, and the Sparkle end-to-end harness |
+| [`docs/feature-defaults.md`](docs/feature-defaults.md) | The contract every user-facing default must satisfy |
+| [`docs/website.md`](docs/website.md) | How the site is built and deployed |
+| [`AGENTS.md`](AGENTS.md) | The complete product and repository working agreements |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to report a bug or propose a change |
+| [`UPSTREAM.md`](UPSTREAM.md) | Upstream attribution and the base tag this work derives from |
+| [`CHANGELOG.md`](CHANGELOG.md) | Every released version |
 
-Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved
-Developer ID identity. Official tags run the fail-closed signing, notarization, stapling,
-Gatekeeper, Sparkle, and GitHub Release workflow.
+<br />
 
-Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
-[feature defaults](docs/feature-defaults.md) · [website deployment](docs/website.md) ·
-[contributing](CONTRIBUTING.md) · [upstream attribution](UPSTREAM.md)
-
-## Known limitations
+## Limitations
 
 - Other-Space windows become discoverable only after that Space has been visited while
   WindowHop runs; WindowHop deliberately uses no private APIs.
@@ -229,9 +303,12 @@ Docs: [architecture](docs/architecture.md) · [testing](docs/testing.md) ·
   both correctly use the static permission-blocked fallback and single recovery action.
 - English-only interface in this release.
 
-## License and attribution
+<br />
 
-[GPL-3.0](LICENSE). Derived from
-[AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise (lwouis) and
-contributors — base tag `v10.12.0` (`317a485b`), with upstream history preserved.
-See [UPSTREAM.md](UPSTREAM.md).
+## License
+
+[GPL-3.0](LICENSE) © 2026 Marton Paulo.
+
+Derived from [AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise (lwouis) and contributors — base tag `v10.12.0` (`317a485b`), with upstream history preserved.
+
+Upstream attribution in [UPSTREAM.md](UPSTREAM.md).

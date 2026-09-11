@@ -72,11 +72,14 @@ fi
 
 # --- documentation/release synchronization ----------------------------------
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
-README_DMG_VERSIONS=$(grep -oE 'WindowHop-[0-9]+\.[0-9]+\.[0-9]+\.dmg' README.md | sort -u)
-if [ "$README_DMG_VERSIONS" = "WindowHop-$VERSION.dmg" ]; then
-    pass "README download matches version $VERSION"
+# The README no longer advertises a download (the GitHub About carries the site), so the
+# document that must track the shipped version is the changelog: its newest entry is the
+# release being described.
+CHANGELOG_VERSION=$(grep -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1 | sed 's/^## //')
+if [ "$CHANGELOG_VERSION" = "$VERSION" ]; then
+    pass "CHANGELOG's newest entry matches version $VERSION"
 else
-    fail "README download does not uniquely match version $VERSION: $README_DMG_VERSIONS"
+    fail "CHANGELOG's newest entry ($CHANGELOG_VERSION) does not match version $VERSION"
 fi
 
 MARKDOWN_FILES=$(git ls-files '*.md')
