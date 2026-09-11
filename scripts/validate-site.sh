@@ -7,7 +7,8 @@ required=(
   docs/styles/main.css
   docs/scripts/main.js
   docs/assets/app-icon.png
-  docs/assets/favicon.png
+  docs/favicon.ico
+  docs/apple-touch-icon.png
   docs/social-card.jpg
   docs/.nojekyll
   docs/CNAME
