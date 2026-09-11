@@ -27,73 +27,55 @@ stay in memory and are never written to disk or transmitted.
 <br />
 
 ## 🌱 Quick Start
-Requires **macOS 14+** and **Xcode 16+** command line tools. No paid Apple account is needed.
+Requires **macOS 14+** and the **Xcode 16+** command line tools; no paid Apple account is needed.
 
 ```sh
 git clone https://github.com/martonpaulo/windowhop
 cd windowhop
-swift build && swift test
-scripts/validate.sh
-scripts/package-app.sh <version> <build>   # e.g. 1.6.2 10602
-scripts/make-dmg.sh <version>
+swift build
+scripts/package-app.sh
+open build/WindowHop.app
 ```
 
-Then open the packaged app and grant **System Settings → Privacy & Security → Accessibility**.
-Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved Developer ID
-identity; official tags run the fail-closed signing, notarization, stapling, Gatekeeper, Sparkle,
-and GitHub Release workflow.
+Grant **System Settings → Privacy & Security → Accessibility** after the first launch, or the native ⌘Tab keeps answering instead.
+
+Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved Developer ID identity.
 
 <br />
 
 ## 🛠 Commands
 | Command | What it does |
 | --- | --- |
-| `swift build` / `swift build -c release` | Debug and release builds |
-| `swift test` | The unit suite — must pass with zero warnings |
-| `scripts/validate.sh` | Repository invariants: layering, ScreenCaptureKit confinement, docs, site |
-| `scripts/package-app.sh [version] [build]` | Assembles `build/WindowHop.app` with Sparkle embedded, plus its zip |
-| `scripts/make-dmg.sh [version]` | Builds the branded DMG from `build/WindowHop.app` |
-| `scripts/make-appcast.sh` | Regenerates `appcast.xml` for Sparkle |
-| `scripts/capture-screenshots.sh` | Published screenshots (a Retina display is required) |
-| `scripts/verify-release-identity.sh` | Compares code identity against the previous official release |
-| `scripts/verify-dmg-branding.sh` / `scripts/verify-update-continuity.sh` | Release gates for DMG branding and Sparkle continuity |
-| `scripts/publish-release.sh` | The publication step the tag workflow runs |
+| `swift test` | Run the unit suite, which must pass with zero warnings |
+| `scripts/validate.sh` | Check the repository invariants: layering, ScreenCaptureKit confinement, docs, site |
+| `swift build` | Build the debug binary; add `-c release` for the release build |
+| `scripts/package-app.sh [version] [build]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip |
+| `scripts/make-dmg.sh [version]` | Build the branded DMG from `build/WindowHop.app` |
+| `scripts/make-appcast.sh` | Regenerate `appcast.xml` for Sparkle |
+| `scripts/capture-screenshots.sh` | Capture the published screenshots, which needs a Retina display |
+| `scripts/validate-site.sh` | Check the published site's files and links |
+| `scripts/verify-release-identity.sh` | Compare the code identity against the previous official release |
+| `scripts/verify-dmg-branding.sh` | Check the DMG branding release gate |
+| `scripts/verify-update-continuity.sh` | Check the Sparkle update-continuity release gate |
+| `scripts/publish-release.sh` | Run the publication step the tag workflow performs |
 
-Runtime checks on the debug binary (Accessibility permission is inherited from a trusted terminal):
-
-```sh
-.build/debug/WindowHop --dump-windows           # real discovery works?
-.build/debug/WindowHop --dump-previews          # entry → captured window pairing (no image)
-.build/debug/WindowHop --render-ui /tmp/shots   # switcher + settings, light/dark/overflow
-.build/debug/WindowHop --demo-switcher [--dark] [--many]
-.build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end
-WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
-```
+The debug binary's runtime check flags are documented in [`docs/testing.md`](docs/testing.md).
 
 <br />
 
 ## 🔐 Secrets and variables
-The app itself reads **no secret**: it has no account, no API key, and no credential of its own.
-Everything below belongs to the **release pipeline** (`.github/workflows/release.yml`), which is
-push-only on a `vX.Y.Z` tag, so these values are never exposed to pull requests or fork workflows.
-Names only — no value ever enters the repository, a commit message, an issue, or a log.
+The app itself reads none of these: every secret below belongs to the release pipeline (`.github/workflows/release.yml`), which is push-only on a `vX.Y.Z` tag and so is never exposed to pull requests or fork workflows.
 
-| Secret | Purpose |
-| --- | --- |
-| `DEVELOPER_ID_CERT_P12` | Base64-encoded Apple-issued Developer ID Application certificate |
-| `DEVELOPER_ID_CERT_PASSWORD` | Import password for that P12 |
-| `NOTARIZATION_APPLE_ID` | Apple Developer account email used for notarization |
-| `NOTARIZATION_PASSWORD` | App-specific password for that Apple ID |
-| `NOTARIZATION_TEAM_ID` | Apple Developer team identifier |
-| `SPARKLE_PRIVATE_KEY` | EdDSA key that signs the update archive |
-
-| Local variable | Purpose |
-| --- | --- |
-| `DEVELOPER_ID_IDENTITY` | Names the approved Developer ID identity for a local package; without it, packaging is ad-hoc signed |
-| `WINDOWHOP_DEBUG` | Set to `1` to log input and session behavior while diagnosing |
-
-The Sparkle EdDSA private key lives in the login Keychain and in the `SPARKLE_PRIVATE_KEY` secret.
-Never tag a release to test credentials; use the local packaging commands and Apple tooling directly.
+| Name | Where | What for |
+| --- | --- | --- |
+| `DEVELOPER_ID_CERT_P12` | Actions secret, `release.yml` | Required for a release. Base64 of the Apple-issued Developer ID Application certificate |
+| `DEVELOPER_ID_CERT_PASSWORD` | Actions secret, `release.yml` | Required for a release. The import password for that P12 |
+| `NOTARIZATION_APPLE_ID` | Actions secret, `release.yml` | Required for a release. The Apple Developer account email used for notarization |
+| `NOTARIZATION_PASSWORD` | Actions secret, `release.yml` | Required for a release. The app-specific password for that Apple ID |
+| `NOTARIZATION_TEAM_ID` | Actions secret, `release.yml` | Required for a release. The Apple Developer team identifier |
+| `SPARKLE_PRIVATE_KEY` | Actions secret, `release.yml`, mirroring the login Keychain | Required for a release. The EdDSA key that signs the update archive |
+| `DEVELOPER_ID_IDENTITY` | Local shell, `scripts/package-app.sh` | Optional. Names the approved Developer ID identity; without it, packaging is ad-hoc signed |
+| `WINDOWHOP_DEBUG` | Local shell, the debug binary | Optional. Set to `1` to log input and session behavior while diagnosing |
 
 ---
 
@@ -237,6 +219,9 @@ are its only network activity. There are no accounts, analytics, advertising, or
 telemetry. Official release automation refuses to publish if the Developer ID identity,
 nested signatures, hardened runtime, designated requirement, notarization, stapling,
 Gatekeeper assessment, DMG branding, or Sparkle signature is missing or inconsistent.
+
+Never tag a release to test credentials; use the local packaging commands and Apple tooling
+directly.
 
 The bundle identifier, Team ID, leaf Developer ID certificate, entitlements, and exact
 designated requirement are validated against the previous official release. This keeps
