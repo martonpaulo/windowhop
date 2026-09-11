@@ -400,6 +400,9 @@ enum DebugHarness {
         }
         let window = NSWindow(contentViewController: controller)
         window.styleMask = [.titled, .closable, .miniaturizable]
+        // Published captures keep the traffic lights and drop the words: the product's name
+        // is already beside every image, and the pane is named by its selected toolbar item.
+        window.titleVisibility = .hidden
         window.center()
         app.activate()
         window.makeKeyAndOrderFront(nil)

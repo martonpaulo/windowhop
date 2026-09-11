@@ -139,6 +139,8 @@ Requirements and constraints:
 - The Settings captures pass `--light`, which pins the window's appearance. Without it the
   window follows the operator's system setting, so the published images would change with
   whoever ran the script. Light matches the site's default appearance.
+- The Settings demo hides the window title (`titleVisibility = .hidden`): published images keep the
+  traffic lights and the toolbar, and the product name is already beside every image.
 - The `width`/`height` attributes in `docs/index.html` are the captured pixels halved. Update
   them whenever the captures change size, or the site reserves the wrong box and the hero
   image lands misaligned.
