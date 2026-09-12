@@ -37,12 +37,34 @@ grep -Fq "WindowHop-$VERSION-Installer.zip" docs/scripts/main.js || {
 
 for marker in 'id="features"' 'id="download"' 'data-link="download"' \
               'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
-              'Developed by Marton Paulo' 'AltTab on GitHub'; do
+              'Developed by Marton Paulo' 'AltTab on GitHub' \
+              'Download WindowHop <span data-site-version>' 'class="external-icon"'; do
   grep -R -Fq "$marker" docs/index.html docs/styles/main.css || {
     echo "website is missing required marker: $marker" >&2
     exit 1
   }
 done
+
+# The 404 page is part of the site, not a bare fallback: same header, same
+# footer, same design, and it links back to the one page that exists.
+for marker in 'class="site-header"' 'class="site-footer"' '/styles/main.css' 'href="/"'; do
+    grep -Fq "$marker" docs/404.html || {
+        echo "docs/404.html is missing required marker: $marker" >&2
+        exit 1
+    }
+done
+
+# Every link that leaves the site carries the external-link arrow and
+# rel="noopener"; a link to another page of this site carries neither.
+while IFS= read -r line; do
+    case "$line" in *'rel="noopener"'*) ;; *)
+        echo "external link without rel=\"noopener\": $line" >&2; exit 1 ;;
+    esac
+    case "$line" in *'class="external-icon"'*) ;; *)
+        echo "external link without the external-link icon: $line" >&2; exit 1 ;;
+    esac
+done < <(grep -hoE '<a [^>]*(href="https?://[^"]+"|data-link="(github|issues|license|altTab|download|releases|releaseNotes)")[^>]*>.*</a>' \
+    docs/index.html docs/404.html || true)
 
 # Every local path the page names: src and href values, plus each candidate of a
 # srcset or imagesrcset list with its width descriptor dropped.

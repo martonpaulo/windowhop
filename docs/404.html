@@ -5,16 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>Page not found · WindowHop</title>
+  <meta name="description" content="The page you asked for does not exist on the WindowHop website.">
   <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0a0b0d" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/styles/main.css">
+  <script src="/scripts/main.js" defer></script>
 </head>
 <body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" aria-label="Primary navigation">
+    <a class="brand" href="/" aria-label="WindowHop home">
+      <img src="/assets/app-icon.png" width="36" height="36" alt="">
+      <span>WindowHop</span>
+    </a>
+    <nav aria-label="Page sections">
+      <a href="/#features">Features</a>
+      <a href="/#download">Download</a>
+      <a data-link="github" href="#" rel="noopener">GitHub<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </nav>
+  </header>
+
   <main id="main">
-    <h1>Page not found</h1>
-    <p>There is nothing at this address.</p>
-    <p><a href="/">Go to the WindowHop home page</a></p>
+    <section class="hero" aria-labelledby="not-found-title">
+      <div class="hero-copy">
+        <img class="hero-icon" src="/assets/app-icon.png" width="160" height="160" alt="WindowHop application icon">
+        <p class="eyebrow">Error 404</p>
+        <h1 id="not-found-title">Page not found.</h1>
+        <p class="hero-summary">There is nothing at this address. The WindowHop site is a single page, so everything it has is on the home page.</p>
+        <div class="actions">
+          <a class="button primary" href="/">Go to the home page</a>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <p>Developed by Marton Paulo · © <span data-site-year></span> WindowHop contributors.</p>
+    <p>No telemetry. No accounts. Update checks are WindowHop's only network activity.</p>
+  </footer>
 </body>
 </html>

@@ -1,3 +1,33 @@
+/* Fleet typography standard, 2026-09. This :root block is identical, in this
+   order, in windowhop, mailbell and meantime: the three sites share a design
+   but no package, so copying is the cost and identical ordering is what keeps
+   the drift greppable. The -apple-system stack is deliberate and stays: these
+   are landing pages for Mac apps, so the page wears the platform's own face. */
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: clamp(1.75rem, 1.25rem + 1.5vw, 2.25rem);
+  --text-2xl: clamp(2.5rem, 1.5rem + 3.5vw, 4rem);
+  --text-3xl: clamp(3rem, 1.25rem + 6.5vw, 6.5rem);
+  --leading-tight: 1.08;
+  --leading-snug: 1.2;
+  --leading-relaxed: 1.4;
+  --leading-body: 1.6;
+  --tracking-display: -0.03em;
+  --tracking-body: -0.01em;
+  --tracking-eyebrow: 0.12em;
+  --weight-body: 400;
+  --weight-strong: 600;
+  --weight-display: 700;
+  --measure: 68ch;
+  --measure-narrow: 44ch;
+  --measure-title: 16ch;
+}
+
+/* --- WindowHop palette and page metrics ------------------------------------ */
 :root {
   color-scheme: light dark;
   --bg: #f5f5f7;
@@ -7,90 +37,19 @@
   --secondary: #6e6e73;
   --line: rgba(0, 0, 0, 0.08);
   --accent: #0675e8;
+  --accent-hover: #0067d6;
   /* Filled buttons carry their own foreground/background pair: the link accent
      alone gives white text only 4.45:1 in light and 2.46:1 in dark. */
   --button-primary-fg: #ffffff;
   --button-primary-bg: #0a66c8;
   --button-primary-bg-hover: #0b5fbb;
-  --accent-hover: #0067d6;
+  --button-glow: 0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent);
+  --button-glow-hover: 0 12px 28px color-mix(in srgb, var(--accent) 34%, transparent);
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
   --radius: 28px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+  --radius-card: 24px;
+  --page-width: min(1180px, calc(100% - 40px));
 }
-
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); line-height: 1.5; }
-a { color: inherit; }
-img { display: block; max-width: 100%; height: auto; }
-
-.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; padding: 10px 14px; border-radius: 10px; background: var(--text); color: var(--bg); }
-.skip-link:focus { top: 16px; }
-
-.site-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 14px 0; background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(22px) saturate(1.4); border-bottom: 1px solid var(--line); }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 650; text-decoration: none; letter-spacing: -0.02em; }
-.brand img { border-radius: 9px; }
-nav { display: flex; gap: 24px; }
-nav a, .text-link, .link-row a { color: var(--secondary); text-decoration: none; font-size: 14px; font-weight: 550; }
-nav a:hover, .text-link:hover, .link-row a:hover { color: var(--accent); }
-
-main, footer { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
-.hero { min-height: min(880px, 92vh); padding: 96px 0 72px; text-align: center; overflow: hidden; }
-.hero-copy { max-width: 820px; margin: 0 auto; }
-.hero-icon { margin: 0 auto 26px; filter: drop-shadow(0 18px 28px rgba(37, 112, 228, 0.22)); }
-.eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 15px; font-weight: 700; letter-spacing: 0.015em; }
-h1, h2, h3, p { text-wrap: balance; }
-h1 { margin: 0; font-size: clamp(48px, 7vw, 88px); line-height: 0.98; letter-spacing: -0.058em; font-weight: 720; }
-.hero-summary { max-width: 680px; margin: 26px auto 28px; color: var(--secondary); font-size: clamp(19px, 2.2vw, 25px); line-height: 1.35; }
-.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-.button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 22px; border-radius: 999px; text-decoration: none; font-size: 16px; font-weight: 650; transition: transform 160ms ease, background-color 160ms ease, color 160ms ease; }
-.button [data-site-version]::before { content: "\00a0"; }
-.button:hover { transform: translateY(-1px); }
-.button.primary { background: var(--button-primary-bg); color: var(--button-primary-fg); }
-.button.primary:hover { background: var(--button-primary-bg-hover); }
-.button.secondary { background: var(--surface-strong); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
-.compatibility { margin: 18px 0 0; color: var(--secondary); font-size: 14px; }
-/* Screenshots are captured with `screencapture -l`, so each PNG already carries
-   the window's own corner radius, drop shadow and transparent elevation. Adding
-   a CSS radius on top clips those corners a second time at a different radius,
-   and a CSS shadow doubles the one in the image. */
-.hero-visual { display: block; width: min(1134px, 100%); margin: 62px auto 0; }
-/* The capture draws at 958px inside a box up to 1134px wide; as a block it would
-   sit against the left edge of that box, so it is centred in it. */
-.hero-visual img { margin-inline: auto; }
-
-.section { padding: 120px 0; border-top: 1px solid var(--line); }
-.section h2 { max-width: 850px; margin: 0; font-size: clamp(38px, 5vw, 64px); line-height: 1.04; letter-spacing: -0.045em; }
-.section > p:not(.eyebrow), .settings-showcase p:not(.eyebrow), .download > p:not(.eyebrow) { max-width: 760px; color: var(--secondary); font-size: 20px; }
-
-.overview > p:not(.eyebrow) { margin: 22px 0 48px; }
-.overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-figure { margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: 14px; }
-
-.features h2 { margin-bottom: 48px; }
-.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.feature-grid article { min-height: 240px; padding: 30px; background: var(--surface); border: 1px solid var(--line); border-radius: 24px; }
-.feature-grid article > span { display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 36px; border-radius: 13px; background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); font-size: 20px; font-weight: 700; }
-.feature-grid h3 { margin: 0 0 8px; font-size: 21px; letter-spacing: -0.025em; }
-.feature-grid p { margin: 0; color: var(--secondary); }
-
-.settings-showcase { display: grid; grid-template-columns: 1fr minmax(340px, 520px); align-items: center; gap: 72px; }
-.settings-showcase img { max-height: 650px; justify-self: end; }
-
-.download { text-align: center; }
-.download > img { margin: 0 auto 20px; }
-.download h2, .download > p { margin-inline: auto; }
-.download > p { margin-block: 18px 30px; }
-.download .text-link { display: inline-block; margin-top: 22px; color: var(--accent); }
-
-.open-source p:not(.eyebrow) { margin: 22px 0 30px; }
-.link-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
-.link-row a { color: var(--accent); }
-footer { display: flex; justify-content: space-between; gap: 30px; padding: 32px 0 56px; border-top: 1px solid var(--line); color: var(--secondary); font-size: 13px; }
-footer p { margin: 0; }
-
-a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white); outline-offset: 4px; border-radius: 8px; }
 
 @media (prefers-color-scheme: dark) {
   :root {
@@ -101,40 +60,229 @@ a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 70%, white
     --secondary: #a1a1a6;
     --line: rgba(255, 255, 255, 0.11);
     --accent: #57a9ff;
+    --accent-hover: #79baff;
     --button-primary-fg: #07111f;
     --button-primary-bg: #57a9ff;
     --button-primary-bg-hover: #79baff;
-    --accent-hover: #79baff;
     --shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
   }
 }
 
+/* --- Shared structure ------------------------------------------------------
+   The section rhythm, hero, feature blocks, buttons and footer below are the
+   fleet's one landing-page design. Keep them in step across the three sites. */
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+/* The footer sits at the bottom of the viewport on a short page (the 404
+   above all) instead of floating in the middle of it. svh keeps mobile browser
+   chrome from pushing it off; vh is the fallback for anything older. */
+body {
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  letter-spacing: var(--tracking-body);
+  background: var(--bg);
+  color: var(--text);
+}
+a { color: inherit; }
+/* A link inside running copy shows itself. Navigation, buttons and link rows
+   carry their own treatment instead. */
+p a, li a, td a { color: var(--accent); text-decoration: underline; text-underline-offset: 0.18em; }
+.actions a, .link-row a, .site-footer a, .site-header a { text-decoration: none; }
+img { display: block; max-width: 100%; height: auto; }
+strong { font-weight: var(--weight-strong); }
+
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; padding: 10px 14px; border-radius: 10px; background: var(--text); color: var(--bg); text-decoration: none; }
+.skip-link:focus { top: 16px; }
+
+:where(a, button, input, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 70%, white);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* One icon for every link that leaves the site: the GitHub button, another site
+   of the fleet, any external documentation. A link to another page of this site
+   never carries it. */
+.external-icon {
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.35em;
+  vertical-align: baseline;
+  opacity: 0.8;
+}
+
+.site-header {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 24px;
+  width: var(--page-width); margin: 0 auto; padding: 14px 0;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: blur(22px) saturate(1.4);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: var(--weight-strong); text-decoration: none; letter-spacing: var(--tracking-display); }
+.brand img { border-radius: 9px; }
+.site-header nav { display: flex; gap: 24px; }
+.site-header nav a, .text-link, .link-row a, .site-footer a {
+  display: inline-flex; align-items: center;
+  color: var(--secondary); text-decoration: none;
+  font-size: var(--text-sm); font-weight: var(--weight-strong);
+}
+.site-header nav a:hover, .text-link:hover, .link-row a:hover, .site-footer a:hover { color: var(--accent); }
+.site-header [aria-current="page"] { color: var(--accent); }
+
+main, .site-footer { width: var(--page-width); margin-inline: auto; }
+main { flex: 1 0 auto; }
+.site-footer { margin-top: auto; }
+
+.hero { padding: 96px 0 72px; text-align: center; overflow: hidden; }
+.hero-copy { max-width: 820px; margin: 0 auto; }
+.eyebrow {
+  margin: 0 0 12px; color: var(--accent);
+  font-size: var(--text-xs); font-weight: var(--weight-display);
+  text-transform: uppercase; letter-spacing: var(--tracking-eyebrow);
+}
+/* Balanced wrapping is for headings. Body copy reads worse when the browser
+   evens out the last lines of a long paragraph. */
+h1, h2, h3 { text-wrap: balance; }
+h1 {
+  max-width: var(--measure-title); margin: 0 auto;
+  font-size: var(--text-3xl); line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display); font-weight: var(--weight-display);
+}
+.hero-summary {
+  max-width: var(--measure-narrow); margin: 26px auto 28px;
+  color: var(--secondary); font-size: var(--text-lg); line-height: var(--leading-relaxed);
+}
+
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+/* Buttons take Mailbell's motion: a short rise on hover with the shadow
+   following it on the same curve, and the press putting the button back down. */
+.button {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 22px; border-radius: 999px;
+  text-decoration: none; font-size: 1rem; font-weight: var(--weight-strong);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, color 0.12s ease;
+}
+.button:hover { transform: translateY(-1px); text-decoration: none; }
+.button:active { transform: translateY(0); }
+/* The soft halo under the download button. Mailbell's was a fixed rgba of its
+   own accent; here it is mixed from whichever accent the site carries. */
+.button.primary {
+  background: var(--button-primary-bg); color: var(--button-primary-fg);
+  box-shadow: var(--button-glow);
+}
+.button.primary:hover { background: var(--button-primary-bg-hover); box-shadow: var(--button-glow-hover); }
+.button.secondary { background: var(--surface-strong); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
+.compatibility { margin: 18px 0 0; color: var(--secondary); font-size: var(--text-sm); }
+
+.section { padding: 120px 0; border-top: 1px solid var(--line); }
+.section h2 {
+  max-width: var(--measure-title); margin: 0;
+  font-size: var(--text-2xl); line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display); font-weight: var(--weight-display);
+}
+/* The rhythm inside a section: eyebrow, heading, an optional lead paragraph at
+   22px, then whatever the section shows at 48px. */
+.section > :not(.eyebrow):not(h2) { margin-top: 48px; }
+.section > p:not(.eyebrow) {
+  max-width: var(--measure); margin: 22px 0 0;
+  color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed);
+}
+
+figure { margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--text-sm); }
+
+.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.feature-grid article { min-height: 240px; padding: 30px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.feature-grid article > span {
+  display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 36px;
+  border-radius: 13px; background: color-mix(in srgb, var(--accent) 13%, transparent);
+  color: var(--accent); font-size: var(--text-md); font-weight: var(--weight-display);
+}
+.feature-grid h3 { margin: 0 0 8px; font-size: var(--text-lg); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); font-weight: var(--weight-strong); }
+.feature-grid p { margin: 0; color: var(--secondary); }
+
+.download { text-align: center; }
+.download > img { margin: 0 auto 20px; }
+.download h2, .download > p:not(.eyebrow) { margin-inline: auto; }
+.download > p:not(.eyebrow) { margin-block: 18px 30px; }
+.download .text-link { display: inline-flex; margin-top: 22px; color: var(--accent); }
+.download .compatibility { margin-top: 22px; }
+
+.link-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.link-row a { color: var(--accent); }
+
+.site-footer {
+  display: flex; justify-content: space-between; gap: 12px 30px; flex-wrap: wrap;
+  padding: 32px 0 56px; border-top: 1px solid var(--line);
+  color: var(--secondary); font-size: var(--text-sm);
+}
+.site-footer p { margin: 0; }
+.site-footer nav { display: flex; flex-wrap: wrap; gap: 12px 20px; }
+
 @media (max-width: 820px) {
-  .site-header { width: min(100% - 28px, 1180px); }
-  nav a:not(:last-child) { display: none; }
-  main, footer { width: min(100% - 28px, 1180px); }
-  .hero { padding-top: 68px; min-height: auto; }
-  .hero-icon { width: 116px; height: 116px; }
-  .hero-visual { width: 100%; margin-top: 44px; }
+  :root { --page-width: min(100% - 28px, 1180px); }
+  /* The header keeps every destination on narrow screens: it wraps onto a
+     second centred row rather than dropping links the visitor came for. */
+  .site-header { flex-wrap: wrap; justify-content: center; }
+  .site-header nav { width: 100%; justify-content: center; flex-wrap: wrap; gap: 8px 18px; }
+  .hero { padding-top: 68px; }
   .section { padding: 86px 0; }
-  .overview-visuals, .feature-grid, .settings-showcase { grid-template-columns: 1fr; }
-  .settings-showcase { gap: 44px; }
-  .settings-showcase img { justify-self: center; max-height: 560px; }
+  .feature-grid { grid-template-columns: 1fr; }
   .feature-grid article { min-height: 210px; }
-  footer { flex-direction: column; }
+  .site-footer { flex-direction: column; }
 }
 
 @media (max-width: 520px) {
-  h1 { font-size: 45px; }
-  .hero-summary, .section > p:not(.eyebrow), .settings-showcase p:not(.eyebrow), .download > p:not(.eyebrow) { font-size: 18px; }
   .actions { align-items: stretch; flex-direction: column; }
   .button { width: 100%; }
-  .hero-visual { width: 100%; }
   .feature-grid article { padding: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-  .button:hover { transform: none; }
+  .button:hover, .button:active { transform: none; }
 }
+
+/* --- WindowHop's own sections ---------------------------------------------- */
+
+.hero { min-height: min(880px, 92vh); }
+.hero-icon { margin: 0 auto 26px; filter: drop-shadow(0 18px 28px rgba(37, 112, 228, 0.22)); }
+/* Screenshots are captured with `screencapture -l`, so each PNG already carries
+   the window's own corner radius, drop shadow and transparent elevation. Adding
+   a CSS radius on top clips those corners a second time at a different radius,
+   and a CSS shadow doubles the one in the image. */
+.hero-visual { display: block; width: min(1134px, 100%); margin: 62px auto 0; }
+/* The capture draws at 958px inside a box up to 1134px wide; as a block it would
+   sit against the left edge of that box, so it is centred in it. */
+.hero-visual img { margin-inline: auto; }
+
+.overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+.settings-showcase { display: grid; grid-template-columns: 1fr minmax(340px, 520px); align-items: center; gap: 72px; }
+.settings-showcase p:not(.eyebrow) { max-width: var(--measure); margin: 22px 0 0; color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed); }
+.settings-showcase img { max-height: 650px; justify-self: end; }
+
+.open-source p:not(.eyebrow) { margin: 22px 0 30px; }
+
+@media (max-width: 820px) {
+  .hero { min-height: auto; }
+  .hero-icon { width: 116px; height: 116px; }
+  .hero-visual { width: 100%; margin-top: 44px; }
+  .overview-visuals, .settings-showcase { grid-template-columns: 1fr; }
+  .settings-showcase { gap: 44px; }
+  .settings-showcase img { justify-self: center; max-height: 560px; }
+}
+
+/* The version is written by scripts/main.js, so the space before it has to
+   survive an empty span before that script runs. */
+.button [data-site-version]::before { content: "\00a0"; }
