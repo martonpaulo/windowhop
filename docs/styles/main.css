@@ -46,9 +46,13 @@
   --button-glow: 0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent);
   --button-glow-hover: 0 12px 28px color-mix(in srgb, var(--accent) 34%, transparent);
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
+  --icon-shadow: drop-shadow(0 18px 28px rgba(37, 112, 228, 0.22));
   --radius: 28px;
   --radius-card: 24px;
   --page-width: min(1180px, calc(100% - 40px));
+  /* The sticky header's own height: what anything else that sticks has to
+     clear so it does not park underneath it. */
+  --header-height: 65px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -65,6 +69,7 @@
     --button-primary-bg: #57a9ff;
     --button-primary-bg-hover: #79baff;
     --shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
+    --icon-shadow: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.55));
   }
 }
 
@@ -128,7 +133,9 @@ strong { font-weight: var(--weight-strong); }
   border-bottom: 1px solid var(--line);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; font-weight: var(--weight-strong); text-decoration: none; letter-spacing: var(--tracking-display); }
-.brand img { border-radius: 9px; }
+/* The icon artwork is a squircle on full transparency and carries its own
+   corners: a CSS radius would clip it a second time at a different curve. */
+.brand img { border-radius: 0; }
 .site-header nav { display: flex; gap: 24px; }
 .site-header nav a, .text-link, .link-row a, .site-footer a {
   display: inline-flex; align-items: center;
@@ -157,6 +164,9 @@ h1 {
   font-size: var(--text-3xl); line-height: var(--leading-tight);
   letter-spacing: var(--tracking-display); font-weight: var(--weight-display);
 }
+/* drop-shadow follows the artwork's alpha, so the shadow takes the squircle's
+   shape instead of being cast by a square border box. */
+.hero-icon { margin: 0 auto 26px; filter: var(--icon-shadow); }
 .hero-summary {
   max-width: var(--measure-narrow); margin: 26px auto 28px;
   color: var(--secondary); font-size: var(--text-lg); line-height: var(--leading-relaxed);
@@ -197,6 +207,28 @@ h1 {
   color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed);
 }
 
+/* Prose paired with a SINGLE figure: two columns from the tablet breakpoint up,
+   stacked below it with the copy first. Alternate `.showcase` and
+   `.showcase.figure-first` down a page so consecutive pairs never put the
+   figure on the same side. A figure that is itself the point, such as the hero
+   visual or a wide screenshot, stays full width instead. */
+/* minmax(0, 1fr), not 1fr: a column whose automatic minimum is min-content
+   pushes the grid wider than the shared container and the copy then starts hard
+   against the window edge instead of on the container's gutter. */
+.showcase { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 440px); align-items: center; gap: 72px; }
+.showcase > * { min-width: 0; margin-top: 0; }
+/* A heading that shares its row with a figure takes the step below the
+   full-width one, so it stays inside its column. */
+.showcase-copy h2 { font-size: var(--text-xl); }
+.showcase > :not(.showcase-copy) { justify-self: end; max-height: 560px; }
+.showcase-copy > p:not(.eyebrow) {
+  max-width: var(--measure); margin: 22px 0 0;
+  color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed);
+}
+.showcase.figure-first { grid-template-columns: minmax(280px, 440px) minmax(0, 1fr); }
+.showcase.figure-first > .showcase-copy { order: 2; }
+.showcase.figure-first > :not(.showcase-copy) { justify-self: start; }
+
 figure { margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
 figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--text-sm); }
 
@@ -214,9 +246,14 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 .download > img { margin: 0 auto 20px; }
 .download h2, .download > p:not(.eyebrow) { margin-inline: auto; }
 .download > p:not(.eyebrow) { margin-block: 18px 30px; }
-.download .text-link { display: inline-flex; margin-top: 22px; color: var(--accent); }
-.download .compatibility { margin-top: 22px; }
+/* The section rhythm puts 48px under the buttons; the closing note and the
+   secondary link belong to them, so they sit closer. */
+.section.download > .compatibility { margin-top: 22px; }
+.section.download > .text-link { display: inline-flex; margin-top: 22px; color: var(--accent); }
 
+/* The closing open-source section: eyebrow, heading, what the project is and
+   who made it, then the row of outward links. */
+.open-source > p:not(.eyebrow):last-of-type { margin-bottom: 30px; }
 .link-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
 .link-row a { color: var(--accent); }
 
@@ -229,7 +266,8 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 12px 20px; }
 
 @media (max-width: 820px) {
-  :root { --page-width: min(100% - 28px, 1180px); }
+  /* The nav wraps onto a second row below this width, so the header is taller. */
+  :root { --page-width: min(100% - 28px, 1180px); --header-height: 99px; }
   /* The header keeps every destination on narrow screens: it wraps onto a
      second centred row rather than dropping links the visitor came for. */
   .site-header { flex-wrap: wrap; justify-content: center; }
@@ -237,6 +275,9 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
   .hero { padding-top: 68px; }
   .section { padding: 86px 0; }
   .feature-grid { grid-template-columns: 1fr; }
+  .showcase, .showcase.figure-first { grid-template-columns: 1fr; gap: 44px; }
+  .showcase > .showcase-copy { order: -1; }
+  .showcase > :not(.showcase-copy) { justify-self: center; max-height: 560px; }
   .feature-grid article { min-height: 210px; }
   .site-footer { flex-direction: column; }
 }
@@ -256,7 +297,6 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 /* --- WindowHop's own sections ---------------------------------------------- */
 
 .hero { min-height: min(880px, 92vh); }
-.hero-icon { margin: 0 auto 26px; filter: drop-shadow(0 18px 28px rgba(37, 112, 228, 0.22)); }
 /* Screenshots are captured with `screencapture -l`, so each PNG already carries
    the window's own corner radius, drop shadow and transparent elevation. Adding
    a CSS radius on top clips those corners a second time at a different radius,
@@ -268,19 +308,11 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 
 .overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 
-.settings-showcase { display: grid; grid-template-columns: 1fr minmax(340px, 520px); align-items: center; gap: 72px; }
-.settings-showcase p:not(.eyebrow) { max-width: var(--measure); margin: 22px 0 0; color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed); }
-.settings-showcase img { max-height: 650px; justify-self: end; }
-
-.open-source p:not(.eyebrow) { margin: 22px 0 30px; }
-
 @media (max-width: 820px) {
   .hero { min-height: auto; }
   .hero-icon { width: 116px; height: 116px; }
   .hero-visual { width: 100%; margin-top: 44px; }
-  .overview-visuals, .settings-showcase { grid-template-columns: 1fr; }
-  .settings-showcase { gap: 44px; }
-  .settings-showcase img { justify-self: center; max-height: 560px; }
+  .overview-visuals { grid-template-columns: 1fr; }
 }
 
 /* The version is written by scripts/main.js, so the space before it has to
