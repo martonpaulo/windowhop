@@ -1,8 +1,9 @@
 /* Fleet typography standard, 2026-09. This :root block is identical, in this
-   order, in windowhop, mailbell and meantime: the three sites share a design
-   but no package, so copying is the cost and identical ordering is what keeps
-   the drift greppable. The -apple-system stack is deliberate and stays: these
-   are landing pages for Mac apps, so the page wears the platform's own face. */
+   order, in windowhop, mailbell, meantime, smart-desk and orbit: the five sites
+   share a design but no package, so copying is the cost and identical ordering
+   is what keeps the drift greppable. The -apple-system stack is deliberate and
+   stays: these are landing pages for Mac apps, so the page wears the platform's
+   own face. */
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   --text-xs: 0.75rem;
