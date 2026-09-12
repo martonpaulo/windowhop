@@ -65,14 +65,16 @@
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header" aria-label="Primary navigation">
-    <a class="brand" data-link="website" href="#top" aria-label="WindowHop home">
-      <img src="assets/app-icon.png" width="36" height="36" alt="">
-      <span>WindowHop</span>
-    </a>
-    <nav aria-label="Page sections">
-      <a href="#features">Features</a>
-      <a href="#download">Download</a>
-    </nav>
+    <div class="site-header-inner">
+      <a class="brand" data-link="website" href="#top" aria-label="WindowHop home">
+        <img src="assets/app-icon.png" width="36" height="36" alt="">
+        <span>WindowHop</span>
+      </a>
+      <nav aria-label="Page sections">
+        <a href="#features">Features</a>
+        <a href="#download">Download</a>
+      </nav>
+    </div>
   </header>
 
   <main id="main">
@@ -161,12 +163,14 @@
   </main>
 
   <footer class="site-footer">
-    <p>Developed by Marton Paulo · GPL-3.0 licensed · © <span data-site-year></span> WindowHop contributors.</p>
-    <nav aria-label="Site links">
-      <a data-link="github" href="#" rel="noopener">Source<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <a data-link="issues" href="#" rel="noopener">Issues<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-      <a data-link="releases" href="#" rel="noopener">Releases<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
-    </nav>
+    <div class="site-footer-inner">
+      <p>Developed by Marton Paulo · GPL-3.0 licensed · © <span data-site-year></span> WindowHop contributors.</p>
+      <nav aria-label="Site links">
+        <a data-link="github" href="#" rel="noopener">Source<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a data-link="issues" href="#" rel="noopener">Issues<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a data-link="releases" href="#" rel="noopener">Releases<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </nav>
+    </div>
   </footer>
 </body>
 </html>

@@ -125,13 +125,18 @@ strong { font-weight: var(--weight-strong); }
   opacity: 0.8;
 }
 
+/* The header's background, blur and hairline span the viewport; only its
+   contents sit in the container, so the brand keeps the same left edge as every
+   section below it. The footer's rule is drawn the same way. */
 .site-header {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px 24px;
-  width: var(--page-width); margin: 0 auto; padding: 14px 0;
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(22px) saturate(1.4);
   border-bottom: 1px solid var(--line);
+}
+.site-header-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px 24px;
+  width: var(--page-width); margin-inline: auto; padding: 14px 0;
 }
 /* The wordmark is the site's name, not a navigation state: it stays --text on
    every page, so the lockup never changes colour as the visitor moves around. */
@@ -150,7 +155,7 @@ strong { font-weight: var(--weight-strong); }
    name rather than a nav state, so it must not change colour with the route. */
 .site-header nav [aria-current="page"] { color: var(--accent); }
 
-main, .site-footer { width: var(--page-width); margin-inline: auto; }
+main { width: var(--page-width); margin-inline: auto; }
 main { flex: 1 0 auto; }
 .site-footer { margin-top: auto; }
 
@@ -263,9 +268,12 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 .link-row a { color: var(--accent); }
 
 .site-footer {
-  display: flex; justify-content: space-between; gap: 12px 30px; flex-wrap: wrap;
-  padding: 32px 0 56px; border-top: 1px solid var(--line);
+  border-top: 1px solid var(--line);
   color: var(--secondary); font-size: var(--text-sm);
+}
+.site-footer-inner {
+  display: flex; justify-content: space-between; gap: 12px 30px; flex-wrap: wrap;
+  width: var(--page-width); margin-inline: auto; padding: 32px 0 56px;
 }
 .site-footer p { margin: 0; }
 .site-footer nav { display: flex; flex-wrap: wrap; gap: 12px 20px; }
@@ -275,7 +283,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
   :root { --page-width: min(100% - 28px, 1180px); --header-height: 99px; }
   /* The header keeps every destination on narrow screens: it wraps onto a
      second centred row rather than dropping links the visitor came for. */
-  .site-header { flex-wrap: wrap; justify-content: center; }
+  .site-header-inner { flex-wrap: wrap; justify-content: center; }
   .site-header nav { width: 100%; justify-content: center; flex-wrap: wrap; gap: 8px 18px; }
   .hero { padding-top: 68px; }
   .section { padding: 86px 0; }
@@ -284,7 +292,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
   .showcase > .showcase-copy { order: -1; }
   .showcase > :not(.showcase-copy) { justify-self: center; max-height: 560px; }
   .feature-grid article { min-height: 210px; }
-  .site-footer { flex-direction: column; }
+  .site-footer-inner { flex-direction: column; }
 }
 
 @media (max-width: 520px) {
