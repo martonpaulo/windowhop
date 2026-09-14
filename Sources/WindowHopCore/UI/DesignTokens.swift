@@ -91,22 +91,66 @@ enum DesignTokens {
     static let largeIconSize: CGFloat = 88
 
     // MARK: Window Previews appearance
+    /// The smallest card: what every display got before cards followed the
+    /// display (issue #33), kept as the floor so no display gets smaller previews.
     static let previewsTileWidth: CGFloat = 204
+    static let previewMinimumContentWidth = previewsTileWidth - tileLabelInset * 2
+    /// Display-sized cards (Medium, Large) never grow so wide that fewer than
+    /// this many fit across one row.
+    static let previewMinimumColumns = 3
     /// Every preview canvas is this fixed shape, so all cards have identical
     /// dimensions and any window aspect-fits inside without cropping (unused
     /// area uses the semantic preview surface instead of exposing content
-    /// behind the panel). It is deliberately independent of the monitor:
-    /// deriving it from the display made every card a shallow strip on an
-    /// ultrawide screen, where previews are hardest to recognize.
+    /// behind the panel). The shape is deliberately independent of the
+    /// monitor: deriving it from the display made every card a shallow strip
+    /// on an ultrawide screen, where previews are hardest to recognize.
     static let previewCanvasAspect: CGFloat = 16.0 / 10.0
     static func previewContentHeight(width: CGFloat) -> CGFloat {
         (width / previewCanvasAspect).rounded()
     }
+
+    /// The metadata line is always reserved, so turning tab counts on or off
+    /// never resizes the previews and three rows fit either way.
+    static func previewCardSizing(rows: Int) -> PreviewCardSizing.Layout {
+        PreviewCardSizing.Layout(
+            rows: rows,
+            minimumColumns: previewMinimumColumns,
+            minimumCanvasWidth: previewMinimumContentWidth,
+            canvasAspect: previewCanvasAspect,
+            cardChromeHeight: tileHeight(contentHeight: 0, showMetadata: true),
+            cardChromeWidth: tileLabelInset * 2,
+            spacing: tileSpacing,
+            rowSpacing: tileRowSpacing,
+            padding: panelPadding,
+            maxWidthFraction: panelMaxWidthFraction,
+            maxHeightFraction: panelMaxHeightFraction)
+    }
+
+    /// The preview canvas width for a display's visible extent and the chosen
+    /// preview size; Small, or no display (offscreen layout), is the minimum card.
+    static func previewContentWidth(visibleExtent: CGSize?, size: PreviewSize) -> CGFloat {
+        guard let visibleExtent, let rows = size.rowsOnScreen else {
+            return previewMinimumContentWidth
+        }
+        return PreviewCardSizing.canvasWidth(visibleExtent: visibleExtent,
+                                             layout: previewCardSizing(rows: rows))
+    }
     static let previewCornerRadius = cardCornerRadius
-    /// The badge is 60% of its previous rendered size and overlaps the fixed
-    /// canvas corner, independent of the source image's aspect-fit bounds.
+    /// The badge overlaps the fixed canvas corner, independent of the source
+    /// image's aspect-fit bounds. These are its sizes on the minimum canvas; a
+    /// larger canvas scales both in proportion, so the icon never looks tiny
+    /// beside a display-sized preview (issue #33).
     static let previewBadgeSize: CGFloat = 48
     static let previewOverlayOverlap: CGFloat = 8
+    static func scaledPreviewBadgeSize(canvasWidth: CGFloat) -> CGFloat {
+        (previewBadgeSize * previewCanvasScale(canvasWidth)).rounded()
+    }
+    static func scaledPreviewOverlayOverlap(canvasWidth: CGFloat) -> CGFloat {
+        (previewOverlayOverlap * previewCanvasScale(canvasWidth)).rounded()
+    }
+    private static func previewCanvasScale(_ canvasWidth: CGFloat) -> CGFloat {
+        max(1, canvasWidth / previewMinimumContentWidth)
+    }
     /// The snapshot's own soft shadow (the capture itself is shadow-free); the
     /// path follows the preview's rounded shape, never a plain rectangle.
     static let previewShadowRadius: CGFloat = 6

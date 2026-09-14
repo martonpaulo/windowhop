@@ -158,13 +158,23 @@ final class SwitcherTileView: NSView {
                 contentHeight: DesignTokens.appIconsContentHeight)
         }
 
+        /// The canvas area; in Window Previews it is also the capture target size.
+        var contentSize: NSSize {
+            NSSize(width: tileSize.width - DesignTokens.tileLabelInset * 2, height: contentHeight)
+        }
+
         /// Preview containers share one fixed canvas shape, so every card is
-        /// identical and any window aspect-fits without cropping.
-        static func windowPreviews(showTabCounts: Bool) -> Metrics {
-            let contentHeight = DesignTokens.previewContentHeight(
-                width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2)
+        /// identical and any window aspect-fits without cropping. The card size
+        /// follows `visibleExtent`, the display the panel lays out for; nil is
+        /// the minimum card.
+        static func windowPreviews(showTabCounts: Bool,
+                                   visibleExtent: CGSize? = nil,
+                                   size: PreviewSize = Preferences.Defaults.previewSize) -> Metrics {
+            let contentWidth = DesignTokens.previewContentWidth(visibleExtent: visibleExtent,
+                                                                size: size)
+            let contentHeight = DesignTokens.previewContentHeight(width: contentWidth)
             return Metrics(
-                tileSize: NSSize(width: DesignTokens.previewsTileWidth,
+                tileSize: NSSize(width: contentWidth + DesignTokens.tileLabelInset * 2,
                                  height: DesignTokens.tileHeight(
                                     contentHeight: contentHeight,
                                     showMetadata: showTabCounts)),
@@ -172,10 +182,13 @@ final class SwitcherTileView: NSView {
         }
 
         static func metrics(for mode: AppearanceMode,
-                            showTabCounts: Bool) -> Metrics {
+                            showTabCounts: Bool,
+                            visibleExtent: CGSize? = nil,
+                            size: PreviewSize = Preferences.Defaults.previewSize) -> Metrics {
             mode == .appIcons
                 ? .appIcons(showTabCounts: showTabCounts)
-                : .windowPreviews(showTabCounts: showTabCounts)
+                : .windowPreviews(showTabCounts: showTabCounts,
+                                  visibleExtent: visibleExtent, size: size)
         }
     }
 
@@ -343,10 +356,13 @@ final class SwitcherTileView: NSView {
     func configure(item: SwitcherItem,
                    mode: AppearanceMode,
                    showTabCounts: Bool,
+                   visibleExtent: CGSize? = nil,
+                   previewSize: PreviewSize = Preferences.Defaults.previewSize,
                    preview: NSImage?) {
         self.mode = mode
         self.showTabCounts = showTabCounts
-        metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts)
+        metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts,
+                                  visibleExtent: visibleExtent, size: previewSize)
         let tabsText = item.tabCount.map { "\($0) tabs" } ?? ""
         var accessibilityParts = [item.title, item.appName]
         if showTabCounts, !tabsText.isEmpty { accessibilityParts.append(tabsText) }
@@ -455,16 +471,18 @@ final class SwitcherTileView: NSView {
                 cornerHeight: DesignTokens.previewCornerRadius, transform: nil)
             // Both overlays belong to the fixed display-aspect canvas, never
             // the source image's fitted bounds.
-            let badge = DesignTokens.previewBadgeSize
-            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
-                                         y: contentBox.minY - DesignTokens.previewOverlayOverlap,
+            let badge = DesignTokens.scaledPreviewBadgeSize(canvasWidth: contentBox.width)
+            let overlap = DesignTokens.scaledPreviewOverlayOverlap(canvasWidth: contentBox.width)
+            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + overlap,
+                                         y: contentBox.minY - overlap,
                                          width: badge, height: badge)
         } else if mode == .windowPreviews {
             // placeholder card keeps the geometry stable until a snapshot fades in
             previewSurfaceView.frame = contentBox
-            let badge = DesignTokens.previewBadgeSize
-            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
-                                         y: contentBox.minY - DesignTokens.previewOverlayOverlap,
+            let badge = DesignTokens.scaledPreviewBadgeSize(canvasWidth: contentBox.width)
+            let overlap = DesignTokens.scaledPreviewOverlayOverlap(canvasWidth: contentBox.width)
+            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + overlap,
+                                         y: contentBox.minY - overlap,
                                          width: badge, height: badge)
         } else {
             let iconSize = DesignTokens.largeIconSize

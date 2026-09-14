@@ -45,7 +45,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
     func testOnePanelIsCreatedPerTargetDisplay() throws {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
 
-        group.prepare(for: targets(3), tileCount: 4, tileSize: NSSize(width: 200, height: 160))
+        group.prepare(for: targets(3), tileCount: 4, tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
 
         XCTAssertEqual(group.panelCountForTesting, 3)
     }
@@ -54,8 +54,8 @@ final class SwitcherPanelGroupTests: XCTestCase {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         let tileSize = NSSize(width: 200, height: 160)
 
-        group.prepare(for: targets(3), tileCount: 4, tileSize: tileSize)
-        group.prepare(for: targets(1), tileCount: 4, tileSize: tileSize)
+        group.prepare(for: targets(3), tileCount: 4, tileSizeForExtent: { _ in tileSize })
+        group.prepare(for: targets(1), tileCount: 4, tileSizeForExtent: { _ in tileSize })
 
         XCTAssertEqual(group.panelCountForTesting, 1,
                        "unplugging a display must not leave a panel behind")
@@ -65,7 +65,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         let list = items(5)
         group.prepare(for: targets(2), tileCount: list.count,
-                      tileSize: NSSize(width: 200, height: 160))
+                      tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
         group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
 
         group.select(3)
@@ -82,7 +82,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         let list = items(3)
         group.prepare(for: targets(2), tileCount: list.count,
-                      tileSize: NSSize(width: 200, height: 160))
+                      tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
         group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
 
         group.hide()
@@ -97,7 +97,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         let list = items(9)
         group.prepare(for: targets(3), tileCount: list.count,
-                      tileSize: NSSize(width: 200, height: 160))
+                      tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
         group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
 
         let columns = try XCTUnwrap(group.panelForTesting(at: 0)).columnsPerRow
@@ -110,12 +110,42 @@ final class SwitcherPanelGroupTests: XCTestCase {
         group.hide()
     }
 
+    func testEveryPanelSizesItsCardsForTheMostConstrainedDisplay() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let screen = try XCTUnwrap(NSScreen.screens.first)
+        let ultrawide = DisplayDescriptor(
+            id: "ultrawide", name: "Ultrawide",
+            visibleFrame: CGRect(x: 0, y: 0, width: 3440, height: 1415), backingScale: 1)
+        let laptop = DisplayDescriptor(
+            id: "laptop", name: "Laptop",
+            visibleFrame: CGRect(x: 0, y: 0, width: 1512, height: 920), backingScale: 2)
+        var requested: [CGSize?] = []
+
+        group.prepare(for: [(ultrawide, screen), (laptop, screen)], tileCount: 4) { extent in
+            requested.append(extent)
+            return NSSize(width: 200, height: 160)
+        }
+
+        let constrained = CGSize(width: 1512, height: 920)
+        XCTAssertEqual(requested, [constrained])
+        for index in 0..<group.panelCountForTesting {
+            let panel = try XCTUnwrap(group.panelForTesting(at: index))
+            XCTAssertEqual(panel.sharedLayoutExtent, constrained,
+                           "mirrored panels would draw different card sizes")
+        }
+        XCTAssertEqual(group.previewContentSize,
+                       SwitcherTileView.Metrics.windowPreviews(
+                           showTabCounts: Preferences.shared.showTabCounts,
+                           visibleExtent: constrained,
+                           size: Preferences.shared.previewSize).contentSize)
+    }
+
     func testCaptureScaleFollowsTheSharpestTargetDisplay() throws {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         var mixed = targets(1, scale: 1)
         mixed.append(contentsOf: targets(1, scale: 3))
 
-        group.prepare(for: mixed, tileCount: 2, tileSize: NSSize(width: 200, height: 160))
+        group.prepare(for: mixed, tileCount: 2, tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
 
         XCTAssertEqual(group.captureScale, 3)
     }

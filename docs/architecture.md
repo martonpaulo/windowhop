@@ -119,7 +119,7 @@ unaffected by placement.
 
 ## Presentation
 
-Fixed-size tiles in one of two appearances (Settings → Appearance; changing it
+Uniform tiles in one of two appearances (Settings → Appearance; changing it
 applies on the next session, no restart):
 
 - **App Icons** (default): a large application icon dominates a compact tile.
@@ -127,9 +127,15 @@ applies on the next session, no restart):
   bottom-right badge overlapping the fixed preview canvas by the same amount on both
   edges. Every canvas is the same fixed 16:10 shape
   (`DesignTokens.previewCanvasAspect`), so the snapshot can center and aspect-fit
-  without cropping or distortion. The canvas deliberately ignores the monitor:
+  without cropping or distortion. The canvas *shape* deliberately ignores the monitor:
   deriving it from the display made every card a shallow strip on an ultrawide
-  screen. Unused space is an intentional semantic
+  screen. Its *size* follows the display and the Preview size setting (`PreviewSize`,
+  `Core/PanelPlacement.swift` `PreviewCardSizing`): Medium (default) grows cards until four
+  full rows fill the panel height and Large until three, like AltTab's Medium and Large
+  thumbnails, while Small keeps the original card; growing cards keep at least three per row, never drop below the original
+  188 × 118 pt canvas, and mirrored panels all use the most constrained display's size.
+  The app badge and its corner overlap scale with the canvas.
+  Unused space is an intentional semantic
   surface rather than transparent letterboxing. Loading, permission-required, failure,
   and loaded content all reuse that surface, geometry, badge anchor, and corner radius.
 

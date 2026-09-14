@@ -108,8 +108,10 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 - Closing a window always goes through the confirmation dialog (Cancel is default);
   Quit is graceful termination only; Force Quit requires its own second confirmation.
 - **Appearance is fixed**: icon size is Large, the only appearance options are App Icons
-  (default) and Window Previews, and theming is system Light/Dark only. No themes, no
-  custom sizes, no layout or opacity options. This rule governs how the panel *looks*.
+  (default) and Window Previews, the Window Previews size presets Small, Medium (default),
+  and Large (`Core/Preferences.swift` `PreviewSize`, issue #33), and theming is system
+  Light/Dark only. No themes, no free-form or App Icons sizes, no layout or opacity options.
+  This rule governs how the panel *looks*.
   Where the panel is drawn is display behavior, not appearance, and lives with the other
   display settings in Settings → Windows (see `Core/PanelPlacement.swift`).
 - All shortcut strings render through `Core/ShortcutFormatter` — never hardcode a

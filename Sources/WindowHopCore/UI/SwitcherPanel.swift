@@ -112,16 +112,20 @@ public final class SwitcherPanel: NSPanel {
     /// arrow-key navigation. nil means "use this display's own capacity".
     public var sharedColumnLimit: Int?
     public var sharedRowLimit: Int?
+    /// The visible extent this panel sizes and wraps its grid for. The group
+    /// sets the most constrained target's, so mirrored panels draw identical
+    /// Window Previews cards; nil uses this panel's own layout screen.
+    public var sharedLayoutExtent: CGSize?
 
     private var layoutScreen: NSScreen? { placementScreen ?? NSScreen.screens.first }
+    private var sizingExtent: CGSize? { sharedLayoutExtent ?? layoutScreen?.visibleFrame.size }
 
     /// The preview area a tile offers in Window Previews mode, for capture sizing.
-    public static var previewContentSize: NSSize {
-        let metrics = SwitcherTileView.Metrics.metrics(
-            for: .windowPreviews,
-            showTabCounts: Preferences.shared.showTabCounts)
-        return NSSize(width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
-                      height: metrics.contentHeight)
+    public var previewContentSize: NSSize {
+        SwitcherTileView.Metrics.windowPreviews(
+            showTabCounts: Preferences.shared.showTabCounts,
+            visibleExtent: sizingExtent,
+            size: Preferences.shared.previewSize).contentSize
     }
 
     public static var expandedPreviewContentSize: NSSize {
@@ -409,6 +413,8 @@ public final class SwitcherPanel: NSPanel {
                 tile.configure(item: item,
                                mode: mode,
                                showTabCounts: Preferences.shared.showTabCounts,
+                               visibleExtent: sizingExtent,
+                               previewSize: Preferences.shared.previewSize,
                                preview: PreviewProvider.shared.cachedPreview(for: item.id))
                 tile.onClick = { [weak self] in self?.onItemClicked?(index) }
                 tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
@@ -427,10 +433,13 @@ public final class SwitcherPanel: NSPanel {
         let padding = DesignTokens.panelPadding
         let spacing = DesignTokens.tileSpacing
         let rowSpacing = DesignTokens.tileRowSpacing
+        let visibleFrame = CGRect(origin: .zero,
+                                  size: sharedLayoutExtent ?? screen.visibleFrame.size)
         let tileSize = SwitcherTileView.Metrics.metrics(
             for: mode,
-            showTabCounts: Preferences.shared.showTabCounts).tileSize
-        let visibleFrame = screen.visibleFrame
+            showTabCounts: Preferences.shared.showTabCounts,
+            visibleExtent: visibleFrame.size,
+            size: Preferences.shared.previewSize).tileSize
 
         // tiles wrap into rows instead of scrolling horizontally (the AltTab
         // layout model); tiles never shrink. Only an extreme window count
