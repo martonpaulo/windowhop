@@ -16,6 +16,11 @@ public final class SwitcherController {
     private var heldModifierGuard: Timer?
     private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
     private var expandedPreviewTimer: Timer?
+    /// Pending reveal of a held session that is still inside its reveal delay.
+    private var revealTimer: Timer?
+    /// False from session start until the panels are drawn. Before that, panel
+    /// and capture work is skipped so a quick tap never draws or announces anything.
+    private var isRevealed = false
     private var configuredEnabled = false
 
     private init() {}
@@ -78,7 +83,7 @@ public final class SwitcherController {
             items = WindowStore.shared.snapshot()
             perform(state.trigger(backward: backward, itemCount: items.count))
             DebugLog.log("trigger handled: \(items.count) items, phase \(state.phase), "
-                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000))ms to visible panel")
+                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000))ms to session start")
             if !state.isActive {
                 // the tap flipped to .session optimistically; nothing to show after all
                 EventTap.shared.mode = configuredEnabled ? .watching : .off
@@ -151,28 +156,17 @@ public final class SwitcherController {
         switch command {
         case .none:
             break
-        case .show(let selectedIndex):
-            let request = expandedPreview.begin(targetedWindowID: itemID(at: selectedIndex))
-            preparePanels(tileCount: items.count)
-            panels.show(
-                items: items,
-                selectedIndex: selectedIndex,
-                presentationMode: state.phase == .sticky ? .persistent : .cycling)
-            state.updateColumns(panels.columnsPerRow)
+        case .show:
+            // the session exists from here on: input is intercepted and modifier
+            // release activates, whether or not the panels are drawn yet
             EventTap.shared.mode = sessionTapMode()
             startSessionSupports()
-            panels.setPreviewPermissionStatus(ScreenRecordingPermission.status)
-            scheduleExpandedPreview(request)
-            // previews (cached ones already showed instantly) refresh live,
-            // asynchronously, never gating panel presentation
-            PreviewProvider.shared.beginSession(
-                items: items,
-                targetSize: SwitcherPanel.previewContentSize,
-                scale: panels.captureScale)
             // a missed destroy notification once produced a duplicate entry;
             // validate the visible windows in the background and prune the dead
             WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
+            scheduleReveal()
         case .select(let index):
+            guard isRevealed else { break }
             panels.select(index)
             targetExpandedPreview(at: index)
         case .activate(let index):
@@ -206,6 +200,7 @@ public final class SwitcherController {
     /// hidden for the duration so the dialog is unquestionably on top, and is
     /// restored afterwards with the previous selection.
     private func runCloseConfirmation(for item: SwitcherItem) {
+        cancelRevealTimer()
         cancelExpandedPreviewTimer()
         expandedPreview.reset()
         panels.hideExpandedPreview()
@@ -267,7 +262,12 @@ public final class SwitcherController {
         }
         refreshDuringSession()
         if state.isActive {
-            panels.presentAgain(presentationMode: .persistent)
+            if isRevealed {
+                panels.presentAgain(presentationMode: .persistent)
+            } else {
+                // the close was requested before the reveal delay elapsed
+                revealPanels()
+            }
         }
     }
 
@@ -308,8 +308,9 @@ public final class SwitcherController {
                                                    preserving: preserved)
         items = plan.ids.compactMap { freshById[$0] ?? sessionById[$0] }
         // a window that appeared mid-session has no capture in flight yet; without
-        // this its tile would stay a placeholder for the rest of the session
-        if !plan.appeared.isEmpty {
+        // this its tile would stay a placeholder for the rest of the session.
+        // Before the reveal no capture session exists; revealing captures them all.
+        if isRevealed, !plan.appeared.isEmpty {
             DebugLog.log("session list grew by \(plan.appeared.count): now \(items.count) items")
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
@@ -321,7 +322,7 @@ public final class SwitcherController {
             items.firstIndex { $0.id == id }
         } ?? state.selectedIndex
         let command = state.listChanged(itemCount: items.count, preferredIndex: preferredIndex)
-        if state.isActive {
+        if state.isActive, isRevealed {
             panels.update(items: items, selectedIndex: state.selectedIndex)
             state.updateColumns(panels.columnsPerRow)
             targetExpandedPreview(at: state.selectedIndex)
@@ -402,7 +403,55 @@ public final class SwitcherController {
         state.phase == .held ? .sessionHeld : .sessionSticky
     }
 
+    // MARK: - Reveal
+
+    /// Draws the panels now, or after the held-session reveal delay. Ending the
+    /// session first invalidates the timer, so a quick tap activates its target
+    /// without the panels ever being ordered front.
+    private func scheduleReveal() {
+        guard let delay = Preferences.shared.switcherRevealDelay.delay(for: state.phase) else {
+            revealPanels()
+            return
+        }
+        let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
+            self?.revealPanels()
+        }
+        revealTimer = timer
+        RunLoop.main.add(timer, forMode: .common)
+    }
+
+    /// Every presentation step of a session. Uses the selection as it is now,
+    /// which includes any stepping done while the reveal was pending.
+    private func revealPanels() {
+        cancelRevealTimer()
+        guard state.phase == .held || state.phase == .sticky, !isRevealed else { return }
+        isRevealed = true
+        let selectedIndex = state.selectedIndex
+        let request = expandedPreview.begin(targetedWindowID: itemID(at: selectedIndex))
+        preparePanels(tileCount: items.count)
+        panels.show(
+            items: items,
+            selectedIndex: selectedIndex,
+            presentationMode: state.phase == .sticky ? .persistent : .cycling)
+        state.updateColumns(panels.columnsPerRow)
+        panels.setPreviewPermissionStatus(ScreenRecordingPermission.status)
+        scheduleExpandedPreview(request)
+        // previews (cached ones already showed instantly) refresh live,
+        // asynchronously, never gating panel presentation
+        PreviewProvider.shared.beginSession(
+            items: items,
+            targetSize: SwitcherPanel.previewContentSize,
+            scale: panels.captureScale)
+    }
+
+    private func cancelRevealTimer() {
+        revealTimer?.invalidate()
+        revealTimer = nil
+    }
+
     private func endSession() {
+        cancelRevealTimer()
+        isRevealed = false
         cancelExpandedPreviewTimer()
         panels.hideExpandedPreview()
         panels.hide()

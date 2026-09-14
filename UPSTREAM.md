@@ -32,6 +32,7 @@ The full upstream history up to that commit is preserved in this repository
 | `src/logic/events/RunningApplicationsEvents.swift` | `Engine/WindowStore.swift` | KVO on `NSWorkspace.runningApplications` |
 | `src/logic/SystemPermissions.swift` | `Engine/AccessibilityPermission.swift` | permission gating; polling reduced to onboarding-window-only |
 | Window/screen coordinate conversion (`Window.isOnScreen`) | `Engine/TrackedWindow.swift` | Quartz↔Cocoa frame conversion |
+| `src/ui/App.swift` (`showUiOrCycleSelection`), `src/logic/Preferences.swift` (`windowDisplayDelay`) | `Core/Preferences.swift` (`SwitcherRevealDelay`) + `Input/SwitcherController.swift` (`scheduleReveal`) | reveal delay before drawing the switcher (upstream default 100 ms), with a quick release ending the session before anything is shown; exposed as presets and applied to held sessions only (WindowHop issue #32) |
 | `src/logic/Screens.swift` (`withMouse()`, `uuid()`) | `Engine/DisplayRegistry.swift` | pointer-display detection via `NSMouseInRect`; stable display identity via `CGDisplayCreateUUIDFromDisplayID` with the nil checks those implicitly-unwrapped APIs actually need; the documented unreliability of `NSScreen.main` |
 
 ## Corrected (ported rule intentionally diverges from upstream)

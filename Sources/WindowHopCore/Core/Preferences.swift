@@ -50,6 +50,46 @@ public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable {
     }
 }
 
+/// How long a held switcher session waits before drawing its panel, so a quick
+/// press-and-release switches windows without flashing the switcher. Ported
+/// from AltTab's `windowDisplayDelay` (see UPSTREAM.md), as presets.
+public enum SwitcherRevealDelay: String, CaseIterable, Identifiable {
+    case off
+    case milliseconds100
+    case milliseconds200
+    case milliseconds300
+    case milliseconds500
+
+    public var id: String { rawValue }
+
+    public var displayName: String {
+        switch self {
+        case .off: return "Off"
+        case .milliseconds100: return "100 ms"
+        case .milliseconds200: return "200 ms"
+        case .milliseconds300: return "300 ms"
+        case .milliseconds500: return "500 ms"
+        }
+    }
+
+    public var duration: TimeInterval? {
+        switch self {
+        case .off: return nil
+        case .milliseconds100: return 0.1
+        case .milliseconds200: return 0.2
+        case .milliseconds300: return 0.3
+        case .milliseconds500: return 0.5
+        }
+    }
+
+    /// The wait before revealing a session that has just entered `phase`, or
+    /// nil to reveal immediately. Only held sessions wait: a sticky session was
+    /// asked for explicitly and has no quick-tap case to protect.
+    public func delay(for phase: SwitcherState.Phase) -> TimeInterval? {
+        phase == .held ? duration : nil
+    }
+}
+
 /// All WindowHop settings with their defaults. This observable model is the
 /// single runtime source of truth; UserDefaults is only its persistence layer.
 /// The store is injectable for deterministic migration and persistence tests.
@@ -67,6 +107,7 @@ public final class Preferences: ObservableObject {
         /// Kept only to migrate 1.1.2 dwell presets.
         case navigationPreviewDelay
         case expandedPreviewDelay
+        case switcherRevealDelay
         case switcherDisplayPlacement
         /// The persistent UUID of the display chosen for `.specificDisplay`.
         case switcherDisplayID
@@ -91,6 +132,7 @@ public final class Preferences: ObservableObject {
         public static let persistentShortcut: PersistentShortcut? = .optionTab
         public static let appearanceMode = AppearanceMode.appIcons
         public static let expandedPreviewDelay = ExpandedPreviewDelay.threeSeconds
+        public static let switcherRevealDelay = SwitcherRevealDelay.milliseconds100
         public static let switcherDisplayPlacement = SwitcherDisplayPlacement.allDisplays
         public static let switcherDisplayID: String? = nil
         public static let includeOtherSpaces = true
@@ -115,6 +157,7 @@ public final class Preferences: ObservableObject {
         .persistentShortcut,
         .appearanceMode,
         .expandedPreviewDelay,
+        .switcherRevealDelay,
         .switcherDisplayPlacement,
         .switcherDisplayID,
         .includeOtherSpaces,
@@ -135,6 +178,7 @@ public final class Preferences: ObservableObject {
         Key.persistentShortcut.rawValue: Defaults.persistentShortcut?.encoded ?? "",
         Key.appearanceMode.rawValue: Defaults.appearanceMode.rawValue,
         Key.expandedPreviewDelay.rawValue: Defaults.expandedPreviewDelay.rawValue,
+        Key.switcherRevealDelay.rawValue: Defaults.switcherRevealDelay.rawValue,
         Key.switcherDisplayPlacement.rawValue: Defaults.switcherDisplayPlacement.rawValue,
         // an absent chosen display is the empty string, matching persistentShortcut:
         // the registration domain cannot hold nil
@@ -179,6 +223,13 @@ public final class Preferences: ObservableObject {
         didSet {
             defaults.set(expandedPreviewDelay.rawValue,
                          forKey: Key.expandedPreviewDelay.rawValue)
+        }
+    }
+
+    @Published public var switcherRevealDelay: SwitcherRevealDelay {
+        didSet {
+            defaults.set(switcherRevealDelay.rawValue,
+                         forKey: Key.switcherRevealDelay.rawValue)
         }
     }
 
@@ -281,6 +332,9 @@ public final class Preferences: ObservableObject {
         expandedPreviewDelay = restoredExpandedPreviewDelay
         defaults.set(restoredExpandedPreviewDelay.rawValue,
                      forKey: Key.expandedPreviewDelay.rawValue)
+        switcherRevealDelay = SwitcherRevealDelay(
+            rawValue: Self.string(defaults, .switcherRevealDelay) ?? "")
+            ?? Defaults.switcherRevealDelay
         switcherDisplayPlacement = SwitcherDisplayPlacement(
             rawValue: Self.string(defaults, .switcherDisplayPlacement) ?? "")
             ?? Defaults.switcherDisplayPlacement
@@ -375,6 +429,7 @@ public final class Preferences: ObservableObject {
             case .appearanceMode: appearanceMode = Defaults.appearanceMode
             case .expandedPreviewDelay:
                 expandedPreviewDelay = Defaults.expandedPreviewDelay
+            case .switcherRevealDelay: switcherRevealDelay = Defaults.switcherRevealDelay
             case .switcherDisplayPlacement:
                 switcherDisplayPlacement = Defaults.switcherDisplayPlacement
             case .switcherDisplayID: switcherDisplayID = Defaults.switcherDisplayID

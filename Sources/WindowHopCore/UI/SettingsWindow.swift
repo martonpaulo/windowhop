@@ -346,6 +346,22 @@ struct WindowsPane: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                Picker("Delay before showing the switcher",
+                       selection: $preferences.switcherRevealDelay) {
+                    ForEach(SwitcherRevealDelay.allCases) { delay in
+                        Text(delay.displayName).tag(delay)
+                    }
+                }
+                .pickerStyle(.menu)
+            } header: {
+                Text("Switcher delay")
+            } footer: {
+                Text("While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is \(Preferences.Defaults.switcherRevealDelay.displayName).")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
         }
         .settingsPane()
         .onAppear { connectedDisplays.startObserving() }

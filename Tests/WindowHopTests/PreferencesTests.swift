@@ -27,6 +27,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
         XCTAssertEqual(preferences.expandedPreviewDelay.duration, 3)
+        XCTAssertEqual(preferences.switcherRevealDelay, .milliseconds100)
         XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
         XCTAssertNil(preferences.switcherDisplayID)
         XCTAssertTrue(preferences.includeOtherSpaces)
@@ -49,6 +50,7 @@ final class PreferencesTests: XCTestCase {
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.appearanceMode = .windowPreviews
         preferences.expandedPreviewDelay = .fiveSeconds
+        preferences.switcherRevealDelay = .milliseconds300
         preferences.switcherDisplayPlacement = .specificDisplay
         preferences.switcherDisplayID = "UUID-EXTERNAL"
         preferences.includeOtherSpaces = false
@@ -70,6 +72,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.persistentShortcut, preferences.persistentShortcut)
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
         XCTAssertEqual(restored.expandedPreviewDelay, .fiveSeconds)
+        XCTAssertEqual(restored.switcherRevealDelay, .milliseconds300)
         XCTAssertEqual(restored.switcherDisplayPlacement, .specificDisplay)
         XCTAssertEqual(restored.switcherDisplayID, "UUID-EXTERNAL")
         XCTAssertFalse(restored.includeOtherSpaces)
@@ -120,6 +123,7 @@ final class PreferencesTests: XCTestCase {
     func testCorruptAppearanceAndBooleanValuesFallBackToDocumentedDefaults() {
         defaults.set("obsolete-mode", forKey: Preferences.Key.appearanceMode.rawValue)
         defaults.set("obsolete-delay", forKey: Preferences.Key.expandedPreviewDelay.rawValue)
+        defaults.set("obsolete-delay", forKey: Preferences.Key.switcherRevealDelay.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.includeOtherSpaces.rawValue)
         defaults.set("not-a-boolean",
                      forKey: Preferences.Key.includeMinimizedWindows.rawValue)
@@ -129,6 +133,7 @@ final class PreferencesTests: XCTestCase {
 
         XCTAssertEqual(restored.appearanceMode, .appIcons)
         XCTAssertEqual(restored.expandedPreviewDelay, .threeSeconds)
+        XCTAssertEqual(restored.switcherRevealDelay, .milliseconds100)
         XCTAssertTrue(restored.includeOtherSpaces)
         XCTAssertFalse(restored.includeMinimizedWindows)
         XCTAssertFalse(restored.showMenuBarItem)
@@ -161,6 +166,18 @@ final class PreferencesTests: XCTestCase {
         withExtendedLifetime(observation) {}
     }
 
+    func testSwitcherRevealDelayPublishesRuntimeUpdatesImmediately() {
+        var observed: [SwitcherRevealDelay] = []
+        let observation = preferences.$switcherRevealDelay.sink {
+            observed.append($0)
+        }
+
+        preferences.switcherRevealDelay = .off
+
+        XCTAssertEqual(observed, [.milliseconds100, .off])
+        withExtendedLifetime(observation) {}
+    }
+
     func testLegacyNavigationDelayMigratesToExpandedPreviewPreset() {
         defaults.removeObject(forKey: Preferences.Key.expandedPreviewDelay.rawValue)
         defaults.set("long", forKey: Preferences.Key.navigationPreviewDelay.rawValue)
@@ -187,6 +204,7 @@ final class PreferencesTests: XCTestCase {
         preferences.persistentShortcut = nil
         preferences.appearanceMode = .windowPreviews
         preferences.expandedPreviewDelay = .off
+        preferences.switcherRevealDelay = .off
         preferences.includeOtherSpaces = false
         preferences.includeOtherDisplays = false
         preferences.includeMinimizedWindows = true
@@ -206,6 +224,7 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
+        XCTAssertEqual(preferences.switcherRevealDelay, .milliseconds100)
         XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
         XCTAssertNil(preferences.switcherDisplayID)
         XCTAssertTrue(preferences.includeOtherSpaces)

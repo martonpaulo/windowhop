@@ -62,6 +62,10 @@ through plain AppKit.
 3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
+   A held session starts at once (input interception, modifier-release activation) but
+   draws its panels only after the `SwitcherRevealDelay` preference (default 100 ms),
+   through one session-scoped timer; ending the session first invalidates it, so a quick
+   press activates its target without drawing anything. Sticky sessions reveal immediately.
 4. `ExpandedPreviewSession` owns only targeted and expanded identities. The `Preferences`
    delay is the single source of truth: Off, 1, 2, 3 (default), or 5 seconds. Target
    changes cancel the one session-scoped timer and invalidate its generation, so an
