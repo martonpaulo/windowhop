@@ -99,9 +99,10 @@ public final class PreviewProvider {
         let requests = items.compactMap(makeCaptureRequest)
         let sessionGeneration = ledger.beginSession(ids: requests.map { $0.id })
         activeSessionGeneration = sessionGeneration
+        let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(requests, generation: sessionGeneration,
-                                targetSize: targetSize, scale: scale)
+                                pixelTarget: pixelTarget)
         }
     }
 
@@ -116,9 +117,10 @@ public final class PreviewProvider {
         let requests = items.compactMap(makeCaptureRequest)
         guard !requests.isEmpty else { return }
         ledger.extendSession(ids: requests.map { $0.id })
+        let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(requests, generation: sessionGeneration,
-                                targetSize: targetSize, scale: scale)
+                                pixelTarget: pixelTarget)
         }
     }
 
@@ -143,13 +145,14 @@ public final class PreviewProvider {
               let request = makeCaptureRequest(item) else { return }
         expandedGeneration += 1
         let requestGeneration = expandedGeneration
+        let pixelTarget = CGSize(width: targetSize.width * scale,
+                                 height: targetSize.height * scale)
         Task { [weak self] in
             await self?.captureExpanded(
                 request,
                 sessionGeneration: sessionGeneration,
                 requestGeneration: requestGeneration,
-                targetSize: targetSize,
-                scale: scale)
+                pixelTarget: pixelTarget)
         }
     }
 
@@ -160,7 +163,7 @@ public final class PreviewProvider {
     // MARK: - Capture
 
     private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
-                         targetSize: CGSize, scale: CGFloat) async {
+                         pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
             for request in requests {
@@ -188,7 +191,7 @@ public final class PreviewProvider {
                 for (request, scWindow) in wave {
                     group.addTask { [weak self] in
                         await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                               targetSize: targetSize, scale: scale)
+                                               pixelTarget: pixelTarget)
                     }
                 }
             }
@@ -203,8 +206,8 @@ public final class PreviewProvider {
 
     private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
                             generation sessionGeneration: Int,
-                            targetSize: CGSize, scale: CGFloat) async {
-        guard let image = await captureImage(scWindow, targetSize: targetSize, scale: scale) else {
+                            pixelTarget: CGSize) async {
+        guard let image = await captureImage(scWindow, pixelTarget: pixelTarget) else {
             await markUnavailable(request.id, generation: sessionGeneration)
             return
         }
@@ -222,7 +225,7 @@ public final class PreviewProvider {
     private func captureExpanded(_ request: CaptureRequest,
                                  sessionGeneration: Int,
                                  requestGeneration: Int,
-                                 targetSize: CGSize, scale: CGFloat) async {
+                                 pixelTarget: CGSize) async {
         let identity = SendableIdentity(value: request.id)
         await ExpandedCaptureFlow.run(
             lookup: { () -> SCWindow? in
@@ -239,7 +242,7 @@ public final class PreviewProvider {
                                               sessionGeneration: sessionGeneration,
                                               requestGeneration: requestGeneration)
             },
-            capture: { await self.captureImage($0, targetSize: targetSize, scale: scale) },
+            capture: { await self.captureImage($0, pixelTarget: pixelTarget) },
             deliver: { image in
                 self.cache[identity.value] = image
                 self.onPreview?(identity.value, image)
@@ -259,26 +262,22 @@ public final class PreviewProvider {
     }
 
     private func captureImage(_ scWindow: SCWindow,
-                              targetSize: CGSize,
-                              scale: CGFloat) async -> NSImage? {
+                              pixelTarget: CGSize) async -> NSImage? {
         let windowSize = scWindow.frame.size
         guard windowSize.width > 1, windowSize.height > 1 else { return nil }
         let configuration = SCStreamConfiguration()
-        let pixels = PreviewCaptureSizing.pixelSize(
-            windowSize: windowSize, targetSize: targetSize, scale: scale)
-        configuration.width = Int(pixels.width)
-        configuration.height = Int(pixels.height)
+        let fit = min(pixelTarget.width / windowSize.width,
+                      pixelTarget.height / windowSize.height, 2)
+        configuration.width = max(1, Int(windowSize.width * fit))
+        configuration.height = max(1, Int(windowSize.height * fit))
         configuration.showsCursor = false
         configuration.ignoreShadowsSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
         guard let cgImage = try? await SCScreenshotManager.captureImage(
             contentFilter: filter, configuration: configuration) else { return nil }
-        // points follow the scale the pixels were captured for; a fixed half
-        // size drew every snapshot at half its canvas on a 1x display
         return NSImage(cgImage: cgImage,
-                       size: PreviewCaptureSizing.pointSize(
-                           pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
-                           scale: scale))
+                       size: NSSize(width: CGFloat(cgImage.width) / 2,
+                                    height: CGFloat(cgImage.height) / 2))
     }
 
     private func makeCaptureRequest(_ item: SwitcherItem) -> CaptureRequest? {
