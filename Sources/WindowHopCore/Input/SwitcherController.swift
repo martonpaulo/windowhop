@@ -314,7 +314,7 @@ public final class SwitcherController {
             DebugLog.log("session list grew by \(plan.appeared.count): now \(items.count) items")
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
-                targetSize: panels.previewContentSize,
+                targetSize: SwitcherPanel.previewContentSize,
                 scale: panels.captureScale)
         }
         expandedPreview.retainAvailable(Set(items.map(\.id)))
@@ -391,14 +391,10 @@ public final class SwitcherController {
             available: connected.map(\.descriptor),
             pointerDisplayID: DisplayRegistry.pointerDisplayID()).map(\.id))
         let targets = connected.filter { targetIDs.contains($0.descriptor.id) }
-        let mode = Preferences.shared.appearanceMode
-        let showTabCounts = Preferences.shared.showTabCounts
-        let previewSize = Preferences.shared.previewSize
-        panels.prepare(for: targets, tileCount: tileCount) { extent in
-            SwitcherTileView.Metrics.metrics(
-                for: mode, showTabCounts: showTabCounts,
-                visibleExtent: extent, size: previewSize).tileSize
-        }
+        let metrics = SwitcherTileView.Metrics.metrics(
+            for: Preferences.shared.appearanceMode,
+            showTabCounts: Preferences.shared.showTabCounts)
+        panels.prepare(for: targets, tileCount: tileCount, tileSize: metrics.tileSize)
         DebugLog.log("panels prepared: \(targets.count) display(s), "
             + "placement \(Preferences.shared.switcherDisplayPlacement.rawValue)")
     }
@@ -444,7 +440,7 @@ public final class SwitcherController {
         // asynchronously, never gating panel presentation
         PreviewProvider.shared.beginSession(
             items: items,
-            targetSize: panels.previewContentSize,
+            targetSize: SwitcherPanel.previewContentSize,
             scale: panels.captureScale)
     }
 

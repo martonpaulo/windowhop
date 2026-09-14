@@ -276,44 +276,14 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(firstRow.minY - secondRow.maxY, DesignTokens.tileRowSpacing)
     }
 
-    // MARK: - Display-sized cards (issue #33)
-
-    func testUltrawideCardScalesTheCanvasAndKeepsOverlaysAnchored() {
-        let minimum = configuredTile(imageSize: NSSize(width: 1440, height: 900))
-        let scaled = configuredTile(imageSize: NSSize(width: 1440, height: 900),
-                                    visibleExtent: CGSize(width: 3440, height: 1415))
-        let canvas = scaled.previewCanvasFrameForTesting
-        let badge = scaled.badgeFrameForTesting
-
-        XCTAssertEqual(canvas.size, NSSize(width: 302, height: 189))
-        // the app icon grows with the canvas and stays anchored to its corner
-        XCTAssertEqual(minimum.badgeFrameForTesting.width, DesignTokens.previewBadgeSize)
-        XCTAssertEqual(badge.width, 77)
-        XCTAssertEqual(badge.maxX - canvas.maxX, 13)
-        XCTAssertEqual(canvas.minY - badge.minY, 13)
-        XCTAssertTrue(canvas.insetBy(dx: -1, dy: -1).contains(scaled.previewImageFrameForTesting))
-    }
-
-    func testAppIconsCardsIgnoreTheDisplayExtent() {
-        let plain = SwitcherTileView.Metrics.metrics(for: .appIcons, showTabCounts: false)
-        let ultrawide = SwitcherTileView.Metrics.metrics(
-            for: .appIcons, showTabCounts: false, visibleExtent: CGSize(width: 3440, height: 1415))
-
-        XCTAssertEqual(plain.tileSize, ultrawide.tileSize)
-        XCTAssertEqual(plain.contentHeight, ultrawide.contentHeight)
-    }
-
     private func configuredTile(imageSize: NSSize?,
-                                mode: AppearanceMode = .windowPreviews,
-                                visibleExtent: CGSize? = nil) -> SwitcherTileView {
+                                mode: AppearanceMode = .windowPreviews) -> SwitcherTileView {
         let tile = SwitcherTileView()
         tile.configure(item: item("tile"), mode: mode, showTabCounts: false,
-                       visibleExtent: visibleExtent,
                        preview: imageSize.map(NSImage.init(size:)))
         tile.frame = NSRect(origin: .zero,
                             size: SwitcherTileView.Metrics.metrics(
-                                for: mode, showTabCounts: false,
-                                visibleExtent: visibleExtent).tileSize)
+                                for: mode, showTabCounts: false).tileSize)
         tile.layoutSubtreeIfNeeded()
         return tile
     }

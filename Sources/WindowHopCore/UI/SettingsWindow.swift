@@ -404,16 +404,9 @@ struct AppearancePane: View {
                         PreviewProvider.shared.evictAll()
                     }
                 }
-                Picker("Preview size", selection: $preferences.previewSize) {
-                    ForEach(PreviewSize.allCases) { size in
-                        Text(size.displayName).tag(size)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .disabled(!previewsSelected)
                 Toggle("Show tab counts", isOn: $preferences.showTabCounts)
             } footer: {
-                Text("App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title. Preview size applies to Window Previews: Small keeps the same size on every display, while Medium and Large grow on larger displays. The default is \(Preferences.Defaults.previewSize.displayName).")
+                Text("App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

@@ -50,36 +50,6 @@ public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable {
     }
 }
 
-/// How large Window Previews cards are (issue #33). Only the preview size is
-/// adjustable; App Icons keeps its fixed native proportions.
-public enum PreviewSize: String, CaseIterable, Identifiable {
-    case small
-    case medium
-    case large
-
-    public var id: String { rawValue }
-
-    public var displayName: String {
-        switch self {
-        case .small: return "Small"
-        case .medium: return "Medium"
-        case .large: return "Large"
-        }
-    }
-
-    /// Full card rows the panel height must hold: cards grow with the display
-    /// until they fill it. Small never grows, so every display keeps the original
-    /// card. Medium and Large match AltTab's thumbnail sizes (`rowsCount` 4 and 3,
-    /// `317a485b:src/logic/Appearance.swift`).
-    public var rowsOnScreen: Int? {
-        switch self {
-        case .small: return nil
-        case .medium: return 4
-        case .large: return 3
-        }
-    }
-}
-
 /// How long a held switcher session waits before drawing its panel, so a quick
 /// press-and-release switches windows without flashing the switcher. Ported
 /// from AltTab's `windowDisplayDelay` (see UPSTREAM.md), as presets.
@@ -134,7 +104,6 @@ public final class Preferences: ObservableObject {
         case shortcut
         case persistentShortcut
         case appearanceMode
-        case previewSize
         /// Kept only to migrate 1.1.2 dwell presets.
         case navigationPreviewDelay
         case expandedPreviewDelay
@@ -162,7 +131,6 @@ public final class Preferences: ObservableObject {
         public static let shortcut = ShortcutSpec.commandTab
         public static let persistentShortcut: PersistentShortcut? = .optionTab
         public static let appearanceMode = AppearanceMode.appIcons
-        public static let previewSize = PreviewSize.medium
         public static let expandedPreviewDelay = ExpandedPreviewDelay.threeSeconds
         public static let switcherRevealDelay = SwitcherRevealDelay.milliseconds100
         public static let switcherDisplayPlacement = SwitcherDisplayPlacement.allDisplays
@@ -188,7 +156,6 @@ public final class Preferences: ObservableObject {
         .shortcut,
         .persistentShortcut,
         .appearanceMode,
-        .previewSize,
         .expandedPreviewDelay,
         .switcherRevealDelay,
         .switcherDisplayPlacement,
@@ -210,7 +177,6 @@ public final class Preferences: ObservableObject {
         Key.shortcut.rawValue: Defaults.shortcut.rawValue,
         Key.persistentShortcut.rawValue: Defaults.persistentShortcut?.encoded ?? "",
         Key.appearanceMode.rawValue: Defaults.appearanceMode.rawValue,
-        Key.previewSize.rawValue: Defaults.previewSize.rawValue,
         Key.expandedPreviewDelay.rawValue: Defaults.expandedPreviewDelay.rawValue,
         Key.switcherRevealDelay.rawValue: Defaults.switcherRevealDelay.rawValue,
         Key.switcherDisplayPlacement.rawValue: Defaults.switcherDisplayPlacement.rawValue,
@@ -251,10 +217,6 @@ public final class Preferences: ObservableObject {
 
     @Published public var appearanceMode: AppearanceMode {
         didSet { defaults.set(appearanceMode.rawValue, forKey: Key.appearanceMode.rawValue) }
-    }
-
-    @Published public var previewSize: PreviewSize {
-        didSet { defaults.set(previewSize.rawValue, forKey: Key.previewSize.rawValue) }
     }
 
     @Published public var expandedPreviewDelay: ExpandedPreviewDelay {
@@ -366,8 +328,6 @@ public final class Preferences: ObservableObject {
         appearanceMode = AppearanceMode(
             rawValue: Self.string(defaults, .appearanceMode) ?? "")
             ?? Defaults.appearanceMode
-        previewSize = PreviewSize(rawValue: Self.string(defaults, .previewSize) ?? "")
-            ?? Defaults.previewSize
         let restoredExpandedPreviewDelay = Self.expandedPreviewDelay(from: defaults)
         expandedPreviewDelay = restoredExpandedPreviewDelay
         defaults.set(restoredExpandedPreviewDelay.rawValue,
@@ -467,7 +427,6 @@ public final class Preferences: ObservableObject {
             case .shortcut: shortcut = Defaults.shortcut
             case .persistentShortcut: persistentShortcut = Defaults.persistentShortcut
             case .appearanceMode: appearanceMode = Defaults.appearanceMode
-            case .previewSize: previewSize = Defaults.previewSize
             case .expandedPreviewDelay:
                 expandedPreviewDelay = Defaults.expandedPreviewDelay
             case .switcherRevealDelay: switcherRevealDelay = Defaults.switcherRevealDelay

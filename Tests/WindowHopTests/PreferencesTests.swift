@@ -27,7 +27,6 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
         XCTAssertEqual(preferences.expandedPreviewDelay.duration, 3)
-        XCTAssertEqual(preferences.previewSize, .medium)
         XCTAssertEqual(preferences.switcherRevealDelay, .milliseconds100)
         XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
         XCTAssertNil(preferences.switcherDisplayID)
@@ -52,7 +51,6 @@ final class PreferencesTests: XCTestCase {
         preferences.appearanceMode = .windowPreviews
         preferences.expandedPreviewDelay = .fiveSeconds
         preferences.switcherRevealDelay = .milliseconds300
-        preferences.previewSize = .large
         preferences.switcherDisplayPlacement = .specificDisplay
         preferences.switcherDisplayID = "UUID-EXTERNAL"
         preferences.includeOtherSpaces = false
@@ -75,7 +73,6 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
         XCTAssertEqual(restored.expandedPreviewDelay, .fiveSeconds)
         XCTAssertEqual(restored.switcherRevealDelay, .milliseconds300)
-        XCTAssertEqual(restored.previewSize, .large)
         XCTAssertEqual(restored.switcherDisplayPlacement, .specificDisplay)
         XCTAssertEqual(restored.switcherDisplayID, "UUID-EXTERNAL")
         XCTAssertFalse(restored.includeOtherSpaces)
@@ -127,7 +124,6 @@ final class PreferencesTests: XCTestCase {
         defaults.set("obsolete-mode", forKey: Preferences.Key.appearanceMode.rawValue)
         defaults.set("obsolete-delay", forKey: Preferences.Key.expandedPreviewDelay.rawValue)
         defaults.set("obsolete-delay", forKey: Preferences.Key.switcherRevealDelay.rawValue)
-        defaults.set("gigantic", forKey: Preferences.Key.previewSize.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.includeOtherSpaces.rawValue)
         defaults.set("not-a-boolean",
                      forKey: Preferences.Key.includeMinimizedWindows.rawValue)
@@ -138,7 +134,6 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.appearanceMode, .appIcons)
         XCTAssertEqual(restored.expandedPreviewDelay, .threeSeconds)
         XCTAssertEqual(restored.switcherRevealDelay, .milliseconds100)
-        XCTAssertEqual(restored.previewSize, .medium)
         XCTAssertTrue(restored.includeOtherSpaces)
         XCTAssertFalse(restored.includeMinimizedWindows)
         XCTAssertFalse(restored.showMenuBarItem)
@@ -210,7 +205,6 @@ final class PreferencesTests: XCTestCase {
         preferences.appearanceMode = .windowPreviews
         preferences.expandedPreviewDelay = .off
         preferences.switcherRevealDelay = .off
-        preferences.previewSize = .small
         preferences.includeOtherSpaces = false
         preferences.includeOtherDisplays = false
         preferences.includeMinimizedWindows = true
@@ -230,7 +224,6 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
         XCTAssertEqual(preferences.expandedPreviewDelay, .threeSeconds)
-        XCTAssertEqual(preferences.previewSize, .medium)
         XCTAssertEqual(preferences.switcherRevealDelay, .milliseconds100)
         XCTAssertEqual(preferences.switcherDisplayPlacement, .allDisplays)
         XCTAssertNil(preferences.switcherDisplayID)

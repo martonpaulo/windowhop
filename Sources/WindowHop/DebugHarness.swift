@@ -171,31 +171,6 @@ enum DebugHarness {
                 finishOne()
             }
         }
-        // Card size follows the display (issue #33): render the same previews for
-        // a conventional and an ultrawide extent, independent of the developer's
-        // own screen.
-        for (suffix, extent) in [("laptop", CGSize(width: 1512, height: 920)),
-                                 ("ultrawide", CGSize(width: 3440, height: 1415))] {
-            let sizedPanel = SwitcherPanel(rasterizableBackground: true)
-            sizedPanel.appearance = NSAppearance(named: .aqua)
-            sizedPanel.sharedLayoutExtent = extent
-            let sizedItems = demoItems()
-            sizedPanel.show(items: sizedItems, selectedIndex: 1, presentationMode: .persistent)
-            pending += 1
-            for (index, item) in sizedItems.enumerated() {
-                let wide = index % 3 != 2
-                let size = wide ? NSSize(width: 1440, height: 900) : NSSize(width: 760, height: 1200)
-                sizedPanel.updatePreview(id: item.id, image: syntheticWindowImage(size: size, seed: index))
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                sizedPanel.prepareCloseForRendering(at: nil)
-                if let contentView = sizedPanel.contentView {
-                    write(contentView, "switcher-previews-\(suffix)")
-                }
-                sizedPanel.hide()
-                finishOne()
-            }
-        }
         // Standard switcher renders always exercise the permission-free default,
         // independent of the developer's persisted local preference.
         Preferences.shared.appearanceMode = .appIcons

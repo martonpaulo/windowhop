@@ -45,7 +45,7 @@ final class ExpandedPreviewPresentationTests: XCTestCase {
     private func openedGroup(panelCount: Int = 1, items list: [SwitcherItem]) throws {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
         group.prepare(for: targets(panelCount), tileCount: list.count,
-                      tileSizeForExtent: { _ in NSSize(width: 200, height: 160) })
+                      tileSize: NSSize(width: 200, height: 160))
         group.update(items: list, selectedIndex: 0)
     }
 

@@ -72,8 +72,7 @@ to reopen the non-goal — an inconvenient feature request is not.
   a working switcher. This is the fail-safe the whole design is arranged around.
 
 Appearance customization is deliberately *not* on this list. It is currently constrained to two
-modes, three Window Previews size presets, and system Light/Dark by an implementation rule in
-`AGENTS.md`, which is a narrower and
+modes and system Light/Dark by an implementation rule in `AGENTS.md`, which is a narrower and
 more reversible commitment than a product non-goal.
 
 ## How you know it worked

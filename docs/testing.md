@@ -76,8 +76,6 @@ one browser at the same size and confirm every line resolves to its own title.
 `--render-ui` produces synthetic, privacy-safe PNGs for:
 
 - App Icons and Window Previews in Light and Dark Mode;
-- Window Previews sized for a laptop and an ultrawide display
-  (`switcher-previews-laptop`, `switcher-previews-ultrawide`);
 - loaded, letterboxed, loading, unavailable, and permission-blocked previews;
 - expanded preview in both appearances;
 - multi-row overflow;

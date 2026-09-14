@@ -33,36 +33,19 @@ public final class SwitcherPanelGroup {
     /// Called at session start, before `show`. Panels are recreated only when the
     /// target set changes, so a repeated session on the same displays reuses its
     /// panels and their warm tile pools.
-    ///
-    /// `tileSizeForExtent` maps a visible extent to the session's tile size,
-    /// because Window Previews cards follow the display they are laid out for.
     public func prepare(for targets: [(descriptor: DisplayDescriptor, screen: NSScreen)],
                         tileCount: Int,
-                        tileSizeForExtent: (CGSize?) -> NSSize) {
+                        tileSize: NSSize) {
         let descriptors = targets.map(\.descriptor)
         captureScale = SwitcherGridCapacity.captureScale(descriptors, fallback: 2)
-        // every panel sizes its cards for the most constrained target, so the
-        // mirrored panels stay identical even though card size follows the display
-        let extent = SwitcherGridCapacity.mostConstrainedExtent(descriptors)
-            .map { CGSize(width: $0.width, height: $0.height) }
 
-        let limits = sharedLimits(for: descriptors, tileCount: tileCount,
-                                  tileSize: tileSizeForExtent(extent))
+        let limits = sharedLimits(for: descriptors, tileCount: tileCount, tileSize: tileSize)
         resizePool(to: targets.count)
         for (panel, target) in zip(panels, targets) {
             panel.placementScreen = target.screen
             panel.sharedColumnLimit = limits.columns
             panel.sharedRowLimit = limits.rows
-            panel.sharedLayoutExtent = extent
         }
-    }
-
-    /// The preview canvas every panel draws, which is what captures must fill.
-    public var previewContentSize: NSSize {
-        panels.first?.previewContentSize
-            ?? SwitcherTileView.Metrics.windowPreviews(
-                showTabCounts: Preferences.shared.showTabCounts,
-                size: Preferences.shared.previewSize).contentSize
     }
 
     /// The grid every mirrored panel must use, taken from the narrowest and
