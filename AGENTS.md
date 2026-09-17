@@ -2,7 +2,7 @@
 
 ## Project identity and policy
 
-- Project name: `WindowHop`
+- Project name: `windowhop`
 - Public name: `WindowHop`
 - Benefit-first description: Switch between windows, not just apps. Fast, native macOS
   window switcher with large app icons or live previews — free, GPL, no telemetry.
