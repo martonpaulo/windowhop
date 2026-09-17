@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Repository validation
-        run: scripts/validate.sh
+        run: make validate
 
   # A release build plus the full suite costs minutes of macOS runner time, so
   # it only runs when something it could actually observe changed. Documentation

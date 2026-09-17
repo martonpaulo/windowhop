@@ -22,7 +22,7 @@ Sparkle key material anywhere.
 git clone https://github.com/martonpaulo/windowhop && cd windowhop
 swift build            # debug build
 swift test             # unit tests (must pass)
-scripts/validate.sh    # repository invariants (must pass)
+make validate          # repository invariants (must pass)
 scripts/package-app.sh # assemble build/WindowHop.app
 ```
 
@@ -69,7 +69,7 @@ to test credentials; use the local packaging commands and Apple tooling directly
 1. The owner commits validated work directly to `main`; outside contributors work on a branch and
    open a pull request.
 2. Keep changes focused; unrelated refactors make review slow.
-3. `swift test` and `scripts/validate.sh` must pass, with zero warnings.
+3. `swift test` and `make validate` must pass, with zero warnings.
 4. Use [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, …),
    one concern per commit, and end a commit made for an issue with `(#<issue number>)`.
 5. Update documentation when behavior changes, and never bump the version or edit `appcast.xml` as

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A stand-in for `gh release` used by scripts/tests/publish-release-tests.sh.
+"""A stand-in for `gh release` used by tests/scripts/publish-release-tests.sh.
 
 It keeps the release state in FAKE_GH_STATE, appends one line per operation to
 FAKE_GH_LOG, and fails the single operation named in FAKE_GH_FAIL. No network,

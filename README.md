@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/social-card.jpg" width="100%" alt="WindowHop — switch between windows, not just apps: a fast, native macOS window switcher">
+<img src="site/social-card.jpg" width="100%" alt="WindowHop — switch between windows, not just apps: a fast, native macOS window switcher">
 
 # WindowHop
 
@@ -47,7 +47,7 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | Command | What it does |
 | --- | --- |
 | `swift test` | Run the unit suite, which must pass with zero warnings |
-| `scripts/validate.sh` | Check the repository invariants: layering, ScreenCaptureKit confinement, docs, site |
+| `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
 | `swift build` | Build the debug binary; add `-c release` for the release build |
 | `scripts/package-app.sh [version] [build]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip |
 | `scripts/make-dmg.sh [version]` | Build the branded DMG from `build/WindowHop.app` |

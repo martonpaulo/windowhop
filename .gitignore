@@ -5,3 +5,6 @@ build/
 DerivedData/
 artifacts/
 *.xcuserdata
+
+# Disposable agent work: handoffs and prototypes
+.scratch/

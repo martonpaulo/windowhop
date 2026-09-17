@@ -1,5 +1,5 @@
 #!/bin/bash
-# Captures the published screenshots in docs/screenshots/.
+# Captures the published screenshots in site/screenshots/.
 #
 # Why a real on-screen capture instead of the offscreen `--render-ui` harness:
 # `screencapture -l<windowid>` records the window as macOS actually composites
@@ -18,7 +18,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-OUTPUT=${1:-docs/screenshots}
+OUTPUT=${1:-site/screenshots}
 BINARY=.build/debug/WindowHop
 mkdir -p "$OUTPUT"
 
@@ -114,7 +114,7 @@ capture switcher-previews-light   native --demo-switcher --previews --columns 4
 capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
 capture settings-windows          native --demo-settings windows --light
 
-# The hero's srcset and imagesrcset in docs/index.html list exactly these widths.
+# The hero's srcset and imagesrcset in site/index.html list exactly these widths.
 variants switcher-previews-light 480 720 958 1200
 variants switcher-previews-dark  480 720 958 1200
 

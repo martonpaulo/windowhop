@@ -4,7 +4,7 @@
 
 ```sh
 swift build && swift test   # 164+ unit and integration tests, zero warnings
-scripts/validate.sh         # repository and documentation invariants
+make validate               # repository and documentation invariants
 ```
 
 The suite covers both held and sticky session state machines; tab grouping; Settings
@@ -86,7 +86,7 @@ only on a real window:
 
 ```sh
 build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings windows   # prints its window number
-screencapture -x -l<window-number> docs/screenshots/settings-windows.png
+screencapture -x -l<window-number> site/screenshots/settings-windows.png
 ```
 
 `--demo-settings` shows the running user's real preferences, so set the documented
@@ -113,7 +113,7 @@ ad-hoc or development-signed app in the update feed.
 
 ## Published screenshots
 
-`scripts/capture-screenshots.sh` produces everything under `docs/screenshots/`. It launches
+`scripts/capture-screenshots.sh` produces everything under `site/screenshots/`. It launches
 `--demo-switcher` / `--demo-settings`, waits for the demo to print its window number, and
 captures that one window with `screencapture -l<windowid>`.
 
@@ -141,7 +141,7 @@ Requirements and constraints:
   whoever ran the script. Light matches the site's default appearance.
 - The Settings demo hides the window title (`titleVisibility = .hidden`): published images keep the
   traffic lights and the toolbar, and the product name is already beside every image.
-- The `width`/`height` attributes in `docs/index.html` are the captured pixels halved. Update
+- The `width`/`height` attributes in `site/index.html` are the captured pixels halved. Update
   them whenever the captures change size, or the site reserves the wrong box and the hero
   image lands misaligned.
 - Each capture declares a **maximum published width**, or `native`. A capture is taken at
@@ -188,7 +188,7 @@ Both steps are idempotent under retry, and neither is idempotent by assumption:
 Because the feed is written last, every failure before it leaves `main` unmoved, so the
 workflow's `tag commit == current origin/main` gate still holds for a normal rerun.
 
-`scripts/tests/publish-release-tests.sh` and `scripts/tests/make-appcast-tests.sh` exercise
+`tests/scripts/publish-release-tests.sh` and `tests/scripts/make-appcast-tests.sh` exercise
 this against a fake `gh` and throwaway repositories — no network, no token, no signing
 material, no real release. `scripts/validate.sh` runs both.
 

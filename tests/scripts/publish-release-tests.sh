@@ -31,7 +31,7 @@ setup() {
     printf 'notes\n' > "$SANDBOX/notes.md"
     echo '{"exists": false, "draft": true, "assets": {}}' > "$SANDBOX/state.json"
     : > "$SANDBOX/operations.log"
-    cp "$REPO_ROOT/scripts/tests/fake-gh.py" "$SANDBOX/bin/gh"
+    cp "$REPO_ROOT/tests/scripts/fake-gh.py" "$SANDBOX/bin/gh"
     chmod +x "$SANDBOX/bin/gh"
     export FAKE_GH_STATE="$SANDBOX/state.json"
     export FAKE_GH_LOG="$SANDBOX/operations.log"

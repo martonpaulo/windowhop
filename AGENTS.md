@@ -9,9 +9,9 @@
 - Repository: `martonpaulo/windowhop` (public)
 - Public identifiers: bundle identifier `com.perso.windowhop`; SwiftPM package, executable
   target, and app name `WindowHop`; library target `WindowHopCore`
-- Landing page: <https://windowhop.martonpaulo.com/> (custom domain in `docs/CNAME`),
-  published from `docs/` by `.github/workflows/deploy.yml`. It lives in this repository;
-  there is no separate site repo.
+- Landing page: <https://windowhop.martonpaulo.com/> (custom domain in `site/CNAME`),
+  published from `site/` by `.github/workflows/deploy.yml`. It lives in this repository;
+  there is no separate site repo. `docs/` holds developer documentation and is never published.
 - License: `GPL-3.0-only`, with AltTab attribution recorded in `UPSTREAM.md`
 - Copyright: GPL-3.0. Derived from AltTab, © lwouis and contributors
   (`NSHumanReadableCopyright` in `Support/Info.plist` is the canonical string).
@@ -67,7 +67,7 @@ effects.
 
 ```sh
 swift build && swift test        # must pass, zero warnings
-scripts/validate.sh              # repository invariants (must pass)
+make validate                    # repository invariants (must pass); runs scripts/validate.sh
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [ver] [build]  # release .app with Sparkle embedded + zip
 scripts/make-dmg.sh [ver]        # DMG (expects build/WindowHop.app)
@@ -295,7 +295,7 @@ notes. A missing configurability decision is a review failure.
   create empty documentation for possible future use.
 - Keep the README easy to scan: benefit, behavior, requirements, install, usage, validation,
   privacy, limitations, landing page, download. It opens with the social card
-  (`docs/social-card.jpg`) and shows no screenshots; screenshots belong to the landing page.
+  (`site/social-card.jpg`) and shows no screenshots; screenshots belong to the landing page.
   Use badges and statistics only when they improve comprehension and can stay current.
 - Maintain `CHANGELOG.md` — every public release gets a user-facing entry.
 - Preserve the approved `WindowHop` README heading. Give every new or materially edited
@@ -341,7 +341,7 @@ to publish an issue or change code. Do not ask again for a decision already reco
   details or framework behavior.
 - Run the smallest relevant check during iteration. Inspect the first useful failure and make a
   relevant change before rerunning.
-- Once stable, run `swift build && swift test` plus `scripts/validate.sh` — both must pass with
+- Once stable, run `swift build && swift test` plus `make validate` — both must pass with
   zero warnings before a commit.
 - Never claim a check passed unless it ran successfully. Report exact skips, blockers, residual
   risk, and manual gaps.
@@ -365,7 +365,8 @@ to publish an issue or change code. Do not ask again for a decision already reco
   across `Core/`, `Engine/`, `Input/`, and `UI/`)
 - Architecture decision records: `docs/adr/` (create only when a decision needs its rationale
   recorded; `docs/architecture.md` stays the description of what exists today)
-- Prototypes: `artifacts/prototypes/` (gitignored, disposable)
+- Handoffs: `.scratch/handoffs/`
+- Prototypes: `.scratch/prototypes/` (gitignored, disposable)
 
 ## Git and releases
 

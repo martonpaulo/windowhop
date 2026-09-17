@@ -101,14 +101,14 @@ done <<< "$MARKDOWN_FILES"
 # or as a srcset candidate (the hero's narrower widths appear nowhere else).
 while IFS= read -r screenshot; do
     [ -n "$screenshot" ] || continue
-    site_path=${screenshot#docs/}
+    site_path=${screenshot#site/}
     if grep -qF "($screenshot)" $MARKDOWN_FILES \
-        || grep -qF -e "\"$site_path\"" -e "$site_path " docs/index.html; then
+        || grep -qF -e "\"$site_path\"" -e "$site_path " site/index.html; then
         :
     else
         fail "unreferenced screenshot is tracked: $screenshot"
     fi
-done < <(find docs/screenshots -type f -print | sort)
+done < <(find site/screenshots -type f -print | sort)
 
 if [ "$failures" -eq 0 ]; then
     pass "Markdown local links and tracked screenshots are synchronized"
@@ -123,7 +123,7 @@ fi
 # --- release publication behaves as specified --------------------------------
 # These run the real publication scripts against a fake `gh` and throwaway
 # repositories: no network, no token, no signing material, no real release.
-for fixture in scripts/tests/publish-release-tests.sh scripts/tests/make-appcast-tests.sh; do
+for fixture in tests/scripts/publish-release-tests.sh tests/scripts/make-appcast-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"
     else
