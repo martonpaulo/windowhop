@@ -20,8 +20,6 @@
   bundle, and no fallback locale; adding one is a migration, not an incidental change.
 - Browser engine families: Chromium and WebKit for the website. `docs/website.md` owns
   the validation procedure and the distinction between static CI and browser checks.
-- Agent automation: `disabled`. Implementation and review run only when requested;
-  do not install an automated issue-intake or execution integration.
 - Agent guidance: `AGENTS.md` is canonical; Codex reads it directly and
   `CLAUDE.md -> AGENTS.md` is the Claude adapter. Gemini and Antigravity require explicit
   client selection and functional readback before configuration. The legacy
