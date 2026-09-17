@@ -149,6 +149,16 @@ jobs:
           rm "artifacts/WindowHop-$VERSION.zip"
           ditto -c -k --keepParent build/WindowHop.app "artifacts/WindowHop-$VERSION.zip"
 
+      # The sign_update tool comes from a pinned tarball while the embedded
+      # framework comes from Package.resolved; refuse to release when they drift.
+      - name: Check Sparkle tool version matches Package.resolved
+        run: |
+          RESOLVED=$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Package.resolved"))["pins"] if p["identity"] == "sparkle"))')
+          if [ "$RESOLVED" != "$SPARKLE_VERSION" ]; then
+            echo "SPARKLE_VERSION ($SPARKLE_VERSION) differs from Package.resolved Sparkle ($RESOLVED)." >&2
+            exit 1
+          fi
+
       - name: Sign update for Sparkle
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
