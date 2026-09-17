@@ -91,7 +91,7 @@ has recorded 56 total asset downloads, which cannot distinguish a user from a Sp
 
 ## Constraints
 
-- macOS 14 or later; Apple Silicon and Intel.
+- macOS 14 or later on Apple Silicon only; releases are built for arm64 and do not run on Intel Macs.
 - Accessibility permission is mandatory; Screen Recording is optional and only for previews.
 - Sparkle is the only runtime dependency.
 - GPL-3.0-only, with AltTab attribution preserved in [UPSTREAM.md](../UPSTREAM.md).
