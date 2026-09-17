@@ -11,6 +11,12 @@ EXPECTED_CERT=Support/WindowHopCodeSigning.cer
 EXPECTED_REQUIREMENT=$(tr -d '\n' < Support/ExpectedDesignatedRequirement.txt)
 
 [ -d "$APP" ] || { echo "Identity validation failed: app not found: $APP" >&2; exit 1; }
+# Apple silicon only (windowhop#39): the main executable carries exactly one arm64 slice.
+ARCHS=$(lipo -archs "$APP/Contents/MacOS/WindowHop")
+[ "$ARCHS" = arm64 ] || {
+    echo "Identity validation failed: main executable must be arm64 only, found: $ARCHS" >&2
+    exit 1
+}
 codesign --verify --deep --strict --verbose=2 "$APP"
 
 SIGNATURE=$(codesign -dvvv "$APP" 2>&1)

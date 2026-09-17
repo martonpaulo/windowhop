@@ -17,7 +17,8 @@ VERSION="${1:-$DEFAULT_VERSION}"
 BUILD_NUMBER="${2:-$DEFAULT_BUILD}"
 IDENTITY="${DEVELOPER_ID_IDENTITY:--}"
 
-swift build -c release
+# WindowHop supports Apple silicon only (windowhop#39); an Intel slice is never built.
+swift build -c release --arch arm64
 
 APP=build/WindowHop.app
 rm -rf "$APP"

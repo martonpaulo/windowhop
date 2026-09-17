@@ -44,6 +44,31 @@ check "first entry succeeds" "$status" "0"
 check "first entry is written" "$(items)" "1"
 check "first entry carries the signature" \
     "$(grep -c 'sparkle:edSignature="AAAA"' "$SANDBOX/appcast.xml")" "1"
+check "first entry requires Apple silicon" \
+    "$(grep -c '<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>' "$SANDBOX/appcast.xml")" "1"
+teardown
+
+# --- an entry published before the arm64 requirement still matches ---------
+setup
+cat > "$SANDBOX/appcast.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+  <channel>
+    <title>WindowHop</title>
+    <language>en</language>
+    <item>
+      <title>1.2.3</title>
+      <sparkle:version>10203</sparkle:version>
+      <sparkle:shortVersionString>1.2.3</sparkle:shortVersionString>
+      <enclosure url="https://github.com/martonpaulo/windowhop/releases/download/v1.2.3/WindowHop-1.2.3.zip" sparkle:edSignature="AAAA" length="1234" type="application/octet-stream"/>
+    </item>
+  </channel>
+</rss>
+XML
+status=$(run_appcast 1.2.3 10203 "$SIG")
+check "legacy entry without the requirement is an idempotent match" "$status" "0"
+check "legacy entry is left unchanged" \
+    "$(grep -c 'hardwareRequirements' "$SANDBOX/appcast.xml")" "0"
 teardown
 
 # --- an identical rerun is an idempotent no-op ----------------------------
@@ -84,6 +109,8 @@ check "newest entry comes first" \
 check "newest item precedes the older one" \
     "$(grep -o '<sparkle:shortVersionString>[^<]*' "$SANDBOX/appcast.xml" | head -1 | cut -d'>' -f2)" \
     "1.3.0"
+check "every new entry requires Apple silicon" \
+    "$(grep -c '<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>' "$SANDBOX/appcast.xml")" "2"
 teardown
 
 echo "make-appcast fixtures: $PASSED passed, $FAILED failed"

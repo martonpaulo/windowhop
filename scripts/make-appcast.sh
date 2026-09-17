@@ -1,5 +1,7 @@
 #!/bin/bash
-# Prepends a release entry to appcast.xml (creating it if missing).
+# Prepends a release entry to appcast.xml (creating it if missing). New entries
+# require Apple silicon through sparkle:hardwareRequirements (Sparkle 2.9+);
+# entries already published are left as they are.
 # Usage: scripts/make-appcast.sh <version> <build-number> <zip-path> <signature-attrs>
 #   signature-attrs is sign_update's output: sparkle:edSignature="..." length="..."
 set -euo pipefail
@@ -22,6 +24,7 @@ cat > "$ITEM_FILE" <<EOF
       <sparkle:version>$BUILD_NUMBER</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
       <enclosure url="$URL" $SIGNATURE_ATTRS type="application/octet-stream"/>
     </item>
 EOF
