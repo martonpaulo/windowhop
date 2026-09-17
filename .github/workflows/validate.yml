@@ -43,7 +43,7 @@ jobs:
           fi
           CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
           echo "changed files:"; echo "$CHANGED"
-          if echo "$CHANGED" | grep -qE '^(Sources/|Tests/|Support/|scripts/|Package\.swift|Package\.resolved|\.github/workflows/ci\.yml)'; then
+          if echo "$CHANGED" | grep -qE '^(Sources/|Tests/|Support/|scripts/|Package\.swift|Package\.resolved|\.github/workflows/validate\.yml)'; then
             echo "swift=true" >> "$GITHUB_OUTPUT"
           else
             echo "swift=false" >> "$GITHUB_OUTPUT"
