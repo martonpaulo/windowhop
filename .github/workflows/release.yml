@@ -57,17 +57,17 @@ jobs:
         env:
           CERT: ${{ secrets.DEVELOPER_ID_CERT_P12 }}
           CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
-          NOTARY_APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
-          NOTARY_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
-          NOTARY_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
           SPARKLE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           missing=()
           [ -n "$CERT" ] || missing+=(DEVELOPER_ID_CERT_P12)
           [ -n "$CERT_PASSWORD" ] || missing+=(DEVELOPER_ID_CERT_PASSWORD)
-          [ -n "$NOTARY_APPLE_ID" ] || missing+=(NOTARIZATION_APPLE_ID)
-          [ -n "$NOTARY_PASSWORD" ] || missing+=(NOTARIZATION_PASSWORD)
-          [ -n "$NOTARY_TEAM_ID" ] || missing+=(NOTARIZATION_TEAM_ID)
+          [ -n "$NOTARY_API_KEY" ] || missing+=(NOTARY_API_KEY)
+          [ -n "$NOTARY_API_KEY_ID" ] || missing+=(NOTARY_API_KEY_ID)
+          [ -n "$NOTARY_API_ISSUER_ID" ] || missing+=(NOTARY_API_ISSUER_ID)
           [ -n "$SPARKLE_KEY" ] || missing+=(SPARKLE_PRIVATE_KEY)
           if [ "${#missing[@]}" -ne 0 ]; then
             echo "Official release blocked: missing required secrets: ${missing[*]}" >&2
@@ -120,25 +120,28 @@ jobs:
           scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
           scripts/verify-release-identity.sh build/WindowHop.app
 
-      - name: Notarize, staple, and validate app
+      # The team App Store Connect API key is written to a private temporary file
+      # for scripts/notarize.sh and removed by the always-run step at the end.
+      - name: Write notary API key
         env:
-          APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          umask 077
+          KEY_PATH="$RUNNER_TEMP/notary/AuthKey.p8"
+          mkdir -p "$(dirname "$KEY_PATH")"
+          printf '%s\n' "$NOTARY_API_KEY" > "$KEY_PATH"
+          {
+            echo "NOTARY_API_KEY_PATH=$KEY_PATH"
+            echo "NOTARY_API_KEY_ID=$NOTARY_API_KEY_ID"
+            echo "NOTARY_API_ISSUER_ID=$NOTARY_API_ISSUER_ID"
+          } >> "$GITHUB_ENV"
+
+      - name: Notarize, staple, and validate app
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          RESULT=$(xcrun notarytool submit "artifacts/WindowHop-$VERSION.zip" \
-            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
-            --wait --output-format json)
-          STATUS=$(jq -r '.status' <<< "$RESULT")
-          SUBMISSION_ID=$(jq -r '.id' <<< "$RESULT")
-          if [ "$STATUS" != "Accepted" ]; then
-            echo "Apple notarization rejected the app archive (status: $STATUS, id: $SUBMISSION_ID)." >&2
-            xcrun notarytool log "$SUBMISSION_ID" \
-              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
-              notarization-app-log.json || true
-            exit 1
-          fi
+          scripts/notarize.sh "artifacts/WindowHop-$VERSION.zip"
           xcrun stapler staple build/WindowHop.app
           xcrun stapler validate build/WindowHop.app
           codesign --verify --deep --strict --verbose=2 build/WindowHop.app
@@ -164,27 +167,10 @@ jobs:
           scripts/make-dmg.sh "$VERSION"
 
       - name: Notarize, staple, and validate DMG
-        env:
-          APPLE_ID: ${{ secrets.NOTARIZATION_APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.NOTARIZATION_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.NOTARIZATION_TEAM_ID }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DMG="artifacts/WindowHop-$VERSION.dmg"
-          RESULT=$(xcrun notarytool submit "$DMG" \
-            --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
-            --wait --output-format json)
-          STATUS=$(jq -r '.status' <<< "$RESULT")
-          SUBMISSION_ID=$(jq -r '.id' <<< "$RESULT")
-          if [ "$STATUS" != "Accepted" ]; then
-            echo "Apple notarization rejected the DMG (status: $STATUS, id: $SUBMISSION_ID)." >&2
-            xcrun notarytool log "$SUBMISSION_ID" \
-              --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" \
-              notarization-dmg-log.json || true
-            exit 1
-          fi
-          xcrun stapler staple "$DMG"
-          xcrun stapler validate "$DMG"
+          scripts/notarize.sh "$DMG"
           codesign --verify --verbose=2 "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
           scripts/verify-dmg-branding.sh "$DMG"
@@ -270,3 +256,7 @@ jobs:
             git pull --rebase origin main
             git push origin main
           fi
+
+      - name: Remove notary API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/notary"

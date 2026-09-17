@@ -283,12 +283,12 @@ EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI
 Update checks are the app's only network activity.
 
 Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
-requires an Apple-issued Developer ID Application identity plus Apple ID notarization
-credentials, and validates the final app against `Support/ExpectedDesignatedRequirement.txt`
+requires an Apple-issued Developer ID Application identity plus a team App Store
+Connect API key for notarization, and validates the final app against `Support/ExpectedDesignatedRequirement.txt`
 and the stable public leaf certificate in `Support/WindowHopCodeSigning.cer`. The validator
 checks bundle id, Team ID, hardened runtime, entitlements, every nested Mach-O signature,
 and the exact designated requirement. The workflow submits both the app archive and final
-DMG with `notarytool --wait`, staples and validates both tickets, runs Gatekeeper on the
+DMG through `scripts/notarize.sh` (`notarytool --wait`), staples and validates both tickets, runs Gatekeeper on the
 app and DMG, preserves the branded DMG resource fork in an installer ZIP, then signs the
 Sparkle archive and publishes. Local packages may remain ad-hoc signed only when release
 identity validation is explicitly inapplicable.

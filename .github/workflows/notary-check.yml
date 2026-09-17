@@ -1,0 +1,28 @@
+# Manual check that the notarization secrets authenticate, without building or
+# publishing anything. Run it after creating or rotating the team API key.
+name: Notary credentials check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: macos-latest
+    steps:
+      - name: Authenticate with the team API key
+        env:
+          NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          umask 077
+          KEY_PATH="$RUNNER_TEMP/notary/AuthKey.p8"
+          mkdir -p "$(dirname "$KEY_PATH")"
+          trap 'rm -rf "$RUNNER_TEMP/notary"' EXIT
+          printf '%s\n' "$NOTARY_API_KEY" > "$KEY_PATH"
+          xcrun notarytool history --key "$KEY_PATH" --key-id "$NOTARY_API_KEY_ID" \
+            --issuer "$NOTARY_API_ISSUER_ID" > /dev/null
+          echo "The notary API key authenticates."

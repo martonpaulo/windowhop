@@ -36,13 +36,14 @@ repository has all of these Actions secrets:
 
 - `DEVELOPER_ID_CERT_P12` — base64-encoded Apple-issued Developer ID Application P12
 - `DEVELOPER_ID_CERT_PASSWORD` — that P12's import password
-- `NOTARIZATION_APPLE_ID` — Apple Developer account email
-- `NOTARIZATION_PASSWORD` — app-specific password for the Apple ID
-- `NOTARIZATION_TEAM_ID` — Apple Developer team identifier
+- `NOTARY_API_KEY` — contents of the team App Store Connect API key (`.p8`, Developer role)
+- `NOTARY_API_KEY_ID` — that key's Key ID
+- `NOTARY_API_ISSUER_ID` — the App Store Connect Issuer ID
 - `SPARKLE_PRIVATE_KEY` — EdDSA key used only for the update archive
 
 The tag workflow is push-only, so release secrets are not exposed to pull requests or
-fork workflows. It waits for Apple to accept both the app archive and DMG, staples and
+fork workflows. `scripts/notarize.sh` submits each artifact; on a Mac the same script uses
+the `skd-notary` Keychain profile, so a local rehearsal runs the release code. It waits for Apple to accept both the app archive and DMG, staples and
 validates both tickets, and runs Gatekeeper checks before publishing. Never tag a release
 to test credentials; use the local packaging commands and Apple tooling directly.
 

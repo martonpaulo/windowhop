@@ -70,9 +70,10 @@ The app itself reads none of these: every secret below belongs to the release pi
 | --- | --- | --- |
 | `DEVELOPER_ID_CERT_P12` | Actions secret, `release.yml` | Required for a release. Base64 of the Apple-issued Developer ID Application certificate |
 | `DEVELOPER_ID_CERT_PASSWORD` | Actions secret, `release.yml` | Required for a release. The import password for that P12 |
-| `NOTARIZATION_APPLE_ID` | Actions secret, `release.yml` | Required for a release. The Apple Developer account email used for notarization |
-| `NOTARIZATION_PASSWORD` | Actions secret, `release.yml` | Required for a release. The app-specific password for that Apple ID |
-| `NOTARIZATION_TEAM_ID` | Actions secret, `release.yml` | Required for a release. The Apple Developer team identifier |
+| `NOTARY_API_KEY` | Actions secret, `release.yml` | Required for a release. The team App Store Connect API key (`.p8`, Developer role) used by `scripts/notarize.sh` |
+| `NOTARY_API_KEY_ID` | Actions secret, `release.yml` | Required for a release. That key's Key ID |
+| `NOTARY_API_ISSUER_ID` | Actions secret, `release.yml` | Required for a release. The App Store Connect Issuer ID |
+| `NOTARY_PROFILE` | Local shell, `scripts/notarize.sh` | Optional. The Keychain profile for a local rehearsal; defaults to `skd-notary` |
 | `SPARKLE_PRIVATE_KEY` | Actions secret, `release.yml`, mirroring the login Keychain | Required for a release. The EdDSA key that signs the update archive |
 | `DEVELOPER_ID_IDENTITY` | Local shell, `scripts/package-app.sh` | Optional. Names the approved Developer ID identity; without it, packaging is ad-hoc signed |
 | `WINDOWHOP_DEBUG` | Local shell, the debug binary | Optional. Set to `1` to log input and session behavior while diagnosing |
