@@ -52,6 +52,12 @@ struct EventTapInterceptionState {
     var mode: TapMode = .off
     var holdModifier: CGEventFlags = .maskCommand
     var persistentShortcut: PersistentShortcut?
+    /// True while the Settings shortcut recorder is recording. Owned by the
+    /// recorder, not the tap lifecycle, so `reset()` keeps it: while it is set,
+    /// `watching` passes every key so an already-active chord reaches the
+    /// recorder instead of opening a session. Fail-safe if it were stuck: only
+    /// WindowHop's own chords pause, native Cmd-Tab keeps working.
+    var isRecordingShortcut = false
     private(set) var suppressedKeyUps: Set<Int64> = []
 
     mutating func reset() {
@@ -79,7 +85,7 @@ struct EventTapInterceptionState {
         case .off, .passthrough:
             return .pass
         case .watching:
-            guard type == .keyDown else { return .pass }
+            guard type == .keyDown, !isRecordingShortcut else { return .pass }
             if isSwitcherTrigger(keyCode: keyCode, flags: flags) {
                 mode = .sessionHeld
                 suppressedKeyUps.insert(keyCode)
@@ -184,6 +190,13 @@ public final class EventTap {
     public var persistentShortcut: PersistentShortcut? {
         get { lock.lock(); defer { lock.unlock() }; return interception.persistentShortcut }
         set { lock.lock(); interception.persistentShortcut = newValue; lock.unlock() }
+    }
+
+    /// Set while the Settings shortcut recorder is recording; see
+    /// `EventTapInterceptionState.isRecordingShortcut`. `stop()` keeps it.
+    public var isRecordingShortcut: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return interception.isRecordingShortcut }
+        set { lock.lock(); interception.isRecordingShortcut = newValue; lock.unlock() }
     }
 
     /// Creates the tap on the dedicated tap thread. Returns false when tap creation

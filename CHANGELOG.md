@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or every card while Screen Recording was off, went back to the animated loading
   placeholder as soon as any window changed its title or the list reordered. Those cards
   now stay a calm static placeholder for the rest of the session.
+- **Recording a shortcut no longer opens the switcher**: while Settings records the Open
+  WindowHop shortcut, pressing a chord WindowHop already uses reaches the recorder instead
+  of opening a session. ⌘Tab reaches macOS as it does in any shortcut field, and
+  interception resumes as soon as recording ends.
 
 ## [1.6.2] - 2026-09-09
 

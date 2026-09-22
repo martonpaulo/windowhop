@@ -83,4 +83,84 @@ final class EventTapInterceptionTests: XCTestCase {
         XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab,
                                     flags: .maskCommand), .pass)
     }
+
+    // MARK: - Shortcut recording (#83)
+
+    private func watchingState(recording: Bool) -> EventTapInterceptionState {
+        EventTapInterceptionState(
+            mode: .watching,
+            holdModifier: .maskCommand,
+            persistentShortcut: .optionTab,
+            isRecordingShortcut: recording)
+    }
+
+    /// Without the recording flag the tap owns both chords, so a keyDown the
+    /// recorder waits for would never be delivered to the app.
+    func testWatchingConsumesBothChordsWhenNotRecording() {
+        var persistent = watchingState(recording: false)
+        XCTAssertEqual(
+            persistent.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
+            EventTapDecision(disposition: .consume, input: .openPersistent))
+
+        var held = watchingState(recording: false)
+        XCTAssertEqual(
+            held.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+            EventTapDecision(disposition: .consume, input: .trigger(backward: false)))
+    }
+
+    func testRecordingPassesBothChordsWithoutOwningTheirRelease() {
+        var state = watchingState(recording: true)
+
+        for flags: CGEventFlags in [.maskAlternate, .maskCommand, [.maskCommand, .maskShift]] {
+            XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: flags), .pass)
+            XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: flags), .pass)
+        }
+        XCTAssertEqual(state.mode, .watching, "no session starts while recording")
+        XCTAssertTrue(state.suppressedKeyUps.isEmpty, "nothing enters the key-up ledger")
+    }
+
+    func testReleaseOwnedBeforeRecordingIsStillConsumed() {
+        var state = watchingState(recording: false)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate)
+        state.mode = .watching
+        state.isRecordingShortcut = true
+
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskAlternate),
+                       .consume)
+        XCTAssertTrue(state.suppressedKeyUps.isEmpty)
+    }
+
+    func testEndingRecordingRestoresInterception() {
+        var state = watchingState(recording: true)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate)
+        state.isRecordingShortcut = false
+
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
+            EventTapDecision(disposition: .consume, input: .openPersistent))
+    }
+
+    func testResetKeepsTheRecorderOwnedFlag() {
+        var state = watchingState(recording: true)
+        state.reset()
+        state.mode = .watching
+
+        XCTAssertTrue(state.isRecordingShortcut)
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+                       .pass)
+    }
+
+    func testFlagsChangedPassesWhetherOrNotRecording() {
+        for recording in [false, true] {
+            for mode: TapMode in [.off, .watching, .sessionHeld, .sessionSticky, .passthrough] {
+                var state = watchingState(recording: recording)
+                state.mode = mode
+                for flags: CGEventFlags in [[], .maskCommand, .maskAlternate] {
+                    XCTAssertEqual(
+                        state.decide(type: .flagsChanged, keyCode: 55, flags: flags).disposition,
+                        .pass, "flagsChanged is never consumed (\(mode), recording \(recording))")
+                }
+            }
+        }
+    }
 }

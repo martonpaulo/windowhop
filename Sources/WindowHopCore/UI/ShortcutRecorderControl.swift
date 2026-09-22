@@ -153,6 +153,9 @@ struct ShortcutRecorderField: NSViewRepresentable {
     @Binding var shortcut: PersistentShortcut?
     @Binding var validationMessage: String?
     let switcherShortcut: ShortcutSpec
+    /// Forwarded from the recorder: `true` when recording starts, `false` once
+    /// when it ends. Settings uses it to pause global interception meanwhile.
+    var onRecordingChanged: ((Bool) -> Void)?
 
     func makeNSView(context: Context) -> ShortcutRecorderControl {
         let control = ShortcutRecorderControl()
@@ -182,5 +185,6 @@ struct ShortcutRecorderField: NSViewRepresentable {
             validationMessage = nil
             shortcut = nil
         }
+        control.onRecordingChanged = onRecordingChanged
     }
 }

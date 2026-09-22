@@ -14,6 +14,8 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         @Published var switcherShortcut: ShortcutSpec = .commandTab
         @Published var shortcut: PersistentShortcut?
         @Published var validationMessage: String?
+        /// Every value the field forwarded through `onRecordingChanged`.
+        var forwardedRecording: [Bool] = []
     }
 
     private struct Host: View {
@@ -22,7 +24,8 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         var body: some View {
             ShortcutRecorderField(shortcut: $model.shortcut,
                                   validationMessage: $model.validationMessage,
-                                  switcherShortcut: model.switcherShortcut)
+                                  switcherShortcut: model.switcherShortcut,
+                                  onRecordingChanged: { model.forwardedRecording.append($0) })
         }
     }
 
@@ -304,5 +307,17 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         XCTAssertEqual(model.shortcut, installed)
         XCTAssertNil(model.validationMessage)
         XCTAssertEqual(transitions.values, [true, false])
+    }
+
+    /// Settings pauses global interception through this forwarding; the field
+    /// must report the recorder's real start and end, not just its creation.
+    func testFieldForwardsRecordingLifetime() throws {
+        let control = try recorder()
+        control.performClick(nil)
+        XCTAssertEqual(model.forwardedRecording, [true])
+
+        try sendKey(KeyCode.escape)
+
+        XCTAssertEqual(model.forwardedRecording, [true, false])
     }
 }

@@ -61,6 +61,10 @@ through plain AppKit.
 2. In `watching` it matches two chords: the switcher shortcut (modifier+Tab, Shift
    reverses) opening a **held** session, and the optional persistent shortcut
    (`PersistentShortcut`, exact modifier match) opening a **sticky** session.
+   While the Settings shortcut recorder records, `isRecordingShortcut` makes `watching`
+   pass every key, so a chord already in use reaches the recorder. The recorder owns the
+   flag through `onRecordingChanged` → `SwitcherController.setShortcutRecordingActive`;
+   stopping the tap keeps it. A key-up owned before recording began is still consumed.
 3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.

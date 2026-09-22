@@ -75,6 +75,13 @@ public final class SwitcherController {
         }
     }
 
+    /// Driven by the Settings shortcut recorder: while it records, the tap passes
+    /// every key in `watching`, so pressing an already-active chord reaches the
+    /// recorder instead of opening a session.
+    public func setShortcutRecordingActive(_ active: Bool) {
+        EventTap.shared.isRecordingShortcut = active
+    }
+
     private func handle(_ event: SwitcherInputEvent) {
         switch event {
         case .trigger(let backward):

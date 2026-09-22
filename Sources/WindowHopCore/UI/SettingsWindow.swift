@@ -255,7 +255,11 @@ struct ShortcutsPane: View {
                 LabeledContent("Open WindowHop") {
                     ShortcutRecorderField(shortcut: $preferences.persistentShortcut,
                                           validationMessage: $shortcutValidationMessage,
-                                          switcherShortcut: preferences.shortcut)
+                                          switcherShortcut: preferences.shortcut,
+                                          onRecordingChanged: { recording in
+                                              SwitcherController.shared
+                                                  .setShortcutRecordingActive(recording)
+                                          })
                 }
                 if let shortcutValidationMessage {
                     Text(shortcutValidationMessage)
