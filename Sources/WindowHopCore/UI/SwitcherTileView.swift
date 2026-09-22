@@ -335,7 +335,7 @@ final class SwitcherTileView: NSView {
     /// announcement share this one composition, so the spoken target always
     /// matches the tile.
     static func accessibilityText(for item: SwitcherItem, showTabCounts: Bool) -> String {
-        var parts = [item.title, item.appName]
+        var parts = [item.displayTitle, item.appName]
         let tabsText = tabsText(for: item)
         if showTabCounts, !tabsText.isEmpty { parts.append(tabsText) }
         return parts.joined(separator: ", ")
@@ -356,7 +356,7 @@ final class SwitcherTileView: NSView {
         let tabsText = Self.tabsText(for: item)
         iconView.image = item.icon
         badgeIconView.image = item.icon
-        setTypography(title: item.title, metadata: tabsText)
+        setTypography(title: item.displayTitle, metadata: tabsText)
         tabsLabel.isHidden = !showTabCounts
         setAccessibilityLabel(Self.accessibilityText(for: item, showTabCounts: showTabCounts))
         // a pooled tile may be re-representing another window: any in-flight

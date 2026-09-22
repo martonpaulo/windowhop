@@ -18,6 +18,8 @@ public final class TrackedWindow {
     /// True only for the registered WindowHop Settings window entry.
     public let isOwnSettingsEntry: Bool
     public private(set) var title: String
+    /// The raw AXDocument value, kept for CollisionLabel; nil for the Settings entry.
+    public private(set) var documentPath: String?
     public private(set) var tabCount: Int?
     public internal(set) var isMinimized: Bool
     public internal(set) var isFullscreen: Bool
@@ -40,6 +42,7 @@ public final class TrackedWindow {
         self.app = app
         nativeWindow = nil
         isOwnSettingsEntry = false
+        documentPath = attributes.document
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)
@@ -68,6 +71,7 @@ public final class TrackedWindow {
 
     func update(from attributes: AXAttributes, tabTitles: [String]?) {
         guard let app else { return }
+        documentPath = attributes.document
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)

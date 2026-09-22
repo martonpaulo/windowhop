@@ -275,24 +275,29 @@ enum DebugHarness {
 
     /// Covers the review checklist: several windows of the same app, duplicate and
     /// long titles, entries with and without tab counts, and the Settings entry.
+    /// The duplicate TextEdit pair carries documents in different folders, so the
+    /// tiles show the CollisionLabel qualifier the store would produce.
     private static func demoItems() -> [SwitcherItem] {
-        let rows: [(String, String, String, Int?)] = [
-            ("Project Plan", "Notes", "com.apple.Notes", nil),
-            ("Apple Design Resources", "Safari", "com.apple.Safari", 7),
-            ("Window Management Guide", "Safari", "com.apple.Safari", 12),
-            ("Downloads", "Finder", "com.apple.finder", 3),
-            ("Untitled", "TextEdit", "com.apple.TextEdit", nil),
-            ("Untitled", "TextEdit", "com.apple.TextEdit", nil),
-            ("Terminal", "Terminal", "com.apple.Terminal", 2),
-            ("WindowHop Settings", "WindowHop", "com.perso.windowhop", nil),
+        let rows: [(String, String, String, Int?, String?)] = [
+            ("Project Plan", "Notes", "com.apple.Notes", nil, nil),
+            ("Apple Design Resources", "Safari", "com.apple.Safari", 7, nil),
+            ("Window Management Guide", "Safari", "com.apple.Safari", 12, nil),
+            ("Downloads", "Finder", "com.apple.finder", 3, nil),
+            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Work/Notes.txt"),
+            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Personal/Notes.txt"),
+            ("Terminal", "Terminal", "com.apple.Terminal", 2, nil),
+            ("WindowHop Settings", "WindowHop", "com.perso.windowhop", nil, nil),
         ]
+        let labels = CollisionLabel.labels(for: rows.map {
+            CollisionLabel.Entry(appId: $0.2, title: $0.0, documentPath: $0.4)
+        })
         return rows.enumerated().map { index, row in
             let tileIcon = row.2 == "com.perso.windowhop"
                 ? (NSImage(contentsOfFile: "Support/AppIcon.icns")
                     ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.2))
                 : icon(row.2)
-            return SwitcherItem(id: index, window: nil, title: row.0, appName: row.1,
-                                icon: tileIcon, tabCount: row.3)
+            return SwitcherItem(id: index, window: nil, title: row.0, displayTitle: labels[index],
+                                appName: row.1, icon: tileIcon, tabCount: row.3)
         }
     }
 

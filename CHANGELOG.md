@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   login item, so it cannot fail and never changes system settings.
 - **WindowHop now requires macOS 26 or later**: Macs on macOS 14 or 15 keep the current
   version and are not offered this update.
+- **Same-named windows show their folder**: when two windows of one app have the same
+  title, such as two `Notes.txt` documents, each tile and its VoiceOver label now add the
+  name of the folder the document is in. Windows without a saved document, such as two
+  Untitled ones, keep their title as it is.
 
 ### Fixed
 

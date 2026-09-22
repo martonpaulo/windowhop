@@ -61,6 +61,30 @@ final class SwitcherTileAccessibilityTests: XCTestCase {
         XCTAssertEqual(staleActivations, 0)
     }
 
+    /// Two same-app windows sharing a raw title are told apart by the collision
+    /// qualifier in both the visible title and the spoken label (issue #92).
+    func testCollidingTitlesGetDistinctLabels() {
+        let work = SwitcherItem(id: AnyHashable("w"), window: nil, title: "Notes.txt",
+                                displayTitle: "Notes.txt — Work",
+                                appName: "TextEdit", icon: nil, tabCount: nil)
+        let home = SwitcherItem(id: AnyHashable("h"), window: nil, title: "Notes.txt",
+                                displayTitle: "Notes.txt — Home",
+                                appName: "TextEdit", icon: nil, tabCount: nil)
+
+        let workLabel = configuredTile(item: work).accessibilityLabel()
+        let homeLabel = configuredTile(item: home).accessibilityLabel()
+
+        XCTAssertEqual(workLabel, "Notes.txt — Work, TextEdit")
+        XCTAssertNotEqual(workLabel, homeLabel)
+        XCTAssertEqual(work.title, "Notes.txt", "the raw title stays for matching")
+    }
+
+    func testDisplayTitleDefaultsToTheRawTitle() {
+        let item = makeItem(id: "a", title: "Untitled")
+        XCTAssertEqual(item.displayTitle, "Untitled")
+        XCTAssertEqual(configuredTile(item: item).accessibilityLabel(), "Untitled, Test App")
+    }
+
     /// A pooled tile parked out of the visible list has no callback, so it must
     /// not report a successful action in either appearance.
     func testDetachedTileRejectsPressInBothAppearances() {

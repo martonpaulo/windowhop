@@ -7,16 +7,22 @@ import ApplicationServices
 public struct SwitcherItem {
     public let id: AnyHashable
     public let window: TrackedWindow?
+    /// The raw window title: preview matching and AX association use this.
     public let title: String
+    /// What the tile shows and speaks: the title, qualified by CollisionLabel when
+    /// same-app entries would otherwise share it.
+    public let displayTitle: String
     public let appName: String
     public let icon: NSImage?
     public let tabCount: Int?
 
     public init(id: AnyHashable, window: TrackedWindow?, title: String,
+                displayTitle: String? = nil,
                 appName: String, icon: NSImage?, tabCount: Int?) {
         self.id = id
         self.window = window
         self.title = title
+        self.displayTitle = displayTitle ?? title
         self.appName = appName
         self.icon = icon
         self.tabCount = tabCount
@@ -350,8 +356,8 @@ public final class WindowStore {
         let policy = preferences.windowInclusionPolicy
         let showTabCounts = preferences.showTabCounts
         let activeScreen = NSScreen.main
-        return windows.compactMap { window in
-            guard window.isActual else { return nil }
+        let visible = windows.filter { window in
+            guard window.isActual else { return false }
             let state = WindowDisplayState(
                 isMinimized: window.isMinimized,
                 isAppHidden: window.app?.isHidden ?? false,
@@ -363,13 +369,22 @@ public final class WindowStore {
                 isPictureInPicture: window.isPictureInPicture ?? false,
                 isOnCurrentSpace: window.isOnCurrentSpace,
                 isOnActiveDisplay: activeScreen.map { window.isOn(screen: $0) } ?? true)
-            guard WindowEligibility.shouldDisplay(state, policy: policy) else { return nil }
-            return SwitcherItem(id: window.stableId,
-                                window: window,
-                                title: window.title,
-                                appName: window.appName,
-                                icon: window.appIcon,
-                                tabCount: showTabCounts ? window.tabCount : nil)
+            return WindowEligibility.shouldDisplay(state, policy: policy)
+        }
+        // collisions are judged among the entries actually shown
+        let labels = CollisionLabel.labels(for: visible.map { window in
+            CollisionLabel.Entry(appId: window.app.map(ObjectIdentifier.init),
+                                 title: window.title,
+                                 documentPath: window.documentPath)
+        })
+        return zip(visible, labels).map { window, label in
+            SwitcherItem(id: window.stableId,
+                         window: window,
+                         title: window.title,
+                         displayTitle: label,
+                         appName: window.appName,
+                         icon: window.appIcon,
+                         tabCount: showTabCounts ? window.tabCount : nil)
         }
     }
 
