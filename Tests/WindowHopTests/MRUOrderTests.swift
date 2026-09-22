@@ -34,6 +34,23 @@ final class MRUOrderTests: XCTestCase {
         XCTAssertEqual(mru.ids, ["x", "a"])
     }
 
+    func testReaddingAfterRemovalAppendsAtEnd() {
+        var mru = MRUOrder<String>()
+        mru.add("a")
+        mru.add("b")
+        mru.remove("a")
+        XCTAssertTrue(mru.add("a"))
+        XCTAssertEqual(mru.ids, ["b", "a"])
+    }
+
+    func testFocusingTheFrontItemIsANoOp() {
+        var mru = MRUOrder<String>()
+        mru.add("a")
+        mru.add("b")
+        mru.focused("a")
+        XCTAssertEqual(mru.ids, ["a", "b"])
+    }
+
     func testRemove() {
         var mru = MRUOrder<String>()
         mru.add("a")

@@ -30,8 +30,11 @@ public final class WindowStore {
     public static let shared = WindowStore()
 
     public private(set) var apps: [pid_t: TrackedApp] = [:]
-    /// MRU order: index 0 is the focused window.
-    public private(set) var windows: [TrackedWindow] = []
+    /// MRU order: index 0 is the focused window. Derived from `order`, the one
+    /// owner of ordering policy (Core/MRUOrder), so its tests cover production.
+    public var windows: [TrackedWindow] { order.ids.compactMap { windowsById[$0] } }
+    private var order = MRUOrder<UUID>()
+    private var windowsById: [UUID: TrackedWindow] = [:]
     /// Fired on any change that can affect the visible list.
     public var onChange: (() -> Void)?
 
@@ -64,7 +67,8 @@ public final class WindowStore {
         apps.values.forEach { $0.stopObserving() }
         apps = [:]
         discardPreviews(of: windows)
-        windows = []
+        order = MRUOrder()
+        windowsById = [:]
         onChange?()
     }
 
@@ -82,7 +86,7 @@ public final class WindowStore {
         app.stopObserving()
         apps[pid] = nil
         let removed = windows.filter { $0.app === app }
-        windows.removeAll { $0.app === app }
+        removed.forEach(forget)
         if !removed.isEmpty {
             discardPreviews(of: removed)
             onChange?()
@@ -137,7 +141,8 @@ public final class WindowStore {
             // that just got focused is real even if its subrole looks wrong mid-animation
             guard WindowEligibility.isActualWindow(facts) || isFocusEvent else { return }
             window = TrackedWindow(ax: element, app: app, attributes: attributes, tabTitles: tabTitles)
-            windows.append(window)
+            windowsById[window.stableId] = window
+            order.add(window.stableId)
             BackgroundWork.axReadsQueue.async {
                 app.subscribeToWindowNotifications(element)
             }
@@ -161,15 +166,19 @@ public final class WindowStore {
     }
 
     private func windowFocused(_ window: TrackedWindow) {
-        if let index = windows.firstIndex(where: { $0 === window }), index != 0 {
-            windows.remove(at: index)
-            windows.insert(window, at: 0)
-        }
+        guard windowsById[window.stableId] != nil else { return }
+        order.focused(window.stableId)
+    }
+
+    /// Drops a window from the MRU order; callers own preview eviction and onChange.
+    private func forget(_ window: TrackedWindow) {
+        order.remove(window.stableId)
+        windowsById[window.stableId] = nil
     }
 
     func removeWindow(_ element: AXUIElement) {
-        guard let index = windows.firstIndex(where: { $0.ax == element }) else { return }
-        let removed = windows.remove(at: index)
+        guard let removed = windows.first(where: { $0.ax == element }) else { return }
+        forget(removed)
         discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
             let remaining = windows.filter { $0.app === removed.app }
@@ -194,7 +203,9 @@ public final class WindowStore {
             return
         }
         let entry = TrackedWindow(settingsWindow: window)
-        windows.insert(entry, at: 0)
+        windowsById[entry.stableId] = entry
+        // an unknown item focused enters at the front: Settings opens focused
+        order.focused(entry.stableId)
         let center = NotificationCenter.default
         center.addObserver(self, selector: #selector(ownWindowClosed(_:)),
                            name: NSWindow.willCloseNotification, object: window)
@@ -231,7 +242,7 @@ public final class WindowStore {
         guard let window = notification.object as? NSWindow,
               let entry = ownEntry(for: window) else { return }
         NotificationCenter.default.removeObserver(self, name: nil, object: window)
-        windows.removeAll { $0 === entry }
+        forget(entry)
         discardPreviews(of: [entry])
         onChange?()
     }

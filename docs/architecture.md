@@ -24,8 +24,12 @@ about AppKit or AX.
 2. AX notifications land in `AXNotificationRouter` on the AX thread, hop to the serial
    AX reads queue for one batched attribute call (plus tab-group titles), then hand plain
    values to `WindowStore` on the main thread.
-3. `WindowStore` keeps `[TrackedWindow]` in window-level MRU order (index 0 = focused).
-   Identity is the `AXUIElement` itself (CFEqual-stable), so duplicate titles cannot
+3. `WindowStore` keeps its windows in window-level MRU order (index 0 = focused). The
+   order is owned by the pure `MRUOrder` (new windows enter at the end, focus moves a
+   window to the front, the Settings entry enters at the front); `WindowStore.windows` is
+   derived from it and never reordered by hand, so the `MRUOrder` tests cover the
+   production policy. Open sessions keep their own stable order (`SessionListReconciler`)
+   rather than re-sorting on every event. Identity is the `AXUIElement` itself (CFEqual-stable), so duplicate titles cannot
    collide. `snapshot()` applies eligibility + display rules and returns value items.
 4. On `activeSpaceDidChange`, every app is re-enumerated: this discovers windows the
    public AX API hides until their Space is visited and refreshes each window's

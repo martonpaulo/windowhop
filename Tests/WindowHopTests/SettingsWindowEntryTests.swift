@@ -63,6 +63,48 @@ final class SettingsWindowEntryTests: XCTestCase {
         XCTAssertEqual(store.windows.first?.isOwnSettingsEntry, true)
     }
 
+    // MARK: - MRU ordering through the store (issue #58)
+
+    /// The registered entries are the only store path tests can drive without AX;
+    /// they exercise the same MRUOrder owner that orders AX windows.
+    private func makeWindow(_ title: String) -> NSWindow {
+        let other = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+                             styleMask: [.titled, .closable, .miniaturizable],
+                             backing: .buffered, defer: true)
+        other.isReleasedWhenClosed = false
+        other.title = title
+        return other
+    }
+
+    private var nativeOrder: [NSWindow?] { store.windows.map(\.nativeWindow) }
+
+    func testSecondRegisteredWindowEntersAtFront() {
+        let second = makeWindow("Second")
+        store.registerOwnWindow(window)
+        store.registerOwnWindow(second)
+        XCTAssertEqual(nativeOrder, [second, window])
+    }
+
+    func testBecomingKeyReordersAmongOwnEntries() {
+        let second = makeWindow("Second")
+        store.registerOwnWindow(window)
+        store.registerOwnWindow(second)
+        NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: window)
+        XCTAssertEqual(nativeOrder, [window, second])
+        NotificationCenter.default.post(name: NSWindow.didBecomeKeyNotification, object: window)
+        XCTAssertEqual(nativeOrder, [window, second], "focusing the front entry is a no-op")
+    }
+
+    func testClosingOneEntryKeepsTheOthersOrder() {
+        let second = makeWindow("Second")
+        let third = makeWindow("Third")
+        store.registerOwnWindow(window)
+        store.registerOwnWindow(second)
+        store.registerOwnWindow(third)
+        NotificationCenter.default.post(name: NSWindow.willCloseNotification, object: second)
+        XCTAssertEqual(nativeOrder, [third, window])
+    }
+
     func testOtherOwnWindowsRemainExcludedByTheDisplayRule() {
         // panels, alerts, onboarding: own windows that are NOT the settings exception
         let ownWindow = WindowDisplayState(isMinimized: false, isAppHidden: false,
