@@ -88,6 +88,16 @@ through plain AppKit.
    recover from missed key-up events. Sticky sessions have no such timer — modifier
    release means nothing there; only Return/Space/click/Escape end them.
 
+The shortcut recorder in Settings (`UI/ShortcutRecorderControl`) stays custom rather than
+adopting a library such as KeyboardShortcuts
+([#74](https://github.com/martonpaulo/windowhop/issues/74)). Adopting one would override
+three recorded rules: Sparkle is the only runtime dependency, `Core/ShortcutFormatter` is the
+only owner of key names, and product copy is English-only with no `.lproj` bundle. It would
+also not remove the hardest part of the job: a library recorder cannot see `EventTap`, so
+coordination with the tap would stay custom either way. Matching stays in `EventTap`, and
+persistence stays in `PersistentShortcut` and `Preferences`. Known recorder gaps are fixed in
+place against the custom control. Revisit this only by first amending the dependency rule.
+
 ## Placement across displays
 
 Where the panel is drawn is display *behavior*, not appearance, and is owned by three
