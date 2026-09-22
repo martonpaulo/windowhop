@@ -123,9 +123,27 @@ struct EventTapInterceptionState {
             && flags.isDisjoint(with: otherModifiers(than: holdModifier))
     }
 
+    /// Session keys match only with Shift plus the modifiers that own the
+    /// session: the hold modifier in a held session, the Open WindowHop chord's
+    /// modifiers in a sticky one. Any other ⌘/⌥/⌃ makes the chord someone
+    /// else's, so it passes: ⌃⌥ + arrows/Space/Return/Delete are VoiceOver
+    /// commands, and which session tap sees them first depends on which was
+    /// created last (`headInsertEventTap`), so matching cannot rely on order.
+    /// Caps Lock, Fn and the keypad flag are ignored. Two exceptions: the
+    /// switcher trigger keeps stepping in any session, and ⌘, needs ⌘.
     private func sessionEvent(for keyCode: Int64,
                               flags: CGEventFlags,
                               sticky: Bool) -> SwitcherInputEvent? {
+        let owner = sticky ? persistentShortcut?.modifiers ?? [] : holdModifier
+        let foreign = flags.intersection(Self.chordModifiers).subtracting(owner)
+        if keyCode == KeyCode.comma {
+            return flags.contains(.maskCommand) && foreign.subtracting(.maskCommand).isEmpty
+                ? .openSettings : nil
+        }
+        if keyCode == KeyCode.tab, isSwitcherTrigger(keyCode: keyCode, flags: flags) {
+            return .step(backward: flags.contains(.maskShift))
+        }
+        guard foreign.isEmpty else { return nil }
         switch keyCode {
         case KeyCode.tab:
             return .step(backward: flags.contains(.maskShift))
@@ -145,17 +163,16 @@ struct EventTapInterceptionState {
             return .arrow(.right)
         case KeyCode.delete, KeyCode.forwardDelete:
             return .deleteKey
-        case KeyCode.comma where flags.contains(.maskCommand):
-            return .openSettings
         default:
             return nil
         }
     }
 
+    /// The modifiers that make a chord belong to someone; Shift never does.
+    private static let chordModifiers: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl]
+
     private func otherModifiers(than holdModifier: CGEventFlags) -> CGEventFlags {
-        var others: CGEventFlags = [.maskCommand, .maskAlternate, .maskControl]
-        others.remove(holdModifier)
-        return others
+        Self.chordModifiers.subtracting(holdModifier)
     }
 }
 

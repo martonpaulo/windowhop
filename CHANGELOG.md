@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   WindowHop shortcut, pressing a chord WindowHop already uses reaches the recorder instead
   of opening a session. ⌘Tab reaches macOS as it does in any shortcut field, and
   interception resumes as soon as recording ends.
+- **VoiceOver commands work while the switcher is open**: ⌃⌥ with an arrow, Space, Return
+  or Delete now reaches VoiceOver instead of moving the switcher. Keys still navigate with
+  the modifier you hold (⌘ + arrows after ⌘Tab) or with none in a persistent session.
 
 ## [1.6.2] - 2026-09-09
 

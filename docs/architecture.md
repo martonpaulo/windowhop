@@ -65,6 +65,12 @@ through plain AppKit.
    pass every key, so a chord already in use reaches the recorder. The recorder owns the
    flag through `onRecordingChanged` → `SwitcherController.setShortcutRecordingActive`;
    stopping the tap keeps it. A key-up owned before recording began is still consumed.
+   In a session, navigation keys (Tab, arrows, Return/Enter, Escape, Delete, sticky Space)
+   match only with Shift plus the modifiers that own the session: the hold modifier when
+   held, the Open WindowHop chord's modifiers when sticky. A chord with any other ⌘/⌥/⌃
+   passes, so ⌃⌥ VoiceOver commands reach assistive technology whichever tap sees them
+   first. Exceptions: the switcher trigger keeps stepping, and ⌘, needs ⌘. An Open
+   WindowHop chord built from ⌃⌥ still owns ⌃⌥ keys in its sticky session.
 3. `SwitcherController` (main) feeds events into the pure `SwitcherState` machine
    (phases: inactive → held/sticky → confirming) and executes the returned commands:
    show/select on the panel, activate/close via `WindowActions`, cancel.
