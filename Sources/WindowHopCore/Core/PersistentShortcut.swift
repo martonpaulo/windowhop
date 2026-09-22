@@ -33,10 +33,18 @@ public struct PersistentShortcut: Equatable {
         case needsModifier
         case conflictsWithSwitcherShortcut
 
+        /// The modifiers that make a chord valid on their own (Shift alone does not),
+        /// listed in the order the explanation names them.
+        static let qualifyingModifiers: [CGEventFlags] =
+            [.maskCommand, .maskAlternate, .maskControl]
+
         public var explanation: String {
             switch self {
             case .needsModifier:
-                return "Add at least one modifier key (⌘, ⌥, ⌃) so normal typing can't open WindowHop."
+                let glyphs = ValidationError.qualifyingModifiers
+                    .map(ShortcutFormatter.modifierSymbols)
+                    .joined(separator: ", ")
+                return "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop."
             case .conflictsWithSwitcherShortcut:
                 return "This is already the switcher shortcut. Choose a different combination."
             }

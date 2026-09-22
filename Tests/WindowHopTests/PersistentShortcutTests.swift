@@ -24,6 +24,21 @@ final class PersistentShortcutTests: XCTestCase {
                        .needsModifier)
     }
 
+    /// The glyphs in the message come from ShortcutFormatter, never a second
+    /// hardcoded representation (issue #114).
+    func testNeedsModifierExplanationUsesFormatterGlyphs() {
+        let glyphs = [CGEventFlags.maskCommand, .maskAlternate, .maskControl]
+            .map(ShortcutFormatter.modifierSymbols)
+            .joined(separator: ", ")
+        XCTAssertEqual(PersistentShortcut.ValidationError.needsModifier.explanation,
+                       "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
+        // every modifier the message names is, on its own, enough to pass validation
+        for modifier in PersistentShortcut.ValidationError.qualifyingModifiers {
+            XCTAssertNil(PersistentShortcut(keyCode: KeyCode.space, modifiers: modifier)
+                .validate(against: .commandTab))
+        }
+    }
+
     func testConflictWithSwitcherShortcutIsRejected() {
         let cmdTab = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskCommand])
         XCTAssertEqual(cmdTab.validate(against: .commandTab), .conflictsWithSwitcherShortcut)
