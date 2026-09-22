@@ -201,6 +201,89 @@ extension SwitcherStateTests {
         XCTAssertEqual(state.phase, .confirming)
     }
 
+    // MARK: - Teardown and session identity
+
+    func testTeardownFromHeldCancels() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        XCTAssertEqual(state.teardown(), .cancel)
+        XCTAssertEqual(state.phase, .inactive)
+    }
+
+    func testTeardownFromHeldCloseConfirmationCancels() {
+        // escape belongs to the dialog while confirming; disabling must not
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        _ = state.deleteKey()
+        XCTAssertEqual(state.escape(), .none)
+        XCTAssertEqual(state.phase, .confirming)
+        XCTAssertEqual(state.teardown(), .cancel)
+        XCTAssertEqual(state.phase, .inactive)
+    }
+
+    func testTeardownFromStickyCloseConfirmationCancels() {
+        var state = SwitcherState()
+        _ = state.openPersistent(itemCount: 3)
+        _ = state.deleteKey()
+        XCTAssertEqual(state.teardown(), .cancel)
+        XCTAssertEqual(state.phase, .inactive)
+    }
+
+    func testTeardownWhileInactiveDoesNothing() {
+        var state = SwitcherState()
+        XCTAssertEqual(state.teardown(), .none)
+        _ = state.trigger(backward: false, itemCount: 3)
+        _ = state.teardown()
+        XCTAssertEqual(state.teardown(), .none)
+    }
+
+    func testNextSessionAfterTeardownOpensNormally() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        _ = state.deleteKey()
+        _ = state.teardown()
+        XCTAssertEqual(state.trigger(backward: false, itemCount: 3), .show(selectedIndex: 1))
+        XCTAssertEqual(state.phase, .held)
+        _ = state.teardown()
+        XCTAssertEqual(state.openPersistent(itemCount: 3), .show(selectedIndex: 1))
+        XCTAssertEqual(state.phase, .sticky)
+    }
+
+    func testSessionIDChangesPerSessionOnly() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        let first = state.sessionID
+        _ = state.trigger(backward: false, itemCount: 3) // step, same session
+        _ = state.arrow(.right)
+        _ = state.deleteKey()
+        _ = state.confirmationFinished()
+        XCTAssertEqual(state.sessionID, first)
+        _ = state.escape()
+        XCTAssertEqual(state.sessionID, first)
+        _ = state.trigger(backward: false, itemCount: 3)
+        XCTAssertNotEqual(state.sessionID, first)
+        let second = state.sessionID
+        _ = state.returnKey()
+        _ = state.openPersistent(itemCount: 3)
+        XCTAssertNotEqual(state.sessionID, second)
+        XCTAssertNotEqual(state.sessionID, first)
+    }
+
+    func testStaleHeldConfirmationIsNotRevivedByANewSession() {
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: 3)
+        _ = state.deleteKey()
+        let stale = state.sessionID
+        XCTAssertTrue(state.isConfirming(sessionID: stale))
+        _ = state.teardown()
+        XCTAssertFalse(state.isConfirming(sessionID: stale))
+        // a new held session reaches its own confirmation before the old callback drains
+        _ = state.trigger(backward: false, itemCount: 3)
+        _ = state.deleteKey()
+        XCTAssertFalse(state.isConfirming(sessionID: stale))
+        XCTAssertTrue(state.isConfirming(sessionID: state.sessionID))
+    }
+
     func testAppearanceModeDefaultsToAppIcons() {
         let suite = "windowhop-tests-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: suite)!

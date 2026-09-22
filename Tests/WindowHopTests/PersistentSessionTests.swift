@@ -87,4 +87,32 @@ final class PersistentSessionTests: XCTestCase {
         _ = state.confirmationFinished()
         XCTAssertEqual(state.phase, .sticky)
     }
+
+    func testTeardownFromStickyCancels() {
+        var state = SwitcherState()
+        _ = state.openPersistent(itemCount: 3)
+        XCTAssertEqual(state.teardown(), .cancel)
+        XCTAssertEqual(state.phase, .inactive)
+    }
+
+    func testTeardownFromStickyCloseConfirmationCancels() {
+        var state = SwitcherState()
+        _ = state.openPersistent(itemCount: 3)
+        _ = state.deleteKey()
+        XCTAssertEqual(state.escape(), .none)
+        XCTAssertEqual(state.teardown(), .cancel)
+        XCTAssertEqual(state.phase, .inactive)
+    }
+
+    func testStaleStickyConfirmationIsNotRevivedByANewSession() {
+        var state = SwitcherState()
+        _ = state.openPersistent(itemCount: 3)
+        _ = state.deleteKey()
+        let stale = state.sessionID
+        _ = state.teardown()
+        _ = state.openPersistent(itemCount: 3)
+        _ = state.deleteKey()
+        XCTAssertFalse(state.isConfirming(sessionID: stale))
+        XCTAssertTrue(state.isConfirming(sessionID: state.sessionID))
+    }
 }

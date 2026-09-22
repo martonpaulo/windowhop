@@ -66,6 +66,9 @@ through plain AppKit.
    draws its panels only after the `SwitcherRevealDelay` preference (default 100 ms),
    through one session-scoped timer; ending the session first invalidates it, so a quick
    press activates its target without drawing anything. Sticky sessions reveal immediately.
+   Disabling or losing permission tears the session down from any phase, including
+   confirming (`SwitcherState.teardown`); deferred confirmation work is bound to its
+   session id, so a stale callback never revives an ended or newer session.
 4. `ExpandedPreviewSession` owns only targeted and expanded identities. The `Preferences`
    delay is the single source of truth: Off, 1, 2, 3 (default), or 5 seconds. Target
    changes cancel the one session-scoped timer and invalidate its generation, so an

@@ -214,6 +214,8 @@ Screen Recording permission.
       app switcher during forward/reverse, rapid, repeated, cancel, or Settings flows.
 - [ ] Disable/enable, shortcut reassignment, relaunch, sleep, and wake leave one active
       event tap with no obsolete chord interception.
+- [ ] Disable during a close confirmation, re-enable: the next ⌘Tab and Open WindowHop
+      sessions are visible.
 
 ### Window inclusion
 

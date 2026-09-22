@@ -68,10 +68,9 @@ public final class SwitcherController {
                 EventTap.shared.mode = .watching
             }
         } else {
-            if state.isActive {
-                perform(state.escape())
-            }
-            state.reset()
+            // teardown, not escape: escape belongs to the dialog while confirming,
+            // but disabling must release every session resource in every phase
+            perform(state.teardown())
             EventTap.shared.stop()
         }
     }
@@ -123,11 +122,7 @@ public final class SwitcherController {
     /// no preview tile click is allowed to leak through.
     private func openSettingsFromSession() {
         let hadActiveSession = state.isActive
-        if hadActiveSession {
-            state.reset()
-            endSession()
-            expandedPreview.reset()
-        }
+        perform(state.teardown())
         if hadActiveSession {
             WindowActions.afterPendingActions {
                 SettingsWindowController.shared.show()
@@ -138,12 +133,7 @@ public final class SwitcherController {
     }
 
     private func openScreenRecordingSettingsFromSession() {
-        let hadActiveSession = state.isActive
-        if hadActiveSession {
-            state.reset()
-            endSession()
-            expandedPreview.reset()
-        }
+        perform(state.teardown())
         if ScreenRecordingPermission.status == .notDetermined {
             _ = ScreenRecordingPermission.request()
         } else {
@@ -206,13 +196,16 @@ public final class SwitcherController {
         panels.hideExpandedPreview()
         EventTap.shared.mode = .passthrough
         panels.hide()
+        let sessionID = state.sessionID
         WindowActions.afterPendingActions { [weak self] in
-            guard let self, self.state.phase == .confirming else { return }
-            self.presentCloseConfirmation(for: item)
+            // a teardown (disable, permission loss) or a newer session may have
+            // happened while pending AX actions drained; never revive either
+            guard let self, self.state.isConfirming(sessionID: sessionID) else { return }
+            self.presentCloseConfirmation(for: item, sessionID: sessionID)
         }
     }
 
-    private func presentCloseConfirmation(for item: SwitcherItem) {
+    private func presentCloseConfirmation(for item: SwitcherItem, sessionID: UInt64) {
         let app = item.window?.app
         let isOwnEntry = item.window?.isOwnSettingsEntry ?? false
         let offersQuit = !isOwnEntry && app != nil
@@ -256,6 +249,9 @@ public final class SwitcherController {
             break
         }
 
+        // the user's explicit choice above still ran; restoring the session does not
+        // when it was torn down (or replaced) while the dialog was up
+        guard state.isConfirming(sessionID: sessionID) else { return }
         _ = state.confirmationFinished()
         if configuredEnabled {
             EventTap.shared.mode = state.isActive ? sessionTapMode() : .watching

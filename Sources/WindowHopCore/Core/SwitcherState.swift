@@ -32,6 +32,10 @@ public struct SwitcherState {
     /// Grid geometry (set by the panel after layout): items wrap into rows,
     /// so ↑/↓ move by one row while ⇥ and ←/→ stay linear.
     public private(set) var columns = 1
+    /// Identity of the current (or most recent) session. It changes each time a
+    /// session starts, so work deferred past a teardown — a queued or modal close
+    /// confirmation — can tell that the session which asked for it is gone.
+    public private(set) var sessionID: UInt64 = 0
 
     public init() {}
 
@@ -46,6 +50,7 @@ public struct SwitcherState {
             guard count > 0 else { return .none }
             itemCount = count
             phase = .held
+            sessionID &+= 1
             selectedIndex = backward ? count - 1 : min(1, count - 1)
             return .show(selectedIndex: selectedIndex)
         case .held, .sticky:
@@ -63,6 +68,7 @@ public struct SwitcherState {
         guard count > 0 else { return .none }
         itemCount = count
         phase = .sticky
+        sessionID &+= 1
         selectedIndex = min(1, count - 1)
         return .show(selectedIndex: selectedIndex)
     }
@@ -151,6 +157,13 @@ public struct SwitcherState {
         return .none
     }
 
+    /// Whether the close confirmation requested by session `id` is still the one
+    /// pending. Deferred and post-modal confirmation work runs only while this holds,
+    /// so a teardown (or a newer session) can never be revived by a stale callback.
+    public func isConfirming(sessionID id: UInt64) -> Bool {
+        phase == .confirming && sessionID == id
+    }
+
     public mutating func itemClicked(index: Int) -> Command {
         guard isActive, index >= 0, index < itemCount else { return .none }
         selectedIndex = index
@@ -172,6 +185,16 @@ public struct SwitcherState {
         itemCount = count
         selectedIndex = max(0, min(preferredIndex ?? selectedIndex, count - 1))
         return .select(index: selectedIndex)
+    }
+
+    /// Ends the session from any phase, including a pending close confirmation, when
+    /// WindowHop is disabled, loses its permission, or hands off to Settings. Unlike
+    /// `escape()` (which belongs to the dialog while confirming), every open phase
+    /// returns `.cancel` so the controller releases all session-owned resources.
+    public mutating func teardown() -> Command {
+        guard isActive else { return .none }
+        reset()
+        return .cancel
     }
 
     /// Ends the session unconditionally (used when the engine shuts down mid-session).
