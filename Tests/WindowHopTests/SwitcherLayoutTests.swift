@@ -252,6 +252,40 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertFalse(loading.skeletonIsAnimatingForTesting)
     }
 
+    func testAppIconsTilesNeverPulseTheirHiddenSkeleton() throws {
+        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                      "Reduce Motion is on, so no skeleton ever pulses")
+        Preferences.shared.appearanceMode = .appIcons
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a")], selectedIndex: 0)
+        let tile = try XCTUnwrap(panel.tileForTesting(at: 0))
+        XCTAssertFalse(tile.skeletonIsAnimatingForTesting,
+                       "an App Icons tile animated a skeleton nobody sees")
+
+        Preferences.shared.appearanceMode = .windowPreviews
+        panel.update(items: [item("a")], selectedIndex: 0)
+        XCTAssertTrue(tile.skeletonIsAnimatingForTesting, "a visible loading preview pulses")
+    }
+
+    func testPulseFollowsTileVisibility() throws {
+        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                      "Reduce Motion is on, so no skeleton ever pulses")
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        let slot = try XCTUnwrap(panel.tileForTesting(at: 1))
+        XCTAssertTrue(slot.skeletonIsAnimatingForTesting)
+
+        slot.isHidden = true
+        XCTAssertFalse(slot.skeletonIsAnimatingForTesting, "a hidden tile kept pulsing")
+        slot.isHidden = false
+        XCTAssertTrue(slot.skeletonIsAnimatingForTesting, "unhiding a loading tile restores it")
+
+        panel.update(items: [item("a")], selectedIndex: 0)
+        XCTAssertFalse(slot.skeletonIsAnimatingForTesting)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        XCTAssertTrue(slot.skeletonIsAnimatingForTesting, "a reused slot pulses again")
+    }
+
     func testSharedTypographyUsesNativeSystemHierarchy() throws {
         let tile = configuredTile(imageSize: NSSize(width: 300, height: 200))
         let title = try XCTUnwrap(tile.titleFontForTesting)

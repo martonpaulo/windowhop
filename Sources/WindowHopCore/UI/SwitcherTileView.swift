@@ -102,11 +102,26 @@ private final class PreviewSkeletonView: NSView {
         needsDisplay = true
     }
 
+    // The pulse lives only while the skeleton can be seen. Measured (#88): an
+    // infinite pulse on a hidden layer inside a visible panel keeps
+    // WindowServer compositing (~35% CPU against ~3% static), whereas an
+    // ordered-out panel costs nothing.
+    override func viewDidHide() {
+        super.viewDidHide()
+        stopAnimation()
+    }
+
+    override func viewDidUnhide() {
+        super.viewDidUnhide()
+        refreshAnimation()
+    }
+
     func refreshAnimation() {
         layer?.removeAnimation(forKey: "previewSkeletonPulse")
         layer?.opacity = 1
         guard variant == .loading,
               window != nil,
+              !isHiddenOrHasHiddenAncestor,
               !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
         let pulse = CABasicAnimation(keyPath: "opacity")
         pulse.fromValue = DesignTokens.previewSkeletonMinimumOpacity
@@ -546,6 +561,9 @@ final class SwitcherTileView: NSView {
     }
 
     private func updateSkeletonPresentation() {
+        // hide before the variant restarts the pulse, so App Icons tiles and
+        // loaded previews never animate an invisible skeleton until layout
+        skeletonView.isHidden = mode != .windowPreviews || hasPreview
         switch previewState {
         case .loading:
             skeletonView.variant = .loading

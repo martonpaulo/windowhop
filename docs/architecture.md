@@ -280,7 +280,10 @@ preview surface. The app badge, Close control, selection plate, shadow, hit test
 title position all anchor to that canvas rather than the fitted source-image bounds.
 
 While an authorized window has no snapshot, the tile shows a simplified macOS-window
-skeleton with a quiet pulse; Reduce Motion makes it static. Missing or revoked permission
+skeleton with a quiet pulse; Reduce Motion makes it static. The pulse runs only while the
+skeleton is visible: a hidden skeleton (App Icons tiles, loaded previews, hidden pool slots)
+never carries one, because an animation on a hidden layer inside the visible panel still
+keeps WindowServer compositing (measured in #88). Missing or revoked permission
 uses the same geometry as a subdued, non-animating fallback while the single panel-level
 recovery action remains available. Acquisition, matching, or capture failure also uses a
 static skeleton, without exposing technical copy. A cached snapshot is never replaced by
