@@ -100,6 +100,15 @@ has recorded 56 total asset downloads, which cannot distinguish a user from a Sp
 - One maintainer. Anything that needs ongoing human upkeep — translations, a server, a support
   queue — is a cost the project cannot absorb.
 
+## Decision index
+
+One row per consequential decision. Each row points to the canonical rule and does not
+restate it.
+
+| Decision | Outcome | Canonical document | Deciding issue |
+| --- | --- | --- | --- |
+| What opens at launch and reopen | Settings opens at a normal launch only on first run or when both icons are hidden; missing Accessibility opens onboarding on any launch, login included | [architecture.md](architecture.md), "Launch and reopen" | [#80](https://github.com/martonpaulo/windowhop/issues/80) |
+
 ## What this document is not
 
 A specification. Individual requirements, acceptance criteria, and edge cases belong in issues.

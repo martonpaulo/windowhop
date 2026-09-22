@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Settings no longer opens at every launch**: once the first launch is done and you
+  show the menu bar item or the Dock icon, starting WindowHop opens nothing. With both
+  icons hidden it still opens Settings, and opening WindowHop again while it runs always
+  does. If Accessibility is missing, the setup window opens on any launch, including at
+  login.
 - **Launch at login is off for new installs**: turn it on in Settings → General. Existing
   installations keep their current choice, including the previous On default.
 - **Restore Defaults leaves launch at login alone**: it no longer registers or removes the

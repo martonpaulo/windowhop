@@ -2,7 +2,8 @@ import AppKit
 import Carbon.HIToolbox
 
 /// Application lifecycle: permission gating, engine start/stop, settings reactions,
-/// and the guarantee that a relaunch opens Settings even with all icons hidden.
+/// and the launch/reopen surface decided by `LaunchPresentation` (reopening always
+/// reaches Settings or onboarding, so hidden icons are never a dead end).
 public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions {
     private let preferences = Preferences.shared
     private var engineRunning = false
@@ -38,32 +39,47 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        let launchedAsLoginItem = isLoginItemLaunch()
+        let trigger: LaunchPresentation.Trigger =
+            isLoginItemLaunch() ? .loginItemLaunch : .normalLaunch
+        // read before completeFirstLaunchIfNeeded() marks the first run done
+        let isFirstRun = !preferences.firstLaunchCompleted
         BackgroundWork.start()
         SwitcherController.shared.wire()
         StatusItemController.shared.apply()
         UpdateManager.shared.startIfBundled()
         observeSystemEvents()
 
-        if AccessibilityPermission.isGranted {
+        let granted = AccessibilityPermission.isGranted
+        if granted {
             startEngine()
             completeFirstLaunchIfNeeded()
-            if !launchedAsLoginItem {
-                SettingsWindowController.shared.show()
-            }
-        } else {
-            showOnboarding()
         }
+        present(trigger: trigger, granted: granted, isFirstRun: isFirstRun)
     }
 
-    /// Relaunching the app (Finder, Spotlight, Dock) reopens Settings.
+    /// Opening the app again (Finder, Spotlight, Dock) is the route back when both
+    /// icons are hidden: Settings, or onboarding while Accessibility is missing.
     public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if AccessibilityPermission.isGranted {
+        present(trigger: .reopen, granted: AccessibilityPermission.isGranted,
+                isFirstRun: !preferences.firstLaunchCompleted)
+        return false
+    }
+
+    private func present(trigger: LaunchPresentation.Trigger, granted: Bool, isFirstRun: Bool) {
+        let presentation = LaunchPresentation.decide(
+            trigger: trigger,
+            permissionGranted: granted,
+            isFirstRun: isFirstRun,
+            menuBarItemVisible: preferences.showMenuBarItem,
+            dockIconVisible: preferences.showDockIcon)
+        switch presentation {
+        case .none:
+            break
+        case .settings:
             SettingsWindowController.shared.show()
-        } else {
+        case .onboarding:
             showOnboarding()
         }
-        return false
     }
 
     public func applicationWillTerminate(_ notification: Notification) {

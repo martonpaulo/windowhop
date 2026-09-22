@@ -355,6 +355,35 @@ identity validation is explicitly inapplicable.
 | Other-Space windows | `_AXUIElementCreateWithRemoteToken` brute force + `CGSCopySpaces*` | persistent store + re-enumeration on Space change (see limitation in README) |
 | Tab-group siblings | CGWindowID matching | object-identity matching in pure `TabGroupResolver` |
 
+## Launch and reopen
+
+Decided on [#80](https://github.com/martonpaulo/windowhop/issues/80) (option C, the
+visibility-aware hybrid). `AppDelegate` asks the pure `Core/LaunchPresentation` rule at launch
+and at reopen; `LaunchPresentationTests` covers every row. The menu bar item and the Dock
+icon are both hidden by default, so "another visible surface" means the user turned one on.
+
+| Condition | Surface |
+| --- | --- |
+| Normal launch, granted, first run | Settings |
+| Normal launch, granted, menu bar item or Dock icon visible | Nothing |
+| Normal launch, granted, both icons hidden | Settings |
+| Login-item launch, granted | Nothing |
+| Any launch (login included), Accessibility not granted | Onboarding |
+| Reopen while running | Settings if granted, onboarding if not |
+| Accessibility revoked while running | Onboarding |
+| Onboarding completes | Settings |
+
+First run is `Preferences.firstLaunchCompleted` still false, read before the launch marks it
+done; it is set once Accessibility is granted, is not user-configurable, and Restore Defaults
+does not reset it. A login-item launch is detected from the `kAEOpenApplication` event's
+`keyAELaunchedAsLogInItem` property.
+
+**Recorded exception to the shared shell standard** (`skd-macos-app-shell`, launch rule "a
+login-item launch never opens a window"): a login launch without Accessibility opens
+onboarding. Native ⌘Tab keeps working when WindowHop cannot intercept it, so without a window
+nothing would reveal that WindowHop is inert, and with both icons hidden by default there is
+no menu bar item to carry the pending state instead.
+
 ## Fail-safe properties
 
 - The native macOS switcher is never modified. Interception exists only while the tap is
