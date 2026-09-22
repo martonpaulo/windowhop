@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   installations keep their current choice, including the previous On default.
 - **Restore Defaults leaves launch at login alone**: it no longer registers or removes the
   login item, so it cannot fail and never changes system settings.
+- **WindowHop now requires macOS 26 or later**: Macs on macOS 14 or 15 keep the current
+  version and are not offered this update.
 
 ### Fixed
 

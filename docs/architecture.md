@@ -179,9 +179,10 @@ hit-testable overflow gutter, so the card and panel do not grow. A compact Setti
 control (⌘, works without a pointer) keeps most of its 44 pt target inside the panel and
 10 pt outside its top-right corner. A transparent host preserves that outside area;
 the control reserves no chrome row and cannot change the visible
-panel's centering or dimensions. On macOS 26+ the panel
+panel's centering or dimensions. The panel
 background is the system glass material (NSGlassEffectView, the native
-switcher's look); older systems use the HUD visual-effect material. Tiles wrap
+switcher's look); only the offscreen `--render-ui` harness substitutes the HUD
+visual-effect material, because glass draws empty under cacheDisplay. Tiles wrap
 into **rows** when one row can't fit ~88 % of the screen width (the AltTab
 layout model) — there is no horizontal scrolling and tiles never shrink; ←/→
 step linearly while ↑/↓ move by one row. Only an extreme window count exceeds

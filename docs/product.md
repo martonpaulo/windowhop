@@ -11,7 +11,7 @@ exact window you select.
 
 ## Who it is for
 
-Someone on macOS 14 or later who routinely keeps several windows of the *same* application open
+Someone on macOS 26 or later who routinely keeps several windows of the *same* application open
 — three browser windows, four terminals, two editor projects — spread across Spaces and
 displays, and who switches between them dozens of times an hour by keyboard.
 
@@ -91,7 +91,7 @@ has recorded 56 total asset downloads, which cannot distinguish a user from a Sp
 
 ## Constraints
 
-- macOS 14 or later on Apple Silicon only; releases are built for arm64 and do not run on Intel Macs.
+- macOS 26 or later on Apple Silicon only; releases are built for arm64 and do not run on Intel Macs.
 - Accessibility permission is mandatory; Screen Recording is optional and only for previews.
 - Sparkle is the only runtime dependency.
 - GPL-3.0-only, with AltTab attribution preserved in [UPSTREAM.md](../UPSTREAM.md).

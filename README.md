@@ -27,7 +27,7 @@ stay in memory and are never written to disk or transmitted.
 <br />
 
 ## 🌱 Quick Start
-Requires **macOS 14+** and the **Xcode 16+** command line tools; no paid Apple account is needed.
+Requires **macOS 26+** and the **Xcode 26+** command line tools; no paid Apple account is needed.
 
 ```sh
 git clone https://github.com/martonpaulo/windowhop

@@ -26,7 +26,7 @@ make validate          # repository invariants (must pass)
 scripts/package-app.sh # assemble build/WindowHop.app
 ```
 
-Requires macOS 14+ and Xcode 16+ command line tools. No paid Apple account is needed.
+Requires macOS 26+ and Xcode 26+ command line tools. No paid Apple account is needed.
 
 ## Official releases
 
