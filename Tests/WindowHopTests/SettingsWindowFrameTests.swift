@@ -77,8 +77,12 @@ final class SettingsWindowFrameTests: XCTestCase {
                            backing: .buffered, defer: true)
         old.isReleasedWhenClosed = false
         windows.append(old)
-        let savedFrame = CGRect(x: screen.minX + 60, y: screen.minY + 40,
-                                width: canvasSize.width + 120, height: canvasSize.height - 80)
+        // anchored to the top with room below, so restoring the taller canvas never makes
+        // AppKit push the window back on screen (CI runners have small displays)
+        try XCTSkipIf(screen.height < canvasSize.height + 80, "display too small to restore the canvas")
+        let savedHeight = canvasSize.height - 80
+        let savedFrame = CGRect(x: screen.minX + 60, y: screen.maxY - 20 - savedHeight,
+                                width: canvasSize.width + 120, height: savedHeight)
         old.setFrame(savedFrame, display: false)
         old.saveFrame(usingName: autosaveName)
 
