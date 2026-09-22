@@ -271,6 +271,12 @@ Screen Recording permission.
 - [ ] With the menu bar item shown, Disable, then revoke Accessibility: the item's shape and
       its accessibility label (Accessibility Inspector) change to paused, then to
       Accessibility access needed, before its menu is opened.
+- [ ] Settings → General → Launch at login follows the real login item: turn it on and off
+      and check System Settings › General › Login Items each time. With Settings left open,
+      remove WindowHop in Login Items and return: the toggle is off without a click. When
+      macOS asks for approval, the toggle stays on, the pane says approval is pending, and
+      Open Login Items Settings… opens that pane. A bare `swift build` product shows the
+      toggle dimmed with the Applications-folder explanation.
 
 ### Installation, update, and TCC continuity
 

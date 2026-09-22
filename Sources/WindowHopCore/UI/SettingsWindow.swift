@@ -186,22 +186,9 @@ private extension View {
 
 struct GeneralPane: View {
     @ObservedObject private var preferences = Preferences.shared
-    @State private var launchAtLogin = LoginItem.isEnabled
-    @State private var launchAtLoginFailed = false
+    @StateObject private var launchAtLogin = LaunchAtLoginModel()
     @State private var restoreConfirmationShown = false
     @State private var quitConfirmationShown = false
-
-    /// Only a user-initiated change registers a login item.
-    private func applyLaunchAtLogin(_ newValue: Bool) {
-        guard LoginItem.set(newValue) else {
-            launchAtLoginFailed = true
-            launchAtLogin = LoginItem.isEnabled
-            return
-        }
-        launchAtLogin = newValue
-        launchAtLoginFailed = false
-        preferences.launchAtLogin = newValue
-    }
 
     private var switchingGuide: SwitchingGuide {
         SwitchingGuide(switcherShortcut: preferences.shortcut,
@@ -223,16 +210,29 @@ struct GeneralPane: View {
             }
             Section {
                 Toggle("Enable WindowHop", isOn: $preferences.switcherEnabled)
-                // The binding, not onChange: the rollback assigns the state
-                // directly, and an onChange would re-enter with the rolled-back
-                // value and immediately erase the failure message.
+                // The binding, not onChange: the toggle shows the status macOS
+                // reports, and only a click requests a change. A refreshed
+                // status never flows back into a change handler.
                 Toggle("Launch at login",
-                       isOn: Binding(get: { launchAtLogin },
-                                     set: applyLaunchAtLogin))
-                if launchAtLoginFailed {
-                    Text("Launch at login could not be configured. Run WindowHop from the Applications folder and try again.")
+                       isOn: Binding(get: { launchAtLogin.status.isOn },
+                                     set: { launchAtLogin.request($0) }))
+                    .disabled(!launchAtLogin.status.allowsChange)
+                if launchAtLogin.failed {
+                    Label(LoginItemStatus.changeFailedExplanation,
+                          systemImage: "exclamationmark.triangle.fill")
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                } else if let explanation = launchAtLogin.status.explanation {
+                    Label(explanation,
+                          systemImage: launchAtLogin.status.offersLoginItemsSettings
+                              ? "exclamationmark.triangle.fill" : "info.circle")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+                if launchAtLogin.status.offersLoginItemsSettings {
+                    Button("Open Login Items Settings…") {
+                        launchAtLogin.openLoginItemsSettings()
+                    }
                 }
             } footer: {
                 Text("Disabling WindowHop hands \(SwitchingGuide.nativeSwitcherChord.display) back to the native app switcher without quitting.")
@@ -278,6 +278,13 @@ struct GeneralPane: View {
             }
         }
         .settingsPane()
+        // the window is retained, so re-read what System Settings may have
+        // changed whenever the pane shows or WindowHop becomes active; nothing polls
+        .onAppear { launchAtLogin.refresh() }
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            launchAtLogin.refresh()
+        }
     }
 }
 

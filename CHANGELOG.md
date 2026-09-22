@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Launch at login shows what macOS actually holds**: the toggle in Settings → General
+  now reads the real login-item status instead of remembering what you last clicked.
+  When macOS waits for your approval, it says so and offers Open Login Items Settings….
+  Changes you make in System Settings appear as soon as you return to WindowHop.
 - **VoiceOver reads the Open WindowHop shortcut field completely**: the recorder now
   speaks the current chord in words ("Option Tab"), says "None" when it is cleared and
   "Recording" while it waits for a chord, explains that Escape cancels and Delete clears,

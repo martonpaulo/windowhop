@@ -153,12 +153,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
 
     /// Registers the login item only when the launch-at-login intent is on
     /// (the default is off, see `Preferences.Defaults`) and it can actually be
-    /// configured (requires running from a real .app bundle).
+    /// configured (requires running from a real .app bundle). An existing
+    /// registration, including one awaiting approval, is left as it is.
     private func completeFirstLaunchIfNeeded() {
         guard !preferences.firstLaunchCompleted else { return }
         preferences.firstLaunchCompleted = true
-        if preferences.launchAtLogin, !LoginItem.isEnabled {
-            if !LoginItem.set(true) {
+        if preferences.launchAtLogin, LoginItem.status == .disabled {
+            if LoginItem.set(true).failed {
                 preferences.launchAtLogin = false
             }
         }
