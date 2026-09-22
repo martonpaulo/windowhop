@@ -305,6 +305,14 @@ a wrong preview is worse than none. Images are requested pre-scaled (no
 full-resolution retention). Preview failure can never remove an entry or block
 activation.
 
+A capture that succeeds is trusted as-is; there is no size or blank-image threshold.
+Measured on macOS 26 ([#89](https://github.com/martonpaulo/windowhop/issues/89)): small
+legitimate windows (30×30 to 260×120 pt) return full, usable images; minimized, hidden
+and ordered-out windows return their last full content; a window destroyed mid-capture
+fails with an error, which keeps the cached preview. The one unusable success is a
+window resized between listing and capture: the image comes back at the requested size
+but only partly filled (nearly blank at 1×1 pt), and the next capture corrects it.
+
 ## Shared window-inclusion policy
 
 `Preferences.windowInclusionPolicy` is the single value passed to
