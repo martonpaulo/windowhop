@@ -298,7 +298,8 @@ notes. A missing configurability decision is a review failure.
   privacy, limitations, landing page, download. It opens with the social card
   (`site/social-card.jpg`) and shows no screenshots; screenshots belong to the landing page.
   Use badges and statistics only when they improve comprehension and can stay current.
-- Maintain `CHANGELOG.md` — every public release gets a user-facing entry.
+- Maintain `CHANGELOG.md` in Keep a Changelog format. User-visible changes go under
+  `[Unreleased]` when they land, and the release renames that section to the version.
 - Preserve the approved `WindowHop` README heading. Give every new or materially edited
   fenced block an explicit language; leave unrelated historical formatting alone.
 
@@ -388,7 +389,8 @@ to publish an issue or change code. Do not ask again for a decision already reco
   may already be public, stop its spread and require revocation or rotation before considering
   cleanup; deleting it from the latest tree does not remove the exposure.
 - If a commit or push fails, report the exact failure without claiming success.
-- Release flow: bump the version and build number, update `CHANGELOG.md`, build and validate
+- Release flow: bump the version and build number, move `CHANGELOG.md`'s `[Unreleased]` to
+  `[X.Y.Z] - date` (and its link reference), build and validate
   from a clean tree, sign and notarize, verify the install and Sparkle update paths, then tag
   `vX.Y.Z` → `.github/workflows/release.yml` (or the local `scripts/`), commit the appcast
   entry, and verify the published download surfaces.

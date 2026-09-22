@@ -1,11 +1,26 @@
 # Changelog
 
-## 1.6.2 — 2026-09-09
+All notable changes to WindowHop are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+## [1.6.2] - 2026-09-09
+
+### Changed
 
 - **The website moved to windowhop.martonpaulo.com**: the About window and the website link
   now open <https://windowhop.martonpaulo.com/>.
 
-## 1.6.1 — 2026-09-08
+## [1.6.1] - 2026-09-08
+
+### Changed
+
+- Updated Sparkle to 2.9.6.
+
+### Fixed
 
 - **Window previews are readable again on wide displays**: every preview card took its
   shape from the monitor, so on an ultrawide screen the snapshot shrank to a thin strip
@@ -40,9 +55,10 @@
   the minimum text contrast, in Light Mode and much less in Dark Mode.
 - Preview snapshots of a window are released on every path that removes it, so repeatedly
   opening and closing Settings no longer leaves stale images in memory.
-- Updated Sparkle to 2.9.6.
 
-## 1.6.0 — 2026-08-07
+## [1.6.0] - 2026-08-07
+
+### Added
 
 - **Choose which displays the switcher appears on**: WindowHop now opens on every display
   by default, instead of picking one for you. Settings → Windows also offers the display
@@ -51,7 +67,9 @@
   back to the display with the pointer and reconnecting restores your choice without
   reconfiguring anything. Single-display Macs are unaffected.
 
-## 1.5.0 — 2026-07-27
+## [1.5.0] - 2026-07-27
+
+### Changed
 
 - **Windows that open while the switcher is up now show up**: the list used to be frozen
   the moment you opened WindowHop, so an app launching, a new document, or a dialog
@@ -61,7 +79,19 @@
   Previews mode the new tile gets its own snapshot without disturbing the captures still
   filling in.
 
-## 1.4.0 — 2026-07-24
+## [1.4.0] - 2026-07-24
+
+### Changed
+
+- **Documentation captures**: the published screenshots are a smaller, curated set, and
+  the Settings images are now the real window — title bar, toolbar, and all six panes'
+  identical frame — instead of an offscreen crop of one pane.
+- **One Settings window size**: panes no longer resize the window. General is split into
+  General, Shortcuts, and Windows, every pane renders into one shared canvas (and scrolls
+  if it ever outgrows it), and the selected pane is restored by identifier so future panes
+  cannot shift it.
+
+### Fixed
 
 - **The right preview on the right window**: Accessibility and the window server spell the
   same window's title differently (Chromium reports `Page – Brave – Profile` where the
@@ -71,39 +101,51 @@
   choice for both sides, and leaves genuinely indistinguishable windows without a preview
   instead of guessing. Long titles the window server reports with their middle elided are
   recognized too, verified against real stacked browser windows.
-- **Documentation captures**: the published screenshots are a smaller, curated set, and
-  the Settings images are now the real window — title bar, toolbar, and all six panes'
-  identical frame — instead of an offscreen crop of one pane.
-- **One Settings window size**: panes no longer resize the window. General is split into
-  General, Shortcuts, and Windows, every pane renders into one shared canvas (and scrolls
-  if it ever outgrows it), and the selected pane is restored by identifier so future panes
-  cannot shift it.
 
-## 1.3.1 — 2026-07-18
+## [1.3.1] - 2026-07-18
+
+### Added
+
+- **About and product website**: About now identifies developer Marton Paulo and links to
+  the official responsive GitHub Pages site. The zero-backend site includes current
+  product visuals, direct downloads, release notes, GPL-3.0 source, issue reporting, and
+  AltTab acknowledgement in adaptive Light and Dark appearances.
+
+### Changed
 
 - **Centralized defaults and safe reset**: every user preference now consumes one typed
   `Preferences.Defaults` contract. Fresh installs use ⌘Tab and ⌥Tab with tab counts hidden;
   upgrades retain saved choices, and the confirmed Restore Defaults action resets every
   configurable value without touching permissions, identity, or first-run state.
-- **Reliable shortcut ownership**: WindowHop now consumes the complete configured
-  Command–Tab key sequence, including rapid release, reverse cycling, repeated input, and
-  re-arming after sleep/wake. No new preference was added for this correctness fix.
 - **Contextual switcher chrome**: Settings stays out of normal cycling until the pointer
   enters the panel, while persistent Open WindowHop sessions keep it visible. The overlay
   never changes panel measurement, preview placement, or keyboard navigation.
 - **Polished card hierarchy**: native system typography strengthens titles, optional tab
   metadata leaves no hidden row, and loading/failure copy is replaced by explicit animated
   or static macOS-window skeleton states that respect Reduce Motion.
-- **About and product website**: About now identifies developer Marton Paulo and links to
-  the official responsive GitHub Pages site. The zero-backend site includes current
-  product visuals, direct downloads, release notes, GPL-3.0 source, issue reporting, and
-  AltTab acknowledgement in adaptive Light and Dark appearances.
 - **Regression coverage and documentation**: typed reset coverage fails when a future
   preference is omitted; shortcut interception, contextual gear visibility, compact
   metadata layout, shared typography, and skeleton domain states are tested. README,
   release metadata, and privacy-safe screenshots reflect 1.3.1.
 
-## 1.2.0 — 2026-07-18
+### Fixed
+
+- **Reliable shortcut ownership**: WindowHop now consumes the complete configured
+  Command–Tab key sequence, including rapid release, reverse cycling, repeated input, and
+  re-arming after sleep/wake. No new preference was added for this correctness fix.
+
+## [1.2.0] - 2026-07-18
+
+### Added
+
+- **Configurable windows shown**: General now owns one shared filtering policy for other
+  Spaces/displays and opt-in minimized, hidden-application, and Picture-in-Picture
+  windows. Existing curated behavior remains the default and changes apply immediately.
+- **Non-activating dwell preview**: pausing for 3 seconds by default enlarges the latest
+  snapshot inside WindowHop. Target changes cancel stale work; only confirmation activates
+  the real window, while cancellation leaves desktop focus and stacking untouched.
+
+### Changed
 
 - **Branded macOS installer**: the automated appdmg build now produces a compact custom
   WindowHop installation window with real draggable app/Applications items, branded
@@ -117,12 +159,6 @@
   Missing permission uses a dedicated `Permission required` canvas and one panel action;
   authorized capture distinguishes `Loading preview…` from `Preview unavailable` and
   handles revocation without retry loops.
-- **Configurable windows shown**: General now owns one shared filtering policy for other
-  Spaces/displays and opt-in minimized, hidden-application, and Picture-in-Picture
-  windows. Existing curated behavior remains the default and changes apply immediately.
-- **Non-activating dwell preview**: pausing for 3 seconds by default enlarges the latest
-  snapshot inside WindowHop. Target changes cancel stale work; only confirmation activates
-  the real window, while cancellation leaves desktop focus and stacking untouched.
 - **Apple-style preview surfaces**: unselected cards drop heavy permanent frames in favor
   of an adaptive surface and shallow rounded shadow. Selection is one appearance-aware
   background plate, App Icons remains borderless, and letterboxing/loading/fallback states
@@ -131,7 +167,19 @@
   Settings, overflow, and DMG captures now match 1.2.0. Tests cover permission states,
   shared filter combinations, overlay geometry, selection semantics, and stale dwell work.
 
-## 1.1.2 — 2026-07-18
+## [1.1.2] - 2026-07-18
+
+### Added
+
+- **Explicit preview fallback**: failed first captures show a semantic “Preview
+  unavailable” placeholder inside the normal canvas. Cached snapshots remain visible,
+  and loading, fallback, and loaded transitions never move the badge, border, or title.
+- **Configurable navigation preview dwell**: Appearance offers Off, Short, Default
+  (700 ms), and Long presets. Rapid traversal cancels superseded work; confirmation is
+  immediate, cancellation restores the origin, and temporary focus never becomes MRU
+  history.
+
+### Changed
 
 - **Native selection for each appearance**: Window Previews uses one 4 pt semantic
   macOS focus ring that replaces its subtle neutral outline for loaded, loading, and
@@ -144,19 +192,14 @@
   top-left point; app badges remain anchored beyond its bottom-right corner. The global
   Settings control is slightly larger and now keeps most of its hit target inside the
   panel with a small, stable outer overlap.
-- **Explicit preview fallback**: failed first captures show a semantic “Preview
-  unavailable” placeholder inside the normal canvas. Cached snapshots remain visible,
-  and loading, fallback, and loaded transitions never move the badge, border, or title.
-- **Configurable navigation preview dwell**: Appearance offers Off, Short, Default
-  (700 ms), and Long presets. Rapid traversal cancels superseded work; confirmation is
-  immediate, cancellation restores the origin, and temporary focus never becomes MRU
-  history.
 - **Release integrity and documentation**: official tag workflows now require an
   Apple-issued Developer ID Application certificate plus all notarization credentials,
   wait for acceptance, staple and validate the app and DMG, and run Gatekeeper checks
   before publishing. README screenshots and behavior documentation reflect 1.1.2.
 
-## 1.1.1 — 2026-07-18
+## [1.1.1] - 2026-07-18
+
+### Added
 
 - **Complete Settings contract**: every existing user-configurable behavior is exposed
   through the native General, Appearance, or Updates panes. `Preferences` is now the
@@ -168,6 +211,9 @@
   outside click restores the exact origin when it still exists. Temporary focus changes
   never rewrite MRU history, and closed origins/targets, rapid traversal, same-app
   windows, modal confirmation, and Settings focus races are covered by regressions.
+
+### Changed
+
 - **Clear preview boundaries and selection**: uniform horizontal card spacing, a subtle
   outline on every preview, restrained hover/temporary emphasis, and exactly one strong
   blue selected outline that remains legible over bright and dark snapshots without
@@ -183,7 +229,9 @@
   transparently letterboxed while outline, selection, shadow, overlays, hit testing, and
   title rhythm all follow the display-ratio preview canvas.
 
-## 1.1.0 — 2026-07-18
+## [1.1.0] - 2026-07-18
+
+### Added
 
 - **Live preview refresh**: opening the switcher still shows cached snapshots
   instantly, but each tile now crossfades to a fresh capture the moment it
@@ -191,6 +239,13 @@
   closed windows are discarded (new tested PreviewLedger), and regression
   tests pin previews to their window id so a snapshot can never appear on
   another window's card.
+- **Update notice in Settings**: the Updates pane now shows "WindowHop X.Y.Z
+  is available" with an Install Update button when the scheduled Sparkle check
+  finds a newer version (the standard Sparkle prompt still handles install /
+  remind-later / skip).
+
+### Changed
+
 - **Picture-in-Picture windows are excluded** — browser PiP (Chrome/Brave/
   Safari) and native floating video panels no longer clutter the switcher.
   Detection is behavior-based (the window server keeps PiP panels floating
@@ -209,15 +264,13 @@
 - **Native glass panel**: on macOS 26 the switcher background is the system
   glass material (NSGlassEffectView), matching the native ⌘⇥ switcher; older
   systems keep the HUD material fallback. Both respect Reduce Transparency.
-- **Update notice in Settings**: the Updates pane now shows "WindowHop X.Y.Z
-  is available" with an Install Update button when the scheduled Sparkle check
-  finds a newer version (the standard Sparkle prompt still handles install /
-  remind-later / skip).
 - **Polished DMG installer**: background artwork with drag-to-Applications
   guidance, fixed icon layout, a volume icon, and a matching file icon —
   generated headlessly (appdmg), so CI produces the full layout too.
 
-## 1.0.5 — 2026-07-08
+## [1.0.5] - 2026-07-08
+
+### Changed
 
 - Window titles now wrap to **two lines** before truncating — no more premature
   "…" on titles that would fit. The title zone has a fixed two-line height, so
@@ -229,10 +282,11 @@
 - Snapshot corners rounded slightly more (10 pt) to sit naturally inside the
   larger selection radius.
 
-
-## 1.0.4 — 2026-07-08
+## [1.0.4] - 2026-07-08
 
 Visual pass to match the native macOS switcher, reviewed primarily in Dark Mode:
+
+### Changed
 
 - The panel now uses the stable dark-glass HUD material — bright desktops can no
   longer wash it out (the popover material was too transparent).
@@ -244,77 +298,105 @@ Visual pass to match the native macOS switcher, reviewed primarily in Dark Mode:
 - Density matched to the native switcher: tighter tiles (124×158 icons, 204×170
   previews), larger panel corner radius, quieter placeholder fill.
 
+## [1.0.3] - 2026-07-07
 
-## 1.0.3 — 2026-07-07
+### Added
 
-- **Permission loop, part 2**: the welcome window now detects macOS App
-  Translocation (running from a quarantined temporary path — a grant can never
-  stick there) and offers a one-click "Reset Stuck Permission…" that clears a
-  stale Accessibility entry via Apple's tccutil so the next grant binds cleanly.
 - **Standard keyboard shortcuts everywhere**: WindowHop now has a proper main
   menu, so ⌘W closes the Settings window, ⌘Q quits, ⌘, opens Settings, and text
   editing shortcuts work.
+
+### Changed
+
 - **Native-switcher colors**: selection and placeholder surfaces now use the
   system semantic fills (secondary/quaternary system fill) and the panel uses
   the standard popover material — the same palette family as Apple's switcher.
-- **No more preview flash**: windows without a snapshot show a quiet rounded
-  placeholder card with the app icon, and the first capture fades in over it
-  (Reduce Motion disables the fade). Geometry never jumps.
 - Close and Settings overlay controls redesigned to the Apple badge idiom:
   hierarchical SF Symbols anchored to the content corner (Mission Control
   style), on one shared inset grid.
-- The Appearance pane keeps a fixed height — switching App Icons/Window
-  Previews no longer resizes the Settings window mid-animation.
 - The DMG is now built with sindresorhus/create-dmg (pinned): the familiar
   polished drag-to-Applications layout, reproducible on CI.
 - Releases now ship exactly two assets: the DMG (for people) and the ZIP
   (for Sparkle updates).
 
+### Fixed
 
-## 1.0.2 — 2026-07-06
+- **Permission loop, part 2**: the welcome window now detects macOS App
+  Translocation (running from a quarantined temporary path — a grant can never
+  stick there) and offers a one-click "Reset Stuck Permission…" that clears a
+  stale Accessibility entry via Apple's tccutil so the next grant binds cleanly.
+- **No more preview flash**: windows without a snapshot show a quiet rounded
+  placeholder card with the app icon, and the first capture fades in over it
+  (Reduce Motion disables the fade). Geometry never jumps.
+- The Appearance pane keeps a fixed height — switching App Icons/Window
+  Previews no longer resizes the Settings window mid-animation.
+
+## [1.0.2] - 2026-07-06
+
+### Added
+
+- The WindowHop Settings window now shows its own preview in Window Previews mode.
+
+### Changed
+
+- **Native update dialog**: checking for updates now shows the plain macOS alert —
+  no embedded web view. Full release notes stay on GitHub.
+- Previews follow the AltTab model strictly: what the switcher opens with is what
+  you see (snapshots are never swapped mid-session); captures only refresh the
+  in-memory cache for the next open, and tiles that had no snapshot fill in.
+- Bigger app-icon badge on previews (40 pt), close/Settings controls aligned on
+  one 8 pt inset grid, and all UI dimensions moved into a single design-tokens
+  file (`UI/DesignTokens.swift`).
+- "Quit WindowHop…" in Settings is visibly destructive (red), with confirmation.
+
+### Fixed
 
 - **Fixed the endless Accessibility permission loop after updates**: releases are
   now signed with a stable certificate, so macOS keeps the grant across updates.
   One last re-grant is needed when installing this version (remove WindowHop from
   the Accessibility list with −, add it again with +); after that, updates keep
   working without asking again.
-- **Native update dialog**: checking for updates now shows the plain macOS alert —
-  no embedded web view. Full release notes stay on GitHub.
-- Previews follow the AltTab model strictly: what the switcher opens with is what
-  you see (snapshots are never swapped mid-session); captures only refresh the
-  in-memory cache for the next open, and tiles that had no snapshot fill in.
-- The WindowHop Settings window now shows its own preview in Window Previews mode.
 - Multi-row layouts center every row (no more left-ragged last row).
-- Bigger app-icon badge on previews (40 pt), close/Settings controls aligned on
-  one 8 pt inset grid, and all UI dimensions moved into a single design-tokens
-  file (`UI/DesignTokens.swift`).
-- "Quit WindowHop…" in Settings is visibly destructive (red), with confirmation.
 
-## 1.0.1 — 2026-07-06
+## [1.0.1] - 2026-07-06
+
+### Added
 
 - **Instant previews**: window snapshots are cached in memory (AltTab-style) so
   the switcher opens instantly with the last known preview, while fresh captures
   load in parallel and crossfade in when the content changed. Nothing is captured
   while the switcher is closed; snapshots stay in memory only and are evicted
   with their window.
-- **Every window gets its own preview**: snapshot-to-window matching is now a
-  unique assignment — two windows of the same app can no longer show the same
-  preview; an uncertain match falls back to the app icon instead of guessing.
+- Added a confirmed "Quit WindowHop…" button in Settings → General.
+
+### Changed
+
 - **Grid instead of horizontal scrolling**: many windows now wrap into multiple
   rows (arrow keys navigate the grid spatially); icons never shrink.
 - Bigger window titles (13 pt), slightly smaller preview tiles, and much more
   visible close and Settings controls.
+- New tagline everywhere: "Switch between windows, not just apps."
+
+### Fixed
+
+- **Every window gets its own preview**: snapshot-to-window matching is now a
+  unique assignment — two windows of the same app can no longer show the same
+  preview; an uncertain match falls back to the app icon instead of guessing.
 - Fixed duplicate entries after a missed window-close notification (the
   "WhatsApp appeared twice" bug): stale Accessibility elements are now detected
   and pruned on Space changes and when the switcher opens.
 - Fixed the WindowHop Settings window sometimes not coming to the front when
   activated from the switcher.
-- Added a confirmed "Quit WindowHop…" button in Settings → General.
-- New tagline everywhere: "Switch between windows, not just apps."
 
-## 1.0.0 — 2026-07-03
+## [1.0.0] - 2026-07-03
 
 First release.
+
+Known limitations: releases are not notarized (no paid Developer ID yet); windows
+on unvisited Spaces appear after that Space is visited once; tab counts only for
+apps exposing native tab groups; English-only interface.
+
+### Added
 
 - Window-first Command-Tab replacement: one entry per top-level window, never per
   tab — a Safari window with 5 tabs is one entry with a quiet "5 tabs" hint.
@@ -334,6 +416,20 @@ First release.
   app's only network activity. No telemetry, no accounts.
 - Derived from AltTab v10.12.0 (GPL-3.0), rebuilt on public Apple APIs only.
 
-Known limitations: releases are not notarized (no paid Developer ID yet); windows
-on unvisited Spaces appear after that Space is visited once; tab counts only for
-apps exposing native tab groups; English-only interface.
+[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.2
+[1.6.1]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.1
+[1.6.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.0
+[1.5.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.5.0
+[1.4.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.4.0
+[1.3.1]: https://github.com/martonpaulo/windowhop/releases/tag/v1.3.1
+[1.2.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.2.0
+[1.1.2]: https://github.com/martonpaulo/windowhop/releases/tag/v1.1.2
+[1.1.1]: https://github.com/martonpaulo/windowhop/releases/tag/v1.1.1
+[1.1.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.1.0
+[1.0.5]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.5
+[1.0.4]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.4
+[1.0.3]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.3
+[1.0.2]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.2
+[1.0.1]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.1
+[1.0.0]: https://github.com/martonpaulo/windowhop/releases/tag/v1.0.0

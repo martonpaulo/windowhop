@@ -74,12 +74,21 @@ fi
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
 # The README no longer advertises a download (the GitHub About carries the site), so the
 # document that must track the shipped version is the changelog: its newest entry is the
-# release being described.
-CHANGELOG_VERSION=$(grep -oE '^## [0-9]+\.[0-9]+\.[0-9]+' CHANGELOG.md | head -1 | sed 's/^## //')
+# release being described. The file follows Keep a Changelog: `## [X.Y.Z] - date`
+# headings, with one `## [Unreleased]` section above every version.
+CHANGELOG_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | tr -d '#[] ')
 if [ "$CHANGELOG_VERSION" = "$VERSION" ]; then
     pass "CHANGELOG's newest entry matches version $VERSION"
 else
     fail "CHANGELOG's newest entry ($CHANGELOG_VERSION) does not match version $VERSION"
+fi
+UNRELEASED_COUNT=$(grep -c '^## \[Unreleased\]' CHANGELOG.md || true)
+UNRELEASED_LINE=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1)
+FIRST_VERSION_LINE=$(grep -nE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | cut -d: -f1)
+if [ "$UNRELEASED_COUNT" = "1" ] && [ "${UNRELEASED_LINE:-0}" -lt "${FIRST_VERSION_LINE:-0}" ]; then
+    pass "CHANGELOG has one [Unreleased] section above every version"
+else
+    fail "CHANGELOG needs exactly one '## [Unreleased]' heading before every version heading"
 fi
 
 MARKDOWN_FILES=$(git ls-files '*.md')
@@ -123,7 +132,8 @@ fi
 # --- release publication behaves as specified --------------------------------
 # These run the real publication scripts against a fake `gh` and throwaway
 # repositories: no network, no token, no signing material, no real release.
-for fixture in tests/scripts/publish-release-tests.sh tests/scripts/make-appcast-tests.sh; do
+for fixture in tests/scripts/publish-release-tests.sh tests/scripts/make-appcast-tests.sh \
+    tests/scripts/release-notes-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"
     else

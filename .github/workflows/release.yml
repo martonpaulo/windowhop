@@ -231,12 +231,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          awk -v version="$VERSION" '
-            $0 ~ "^## " version " " { printing=1; next }
-            printing && /^## / { exit }
-            printing { print }
-          ' CHANGELOG.md > release-notes.md
-          test -s release-notes.md || { echo "Missing CHANGELOG release notes for $VERSION" >&2; exit 1; }
+          scripts/release-notes.sh --version "$VERSION" > release-notes.md
           # Human installer ZIP preserves the DMG Finder icon; the raw DMG stays
           # available for direct mounts, and the plain ZIP is Sparkle's signed
           # update archive. Every artifact is staged in a draft and verified
