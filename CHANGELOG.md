@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Settings reopens where you left it**: the Settings window keeps its position across
   launches instead of re-centering every time, and returns to the main display when the
   display it was on is no longer connected.
+- **The website compares WindowHop with AltTab**: a new section explains when WindowHop
+  suits you and when AltTab is the better choice, and the page title and description now
+  name WindowHop as a free Mac window switcher and AltTab alternative.
 
 ### Changed
 

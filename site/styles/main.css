@@ -252,6 +252,15 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 .feature-grid h3 { margin: 0 0 8px; font-size: var(--text-lg); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); font-weight: var(--weight-strong); }
 .feature-grid p { margin: 0; color: var(--secondary); }
 
+/* The AltTab comparison: two cards in the feature cards' surface, side by side
+   from the tablet breakpoint up. */
+.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.comparison article { padding: 30px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.comparison h3 { margin: 0 0 14px; font-size: var(--text-lg); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); font-weight: var(--weight-strong); }
+.comparison ul { margin: 0; padding-left: 1.2em; color: var(--secondary); }
+.comparison li + li { margin-top: 8px; }
+.alternative > p a { color: var(--accent); }
+
 .download { text-align: center; }
 .download > img { margin: 0 auto 20px; }
 .download h2, .download > p:not(.eyebrow) { margin-inline: auto; }
@@ -288,6 +297,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
   .hero { padding-top: 68px; }
   .section { padding: 86px 0; }
   .feature-grid { grid-template-columns: 1fr; }
+  .comparison { grid-template-columns: 1fr; }
   .showcase, .showcase.figure-first { grid-template-columns: 1fr; gap: 44px; }
   .showcase > .showcase-copy { order: -1; }
   .showcase > :not(.showcase-copy) { justify-self: center; max-height: 560px; }
@@ -299,6 +309,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
   .actions { align-items: stretch; flex-direction: column; }
   .button { width: 100%; }
   .feature-grid article { padding: 24px; }
+  .comparison article { padding: 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

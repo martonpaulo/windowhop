@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <title>WindowHop · Mac window switcher with previews</title>
-  <meta name="description" content="A fast, native macOS window switcher with visual previews, keyboard navigation and filters for which windows appear. Free and open source.">
+  <title>WindowHop · Free Mac window switcher and AltTab alternative</title>
+  <meta name="description" content="Switch to the exact window you need with a native Mac window switcher, a simpler AltTab alternative for macOS 26 on Apple Silicon. Free and open source.">
   <!-- The served URL: the custom domain in site/CNAME. -->
   <link rel="canonical" href="https://windowhop.martonpaulo.com/">
   <meta name="theme-color" content="#0a0b0d" media="(prefers-color-scheme: dark)">
@@ -14,8 +14,8 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="WindowHop">
-  <meta property="og:title" content="WindowHop · Mac window switcher with previews">
-  <meta property="og:description" content="A fast, native macOS window switcher with visual previews, keyboard navigation and filters for which windows appear. Free and open source.">
+  <meta property="og:title" content="WindowHop · Free Mac window switcher and AltTab alternative">
+  <meta property="og:description" content="Switch to the exact window you need with a native Mac window switcher, a simpler AltTab alternative for macOS 26 on Apple Silicon. Free and open source.">
   <meta property="og:url" content="https://windowhop.martonpaulo.com/">
   <meta property="og:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -23,8 +23,8 @@
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="The WindowHop icon and the words Free for Mac, open source, WindowHop, Switch between windows, not just apps, beside a drawing of the switcher panel with eight window previews.">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="WindowHop · Mac window switcher with previews">
-  <meta name="twitter:description" content="A fast, native macOS window switcher with visual previews, keyboard navigation and filters for which windows appear. Free and open source.">
+  <meta name="twitter:title" content="WindowHop · Free Mac window switcher and AltTab alternative">
+  <meta name="twitter:description" content="Switch to the exact window you need with a native Mac window switcher, a simpler AltTab alternative for macOS 26 on Apple Silicon. Free and open source.">
   <meta name="twitter:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
   <link rel="stylesheet" href="styles/main.css">
   <!-- The hero is the largest contentful paint; without this it is only
@@ -51,11 +51,11 @@
     "operatingSystem": "macOS 26 or later",
     "url": "https://windowhop.martonpaulo.com/",
     "downloadUrl": "https://github.com/martonpaulo/windowhop/releases/latest",
-    "description": "A fast, native macOS window switcher with visual previews, keyboard navigation, and configurable window filtering.",
+    "description": "Switch to the exact window you need with a native Mac window switcher, a simpler AltTab alternative for macOS 26 on Apple Silicon. Free and open source.",
     "license": "https://www.gnu.org/licenses/gpl-3.0.html",
     "isAccessibleForFree": true,
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "author": { "@type": "Person", "name": "Marton Paulo" },
+    "author": { "@type": "Person", "@id": "https://martonpaulo.com/#person", "name": "Marton Paulo", "url": "https://martonpaulo.com" },
     "image": "https://windowhop.martonpaulo.com/social-card.jpg"
   }
   </script>
@@ -137,6 +137,36 @@
         <p>Normal windows across your visited Spaces and displays are included by default. Optional categories stay opt-in, tab counts stay out of the way, and every preference can return to its documented default.</p>
       </div>
       <img src="screenshots/settings-windows.webp" alt="WindowHop Windows Settings with the opt-in window categories" loading="lazy" width="672" height="740">
+    </section>
+
+    <!-- Search visitors often arrive looking for an AltTab alternative. Every claim
+         here comes from docs/product.md or AltTab's own source (UPSTREAM.md names the
+         snapshot): no superiority, parity or benchmark claims. -->
+    <section class="alternative section" id="alttab-alternative" aria-labelledby="alternative-title">
+      <p class="eyebrow">Compared with AltTab</p>
+      <h2 id="alternative-title">An AltTab alternative for Mac</h2>
+      <p>WindowHop is derived from <a href="https://github.com/lwouis/alt-tab-macos" rel="noopener">AltTab<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, which already switches between windows well. WindowHop is the deliberately simpler answer: a fixed look, two appearance modes and few settings, for people who want window switching without a long settings screen. If AltTab already works for you, there is no reason to switch.</p>
+      <div class="comparison">
+        <article>
+          <h3>WindowHop suits you if you want</h3>
+          <ul>
+            <li>Every window as its own tile, with a tabbed window kept as one tile.</li>
+            <li>App Icons mode, which needs no Screen Recording permission, or opt-in Window Previews.</li>
+            <li>A fixed look that follows system Light and Dark, with few settings to maintain.</li>
+            <li>Public Apple APIs only, no telemetry and no accounts.</li>
+            <li>A Mac with Apple Silicon and macOS 26 or later.</li>
+          </ul>
+        </article>
+        <article>
+          <h3>AltTab is the better choice if you want</h3>
+          <ul>
+            <li>To type and search window titles in the switcher.</li>
+            <li>More appearance styles, sizes and settings.</li>
+            <li>An Intel Mac or a macOS version older than macOS 26.</li>
+          </ul>
+        </article>
+      </div>
+      <p>Both are free and open source under GPL-3.0.</p>
     </section>
 
     <section class="download section" id="download" aria-labelledby="download-title">

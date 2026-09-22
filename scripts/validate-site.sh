@@ -60,12 +60,37 @@ done < <(grep -hoE '<span data-site-version>[^<]*</span>' "${pages[@]}")
 for marker in 'id="features"' 'id="download"' "href=\"$DOWNLOAD_URL\"" \
               'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
               'Developed by Marton Paulo' 'AltTab on GitHub' \
-              'Download WindowHop <span data-site-version>' 'class="external-icon"'; do
+              'Download WindowHop <span data-site-version>' 'class="external-icon"' \
+              'id="alttab-alternative"'; do
   grep -R -Fq "$marker" site/index.html site/styles/main.css || {
     echo "website is missing required marker: $marker" >&2
     exit 1
   }
 done
+
+# Search and share previews read different tags; they must say the same thing.
+title=$(grep -oE '<title>[^<]*</title>' site/index.html | sed -E 's/<\/?title>//g')
+description=$(grep -oE '<meta name="description" content="[^"]*"' site/index.html | sed -E 's/.*content="//; s/"$//')
+test -n "$title" && test -n "$description" || {
+  echo "site/index.html is missing its <title> or meta description" >&2
+  exit 1
+}
+for tag in 'property="og:title"' 'name="twitter:title"'; do
+  grep -Fq "<meta $tag content=\"$title\">" site/index.html || {
+    echo "site/index.html: $tag does not equal the <title>" >&2
+    exit 1
+  }
+done
+for tag in 'property="og:description"' 'name="twitter:description"'; do
+  grep -Fq "<meta $tag content=\"$description\">" site/index.html || {
+    echo "site/index.html: $tag does not equal the meta description" >&2
+    exit 1
+  }
+done
+grep -Fq "\"description\": \"$description\"" site/index.html || {
+  echo "site/index.html: the JSON-LD description does not equal the meta description" >&2
+  exit 1
+}
 
 # The 404 page is part of the site, not a bare fallback: same header, same
 # footer, same design, and it links back to the one page that exists.
