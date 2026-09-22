@@ -24,6 +24,8 @@ Preview regressions pin:
   one frame, invisible helper windows, and indistinguishable windows that must stay
   without a preview instead of receiving a guess;
 - one shared Settings pane size, so selecting a pane never resizes the window;
+- the Settings window position restored across launches with the canvas size kept, and a
+  saved frame on a vanished display recovered onto the main display;
 - borderless App Icons selection and the shared semantic preview selection plate in
   Light and Dark Mode;
 - intentional semantic letterbox surfaces for wide and tall sources;
@@ -245,8 +247,10 @@ Screen Recording permission.
       persistent session without reflow.
 - [ ] VoiceOver announces selected title/app/tab count; keyboard focus, Increase Contrast,
       Reduce Transparency, Reduce Motion, and larger accessibility text remain usable.
-- [ ] Every Settings pane keeps the same window size and position; nothing is clipped, and a
-      pane taller than the canvas scrolls instead of growing the window.
+- [ ] Every Settings pane keeps the same window size and position, and the position survives
+      relaunch; nothing is clipped, and a pane taller than the canvas scrolls instead of
+      growing the window. Moved to a second display that is then disconnected, Settings
+      reopens centered on the main display.
 - [ ] With three or more windows of one Chromium browser — same size, and again with two of
       them stacked at the same position — each card shows its own window, and a window that
       cannot be told apart shows the skeleton rather than another window's content.

@@ -5,13 +5,24 @@ import SwiftUI
 /// NSTabViewController, exactly like classic System Settings panes) hosting
 /// SwiftUI content. Every pane is the same size, so selecting one never resizes
 /// or re-centers the window.
+///
+/// Its position survives relaunch through AppKit's frame autosave — OS/UI
+/// restoration state under AppKit's own key, not a `Preferences` value, so
+/// Restore Defaults leaves it alone. First use is centered.
 public final class SettingsWindowController {
     public static let shared = SettingsWindowController()
 
     /// The switcher-entry title; the window's visible title follows the pane name.
     public static let switcherEntryTitle = "WindowHop Settings"
 
+    static let defaultFrameAutosaveName = "WindowHopSettings"
+
+    private let frameAutosaveName: String
     private var window: NSWindow?
+
+    init(frameAutosaveName: String = SettingsWindowController.defaultFrameAutosaveName) {
+        self.frameAutosaveName = frameAutosaveName
+    }
 
     /// The settings UI, also used by the debug render harness.
     public static func makeContentViewController() -> NSViewController {
@@ -25,20 +36,52 @@ public final class SettingsWindowController {
     }
 
     public func show() {
-        if window == nil {
-            let newWindow = NSWindow(contentViewController: Self.makeContentViewController())
-            newWindow.styleMask = [.titled, .closable, .miniaturizable]
-            newWindow.isReleasedWhenClosed = false
-            newWindow.center()
-            window = newWindow
-        }
+        let window = preparedWindow()
         NSApp.activate()
-        window?.makeKeyAndOrderFront(nil)
+        window.makeKeyAndOrderFront(nil)
         // the Settings window is a normal switcher entry while open (the one
         // sanctioned exception to the own-window exclusion)
-        if let window {
-            WindowStore.shared.registerOwnWindow(window)
+        WindowStore.shared.registerOwnWindow(window)
+    }
+
+    /// The retained window, created on first use at its saved position (or
+    /// centered), and moved back on screen when its display is gone — checked
+    /// on every show, since a display can be unplugged while it is retained.
+    func preparedWindow() -> NSWindow {
+        let window = window ?? makeWindow()
+        self.window = window
+        let recovered = WindowFrameRecovery.recoveredFrame(
+            window.frame,
+            visibleFrames: NSScreen.screens.map(\.visibleFrame),
+            fallback: NSScreen.main?.visibleFrame)
+        if recovered != window.frame {
+            window.setFrame(recovered, display: false)
         }
+        return window
+    }
+
+    private func makeWindow() -> NSWindow {
+        let newWindow = NSWindow(contentViewController: Self.makeContentViewController())
+        newWindow.styleMask = [.titled, .closable, .miniaturizable]
+        newWindow.isReleasedWhenClosed = false
+        // the pane canvas decides the size; only the origin comes from the
+        // saved frame, so a frame saved by a build with another canvas size
+        // cannot resize the window
+        let canvasSize = newWindow.frame.size
+        if newWindow.setFrameUsingName(frameAutosaveName) {
+            let restored = newWindow.frame
+            if restored.size != canvasSize {
+                // keep the saved top edge, where the person placed the title bar
+                newWindow.setFrame(CGRect(x: restored.minX, y: restored.maxY - canvasSize.height,
+                                          width: canvasSize.width, height: canvasSize.height),
+                                   display: false)
+            }
+        } else {
+            newWindow.center()
+        }
+        // AppKit saves every later move under this name
+        newWindow.setFrameAutosaveName(frameAutosaveName)
+        return newWindow
     }
 }
 

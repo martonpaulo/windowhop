@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A complete menu bar with the Dock icon on**: when "Show Dock icon" is enabled, the
   WindowHop menu now offers Services, Hide WindowHop (⌘H), Hide Others (⌥⌘H) and Show All,
   the Window menu offers Zoom, and a Help menu offers Report an Issue….
+- **Settings reopens where you left it**: the Settings window keeps its position across
+  launches instead of re-centering every time, and returns to the main display when the
+  display it was on is no longer connected.
 
 ### Fixed
 

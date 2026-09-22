@@ -156,8 +156,10 @@ permission exists, capture starts without moving the cards.
 
 Settings has six native panes: General, Shortcuts, Windows, Appearance, Updates, and
 About. Every pane shares one window size, so selecting a pane never resizes or re-centers
-the window, and no pane runs off the bottom of a laptop display. Changes persist and apply
-immediately when safe; invalid stored values restore documented defaults.
+the window, and no pane runs off the bottom of a laptop display. The window reopens where
+you left it, even after relaunch, and comes back to the main display if its display is gone.
+Changes persist and apply immediately when safe; invalid stored values restore documented
+defaults.
 
 ### General
 
