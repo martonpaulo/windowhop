@@ -43,6 +43,12 @@ Native NSWindow tabs (Finder, Terminal, …) are real AX windows; only the visib
 exposes the `AXTabGroup` child. `TabGroupResolver` (pure, ported from AltTab's
 TabGroup.updateState) matches the reported tab titles against same-app windows and marks
 inactive tabs `isTabbed`, which excludes them from display while keeping them tracked.
+A title match alone is not proof of membership. Candidates for one title are ranked by
+their AX frame against the active tab's (same frame, then unknown, then different — a
+freshly merged inactive tab keeps reporting its pre-merge frame, so a different frame
+ranks last instead of being excluded), then by recorded membership, never by discovery
+order. When the best-ranked candidates outnumber the titles left to fill, none of them is
+matched: an ambiguous window stays a visible entry rather than being hidden by a guess.
 Safari-style browsers expose one AX window per browser window, so nothing matches and
 each window simply carries its own tab count. Counts come only from counting
 `AXTabButton` children — never guessed, never parsed from titles.

@@ -280,7 +280,8 @@ public final class WindowStore {
         TabGroupResolver.WindowDescriptor(id: window.stableId,
                                           title: window.title,
                                           isTabbed: window.isTabbed,
-                                          groupIds: window.tabGroupIds)
+                                          groupIds: window.tabGroupIds,
+                                          frame: window.frame)
     }
 
     private func updateTabGroup(for window: TrackedWindow, tabTitles: [String]?) {

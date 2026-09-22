@@ -62,6 +62,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Check for Updates… stays in the menu bar item**: when the menu bar item was already on
   at launch, its menu never offered Check for Updates…. The menu now shows it whenever the
   updater is running, and dims it while a check is already in progress.
+### Fixed
+
+- **A window no longer disappears because it shares a tab's title**: when an independent
+  window had the same title as an inactive tab of another window in the same app, the
+  independent window could be hidden while the tab showed up instead. Tabs are now
+  matched by position as well as title, and a window that cannot be told apart stays
+  visible.
 
 ## [1.6.2] - 2026-09-09
 

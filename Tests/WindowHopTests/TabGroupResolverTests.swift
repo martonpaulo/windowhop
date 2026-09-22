@@ -5,9 +5,15 @@ final class TabGroupResolverTests: XCTestCase {
     private typealias Descriptor = TabGroupResolver.WindowDescriptor<String>
     private typealias State = TabGroupResolver.WindowTabState<String>
 
+    /// Native tabs of one window share that window's frame.
+    private let groupFrame = CGRect(x: 100, y: 80, width: 900, height: 600)
+    private let otherFrame = CGRect(x: 400, y: 300, width: 700, height: 500)
+
     private func window(_ id: String, _ title: String,
-                        isTabbed: Bool = false, groupIds: [String]? = nil) -> Descriptor {
-        Descriptor(id: id, title: title, isTabbed: isTabbed, groupIds: groupIds)
+                        isTabbed: Bool = false, groupIds: [String]? = nil,
+                        frame: CGRect?? = nil) -> Descriptor {
+        Descriptor(id: id, title: title, isTabbed: isTabbed, groupIds: groupIds,
+                   frame: frame ?? groupFrame)
     }
 
     // MARK: - The canonical requirement
@@ -116,8 +122,8 @@ final class TabGroupResolverTests: XCTestCase {
         let groupTwo = ["C", "D"]
         let activeOne = window("A", "A", groupIds: groupOne)
         let inactiveOne = window("B", "B", isTabbed: true, groupIds: groupOne)
-        let activeTwo = window("C", "C", groupIds: groupTwo)
-        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
+        let activeTwo = window("C", "C", groupIds: groupTwo, frame: otherFrame)
+        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo, frame: otherFrame)
 
         let changes = TabGroupResolver.resolve(
             active: activeOne,
@@ -135,14 +141,15 @@ final class TabGroupResolverTests: XCTestCase {
     func testRefreshingTheOtherGroupPreservesTheFirst() {
         let groupOne = ["A", "B"]
         let groupTwo = ["C", "D"]
-        let inactiveOne = window("B", "B", isTabbed: true, groupIds: groupOne)
+        let inactiveOne = window("B", "B", isTabbed: true, groupIds: groupOne, frame: otherFrame)
         let activeTwo = window("C", "C", groupIds: groupTwo)
         let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
 
         let changes = TabGroupResolver.resolve(
             active: activeTwo,
             tabTitles: ["C", "D"],
-            sameAppWindows: [window("A", "A", groupIds: groupOne), inactiveOne, inactiveTwo])
+            sameAppWindows: [window("A", "A", groupIds: groupOne, frame: otherFrame),
+                             inactiveOne, inactiveTwo])
 
         XCTAssertEqual(changes["D"], State(isTabbed: true, groupIds: groupTwo))
         XCTAssertNil(changes["A"])
@@ -156,18 +163,160 @@ final class TabGroupResolverTests: XCTestCase {
         let groupOne = ["A", "B"]
         let groupTwo = ["C", "D"]
         let formerSibling = window("B", "B", isTabbed: true, groupIds: groupOne)
-        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo)
+        let inactiveTwo = window("D", "D", isTabbed: true, groupIds: groupTwo, frame: otherFrame)
 
         let changes = TabGroupResolver.resolve(
             active: window("A", "A", groupIds: groupOne),
             tabTitles: ["A"],
-            sameAppWindows: [formerSibling, window("C", "C", groupIds: groupTwo), inactiveTwo])
+            sameAppWindows: [formerSibling, window("C", "C", groupIds: groupTwo, frame: otherFrame),
+                             inactiveTwo])
 
         XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: nil))
         XCTAssertTrue(isDisplayed(formerSibling, applying: changes),
                       "B left the group and must become its own entry")
         XCTAssertNil(changes["D"])
         XCTAssertFalse(isDisplayed(inactiveTwo, applying: changes))
+    }
+
+    // MARK: - Title collisions (an independent window shares an inactive tab's title)
+
+    /// Active A (Documents) with inactive tab B (Downloads), plus an independent
+    /// window C also titled Downloads at another position. Listing C before B once
+    /// hid C and left the real tab B visible.
+    func testIndependentSameTitleWindowStaysVisibleWhenListedBeforeTheInactiveTab() {
+        let (active, tab, independent) = collisionFixture()
+        let changes = TabGroupResolver.resolve(active: active, tabTitles: ["Documents", "Downloads"],
+                                               sameAppWindows: [independent, tab])
+        XCTAssertTrue(isDisplayed(independent, applying: changes))
+        XCTAssertFalse(isDisplayed(tab, applying: changes))
+        XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A", "B"]))
+    }
+
+    func testIndependentSameTitleWindowStaysVisibleWhenListedAfterTheInactiveTab() {
+        let (active, tab, independent) = collisionFixture()
+        let changes = TabGroupResolver.resolve(active: active, tabTitles: ["Documents", "Downloads"],
+                                               sameAppWindows: [tab, independent])
+        XCTAssertTrue(isDisplayed(independent, applying: changes))
+        XCTAssertFalse(isDisplayed(tab, applying: changes))
+        XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A", "B"]))
+    }
+
+    private func collisionFixture() -> (Descriptor, Descriptor, Descriptor) {
+        (window("A", "Documents"), window("B", "Downloads"),
+         window("C", "Downloads", frame: otherFrame))
+    }
+
+    func testDuplicateTitleTabsSharingTheGroupFrameAreAllMatched() {
+        let tabs = [window("B", "untitled"), window("C", "untitled")]
+        let independent = window("D", "untitled", frame: otherFrame)
+        for order in [tabs + [independent], [independent] + tabs.reversed()] {
+            let changes = TabGroupResolver.resolve(
+                active: window("A", "untitled"),
+                tabTitles: ["untitled", "untitled", "untitled"],
+                sameAppWindows: order)
+            XCTAssertFalse(isDisplayed(tabs[0], applying: changes))
+            XCTAssertFalse(isDisplayed(tabs[1], applying: changes))
+            XCTAssertTrue(isDisplayed(independent, applying: changes))
+            XCTAssertEqual(Set(changes["A"]?.groupIds ?? []), ["A", "B", "C"])
+        }
+    }
+
+    /// Two unrecorded windows share the tab's title and the group's frame (say two
+    /// maximized windows), but the tab bar holds that title once: nothing tells
+    /// them apart, so neither is hidden.
+    func testSameTitleSameFrameTieLeavesCandidatesVisible() {
+        let first = window("B", "Downloads")
+        let second = window("C", "Downloads")
+        for order in [[first, second], [second, first]] {
+            let changes = TabGroupResolver.resolve(
+                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                sameAppWindows: order)
+            XCTAssertTrue(isDisplayed(first, applying: changes))
+            XCTAssertTrue(isDisplayed(second, applying: changes))
+            XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A"]))
+        }
+    }
+
+    /// Recorded membership separates a tie: the window already in this group wins.
+    func testRecordedMemberWinsASameFrameTie() {
+        let member = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])
+        let stranger = window("C", "Downloads")
+        for order in [[member, stranger], [stranger, member]] {
+            let changes = TabGroupResolver.resolve(
+                active: window("A", "Documents", groupIds: ["A", "B"]),
+                tabTitles: ["Documents", "Downloads"], sameAppWindows: order)
+            XCTAssertFalse(isDisplayed(member, applying: changes))
+            XCTAssertTrue(isDisplayed(stranger, applying: changes))
+        }
+    }
+
+    /// The active tab of another group shows its own tab bar; it is never taken
+    /// as an inactive tab here, even with a matching title and frame.
+    func testAnotherGroupsActiveTabIsNeverMatched() {
+        let otherActive = window("C", "Downloads", groupIds: ["C", "D"])
+        let otherTab = window("D", "Music", isTabbed: true, groupIds: ["C", "D"])
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            sameAppWindows: [otherActive, otherTab])
+        XCTAssertNil(changes["C"])
+        XCTAssertTrue(isDisplayed(otherActive, applying: changes))
+        XCTAssertFalse(isDisplayed(otherTab, applying: changes))
+    }
+
+    func testUnknownFrameRanksBelowAFrameEqualCandidate() {
+        let tab = window("B", "Downloads")
+        let unknown = window("C", "Downloads", frame: .some(nil))
+        for order in [[unknown, tab], [tab, unknown]] {
+            let changes = TabGroupResolver.resolve(
+                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                sameAppWindows: order)
+            XCTAssertFalse(isDisplayed(tab, applying: changes))
+            XCTAssertTrue(isDisplayed(unknown, applying: changes))
+        }
+    }
+
+    /// Without any frame-equal candidate, a single unknown-frame title match is
+    /// still the tab: geometry that cannot be read must not break grouping.
+    func testASingleUnknownFrameCandidateIsStillMatched() {
+        let unknown = window("B", "Downloads", frame: .some(nil))
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            sameAppWindows: [unknown])
+        XCTAssertFalse(isDisplayed(unknown, applying: changes))
+    }
+
+    /// Measured on macOS 26: after Window ▸ Merge All Windows an inactive tab keeps
+    /// reporting its pre-merge frame. A different frame ranks last but does not
+    /// exclude the only candidate, or every freshly merged tab would leak out.
+    func testMergedTabWithStalePreMergeFrameIsStillMatched() {
+        let stale = window("B", "Downloads", frame: otherFrame)
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            sameAppWindows: [stale])
+        XCTAssertFalse(isDisplayed(stale, applying: changes))
+    }
+
+    /// Two same-title candidates whose frames both differ from the group's (a stale
+    /// merged tab and an independent window) cannot be told apart: both stay visible.
+    func testTwoDifferentFrameCandidatesForOneTitleStayVisible() {
+        let stale = window("B", "Downloads", frame: otherFrame)
+        let independent = window("C", "Downloads", frame: otherFrame.offsetBy(dx: 40, dy: 40))
+        for order in [[stale, independent], [independent, stale]] {
+            let changes = TabGroupResolver.resolve(
+                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                sameAppWindows: order)
+            XCTAssertTrue(isDisplayed(stale, applying: changes))
+            XCTAssertTrue(isDisplayed(independent, applying: changes))
+        }
+    }
+
+    /// Frames are compared in whole points; sub-point AX noise is not a new window.
+    func testSubPointFrameDifferenceStillMatches() {
+        let nudged = window("B", "Downloads", frame: groupFrame.offsetBy(dx: 0.3, dy: -0.2))
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            sameAppWindows: [nudged])
+        XCTAssertFalse(isDisplayed(nudged, applying: changes))
     }
 
     /// Applies the resolver's sparse change map the way WindowStore does, then

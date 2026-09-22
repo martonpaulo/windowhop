@@ -44,6 +44,12 @@ The full upstream history up to that commit is preserved in this repository
   groups, refreshing either one dissolves the other and its inactive tabs reappear as
   separate entries. `Core/TabGroupResolver.resolve` narrows that cleanup to windows whose
   recorded membership actually contains the refreshing window (WindowHop issue #18).
+- `src/logic/TabGroup.swift` (`updateState`) takes the first same-app window whose title
+  matches a tab title, so an independent window sharing an inactive tab's title can be
+  hidden while the real tab stays visible. `Core/TabGroupResolver.resolve` ranks
+  candidates by AX frame (the geometry rule upstream relies on in `ae89aefa`, relaxed to
+  a ranking because merged tabs report stale pre-merge frames) and by recorded
+  membership, and leaves tied candidates visible (WindowHop issue #45).
 
 ## Removed
 
