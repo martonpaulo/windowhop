@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   icons hidden it still opens Settings, and opening WindowHop again while it runs always
   does. If Accessibility is missing, the setup window opens on any launch, including at
   login.
+- **One About for WindowHop**: WindowHop › About WindowHop now opens Settings → About, the
+  same page the Settings toolbar shows, instead of a separate About window. Its copyright
+  line is the one the app bundle carries.
 - **Launch at login is off for new installs**: turn it on in Settings → General. Existing
   installations keep their current choice, including the previous On default.
 - **Restore Defaults leaves launch at login alone**: it no longer registers or removes the

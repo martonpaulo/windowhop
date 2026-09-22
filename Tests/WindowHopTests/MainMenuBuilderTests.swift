@@ -34,7 +34,7 @@ final class MainMenuBuilderTests: XCTestCase {
         let built = MainMenuBuilder.make(isRegular: false)
         XCTAssertEqual(built.menu.items.compactMap { $0.submenu?.title }, ["WindowHop", "Edit", "Window"])
         XCTAssertEqual(entries(try XCTUnwrap(submenu(built, "WindowHop"))), [
-            Entry(title: "About WindowHop", action: "orderFrontStandardAboutPanel:", key: "", modifiers: 0),
+            Entry(title: "About WindowHop", action: "openAboutFromMenu:", key: "", modifiers: 0),
             Entry(title: "Settings…", action: "openSettingsFromMenu:", key: ",", modifiers: command),
             Entry(title: "Quit WindowHop", action: "terminate:", key: "q", modifiers: command),
         ])
@@ -107,6 +107,7 @@ final class MainMenuBuilderTests: XCTestCase {
     func testAppDelegateHandlesTheAppSpecificActions() {
         // the nil-target items reach the delegate only if it implements them
         let delegate = AppDelegate()
+        XCTAssertTrue(delegate.responds(to: #selector(MainMenuActions.openAboutFromMenu(_:))))
         XCTAssertTrue(delegate.responds(to: #selector(MainMenuActions.openSettingsFromMenu(_:))))
         XCTAssertTrue(delegate.responds(to: #selector(MainMenuActions.reportIssue(_:))))
     }

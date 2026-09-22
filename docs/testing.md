@@ -224,6 +224,9 @@ Screen Recording permission.
       Hide Others (⌥⌘H), Show All, Window › Zoom (dimmed for Settings), and Help › Report an
       Issue…; ⌘C ⌘V ⌘A work in a Settings text field and ⌘W closes Settings in both Dock
       icon modes.
+- [ ] WindowHop › About WindowHop opens Settings on the About pane (also when Settings is
+      already open on another pane); its version, build, release date and copyright line
+      match the bundle's `Info.plist`.
 
 ### Window inclusion
 

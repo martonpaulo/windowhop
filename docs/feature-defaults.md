@@ -16,7 +16,7 @@ configurable key is omitted from Restore Defaults without that explicit exceptio
 | Complete shortcut interception | Enabled | No | Correctness fix: an owned shortcut must not leak into the native app switcher. No persistence or reset entry. |
 | Native title and metadata typography | Enabled | No | Shared required presentation and accessibility behavior. No arbitrary font preference, persistence, migration, or reset entry. |
 | Preview skeletons | Enabled | No | Standard loading/fallback presentation. Loading animation follows the mandatory Reduce Motion system setting. No persistence or reset entry. |
-| About attribution and website | Shown | No | Application metadata, centralized in `ProjectLinks`; no persistence or reset entry. |
+| About attribution and website | Shown | No | Application metadata, centralized in `ProjectLinks`; no persistence or reset entry. Settings › About is the one About surface: the app menu's About WindowHop opens that pane instead of AppKit's standard About panel, and its copyright footer is the bundle's `NSHumanReadableCopyright` read through `Core/AppVersion` (omitted in unbundled development builds). |
 | Restore Defaults | Available | No | Confirmed action rather than a preference. Resets every key in `Preferences.configurableKeys` and never changes permissions, identity, version, or first-run state. |
 
 Existing preferences are never overwritten during an upgrade. Missing keys receive the

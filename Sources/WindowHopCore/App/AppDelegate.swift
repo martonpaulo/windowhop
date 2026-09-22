@@ -30,6 +30,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         NSApp.helpMenu = built.helpMenu
     }
 
+    @objc public func openAboutFromMenu(_ sender: Any?) {
+        SettingsWindowController.shared.showAbout()
+    }
+
     @objc public func openSettingsFromMenu(_ sender: Any?) {
         SettingsWindowController.shared.show()
     }

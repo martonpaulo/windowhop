@@ -1,8 +1,9 @@
 import Foundation
 
-/// The one reader of the running build's public metadata: version, build and
-/// release date. Settings › About, the Updates pane and the updater all show
-/// the same values through it.
+/// The one reader of the running build's public metadata: version, build,
+/// release date and copyright. Settings › About (WindowHop's only About
+/// surface), the Updates pane and support reports all show the same values
+/// through it.
 ///
 /// The release date is written into the packaged `Info.plist` under
 /// `AppReleaseDate` by `scripts/stamp-app-metadata.sh`, as the packaged
@@ -19,12 +20,16 @@ public struct AppVersion: Equatable {
     public let build: String?
     /// Midnight UTC of the release day; nil when absent or malformed.
     public let releaseDate: Date?
+    /// `NSHumanReadableCopyright`, the canonical copyright and attribution
+    /// line; nil in an unbundled development build, which embeds no Info.plist.
+    public let copyright: String?
 
     public init(infoDictionary: [String: Any]) {
         version = Self.nonEmptyString(infoDictionary["CFBundleShortVersionString"])
         build = Self.nonEmptyString(infoDictionary["CFBundleVersion"])
         releaseDate = Self.nonEmptyString(infoDictionary[Self.releaseDateKey])
             .flatMap(Self.parseReleaseDate)
+        copyright = Self.nonEmptyString(infoDictionary["NSHumanReadableCopyright"])
     }
 
     /// The running app's metadata.

@@ -36,7 +36,17 @@ public final class SettingsWindowController {
     }
 
     public func show() {
-        let window = preparedWindow()
+        show(selecting: nil)
+    }
+
+    /// The single About surface: the app menu's About item opens this pane
+    /// instead of AppKit's standard About panel.
+    public func showAbout() {
+        show(selecting: .about)
+    }
+
+    private func show(selecting pane: SettingsPane?) {
+        let window = preparedWindow(selecting: pane)
         NSApp.activate()
         window.makeKeyAndOrderFront(nil)
         // the Settings window is a normal switcher entry while open (the one
@@ -47,9 +57,13 @@ public final class SettingsWindowController {
     /// The retained window, created on first use at its saved position (or
     /// centered), and moved back on screen when its display is gone — checked
     /// on every show, since a display can be unplugged while it is retained.
-    func preparedWindow() -> NSWindow {
+    /// With a pane, that pane is selected (and remembered like a click on it).
+    func preparedWindow(selecting pane: SettingsPane? = nil) -> NSWindow {
         let window = window ?? makeWindow()
         self.window = window
+        if let pane, let tabs = window.contentViewController as? SettingsTabViewController {
+            tabs.select(pane)
+        }
         let recovered = WindowFrameRecovery.recoveredFrame(
             window.frame,
             visibleFrames: NSScreen.screens.map(\.visibleFrame),
@@ -164,6 +178,17 @@ final class SettingsTabViewController: NSTabViewController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    var selectedPane: SettingsPane? {
+        guard tabViewItems.indices.contains(selectedTabViewItemIndex) else { return nil }
+        return (tabViewItems[selectedTabViewItemIndex].identifier as? String)
+            .flatMap(SettingsPane.init(rawValue:))
+    }
+
+    func select(_ pane: SettingsPane) {
+        guard let index = SettingsPane.allCases.firstIndex(of: pane) else { return }
+        selectedTabViewItemIndex = index
+    }
 
     override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         super.tabView(tabView, didSelect: tabViewItem)
@@ -652,9 +677,13 @@ struct AboutPane: View {
                 Link("AltTab on GitHub",
                      destination: ProjectLinks.altTabRepository)
             } footer: {
-                Text("© 2026 WindowHop contributors. Free software under the GNU GPL-3.0.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                // the bundle's canonical line; omitted rather than invented
+                // when no Info.plist is embedded (swift build runs)
+                if let copyright = appVersion.copyright {
+                    Text(copyright)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .settingsPane()

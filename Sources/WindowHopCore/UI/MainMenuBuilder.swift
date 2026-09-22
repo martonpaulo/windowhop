@@ -4,6 +4,8 @@ import AppKit
 /// the application delegate (which `NSApplication` consults after the key
 /// window), so the builder needs no reference to it.
 @objc public protocol MainMenuActions {
+    /// Opens Settings › About, WindowHop's one About surface.
+    func openAboutFromMenu(_ sender: Any?)
     func openSettingsFromMenu(_ sender: Any?)
     func reportIssue(_ sender: Any?)
 }
@@ -33,8 +35,9 @@ public enum MainMenuBuilder {
         // App menu. Services wiring and placement follow AltTab's
         // src/ui/MainMenu.swift (see UPSTREAM.md).
         let appMenu = NSMenu(title: "WindowHop")
-        appMenu.addItem(item("About WindowHop",
-                             #selector(NSApplication.orderFrontStandardAboutPanel(_:))))
+        // opens Settings › About rather than AppKit's standard About panel,
+        // so every entry point reaches the same About
+        appMenu.addItem(item("About WindowHop", #selector(MainMenuActions.openAboutFromMenu(_:))))
         appMenu.addItem(.separator())
         appMenu.addItem(item("Settings…", #selector(MainMenuActions.openSettingsFromMenu(_:)), ","))
         var servicesMenu: NSMenu?

@@ -61,12 +61,19 @@ final class AppVersionTests: XCTestCase {
         XCTAssertEqual(packaged(version: "2.0.0", build: "2.0.0").displayVersion, "2.0.0")
     }
 
+    func testCopyrightComesFromTheBundle() {
+        let line = "GPL-3.0. Derived from AltTab, © lwouis and contributors."
+        XCTAssertEqual(AppVersion(infoDictionary: ["NSHumanReadableCopyright": line]).copyright, line)
+        XCTAssertNil(packaged().copyright)
+    }
+
     func testEmptyDictionaryIsAnHonestDevelopmentBuild() {
         let metadata = AppVersion(infoDictionary: [:])
         XCTAssertEqual(metadata.displayVersion, "Development build")
         XCTAssertEqual(metadata.versionLabel, "Development build")
         XCTAssertNil(metadata.version)
         XCTAssertNil(metadata.build)
+        XCTAssertNil(metadata.copyright)
         XCTAssertNil(metadata.releaseDateText())
     }
 }
