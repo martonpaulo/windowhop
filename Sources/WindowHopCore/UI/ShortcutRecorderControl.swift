@@ -66,6 +66,7 @@ final class ShortcutRecorderControl: NSButton {
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
         }
+        inputSourceNotificationCenter.removeObserver(self)
     }
 
     @objc private func toggleRecording() {
@@ -142,6 +143,15 @@ final class ShortcutRecorderControl: NSButton {
         NSAccessibility.post(element: self, notification: .titleChanged)
     }
 
+    /// Where input-source changes are observed; tests substitute a private
+    /// center so they never post a system-wide notification.
+    var inputSourceNotificationCenter: NotificationCenter = DistributedNotificationCenter.default()
+
+    /// The printable key's label follows the selected layout; the binding does not.
+    @objc private func keyboardLayoutDidChange(_ notification: Notification) {
+        refreshTitle()
+    }
+
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
         let center = NotificationCenter.default
@@ -149,12 +159,18 @@ final class ShortcutRecorderControl: NSButton {
                                           NSWindow.didResignKeyNotification]
         if let oldWindow = window {
             for name in names { center.removeObserver(self, name: name, object: oldWindow) }
+            inputSourceNotificationCenter.removeObserver(
+                self, name: KeyboardLayout.selectionDidChangeNotification, object: nil)
         }
         if let newWindow {
             for name in names {
                 center.addObserver(self, selector: #selector(recordingWindowDidEndContext(_:)),
                                    name: name, object: newWindow)
             }
+            // Observed only while on screen in a window: no idle observer.
+            inputSourceNotificationCenter.addObserver(
+                self, selector: #selector(keyboardLayoutDidChange(_:)),
+                name: KeyboardLayout.selectionDidChangeNotification, object: nil)
         }
     }
 

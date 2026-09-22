@@ -128,6 +128,14 @@ coordination with the tap would stay custom either way. Matching stays in `Event
 persistence stays in `PersistentShortcut` and `Preferences`. Known recorder gaps are fixed in
 place against the custom control. Revisit this only by first amending the dependency rule.
 
+Shortcut labels follow the keyboard layout; bindings do not. A recorded shortcut stores and
+matches the physical key code. `ShortcutFormatter` names printable keys through its
+`KeyLabelSource` seam: the app installs `Engine/KeyboardLayout` at launch (Text Input
+Sources + `UCKeyTranslate`, main thread only), while tests, the render harness and any
+failed translation use the fixed ANSI table in `KeyCodeNames`. Special keys (Tab, Return,
+Space, arrows, F-keys…) never consult the layout. The recorder refreshes its title on
+`kTISNotifySelectedKeyboardInputSourceChanged` only while it is in a window.
+
 ## Placement across displays
 
 Where the panel is drawn is display *behavior*, not appearance, and is owned by three

@@ -43,6 +43,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
             isLoginItemLaunch() ? .loginItemLaunch : .normalLaunch
         // read before completeFirstLaunchIfNeeded() marks the first run done
         let isFirstRun = !preferences.firstLaunchCompleted
+        ShortcutFormatter.keyLabels = KeyboardLayout.current
         BackgroundWork.start()
         SwitcherController.shared.wire()
         StatusItemController.shared.apply()

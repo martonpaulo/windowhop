@@ -3,6 +3,10 @@ import Foundation
 
 /// The configurable "Open WindowHop" shortcut: any modifier+key chord that opens a
 /// persistent switcher session (no held modifier required).
+///
+/// Identity is physical: `keyCode` is the virtual key code that is stored and
+/// that `EventTap` matches. A keyboard-layout change never rewrites it; only the
+/// label `ShortcutFormatter` shows for the key follows the current layout.
 public struct PersistentShortcut: Equatable {
     /// Only these modifiers participate in matching and display.
     public static let relevantModifiers: CGEventFlags =
@@ -87,16 +91,20 @@ public struct PersistentShortcut: Equatable {
     }
 }
 
-/// Human-readable names for common virtual key codes (US ANSI layout for letters,
-/// which is how macOS conventionally displays shortcuts).
+/// Fallback names for virtual key codes, owned by `ShortcutFormatter`. Printable
+/// keys use the US ANSI characters, the fallback when the current layout cannot
+/// name a key; special keys have one canonical glyph on every layout.
 public enum KeyCodeNames {
-    private static let names: [Int64: String] = [
+    private static let printableNames: [Int64: String] = [
         0: "A", 1: "S", 2: "D", 3: "F", 4: "H", 5: "G", 6: "Z", 7: "X", 8: "C", 9: "V",
         11: "B", 12: "Q", 13: "W", 14: "E", 15: "R", 16: "Y", 17: "T",
         18: "1", 19: "2", 20: "3", 21: "4", 22: "6", 23: "5", 24: "=", 25: "9", 26: "7",
         27: "-", 28: "8", 29: "0", 30: "]", 31: "O", 32: "U", 33: "[", 34: "I", 35: "P",
         37: "L", 38: "J", 39: "'", 40: "K", 41: ";", 42: "\\", 43: ",", 44: "/", 45: "N",
         46: "M", 47: ".", 50: "`",
+    ]
+
+    private static let specialNames: [Int64: String] = [
         36: "↩", 48: "⇥", 49: "Space", 51: "⌫", 53: "⎋", 117: "⌦",
         123: "←", 124: "→", 125: "↓", 126: "↑",
         115: "↖", 119: "↘", 116: "⇞", 121: "⇟",
@@ -105,6 +113,16 @@ public enum KeyCodeNames {
     ]
 
     public static func name(for keyCode: Int64) -> String {
-        names[keyCode] ?? "Key \(keyCode)"
+        specialNames[keyCode] ?? printableNames[keyCode] ?? "Key \(keyCode)"
+    }
+
+    /// The US ANSI character of a printable key; nil for any other key.
+    public static func printableName(for keyCode: Int64) -> String? {
+        printableNames[keyCode]
+    }
+
+    /// Keys whose name never follows the keyboard layout.
+    public static func isSpecial(_ keyCode: Int64) -> Bool {
+        specialNames[keyCode] != nil || keyCode == KeyCode.keypadEnter
     }
 }

@@ -48,6 +48,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Closing a same-named window names its folder**: the close confirmation and the
   expanded preview now show the same folder-qualified title as the tile, such as
   "Notes.txt — Work", so you can tell which of two same-named windows you are closing.
+- **Shortcuts show the letter your keyboard types**: on layouts such as German or French,
+  the Open WindowHop shortcut used to be shown and spoken with US letters, so a recorded
+  ⌥Y read as ⌥Z. Letters and symbols now follow your current keyboard layout and update
+  when you switch input sources; the shortcut itself stays on the same physical key.
 - **VoiceOver reads the Open WindowHop shortcut field completely**: the recorder now
   speaks the current chord in words ("Option Tab"), says "None" when it is cleared and
   "Recording" while it waits for a chord, explains that Escape cancels and Delete clears,

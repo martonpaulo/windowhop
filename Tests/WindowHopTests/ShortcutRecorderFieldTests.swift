@@ -309,6 +309,40 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         XCTAssertEqual(transitions.values, [true, false])
     }
 
+    /// Selecting another input source relabels the recorded key while the
+    /// recorder is in a window, and never changes the binding. A private center
+    /// stands in for the distributed one, so no system-wide notification is posted.
+    func testInputSourceChangeRefreshesTheLabelOnlyWhileInAWindow() {
+        struct Fixture: KeyLabelSource {
+            let character: String
+            func character(forKeyCode keyCode: UInt16) -> String? { keyCode == 6 ? character : nil }
+        }
+        defer { ShortcutFormatter.keyLabels = ANSIKeyLabels() }
+        let center = NotificationCenter()
+        let control = ShortcutRecorderControl()
+        control.inputSourceNotificationCenter = center
+        let host = makeRetainedWindow(frame: NSRect(x: 0, y: 0, width: 200, height: 40))
+        defer { host.close() }
+        let recorded = PersistentShortcut(keyCode: 6, modifiers: [.maskAlternate])
+        ShortcutFormatter.keyLabels = Fixture(character: "z")
+        control.shortcut = recorded
+        host.contentView?.addSubview(control)
+        XCTAssertEqual(control.title, "⌥Z")
+
+        ShortcutFormatter.keyLabels = Fixture(character: "y")
+        center.post(name: KeyboardLayout.selectionDidChangeNotification, object: nil)
+
+        XCTAssertEqual(control.title, "⌥Y")
+        XCTAssertEqual(control.accessibilityValue() as? String, "Option Y")
+        XCTAssertEqual(control.shortcut, recorded, "the binding is unchanged")
+
+        control.removeFromSuperview()
+        ShortcutFormatter.keyLabels = Fixture(character: "z")
+        center.post(name: KeyboardLayout.selectionDidChangeNotification, object: nil)
+
+        XCTAssertEqual(control.title, "⌥Y", "no observer is left once detached")
+    }
+
     /// Settings pauses global interception through this forwarding; the field
     /// must report the recorder's real start and end, not just its creation.
     func testFieldForwardsRecordingLifetime() throws {
