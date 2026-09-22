@@ -41,6 +41,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to unzip first, and the download section shows how many times WindowHop was downloaded.
   The number is taken from GitHub's public release data when the site is published; the
   page itself makes no request for it.
+- **The website shows how to install and get help**: a new Install section walks from the
+  download to your first ⌘Tab, including the first-launch prompt and the Accessibility
+  permission, and a Help section covers "⌘Tab still shows Apple's switcher" and how to
+  uninstall. Accent text on the light page now meets WCAG AA contrast.
 - **Settings no longer opens at every launch**: once the first launch is done and you
   show the menu bar item or the Dock icon, starting WindowHop opens nothing. With both
   icons hidden it still opens Settings, and opening WindowHop again while it runs always

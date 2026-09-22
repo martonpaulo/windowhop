@@ -71,7 +71,7 @@ while IFS= read -r span; do
   }
 done < <(grep -hoE '<span data-site-version>[^<]*</span>' "${pages[@]}")
 
-for marker in 'id="features"' 'id="download"' "href=\"$DOWNLOAD_URL\"" \
+for marker in 'id="features"' 'id="download"' 'id="install"' 'id="help"' "href=\"$DOWNLOAD_URL\"" \
               'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
               'Developed by Marton Paulo' 'AltTab on GitHub' \
               'Download WindowHop <span data-site-version>' 'class="external-icon"' \
@@ -157,6 +157,13 @@ for marker in 'class="site-header"' 'class="site-footer"' '/styles/main.css' 'hr
         exit 1
     }
 done
+
+# Both pages show the same header destinations, in the same order.
+nav_labels() { sed -n '/<nav aria-label="Page sections">/,/<\/nav>/p' "$1" | grep -oE '>[^<]+</a>'; }
+[ "$(nav_labels site/index.html)" = "$(nav_labels site/404.html)" ] || {
+    echo "site/404.html header navigation differs from site/index.html" >&2
+    exit 1
+}
 
 # Every link that leaves the site carries the external-link arrow and
 # rel="noopener"; a link to another page of this site carries neither.

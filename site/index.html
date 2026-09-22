@@ -75,6 +75,7 @@
       </a>
       <nav aria-label="Page sections">
         <a href="#features">Features</a>
+        <a href="#install">Install</a>
         <a href="#download">Download</a>
       </nav>
     </div>
@@ -125,9 +126,9 @@
       <h2 id="features-title">Focused, configurable, and keyboard-first.</h2>
       <div class="feature-grid">
         <article><span aria-hidden="true">⌘</span><h3>Keyboard-first</h3><p>Cycle with ⌘Tab, open a persistent switcher with ⌥Tab, or choose your own shortcuts.</p></article>
-        <article><span aria-hidden="true">▣</span><h3>Visual previews</h3><p>Optional live snapshots, memory-only caching, polished skeleton states, and stable card geometry.</p></article>
+        <article><span aria-hidden="true">▣</span><h3>Visual previews</h3><p>Recognize the window you need before switching. Previews stay on your Mac.</p></article>
         <article><span aria-hidden="true">◫</span><h3>Window filtering</h3><p>Include other Spaces, displays, minimized windows, hidden apps, or Picture-in-Picture when useful.</p></article>
-        <article><span aria-hidden="true">◐</span><h3>Light and Dark</h3><p>Semantic AppKit surfaces, native system type, and appearance-aware selection in both modes.</p></article>
+        <article><span aria-hidden="true">◐</span><h3>Light and Dark</h3><p>Follows your Mac’s Light or Dark appearance, with a clear highlight on the selected window.</p></article>
         <article><span aria-hidden="true">⚙</span><h3>Native Settings</h3><p>General, Shortcuts, Windows, Appearance, Updates, and About panes — all one size — with one confirmed Restore Defaults action.</p></article>
         <article><span aria-hidden="true">3s</span><h3>Expanded preview</h3><p>Pause to inspect a larger snapshot inside WindowHop without activating or raising the real window.</p></article>
       </div>
@@ -176,7 +177,7 @@
       <img src="assets/app-icon.png" alt="" width="96" height="96">
       <p class="eyebrow">Latest stable release</p>
       <h2 id="download-title">WindowHop <span data-site-version>1.6.2</span></h2>
-      <p>For macOS 26 or later on Apple Silicon Macs. Signed with Developer ID, notarized by Apple, and distributed in a branded drag-to-Applications installer.</p>
+      <p>For macOS 26 or later on Apple Silicon Macs. Signed with Developer ID, notarized by Apple, and delivered as a disk image you drag to Applications.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-1.6.2.dmg" rel="noopener">Download WindowHop <span data-site-version>1.6.2</span><svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
         <a class="button secondary" href="https://github.com/martonpaulo/windowhop/releases/tag/v1.6.2" rel="noopener">Release notes<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
@@ -185,6 +186,62 @@
            when GitHub's API is unavailable. The page never fetches it. -->
       <p class="download-count" id="download-count" hidden></p>
       <a class="text-link" href="https://github.com/martonpaulo/windowhop/releases" rel="noopener">Browse all releases<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </section>
+
+    <section class="install section" id="install" aria-labelledby="install-title">
+      <p class="eyebrow">Install</p>
+      <h2 id="install-title">From download to your first switch.</h2>
+      <p>No account and no Terminal. WindowHop needs one permission, Accessibility, to see your windows and switch to them.</p>
+      <!-- role="list": WebKit drops list semantics from a list styled without markers. -->
+      <ol class="steps" role="list">
+        <li>
+          <h3>Download</h3>
+          <p>Choose <strong>Download WindowHop</strong> above. Your browser saves the WindowHop disk image, a file ending in <strong>.dmg</strong>, to your Downloads folder.</p>
+        </li>
+        <li>
+          <h3>Open the disk image</h3>
+          <p>Double-click the file. A window opens showing WindowHop next to your Applications folder.</p>
+        </li>
+        <li>
+          <h3>Drag it to Applications</h3>
+          <p>Drag WindowHop onto the Applications folder, then eject the disk image. Always open WindowHop from Applications, not from the disk image or Downloads.</p>
+        </li>
+        <li>
+          <h3>Open WindowHop</h3>
+          <p>Open it from Applications. macOS asks whether you want to open an app downloaded from the internet: choose <strong>Open</strong>. WindowHop is signed and notarized by Apple.</p>
+        </li>
+        <li>
+          <h3>Allow Accessibility</h3>
+          <p>WindowHop shows a setup window. Choose <strong>Open System Settings</strong>, then turn on WindowHop under <strong>Privacy &amp; Security → Accessibility</strong>.</p>
+        </li>
+        <li>
+          <h3>Press ⌘Tab</h3>
+          <p>Hold <kbd>⌘</kbd> and press <kbd>Tab</kbd> to see your windows. Press <kbd>Tab</kbd> again to move, and release <kbd>⌘</kbd> to switch.</p>
+        </li>
+      </ol>
+      <p class="install-note">App Icons, the default look, needs nothing else. If you turn on Window Previews in Settings → Appearance, WindowHop also asks for Screen Recording.</p>
+    </section>
+
+    <section class="help section" id="help" aria-labelledby="help-title">
+      <p class="eyebrow">Help</p>
+      <h2 id="help-title">When something does not work.</h2>
+      <div class="help-grid">
+        <article aria-labelledby="help-native-title">
+          <h3 id="help-native-title">⌘Tab still shows Apple’s switcher</h3>
+          <p>That is WindowHop’s fail-safe: when WindowHop cannot answer, the Mac’s own switcher does. Check these in order:</p>
+          <ul>
+            <li><strong>WindowHop is not open.</strong> Open it from Applications.</li>
+            <li><strong>WindowHop is turned off.</strong> Open WindowHop again to show Settings, then turn on <strong>Enable WindowHop</strong> in General.</li>
+            <li><strong>Accessibility is off.</strong> Turn on WindowHop in System Settings → Privacy &amp; Security → Accessibility.</li>
+            <li><strong>A password field is active.</strong> macOS keeps other apps from reading keys while you type a password, so ⌘Tab goes to Apple’s switcher until you leave that field.</li>
+          </ul>
+        </article>
+        <article aria-labelledby="help-uninstall-title">
+          <h3 id="help-uninstall-title">Uninstall WindowHop</h3>
+          <p>Quit WindowHop: choose <strong>Quit WindowHop</strong> from its menu bar item, or press <kbd>⌘Q</kbd> while its Settings window is in front. Then move WindowHop from Applications to the Trash.</p>
+          <p>To remove its permissions too, select WindowHop in System Settings → Privacy &amp; Security → Accessibility, and in Screen Recording if you used Window Previews, and remove it with the minus button.</p>
+        </article>
+      </div>
     </section>
 
     <section class="open-source section" aria-labelledby="open-source-title">

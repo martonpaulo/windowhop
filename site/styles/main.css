@@ -37,10 +37,12 @@
   --text: #1d1d1f;
   --secondary: #6e6e73;
   --line: rgba(0, 0, 0, 0.08);
-  --accent: #0675e8;
-  --accent-hover: #0067d6;
-  /* Filled buttons carry their own foreground/background pair: the link accent
-     alone gives white text only 4.45:1 in light and 2.46:1 in dark. */
+  /* Accent text (eyebrows, links) is small, so it needs 4.5:1 on --bg: #0067d6
+     gives 4.9:1, where the earlier #0675e8 gave 4.1:1. */
+  --accent: #0067d6;
+  --accent-hover: #0b5fbb;
+  /* Filled buttons carry their own foreground/background pair: white text on
+     the dark-mode accent would be only 2.46:1. */
   --button-primary-fg: #ffffff;
   --button-primary-bg: #0a66c8;
   --button-primary-bg-hover: #0b5fbb;
@@ -79,7 +81,8 @@
    fleet's one landing-page design. Keep them in step across the three sites. */
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* In-page links (Features, Install, Download) land below the sticky header, not under it. */
+html { scroll-behavior: smooth; scroll-padding-top: var(--header-height); }
 /* The footer sits at the bottom of the viewport on a short page (the 404
    above all) instead of floating in the middle of it. svh keeps mobile browser
    chrome from pushing it off; vh is the fallback for anything older. */
@@ -332,6 +335,50 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 .hero-visual img { margin-inline: auto; }
 
 .overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+/* Install: numbered steps in reading order. The number is drawn from a CSS
+   counter so it cannot drift from the list order; role="list" in the HTML keeps
+   the list announced in WebKit, which drops it without markers. */
+.steps {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+  padding: 0; list-style: none; counter-reset: step;
+}
+.steps li, .help-grid article {
+  padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
+}
+.steps li { counter-increment: step; }
+.steps li::before {
+  content: counter(step);
+  display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 22px;
+  /* 9%, lighter than the feature glyph tiles' 13%: the number is text, and at
+     13% the light accent on it is only 4.35:1. */
+  border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent); font-weight: var(--weight-display);
+}
+.steps h3, .help-grid h3 {
+  margin: 0 0 8px; font-size: var(--text-lg); line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display); font-weight: var(--weight-strong);
+}
+.steps p, .help-grid p, .help-grid li { margin: 0; color: var(--secondary); }
+.steps strong, .help-grid strong { color: var(--text); }
+kbd {
+  padding: 0 0.35em; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--surface-strong); color: var(--text); font: inherit; white-space: nowrap;
+}
+
+.help-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.help-grid p + p, .help-grid p + ul { margin-top: 12px; }
+.help-grid ul { margin: 0; padding-left: 1.2em; }
+.help-grid li + li { margin-top: 8px; }
+
+@media (max-width: 820px) {
+  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .help-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .steps { grid-template-columns: 1fr; }
+  .steps li, .help-grid article { padding: 24px; }
+}
 
 @media (max-width: 820px) {
   .hero { min-height: auto; }
