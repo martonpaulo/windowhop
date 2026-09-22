@@ -232,7 +232,6 @@ final class SwitcherTileView: NSView {
         return NSColor(cgColor: color)
     }
     var selectionBackgroundFrameForTesting: NSRect { selectionBackgroundView.frame }
-    var showsCardOutlineForTesting: Bool { false }
     var selectionBackgroundAlphaForTesting: CGFloat {
         selectionBackgroundView.layer?.backgroundColor?.alpha ?? 0
     }

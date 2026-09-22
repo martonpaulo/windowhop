@@ -86,7 +86,7 @@ final class SwitcherLayoutTests: XCTestCase {
         for tile in [loaded, loading, unavailable, permissionUnavailable] {
             tile.isSelected = true
             tile.layoutSubtreeIfNeeded()
-            XCTAssertFalse(tile.showsCardOutlineForTesting)
+            XCTAssertTrue(borderedLayers(in: tile).isEmpty)
             XCTAssertEqual(tile.selectionBackgroundFrameForTesting,
                            loaded.selectionBackgroundFrameForTesting)
             XCTAssertEqual(tile.selectionBackgroundAlphaForTesting,
@@ -103,22 +103,22 @@ final class SwitcherLayoutTests: XCTestCase {
     func testIconOnlyCardsUseBackgroundSelectionWithoutAnyOutline() {
         let tile = configuredTile(imageSize: nil, mode: .appIcons)
 
-        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertTrue(borderedLayers(in: tile).isEmpty)
         XCTAssertEqual(tile.selectionBackgroundAlphaForTesting, 0)
         tile.isSelected = true
-        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertTrue(borderedLayers(in: tile).isEmpty)
         XCTAssertEqual(tile.selectionBackgroundAlphaForTesting,
                        DesignTokens.iconSelectionFill.alphaComponent)
     }
 
     func testUnselectedPreviewHasSurfaceButNoPermanentSelectionFrame() {
         let tile = configuredTile(imageSize: NSSize(width: 300, height: 200))
-        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertTrue(borderedLayers(in: tile).isEmpty)
         XCTAssertEqual(tile.selectionBackgroundAlphaForTesting, 0)
         XCTAssertNotNil(tile.previewSurfaceColorForTesting)
 
         tile.isSelected = true
-        XCTAssertFalse(tile.showsCardOutlineForTesting)
+        XCTAssertTrue(borderedLayers(in: tile).isEmpty)
         XCTAssertGreaterThan(tile.selectionBackgroundAlphaForTesting, 0)
     }
 
@@ -286,6 +286,32 @@ final class SwitcherLayoutTests: XCTestCase {
                                 for: mode, showTabCounts: false).tileSize)
         tile.layoutSubtreeIfNeeded()
         return tile
+    }
+
+    /// Every visible layer in the tile's rendered tree that draws a border.
+    /// Selection is a background fill only; any border here is an outline.
+    private func borderedLayers(in view: NSView) -> [CALayer] {
+        guard !view.isHidden else { return [] }
+        var found: [CALayer] = []
+        if let layer = view.layer {
+            found += borderedLayers(in: layer)
+        }
+        for subview in view.subviews {
+            found += borderedLayers(in: subview)
+        }
+        return found
+    }
+
+    private func borderedLayers(in layer: CALayer) -> [CALayer] {
+        guard !layer.isHidden else { return [] }
+        var found: [CALayer] = []
+        if layer.borderWidth > 0, (layer.borderColor?.alpha ?? 0) > 0 {
+            found.append(layer)
+        }
+        for sublayer in layer.sublayers ?? [] {
+            found += borderedLayers(in: sublayer)
+        }
+        return found
     }
 
     private func rgba(_ color: NSColor) throws -> (CGFloat, CGFloat, CGFloat, CGFloat) {
