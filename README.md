@@ -8,7 +8,7 @@ Switch between windows, not just apps — a fast, native macOS window switcher w
 
 [![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Deploy](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
 
-[![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 16](https://img.shields.io/badge/Xcode-16-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/)
+[![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 26](https://img.shields.io/badge/Xcode-26-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/)
 
 </div>
 
@@ -81,6 +81,12 @@ The app itself reads none of these: every secret below belongs to the release pi
 | `WINDOWHOP_DEBUG` | Local shell, the debug binary | Optional. Set to `1` to log input and session behavior while diagnosing |
 
 ---
+
+<br />
+
+## Install
+
+Download the latest signed `WindowHop-<version>.dmg` from [GitHub Releases](https://github.com/martonpaulo/windowhop/releases/latest), drag WindowHop to Applications, open it, and grant **Accessibility** when it asks.
 
 <br />
 
