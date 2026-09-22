@@ -272,13 +272,37 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         XCTAssertNil(model.validationMessage)
     }
 
-    /// Escape stops recording without reaching either callback.
-    func testCancellationPersistsNothing() throws {
+    /// A real Escape through the recorder's monitor ends recording without
+    /// reaching either callback; the next chord is no longer captured.
+    func testEscapeCancelsRecordingWithoutSaving() throws {
+        let installed = PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate])
+        model.shortcut = installed
+        flushUpdates()
         let control = try recorder()
-        control.performClick(nil)
+        let transitions = startRecording(control)
+        var callbacks = 0
+        let bindingCapture = control.onCapture
+        let bindingClear = control.onClear
+        control.onCapture = { callbacks += 1; bindingCapture?($0) }
+        control.onClear = { callbacks += 1; bindingClear?() }
 
-        control.shortcut = nil
-        XCTAssertNil(model.shortcut)
+        try sendKey(KeyCode.escape)
+
+        XCTAssertEqual(callbacks, 0, "Escape reaches neither capture nor clear")
+        XCTAssertEqual(model.shortcut, installed, "the installed shortcut is kept")
         XCTAssertNil(model.validationMessage)
+        XCTAssertEqual(transitions.values, [true, false])
+        XCTAssertFalse(control.isInterceptingKeys, "no key monitor survives the cancellation")
+        XCTAssertEqual(control.title, installed.displayString)
+
+        try sendKey(Self.keyJ, [.control, .option])
+        let later = try keyEvent(Self.keyJ, [.control, .option])
+
+        XCTAssertIdentical(control.handleRecordingKeyDown(later), later,
+                           "a later chord is passed on, not swallowed")
+        XCTAssertEqual(callbacks, 0, "a later chord is not captured")
+        XCTAssertEqual(model.shortcut, installed)
+        XCTAssertNil(model.validationMessage)
+        XCTAssertEqual(transitions.values, [true, false])
     }
 }
