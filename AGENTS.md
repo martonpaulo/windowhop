@@ -22,12 +22,11 @@
   bundle, and no fallback locale; adding one is a migration, not an incidental change.
 - Browser engine families: Chromium and WebKit for the website. `docs/website.md` owns
   the validation procedure and the distinction between static CI and browser checks.
-- Agent guidance: `AGENTS.md` is canonical; Codex reads it directly and
-  `CLAUDE.md -> AGENTS.md` is the Claude adapter. Gemini and Antigravity require explicit
-  client selection and functional readback before configuration. The legacy
-  `.gemini/rules/agents.md` link is retained, not treated as verified active guidance.
+- Agent guidance: two entrypoints. `AGENTS.md` is the one real file, which Codex reads
+  directly; `CLAUDE.md` is a symlink to it for Claude. Do not create `GEMINI.md`,
+  `.gemini/rules/agents.md`, or any other alias, and never commit `.claude/settings.local.json`.
 - Branch policy: work directly on `main`. Use a branch and pull request only when the user
-  asks for one; bot PRs (Dependabot, ImgBot) still merge through GitHub.
+  asks for one; Dependabot PRs still merge through GitHub.
 - Commit policy: automatic. When a task is complete and its validation has passed, commit it
   without being asked — Conventional Commits, one commit per concern, diff inspected first.
   Do not commit a task that is unfinished, unvalidated, or failing.
@@ -45,16 +44,39 @@
 - Delete branches after merge: enabled on GitHub.
 - Default-branch approving review: not required under the direct-to-`main` policy.
   Do not add a pull-request-only protection rule without reopening that policy.
+- Default-branch required status check: none. `main` has no branch protection and no
+  ruleset, because commits land on it directly; the gate is running `make build`,
+  `make test`, and `make validate` before each push, and `Validate` on `main` right after it.
 - Secret protection: GitHub secret scanning and push protection enabled. These are
   backstops, not substitutes for inspecting the exact publication payload.
-- Release, signing, and secret-storage policy: distributed as a signed, notarized, stapled
-  `.app` in a DMG plus ZIP on GitHub Releases, updated in place by Sparkle from
-  `appcast.xml` on `raw.githubusercontent.com`. Tag `vX.Y.Z` triggers
-  `.github/workflows/release.yml`; local equivalents live in `scripts/`. Signing uses one
-  stable identity from the `DEVELOPER_ID_CERT_P12` / `DEVELOPER_ID_CERT_PASSWORD` GitHub
-  secrets; the Sparkle EdDSA private key lives in the login Keychain and the
-  `SPARKLE_PRIVATE_KEY` secret. No key material, certificate password, or signing log ever
-  enters the repository.
+- Release, signing, and secret-storage policy: direct download, outside the Mac App Store.
+  No field below is secret.
+  - Channel and artifacts: GitHub Releases. Each release publishes
+    `WindowHop-<version>.dmg` (canonical; the landing page links it),
+    `WindowHop-<version>-Installer.zip` (the DMG with its Finder icon preserved), and
+    `WindowHop-<version>.zip` (Sparkle's signed update archive).
+  - Signing identity: `Developer ID Application: Marton Paulo (TBN79KU9ML)`, one stable
+    identity, checked against `Support/ReleaseCertificate.cer`.
+  - Team ID: `TBN79KU9ML`.
+  - Bundle identifier: `com.perso.windowhop`; the embedded Sparkle bundles are verified to be
+    signed by the same team.
+  - Build and package command: `scripts/package-app.sh` (the `.app` and the update ZIP), then
+    `scripts/make-dmg.sh`; `scripts/verify-release-identity.sh` checks the result.
+  - Entitlements and hardened runtime: no entitlements file (the stable empty set); hardened
+    runtime on for every Developer ID signature.
+  - Keychain profile: `skd-notary`, for local rehearsals only; CI notarizes with the team API
+    key from the `NOTARY_API_KEY*` secrets.
+  - Release workflow: `.github/workflows/release.yml`, run by a `vX.Y.Z` tag on the current
+    `main` commit. It is the only thing that publishes; the local `scripts/` rehearse and
+    diagnose, and never publish a release.
+  - Update feed: Sparkle, from `appcast.xml` on `raw.githubusercontent.com`, written by
+    `release.yml` only after the update ZIP is downloadable.
+  - Publishing authority: the owner, by pushing the tag; only artifacts that passed
+    verification in that run are published.
+  - Secrets: `DEVELOPER_ID_CERT_P12`, `DEVELOPER_ID_CERT_PASSWORD`, `NOTARY_API_KEY`,
+    `NOTARY_API_KEY_ID`, `NOTARY_API_ISSUER_ID`, and `SPARKLE_PRIVATE_KEY` in the GitHub
+    secret store; the Sparkle EdDSA private key also lives in the login Keychain. No key
+    material, certificate password, or signing log ever enters the repository.
 - Skills baseline revision: `7cfc324fcded57145c36cc678977c070ed800692`
 - Skills baseline applied: `2026-09-08`
 
@@ -397,8 +419,11 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 - Keep `.gitignore` covering secrets, local environments, logs, caches, build output, and
   generated artifacts that actually exist.
-- The project has no runtime environment variables, so there is no `.env.example`. Add one
-  only if real variables appear, with every supported name and a safe placeholder.
+- The app has no configuration environment variables, so there is no `.env.example`.
+  `WINDOWHOP_DEBUG` is a diagnostic switch for the debug binary and the release-script
+  variables are shell inputs; the README's secrets and variables table lists them. Add an
+  `.env.example` only if real configuration variables appear, with every supported name and a
+  safe placeholder.
 - Keep secrets in the GitHub secret store or the login Keychain, never in versioned files.
 
 ## Tests and validation
@@ -476,9 +501,10 @@ to publish an issue or change code. Do not ask again for a decision already reco
   verified. `skd-github-publishing-conventions` owns the format.
 - Release flow: bump the version and build number, move `CHANGELOG.md`'s `[Unreleased]` to
   `[X.Y.Z] - date` (and its link reference), build and validate
-  from a clean tree, sign and notarize, verify the install and Sparkle update paths, then tag
-  `vX.Y.Z` → `.github/workflows/release.yml` (or the local `scripts/`), commit the appcast
-  entry, and verify the published download surfaces.
+  from a clean tree, rehearse signing and notarization locally with `scripts/` when needed,
+  then tag `vX.Y.Z` → `.github/workflows/release.yml`, which signs, notarizes, publishes, and
+  commits the appcast entry. Verify the install and Sparkle update paths and the published
+  download surfaces.
 - Do not publish a release or change a version unless the task explicitly authorizes it.
 - Pass `-R martonpaulo/windowhop` to `gh`; without it the wrong repository can be selected.
 
