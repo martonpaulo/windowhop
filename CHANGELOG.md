@@ -46,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The menu bar item shows when WindowHop is paused or needs Accessibility access**: its
   symbol changes shape, VoiceOver reads the state, and its menu explains it, with a shortcut
   to Accessibility setup when access is missing.
+- **A complete menu bar with the Dock icon on**: when "Show Dock icon" is enabled, the
+  WindowHop menu now offers Services, Hide WindowHop (⌘H), Hide Others (⌥⌘H) and Show All,
+  the Window menu offers Zoom, and a Help menu offers Report an Issue….
 
 ### Fixed
 

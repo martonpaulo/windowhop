@@ -216,6 +216,10 @@ Screen Recording permission.
       event tap with no obsolete chord interception.
 - [ ] Disable during a close confirmation, re-enable: the next ⌘Tab and Open WindowHop
       sessions are visible.
+- [ ] With Show Dock icon on, the menu bar offers WindowHop › Services, Hide WindowHop (⌘H),
+      Hide Others (⌥⌘H), Show All, Window › Zoom (dimmed for Settings), and Help › Report an
+      Issue…; ⌘C ⌘V ⌘A work in a Settings text field and ⌘W closes Settings in both Dock
+      icon modes.
 
 ### Window inclusion
 
