@@ -67,4 +67,75 @@ final class PreviewAssociationTests: XCTestCase {
         XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 0))
         XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 1))
     }
+
+    // MARK: - Acquisition state survives list refreshes (#51)
+
+    private func tile(_ panel: SwitcherPanel, _ index: Int) throws -> SwitcherTileView {
+        try XCTUnwrap(panel.tileForTesting(at: index))
+    }
+
+    private func renamed(_ id: String) -> SwitcherItem {
+        SwitcherItem(id: id, window: nil, title: "Renamed \(id)",
+                     appName: "TestApp", icon: nil, tabCount: nil)
+    }
+
+    func testUnavailableTileStaysUnavailableAfterAMetadataRefresh() throws {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        panel.updatePreviewUnavailable(id: "b")
+        XCTAssertTrue(try tile(panel, 1).showsUnavailableStateForTesting)
+
+        panel.update(items: [item("a"), renamed("b")], selectedIndex: 0)
+
+        XCTAssertTrue(try tile(panel, 1).showsUnavailableStateForTesting)
+        XCTAssertFalse(try tile(panel, 1).skeletonIsAnimatingForTesting)
+        XCTAssertTrue(try tile(panel, 0).showsLoadingStateForTesting)
+    }
+
+    func testPermissionBlockedTilesStayBlockedAfterARefresh() throws {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        panel.setPreviewPermissionStatus(.denied)
+
+        panel.update(items: [renamed("a"), item("b"), item("c")], selectedIndex: 0)
+
+        for index in 0..<3 {
+            XCTAssertTrue(try tile(panel, index).showsPermissionUnavailableStateForTesting)
+            XCTAssertFalse(try tile(panel, index).skeletonIsAnimatingForTesting)
+        }
+    }
+
+    func testFailedStateFollowsItsWindowAcrossAReorder() throws {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        panel.updatePreviewUnavailable(id: "b")
+
+        panel.update(items: [item("b"), item("a")], selectedIndex: 0)
+
+        XCTAssertTrue(try tile(panel, 0).showsUnavailableStateForTesting)
+        XCTAssertTrue(try tile(panel, 1).showsLoadingStateForTesting)
+    }
+
+    func testSlotReusedForAnotherWindowResetsToLoading() throws {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        panel.updatePreviewUnavailable(id: "b")
+
+        // b closes and c takes its slot: nothing of b's failure may remain
+        panel.update(items: [item("a"), item("c")], selectedIndex: 0)
+
+        XCTAssertTrue(try tile(panel, 1).showsLoadingStateForTesting)
+    }
+
+    func testANewSessionStartsWithoutThePreviousFailures() throws {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.show(items: [item("a")], selectedIndex: 0, presentationMode: .persistent)
+        panel.updatePreviewUnavailable(id: "a")
+        panel.hide()
+
+        panel.show(items: [item("a")], selectedIndex: 0, presentationMode: .persistent)
+        panel.hide()
+
+        XCTAssertTrue(try tile(panel, 0).showsLoadingStateForTesting)
+    }
 }

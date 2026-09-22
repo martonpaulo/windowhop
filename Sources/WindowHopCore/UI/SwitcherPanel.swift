@@ -93,6 +93,9 @@ public final class SwitcherPanel: NSPanel {
     private var mode = AppearanceMode.appIcons
     private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
+    /// Per-window acquisition state for the session. Tiles are pooled by
+    /// position, so failure and permission state must not live on them.
+    private var availability = PreviewAvailability<AnyHashable>()
     /// The window whose expanded preview is on screen, or nil for the grid.
     public private(set) var expandedPreviewID: AnyHashable?
     private var presentationMode = SwitcherPresentationMode.cycling
@@ -279,6 +282,7 @@ public final class SwitcherPanel: NSPanel {
                      presentationMode: SwitcherPresentationMode) {
         self.presentationMode = presentationMode
         hostView.setPointerInside(false)
+        availability.beginSession()
         update(items: items, selectedIndex: selectedIndex)
         orderFrontRegardless()
         hostView.refreshPointerLocation()
@@ -306,6 +310,7 @@ public final class SwitcherPanel: NSPanel {
         self.items = items
         selectedIndex = index
         itemIds = items.map { $0.id }
+        availability.retain(itemIds)
         rebuildTiles(items: items)
         if let stillExpanded {
             expandedPreviewView.updateMetadata(item: stillExpanded)
@@ -327,7 +332,9 @@ public final class SwitcherPanel: NSPanel {
     /// Delivery is keyed by the window's stable id — never by tile position —
     /// so a preview can never land on another window's card.
     public func updatePreview(id: AnyHashable, image: NSImage) {
-        guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
+        guard let index = itemIds.firstIndex(of: id) else { return }
+        availability.captureSucceeded(id)
+        guard index < visibleTileCount else { return }
         tilePool[index].setPreview(image, fadeIn: true)
     }
 
@@ -335,24 +342,27 @@ public final class SwitcherPanel: NSPanel {
     /// available. The tile keeps its fixed geometry and shows a semantic
     /// fallback instead of looking empty or broken.
     public func updatePreviewUnavailable(id: AnyHashable) {
-        guard let index = itemIds.firstIndex(of: id), index < visibleTileCount else { return }
-        tilePool[index].setPreviewUnavailable()
+        guard let index = itemIds.firstIndex(of: id) else { return }
+        // recorded per window, so a later list refresh keeps showing it
+        availability.captureFailed(id)
+        guard index < visibleTileCount else { return }
+        tilePool[index].setPreviewPresentation(
+            availability.presentation(for: id, hasImage: false))
     }
 
     /// Applies one permission state to every preview canvas and exposes a
     /// single global action instead of repeating a button on each card.
     public func setPreviewPermissionStatus(_ status: ScreenRecordingPermission.Status) {
+        availability.permissionChanged(authorized: status.isAuthorized)
         guard mode == .windowPreviews else {
             permissionButton.isHidden = true
             return
         }
         permissionButton.isHidden = status.isAuthorized
-        for tile in tilePool.prefix(visibleTileCount) {
-            if status.isAuthorized {
-                tile.setPreviewLoading()
-            } else {
-                tile.setPreviewPermissionUnavailable()
-            }
+        for (id, tile) in zip(itemIds, tilePool.prefix(visibleTileCount)) {
+            // a tile holding an image ignores this; the others follow the
+            // per-window state, so a recorded failure survives a regrant
+            tile.setPreviewPresentation(availability.presentation(for: id, hasImage: false))
         }
     }
 
@@ -404,10 +414,13 @@ public final class SwitcherPanel: NSPanel {
         for (index, tile) in tilePool.enumerated() {
             if index < items.count {
                 let item = items[index]
+                let cached = PreviewProvider.shared.cachedPreview(for: item.id)
                 tile.configure(item: item,
                                mode: mode,
                                showTabCounts: Preferences.shared.showTabCounts,
-                               preview: PreviewProvider.shared.cachedPreview(for: item.id))
+                               preview: cached,
+                               presentation: availability.presentation(
+                                   for: item.id, hasImage: cached != nil))
                 tile.onClick = { [weak self] in self?.onItemClicked?(index) }
                 tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
                 tile.resetHoverState()

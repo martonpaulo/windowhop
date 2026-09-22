@@ -232,7 +232,10 @@ uses the same geometry as a subdued, non-animating fallback while the single pan
 recovery action remains available. Acquisition, matching, or capture failure also uses a
 static skeleton, without exposing technical copy. A cached snapshot is never replaced by
 an ordinary capture or permission failure. All paths keep constant geometry and selection,
-with no badge, surface, or title movement.
+with no badge, surface, or title movement. The acquisition state is kept per window for the
+session by the pure `PreviewAvailability` (in `Core/`), not by the pooled tile, so a list
+refresh, retitle, or reorder keeps a failed or permission-blocked card static instead of
+resetting it to a loading pulse that no capture would ever end.
 
 After the configured dwell, `SwitcherController` asks the provider for a current snapshot
 of the selected id and presents it in `ExpandedPreviewView`. Both the dwell request and

@@ -77,10 +77,10 @@ final class SwitcherLayoutTests: XCTestCase {
         let loaded = configuredTile(imageSize: NSSize(width: 300, height: 200))
         let loading = configuredTile(imageSize: nil)
         let unavailable = configuredTile(imageSize: nil)
-        unavailable.setPreviewUnavailable()
+        unavailable.setPreviewPresentation(.captureUnavailable)
         unavailable.layoutSubtreeIfNeeded()
         let permissionUnavailable = configuredTile(imageSize: nil)
-        permissionUnavailable.setPreviewPermissionUnavailable()
+        permissionUnavailable.setPreviewPresentation(.permissionUnavailable)
         permissionUnavailable.layoutSubtreeIfNeeded()
 
         for tile in [loaded, loading, unavailable, permissionUnavailable] {
@@ -143,7 +143,7 @@ final class SwitcherLayoutTests: XCTestCase {
 
     func testUnavailableToLoadedTransitionKeepsCanvasBadgeAndSelectionGeometry() {
         let tile = configuredTile(imageSize: nil)
-        tile.setPreviewUnavailable()
+        tile.setPreviewPresentation(.captureUnavailable)
         tile.isSelected = true
         tile.layoutSubtreeIfNeeded()
         let canvas = tile.previewCanvasFrameForTesting
@@ -242,12 +242,12 @@ final class SwitcherLayoutTests: XCTestCase {
         let loading = configuredTile(imageSize: nil)
         XCTAssertTrue(loading.showsLoadingStateForTesting)
 
-        loading.setPreviewPermissionUnavailable()
+        loading.setPreviewPresentation(.permissionUnavailable)
         XCTAssertTrue(loading.showsPermissionUnavailableStateForTesting)
         XCTAssertFalse(loading.skeletonIsAnimatingForTesting)
 
-        loading.setPreviewLoading()
-        loading.setPreviewUnavailable()
+        loading.setPreviewPresentation(.loading)
+        loading.setPreviewPresentation(.captureUnavailable)
         XCTAssertTrue(loading.showsUnavailableStateForTesting)
         XCTAssertFalse(loading.skeletonIsAnimatingForTesting)
     }

@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VoiceOver follows the selection when its window closes**: if the selected window
   disappeared while the switcher was open, VoiceOver kept naming it while Return would
   activate a different window. The new target is now announced.
+- **Preview cards no longer pulse forever**: a window whose preview could not be captured,
+  or every card while Screen Recording was off, went back to the animated loading
+  placeholder as soon as any window changed its title or the list reordered. Those cards
+  now stay a calm static placeholder for the rest of the session.
 
 ## [1.6.2] - 2026-09-09
 

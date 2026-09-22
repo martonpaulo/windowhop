@@ -128,13 +128,6 @@ private final class PreviewSkeletonView: NSView {
     }
 }
 
-enum PreviewPresentationState: Equatable {
-    case loading
-    case permissionUnavailable
-    case captureUnavailable
-    case loaded
-}
-
 /// One switcher entry in either appearance:
 /// - App Icons: a genuinely large application icon dominates the tile.
 /// - Window Previews: an aspect-fit window snapshot with the app icon as a
@@ -355,7 +348,8 @@ final class SwitcherTileView: NSView {
     func configure(item: SwitcherItem,
                    mode: AppearanceMode,
                    showTabCounts: Bool,
-                   preview: NSImage?) {
+                   preview: NSImage?,
+                   presentation: PreviewPresentationState = .loading) {
         self.mode = mode
         self.showTabCounts = showTabCounts
         metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts)
@@ -370,6 +364,9 @@ final class SwitcherTileView: NSView {
         previewView.layer?.removeAllAnimations()
         previewState = .loading
         setPreview(preview)
+        // acquisition state belongs to the window, not the pooled slot: the
+        // panel passes what it recorded for this id
+        setPreviewPresentation(presentation)
         applySelectionStyle()
     }
 
@@ -410,25 +407,13 @@ final class SwitcherTileView: NSView {
         needsLayout = true
     }
 
-    /// Marks a first capture as unavailable without disturbing a cached or
-    /// loaded preview. The fixed canvas, badge, title, and outline never move.
-    func setPreviewUnavailable() {
-        guard mode == .windowPreviews, !hasPreview else { return }
-        previewState = .captureUnavailable
-        updateSkeletonPresentation()
-        needsLayout = true
-    }
-
-    func setPreviewPermissionUnavailable() {
-        guard mode == .windowPreviews, !hasPreview else { return }
-        previewState = .permissionUnavailable
-        updateSkeletonPresentation()
-        needsLayout = true
-    }
-
-    func setPreviewLoading() {
-        guard mode == .windowPreviews, !hasPreview else { return }
-        previewState = .loading
+    /// Shows a loading, capture-unavailable, or permission-blocked skeleton
+    /// without disturbing a cached or loaded preview. The fixed canvas, badge,
+    /// title, and outline never move. `.loaded` only arrives with an image
+    /// through `setPreview`, so it is ignored here.
+    func setPreviewPresentation(_ presentation: PreviewPresentationState) {
+        guard mode == .windowPreviews, !hasPreview, presentation != .loaded else { return }
+        previewState = presentation
         updateSkeletonPresentation()
         needsLayout = true
     }
