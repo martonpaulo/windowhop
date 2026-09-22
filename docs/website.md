@@ -37,10 +37,39 @@ Final user-facing images come from WindowHop's privacy-safe render harness; anno
 development references never belong in `site/`. `docs/` holds developer documentation
 and is never published.
 
+## Download link and download count
+
+Every Download button, and the JSON-LD `downloadUrl`, is
+`https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-<version>.dmg`:
+the signed disk image itself, with no unzip step. Releases also publish
+`WindowHop-<version>-Installer.zip` (the same DMG wrapped so Finder keeps its custom file
+icon) and `WindowHop-<version>.zip` (the Sparkle update archive); the site links neither.
+`scripts/validate-site.sh` fails when any download link or `downloadUrl` names another file
+or another version.
+
+The download section shows "Downloaded N times". The number is the sum of GitHub's
+`download_count` over every release's `WindowHop-<version>.dmg` and
+`WindowHop-<version>-Installer.zip`: the files a person downloads to install. Sparkle update
+archives are excluded because an update is an existing install (`docs/product.md`), and so is
+`checksums.txt`. The number is public release data; nothing is collected from visitors.
+
+The committed page keeps the element empty and `hidden`. At deploy time
+`scripts/render-download-count.sh` fills a staged copy of `site/` (never `site/` itself) from
+the GitHub API, so the published HTML carries the number as text: no request at view time,
+and it reads the same with JavaScript off. When the API fails, or reports zero, the script
+leaves the element hidden and exits 0, so the deploy still succeeds without a count. To see
+it locally, copy `site/` to a temporary directory and run the script on the copy.
+
+The count refreshes on every deploy and at least weekly: `deploy.yml` has a Monday
+`schedule` that republishes the newest `main` commit Validate passed. GitHub disables
+scheduled workflows in a public repository after 60 days without activity; re-enable it from
+the Actions tab if the count stops moving.
+
 ## GitHub Pages
 
-`.github/workflows/deploy.yml` waits for Validate to pass on `main`, uploads `site/` as it is,
-then deploys that commit with GitHub's official Pages actions. The repository Pages
+`.github/workflows/deploy.yml` waits for Validate to pass on `main`, copies `site/` to a
+staging directory, writes the download count into that copy, uploads it, then deploys that
+commit with GitHub's official Pages actions. The repository Pages
 source must be **GitHub Actions**. The workflow uses only read access to repository content
 plus the scoped `pages: write` and `id-token: write` permissions required for deployment.
 
@@ -49,9 +78,10 @@ Its `scope` job (`deployments: read`) skips the upload and deployment when `site
 deployment, so a documentation-only push publishes nothing. It compares against that
 deployment rather than the previous push, so a site change whose deploy failed or was
 cancelled still publishes next time. A manual `workflow_dispatch` always publishes (the
-recovery path), and any doubt — API error, no successful deployment, unfetchable commit —
+recovery path), the weekly `schedule` always publishes (its point is a fresh count; it needs
+`actions: read` to find the last validated commit), and any doubt — API error, no successful deployment, unfetchable commit —
 publishes too. The job log prints the compared SHAs and the changed paths.
 
 No generated website files require manual editing after deployment. The release checklist
-must confirm the public page, direct installer, release notes, source, issue, license, and
-AltTab links before tagging a release.
+must confirm the public page, that Download starts `WindowHop-<version>.dmg`, release notes,
+source, issue, license, and AltTab links before tagging a release.

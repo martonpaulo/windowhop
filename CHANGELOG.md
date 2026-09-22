@@ -36,6 +36,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The website downloads the disk image directly**: Download on
+  windowhop.martonpaulo.com now gets `WindowHop-<version>.dmg` instead of a ZIP you had
+  to unzip first, and the download section shows how many times WindowHop was downloaded.
+  The number is taken from GitHub's public release data when the site is published; the
+  page itself makes no request for it.
 - **Settings no longer opens at every launch**: once the first launch is done and you
   show the menu bar item or the Dock icon, starting WindowHop opens nothing. With both
   icons hidden it still opens Settings, and opening WindowHop again while it runs always

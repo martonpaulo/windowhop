@@ -268,6 +268,7 @@ figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--te
 /* The section rhythm puts 48px under the buttons; the closing note and the
    secondary link belong to them, so they sit closer. */
 .section.download > .compatibility { margin-top: 22px; }
+.section.download > .download-count { margin: 22px auto 0; font-size: var(--text-sm); }
 .section.download > .text-link { display: inline-flex; margin-top: 22px; color: var(--accent); }
 
 /* The closing open-source section: eyebrow, heading, what the project is and

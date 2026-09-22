@@ -35,7 +35,9 @@ if grep -n 'href="#"' "${pages[@]}"; then
 fi
 
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
-DOWNLOAD_URL="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-$VERSION-Installer.zip"
+# The download is the DMG itself (#35). Releases also publish an Installer.zip that
+# wraps it; the site does not link that one.
+DOWNLOAD_URL="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-$VERSION.dmg"
 downloads=$(grep -hoE 'href="[^"]*/releases/[^"]*/download/[^"]*"' "${pages[@]}" || true)
 test -n "$downloads" || { echo "website has no download link" >&2; exit 1; }
 while IFS= read -r href; do
@@ -44,6 +46,17 @@ while IFS= read -r href; do
     exit 1
   }
 done <<< "$downloads"
+# Structured data names the same file as the buttons.
+grep -Fq "\"downloadUrl\": \"$DOWNLOAD_URL\"" site/index.html || {
+  echo "website JSON-LD downloadUrl is not $DOWNLOAD_URL" >&2
+  exit 1
+}
+# The deploy fills this element with the download total (scripts/render-download-count.sh);
+# the committed page keeps it empty and hidden so a failed count shows nothing.
+grep -Fq '<p class="download-count" id="download-count" hidden></p>' site/index.html || {
+  echo "website is missing the empty, hidden download-count element" >&2
+  exit 1
+}
 notes=$(grep -hoE 'href="[^"]*/releases/tag/[^"]*"' "${pages[@]}" || true)
 test -n "$notes" || { echo "website has no release-notes link" >&2; exit 1; }
 while IFS= read -r href; do

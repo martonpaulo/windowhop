@@ -8,6 +8,10 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+  # Weekly, so the download count baked into the page (scripts/render-download-count.sh)
+  # stays within a week of GitHub's numbers even when the site does not change.
+  schedule:
+    - cron: '17 6 * * 1'
 
 permissions:
   contents: read
@@ -20,18 +24,22 @@ jobs:
   # Publishing is skipped when the published input (site/ plus this workflow) is
   # identical to the last *successful* Pages deployment. Comparing against that,
   # not the previous push, means a site change whose deploy failed or was
-  # cancelled still publishes on the next push. Every doubt publishes.
+  # cancelled still publishes on the next push. Every doubt publishes. The weekly
+  # schedule always publishes, since its point is a fresh download count.
   scope:
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
       (github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: read
+      actions: read
     outputs:
       publish: ${{ steps.check.outputs.publish }}
+      sha: ${{ steps.check.outputs.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -46,6 +54,17 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           publish() { echo "publish=$1" >> "$GITHUB_OUTPUT"; echo "publish=$1: $2"; exit 0; }
+
+          # A schedule has no Validate run of its own, so it republishes the newest
+          # main commit that Validate passed, never an unchecked HEAD.
+          if [ "$EVENT" = schedule ]; then
+            VALIDATED=$(gh api "repos/$REPO/actions/workflows/validate.yml/runs?branch=main&event=push&status=success&per_page=1" \
+              --jq '.workflow_runs[0].head_sha // empty') || VALIDATED=""
+            [ -n "$VALIDATED" ] || { echo "::error::no successful Validate run on main to republish"; exit 1; }
+            echo "sha=$VALIDATED" >> "$GITHUB_OUTPUT"
+            publish true "weekly download-count refresh of $VALIDATED"
+          fi
+          echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
 
           # Manual dispatch is the explicit recovery path: always publish.
           [ "$EVENT" = workflow_dispatch ] && publish true "manual dispatch"
@@ -80,11 +99,19 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.scope.outputs.sha }}
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # The count is written into a staged copy, never into site/ itself, and the
+      # script exits 0 without it when GitHub's API is unavailable.
+      - name: Stage the site with the download count
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp -R site "$RUNNER_TEMP/site"
+          scripts/render-download-count.sh "$RUNNER_TEMP/site"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
-          path: site
+          path: ${{ runner.temp }}/site
 
   deploy:
     permissions:
