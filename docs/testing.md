@@ -258,6 +258,9 @@ Screen Recording permission.
 - [ ] Revoking Screen Recording during a session returns to the static fallback without a
       loop or stale preview substitution.
 - [ ] Accessibility revocation restores native ⌘Tab fail-safe behavior.
+- [ ] With the menu bar item shown, Disable, then revoke Accessibility: the item's shape and
+      its accessibility label (Accessibility Inspector) change to paused, then to
+      Accessibility access needed, before its menu is opened.
 
 ### Installation, update, and TCC continuity
 

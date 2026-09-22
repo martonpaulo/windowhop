@@ -150,6 +150,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 self.stopEngine()
                 self.showOnboarding()
             }
+            // the menu bar item shows the permission state
+            StatusItemController.shared.apply()
         }
         // macOS can silently disable event taps across sleep/wake and session switches
         NSWorkspace.shared.notificationCenter.addObserver(

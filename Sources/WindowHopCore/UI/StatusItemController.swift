@@ -1,33 +1,43 @@
 import AppKit
 
-/// Optional menu bar item (hidden by default). Menu contains exactly:
-/// Enable/Disable, Settings…, Check for Updates… (only while the updater
-/// runs, i.e. in a bundled build), Quit.
+/// Optional menu bar item (hidden by default). Its symbol shape and
+/// accessibility label show `StatusItemState` (active, paused, Accessibility
+/// required). The menu contains exactly: a status row, plus Open
+/// Accessibility Setup… when Accessibility is missing (both only when not
+/// active); Enable/Disable, Settings…, Check for Updates… (only while the
+/// updater runs, i.e. in a bundled build), Quit.
 ///
 /// The menu is built once with every item present and brought up to date by
-/// `refresh(_:)` — on `apply()` and each time the menu opens — so its
-/// contents never depend on whether the updater started before or after the
-/// item was created.
+/// `refresh(_:)` — on `apply()` (every settings write and every Accessibility
+/// grant change) and each time the menu opens — so its contents never depend
+/// on whether the updater started before or after the item was created.
 public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     public static let shared = StatusItemController(
         preferences: .shared,
+        accessibilityGranted: { AccessibilityPermission.isGranted },
         updaterAvailable: { UpdateManager.shared.isAvailable },
         canCheckForUpdates: { UpdateManager.shared.canCheckForUpdates })
 
     enum ItemTag: Int {
         case toggle = 1
         case checkForUpdates
+        case status
+        case accessibilitySetup
+        case statusSeparator
     }
 
     private let preferences: Preferences
+    private let accessibilityGranted: () -> Bool
     private let updaterAvailable: () -> Bool
     private let canCheckForUpdates: () -> Bool
     private var statusItem: NSStatusItem?
 
     init(preferences: Preferences,
+         accessibilityGranted: @escaping () -> Bool,
          updaterAvailable: @escaping () -> Bool,
          canCheckForUpdates: @escaping () -> Bool) {
         self.preferences = preferences
+        self.accessibilityGranted = accessibilityGranted
         self.updaterAvailable = updaterAvailable
         self.canCheckForUpdates = canCheckForUpdates
         super.init()
@@ -37,23 +47,56 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         let shouldShow = preferences.showMenuBarItem
         if shouldShow, statusItem == nil {
             let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-            item.button?.image = NSImage(systemSymbolName: "rectangle.on.rectangle",
-                                         accessibilityDescription: "WindowHop")
             item.menu = makeMenu()
             statusItem = item
         } else if !shouldShow, let statusItem {
             NSStatusBar.system.removeStatusItem(statusItem)
             self.statusItem = nil
         }
+        refreshStatusItem()
+    }
+
+    var state: StatusItemState {
+        StatusItemState.resolve(switcherEnabled: preferences.switcherEnabled,
+                                accessibilityGranted: accessibilityGranted())
+    }
+
+    private func refreshStatusItem() {
+        if let button = statusItem?.button {
+            refreshButton(button)
+        }
         if let menu = statusItem?.menu {
             refresh(menu)
         }
+    }
+
+    /// The symbol's shape and its accessibility description both carry the
+    /// state, so it reads without color and without opening the menu.
+    func refreshButton(_ button: NSButton) {
+        let state = state
+        button.image = NSImage(systemSymbolName: state.symbolName,
+                               accessibilityDescription: state.accessibilityLabel)
     }
 
     /// Builds the item's menu once, with every item it can ever show.
     func makeMenu() -> NSMenu {
         let menu = NSMenu()
         menu.delegate = self
+        // no action: AppKit shows it disabled, as plain text VoiceOver reads
+        let statusRow = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        statusRow.tag = ItemTag.status.rawValue
+        statusRow.isHidden = true
+        menu.addItem(statusRow)
+        let setupItem = NSMenuItem(title: "Open Accessibility Setup…",
+                                   action: #selector(openAccessibilitySetup), keyEquivalent: "")
+        setupItem.target = self
+        setupItem.tag = ItemTag.accessibilitySetup.rawValue
+        setupItem.isHidden = true
+        menu.addItem(setupItem)
+        let statusSeparator = NSMenuItem.separator()
+        statusSeparator.tag = ItemTag.statusSeparator.rawValue
+        statusSeparator.isHidden = true
+        menu.addItem(statusSeparator)
         let toggleItem = NSMenuItem(title: "Disable", action: #selector(toggleEnabled), keyEquivalent: "")
         toggleItem.target = self
         toggleItem.tag = ItemTag.toggle.rawValue
@@ -77,6 +120,13 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
     /// Brings the menu's titles and visibility up to the current state.
     /// Idempotent: it only mutates existing items, never adds any.
     func refresh(_ menu: NSMenu) {
+        let state = state
+        if let statusRow = menu.item(withTag: ItemTag.status.rawValue) {
+            statusRow.title = state.statusText ?? ""
+            statusRow.isHidden = state.statusText == nil
+        }
+        menu.item(withTag: ItemTag.accessibilitySetup.rawValue)?.isHidden = !state.offersAccessibilitySetup
+        menu.item(withTag: ItemTag.statusSeparator.rawValue)?.isHidden = state.statusText == nil
         menu.item(withTag: ItemTag.toggle.rawValue)?.title =
             preferences.switcherEnabled ? "Disable" : "Enable"
         // a development build has no updater: hide the command rather than
@@ -88,6 +138,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
 
     public func menuNeedsUpdate(_ menu: NSMenu) {
         refresh(menu)
+        if menu === statusItem?.menu, let button = statusItem?.button {
+            refreshButton(button)
+        }
     }
 
     // MARK: - NSMenuItemValidation
@@ -104,9 +157,13 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
 
     @objc private func toggleEnabled() {
         preferences.switcherEnabled.toggle()
-        if let menu = statusItem?.menu {
-            refresh(menu)
-        }
+        refreshStatusItem()
+    }
+
+    @objc private func openAccessibilitySetup() {
+        // the existing recovery surface; AppDelegate sets its onGranted
+        // whenever permission is missing
+        PermissionOnboardingController.shared.show()
     }
 
     @objc private func openSettings() {
