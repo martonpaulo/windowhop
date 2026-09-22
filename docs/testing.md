@@ -210,6 +210,9 @@ workflow's `tag commit == current origin/main` gate still holds for a normal rer
 The release scripts are byte-identical copies of skill-deck's `project-release` assets, and
 skill-deck's own suites own their behavior. `scripts/validate.sh` checks that each copy parses
 and answers `--help`; `check_repository_conventions.py` reports a drifted copy.
+`tests/scripts/publish-release-tests.sh`, which `scripts/validate.sh` also runs, pins the
+publication counterexamples WindowHop's audit found against the real script and a fake
+`gh` — no network, no token, no signing material, no real release.
 
 ### Release rehearsal
 

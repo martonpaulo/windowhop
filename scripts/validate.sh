@@ -188,9 +188,10 @@ if [ "$failures" -eq "$script_failures" ]; then
 fi
 
 # --- release-script fixtures -------------------------------------------------
-# These run the real scripts in isolation: no network, no token, no signing
-# material, no real release.
-for fixture in tests/scripts/release-notes-tests.sh tests/scripts/stamp-app-metadata-tests.sh; do
+# These run the real scripts in isolation, publish-release.sh against a fake
+# `gh`: no network, no token, no signing material, no real release.
+for fixture in tests/scripts/publish-release-tests.sh tests/scripts/release-notes-tests.sh \
+    tests/scripts/stamp-app-metadata-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"
     else
