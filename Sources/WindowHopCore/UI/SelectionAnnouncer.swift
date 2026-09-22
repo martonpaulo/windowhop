@@ -27,6 +27,14 @@ final class SelectionAnnouncer {
             for: item, showTabCounts: Preferences.shared.showTabCounts))
     }
 
+    /// Announces `item` only when it is a different window from the last one
+    /// spoken: a live refresh that replaced the selected window must say so,
+    /// while a title, preview or appended-window refresh must stay silent.
+    func announceIfChanged(_ item: SwitcherItem) {
+        guard item.id != lastAnnouncedID else { return }
+        announce(item)
+    }
+
     /// Forgets the last target, at the end of a presentation.
     func reset() {
         lastAnnouncedID = nil

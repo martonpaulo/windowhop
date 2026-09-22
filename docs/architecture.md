@@ -82,7 +82,8 @@ through plain AppKit.
    entries keep their session order, entries that disappear are removed in place (nearby
    selection preserved), and newly eligible windows are appended in fresh-store order —
    session `[A, B]` with a fresh store of `[C, B, A]` becomes `[A, B, C]`. The selected
-   window's identity is preserved whenever it survives. An entry that briefly loses its
+   window's identity is preserved whenever it survives; when the selected identity
+   changes, the new target is announced once. An entry that briefly loses its
    location metadata while Spaces update is retained rather than removed, which is distinct
    from appending a new one (`Core/SessionListReconciler.swift`, and
    `SwitcherController.shouldPreserveAcrossLocationRefresh`).

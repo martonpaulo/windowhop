@@ -128,6 +128,10 @@ public final class SwitcherPanelGroup {
     public func update(items: [SwitcherItem], selectedIndex: Int) {
         self.items = items
         panels.forEach { $0.update(items: items, selectedIndex: selectedIndex) }
+        // reconciliation can move the selection to another window without any
+        // navigation; the spoken target must follow what confirmation activates
+        guard !panels.isEmpty, items.indices.contains(selectedIndex) else { return }
+        announcer.announceIfChanged(items[selectedIndex])
     }
 
     public func select(_ index: Int) {

@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the next focus change. They now stay where they were last seen.
 - **VoiceOver names each selection once**: with the switcher shown on several displays,
   every panel announced the same selection, so it was spoken once per display.
+- **VoiceOver follows the selection when its window closes**: if the selected window
+  disappeared while the switcher was open, VoiceOver kept naming it while Return would
+  activate a different window. The new target is now announced.
 
 ## [1.6.2] - 2026-09-09
 

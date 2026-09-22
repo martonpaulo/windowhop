@@ -196,4 +196,89 @@ final class SwitcherPanelGroupTests: XCTestCase {
         let label = try XCTUnwrap(tile.accessibilityLabel())
         XCTAssertEqual(announcements.last?.text, label)
     }
+
+    // MARK: - Reconciliation announcement (#75)
+
+    func testRemovingTheSelectedWindowAnnouncesTheTargetConfirmationWillActivate() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(1), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: list, selectedIndex: 1, presentationMode: .cycling)
+        announcements = []
+
+        let survivors = [list[0], list[2]]
+        group.update(items: survivors, selectedIndex: 1)
+
+        XCTAssertEqual(announcements.count, 1,
+                       "the spoken target went stale when the selected window disappeared")
+        XCTAssertEqual(announcements.first?.id, survivors[1].id,
+                       "the announced window must be the one confirmation activates")
+        XCTAssertEqual(announcements.first?.text, "Window 2, App")
+    }
+
+    func testAMetadataRefreshKeepingTheSelectionAnnouncesNothing() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(1), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: list, selectedIndex: 1, presentationMode: .cycling)
+        announcements = []
+
+        var renamed = list
+        renamed[1] = SwitcherItem(id: list[1].id, window: nil, title: "Renamed",
+                                  appName: "App", icon: nil, tabCount: nil)
+        group.update(items: renamed, selectedIndex: 1)
+
+        XCTAssertTrue(announcements.isEmpty, "a title change is not a selection change")
+    }
+
+    func testAnAppendedWindowAnnouncesNothing() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(1), tileCount: 4,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: Array(list.prefix(2)), selectedIndex: 1, presentationMode: .cycling)
+        announcements = []
+
+        group.update(items: list, selectedIndex: 1)
+
+        XCTAssertTrue(announcements.isEmpty)
+    }
+
+    func testReconciliationAcrossMirroredPanelsAnnouncesOncePerChange() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(4)
+        group.prepare(for: targets(2), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: list, selectedIndex: 2, presentationMode: .cycling)
+        announcements = []
+
+        group.update(items: [list[0], list[1], list[3]], selectedIndex: 2)
+        group.update(items: [list[0], list[1]], selectedIndex: 1)
+
+        XCTAssertEqual(announcements.map(\.id), [list[3].id, list[1].id])
+    }
+
+    func testTheAnnouncedTargetIsTheOneConfirmationActivates() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(1), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        var state = SwitcherState()
+        _ = state.trigger(backward: false, itemCount: list.count)
+        group.show(items: list, selectedIndex: state.selectedIndex, presentationMode: .cycling)
+        announcements = []
+
+        // the selected window vanishes: the controller keeps the old index,
+        // which the state machine clamps (SwitcherController.refreshDuringSession)
+        let survivors = list.filter { $0.id != list[state.selectedIndex].id }
+        _ = state.listChanged(itemCount: survivors.count, preferredIndex: nil)
+        group.update(items: survivors, selectedIndex: state.selectedIndex)
+
+        guard case .activate(let confirmed) = state.returnKey() else {
+            return XCTFail("Return must activate the selection")
+        }
+        XCTAssertEqual(announcements.map(\.id), [survivors[confirmed].id])
+    }
 }
