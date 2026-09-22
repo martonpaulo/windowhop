@@ -136,7 +136,7 @@ public final class SwitcherPanel: NSPanel {
     }
 
     /// `rasterizableBackground` is for the offscreen render harness only: the
-    /// macOS 26 glass background cannot be rasterized with cacheDisplay (it
+    /// glass background cannot be rasterized with cacheDisplay (it
     /// draws empty), so layout renders use the visual-effect fallback instead.
     public init(rasterizableBackground: Bool = false) {
         super.init(contentRect: .zero,
@@ -252,18 +252,16 @@ public final class SwitcherPanel: NSPanel {
         }
     }
 
-    /// The panel background: system glass on macOS 26+, the closest
-    /// visual-effect material before that.
+    /// The panel background: system glass, or a visual-effect stand-in when
+    /// the offscreen render harness needs something it can rasterize.
     private static func makeBackgroundView(wrapping content: NSView,
                                            rasterizable: Bool) -> NSView {
-        #if compiler(>=6.2)
-        if #available(macOS 26.0, *), !rasterizable {
+        if !rasterizable {
             let glass = NSGlassEffectView()
             glass.cornerRadius = DesignTokens.panelCornerRadius
             glass.contentView = content
             return glass
         }
-        #endif
         let effectView = NSVisualEffectView()
         effectView.material = DesignTokens.panelMaterial
         effectView.blendingMode = .behindWindow

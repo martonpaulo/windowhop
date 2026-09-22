@@ -214,9 +214,9 @@ enum DesignTokens {
         return CGSize(width: canvasWidth + chrome.width,
                       height: canvasHeight + chrome.height)
     }
-    /// Fallback panel material for macOS 14/15, close to the pre-Tahoe native
-    /// switcher; on macOS 26+ the panel uses the system glass effect instead
-    /// (see SwitcherPanel), which is what the native switcher draws with.
+    /// Panel material for the offscreen render harness only (`--render-ui`):
+    /// the live panel uses the system glass effect (see SwitcherPanel), which
+    /// cacheDisplay cannot rasterize.
     static let panelMaterial: NSVisualEffectView.Material = .hudWindow
     /// Overlay controls use the Apple badge idiom (notification/Safari-tab
     /// close): a filled gray circle with a white glyph — legible on any content.

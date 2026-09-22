@@ -3,7 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "WindowHop",
-    platforms: [.macOS(.v14)],
+    // `.v26` needs tools version 6.2; the string form works with the current one
+    platforms: [.macOS("26.0")],
     dependencies: [
         // the one approved runtime dependency: automatic updates
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0"),
