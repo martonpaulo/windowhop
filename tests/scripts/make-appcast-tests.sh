@@ -19,12 +19,14 @@ check() {
 }
 
 SIG='sparkle:edSignature="AAAA" length="1234"'
+MINIMUM_SYSTEM_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' Support/Info.plist)
 OTHER_SIG='sparkle:edSignature="BBBB" length="1234"'
 
 setup() {
     SANDBOX=$(mktemp -d)
-    mkdir -p "$SANDBOX/scripts" "$SANDBOX/artifacts"
+    mkdir -p "$SANDBOX/scripts" "$SANDBOX/artifacts" "$SANDBOX/Support"
     cp "$REPO_ROOT/scripts/make-appcast.sh" "$SANDBOX/scripts/"
+    cp "$REPO_ROOT/Support/Info.plist" "$SANDBOX/Support/"
     : > "$SANDBOX/artifacts/WindowHop-1.2.3.zip"
 }
 teardown() { rm -rf "$SANDBOX"; }
@@ -46,6 +48,8 @@ check "first entry carries the signature" \
     "$(grep -c 'sparkle:edSignature="AAAA"' "$SANDBOX/appcast.xml")" "1"
 check "first entry requires Apple silicon" \
     "$(grep -c '<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>' "$SANDBOX/appcast.xml")" "1"
+check "first entry advertises the bundle's macOS floor" \
+    "$(grep -c "<sparkle:minimumSystemVersion>$MINIMUM_SYSTEM_VERSION</sparkle:minimumSystemVersion>" "$SANDBOX/appcast.xml")" "1"
 teardown
 
 # --- an entry published before the arm64 requirement still matches ---------
@@ -95,6 +99,20 @@ setup
 run_appcast 1.2.3 10203 "$SIG" > /dev/null
 status=$(run_appcast 1.2.3 99999 "$SIG")
 check "mismatching build number fails" "$status" "1"
+teardown
+
+# --- a raised floor applies to the new entry only --------------------------
+setup
+run_appcast 1.2.3 10203 "$SIG" > /dev/null
+/usr/libexec/PlistBuddy -c 'Set :LSMinimumSystemVersion 99.0' "$SANDBOX/Support/Info.plist"
+: > "$SANDBOX/artifacts/WindowHop-1.3.0.zip"
+run_appcast 1.3.0 10300 "$SIG" > /dev/null
+check "new entry advertises the raised floor" \
+    "$(grep -o '<sparkle:minimumSystemVersion>[^<]*' "$SANDBOX/appcast.xml" | head -1 | cut -d'>' -f2)" \
+    "99.0"
+check "earlier entry keeps its floor" \
+    "$(grep -o '<sparkle:minimumSystemVersion>[^<]*' "$SANDBOX/appcast.xml" | tail -1 | cut -d'>' -f2)" \
+    "$MINIMUM_SYSTEM_VERSION"
 teardown
 
 # --- a newer version is prepended and keeps the previous entries -----------

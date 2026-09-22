@@ -1,7 +1,9 @@
 #!/bin/bash
 # Prepends a release entry to appcast.xml (creating it if missing). New entries
-# require Apple silicon through sparkle:hardwareRequirements (Sparkle 2.9+);
-# entries already published are left as they are.
+# require Apple silicon through sparkle:hardwareRequirements (Sparkle 2.9+) and
+# advertise the bundle's LSMinimumSystemVersion as their macOS floor; entries
+# already published are left as they are, so older systems keep the last
+# release they can run.
 # Usage: scripts/make-appcast.sh <version> <build-number> <zip-path> <signature-attrs>
 #   signature-attrs is sign_update's output: sparkle:edSignature="..." length="..."
 set -euo pipefail
@@ -12,6 +14,7 @@ BUILD_NUMBER="$2"
 ZIP_PATH="$3"
 SIGNATURE_ATTRS="$4"
 URL="https://github.com/martonpaulo/windowhop/releases/download/v$VERSION/$(basename "$ZIP_PATH")"
+MINIMUM_SYSTEM_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' Support/Info.plist)
 DATE=$(LC_ALL=en_US.UTF-8 date -u "+%a, %d %b %Y %H:%M:%S +0000")
 
 # BSD awk rejects newlines in -v values, so the item travels via a temp file
@@ -23,7 +26,7 @@ cat > "$ITEM_FILE" <<EOF
       <pubDate>$DATE</pubDate>
       <sparkle:version>$BUILD_NUMBER</sparkle:version>
       <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
-      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <sparkle:minimumSystemVersion>$MINIMUM_SYSTEM_VERSION</sparkle:minimumSystemVersion>
       <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
       <enclosure url="$URL" $SIGNATURE_ATTRS type="application/octet-stream"/>
     </item>

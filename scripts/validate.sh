@@ -68,6 +68,28 @@ if [ -f appcast.xml ]; then
     else
         fail "appcast.xml missing edSignature or GitHub release URLs"
     fi
+    # The macOS floor has one owner, LSMinimumSystemVersion, and make-appcast.sh
+    # copies it into every new entry. The newest entry may therefore never
+    # advertise a floor above it. It may sit below it between raising the floor
+    # and the next release, because that entry describes the previous build;
+    # older entries keep their own floor so older systems keep their last release.
+    BUNDLE_FLOOR=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' Support/Info.plist)
+    NEWEST_FLOOR=$(grep -o '<sparkle:minimumSystemVersion>[^<]*' appcast.xml | head -1 | cut -d'>' -f2)
+    # prints -1, 0 or 1 comparing dotted versions numerically
+    FLOOR_ORDER=$(awk -v a="$NEWEST_FLOOR" -v b="$BUNDLE_FLOOR" 'BEGIN {
+        n = split(a, x, "."); m = split(b, y, ".")
+        for (i = 1; i <= (n > m ? n : m); i++) {
+            if (x[i] + 0 < y[i] + 0) { print -1; exit }
+            if (x[i] + 0 > y[i] + 0) { print 1; exit }
+        }
+        print 0 }')
+    if [ -z "$NEWEST_FLOOR" ]; then
+        fail "newest appcast entry has no minimumSystemVersion"
+    elif [ "$FLOOR_ORDER" = "1" ]; then
+        fail "newest appcast floor ($NEWEST_FLOOR) is above LSMinimumSystemVersion ($BUNDLE_FLOOR)"
+    else
+        pass "newest appcast floor ($NEWEST_FLOOR) is consistent with LSMinimumSystemVersion ($BUNDLE_FLOOR)"
+    fi
 fi
 
 # --- documentation/release synchronization ----------------------------------
