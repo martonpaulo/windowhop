@@ -177,8 +177,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         PermissionOnboardingController.shared.show()
     }
 
-    /// Default: launch at login enabled when it can actually be configured
-    /// (requires running from a real .app bundle).
+    /// Registers the login item only when the launch-at-login intent is on
+    /// (the default is off, see `Preferences.Defaults`) and it can actually be
+    /// configured (requires running from a real .app bundle).
     private func completeFirstLaunchIfNeeded() {
         guard !preferences.firstLaunchCompleted else { return }
         preferences.firstLaunchCompleted = true

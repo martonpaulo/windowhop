@@ -1,8 +1,9 @@
 # User-facing defaults and configurability
 
 `Preferences.Defaults` is the only runtime source of persisted defaults. Every typed
-user-facing key participates in `Preferences.configurableKeys`, and a regression test
-fails when a new configurable key is omitted from Restore Defaults.
+user-facing key participates in `Preferences.configurableKeys`, except one that mirrors a
+system registration (launch at login), and a regression test fails when a new
+configurable key is omitted from Restore Defaults without that explicit exception.
 
 ## WindowHop 1.3.1 decisions
 
@@ -49,3 +50,4 @@ centralized default through the registration domain; migrations are explicit and
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |
 |---|---|---|---|
 | Switcher reveal delay | 100 ms | Yes | Windows pane; typed `UserDefaults` (`switcherRevealDelay`), presets Off, 100, 200, 300, 500 ms; no migration — an installation with no stored value takes the default, an invalid value falls back to it; resets to 100 ms. Applies only to held sessions: a quick press switches without drawing the panel, while Open WindowHop always shows immediately. Both states are legitimate preferences, so it is a setting. |
+| Launch at login | Off for new installs | Yes | General; typed `UserDefaults` (`launchAtLogin`). Migration: an installation that completed first launch without storing a value keeps On, the default it received. Every stored choice is kept. Restore Defaults leaves it and the login item alone, because it mirrors a system registration. Showing the real login-item status in Settings is owned by #57. |

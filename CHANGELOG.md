@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Launch at login is off for new installs**: turn it on in Settings → General. Existing
+  installations keep their current choice, including the previous On default.
+- **Restore Defaults leaves launch at login alone**: it no longer registers or removes the
+  login item, so it cannot fail and never changes system settings.
+
 ### Fixed
 
 - **Windows no longer vanish when an app is slow during a Space switch**: with other Spaces

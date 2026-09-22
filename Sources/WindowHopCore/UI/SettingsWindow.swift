@@ -146,7 +146,6 @@ struct GeneralPane: View {
     @State private var launchAtLogin = LoginItem.isEnabled
     @State private var launchAtLoginFailed = false
     @State private var restoreConfirmationShown = false
-    @State private var restoreFailed = false
     @State private var quitConfirmationShown = false
 
     /// Only a user-initiated change registers a login item.
@@ -194,17 +193,11 @@ struct GeneralPane: View {
                 .confirmationDialog("Restore all WindowHop settings?",
                                     isPresented: $restoreConfirmationShown) {
                     Button("Restore Defaults") {
-                        restoreFailed = !SettingsDefaultsRestorer.shared.restore()
-                        launchAtLogin = LoginItem.isEnabled
+                        SettingsDefaultsRestorer.shared.restore()
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions and cached previews are unchanged.")
-                }
-                if restoreFailed {
-                    Text("Defaults could not be restored because Launch at Login is unavailable. Run WindowHop from Applications and try again.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    Text("Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions, launch at login and cached previews are unchanged.")
                 }
                 // macOS Form buttons ignore the destructive role's tint; make the
                 // destructive intent visible explicitly

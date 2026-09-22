@@ -164,8 +164,9 @@ For every new user-facing behavior or presentation feature:
 - Preserve existing user choices during upgrades; migration may change a stored value
   only when the old representation is obsolete or invalid.
 - Add every configurable preference to `Preferences.configurableKeys` so Restore Defaults
-  picks it up. Reset must not change permissions, identity, build metadata, caches, or
-  non-preference user data.
+  picks it up, except a value that mirrors a system registration (launch at login), which
+  the key-contract test lists explicitly. Reset must not change permissions, identity,
+  build metadata, caches, system registrations, or non-preference user data.
 - Add default, migration, persistence, runtime-update, and reset coverage as applicable.
 - Update the Settings-related pull-request checklist whenever this contract evolves.
 

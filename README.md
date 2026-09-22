@@ -162,10 +162,10 @@ immediately when safe; invalid stored values restore documented defaults.
 ### General
 
 - Enable WindowHop — **on**
-- Launch at login — **on**
+- Launch at login — **off**
 - Show menu bar item — **off**
 - Show Dock icon — **off**
-- Restore Defaults… — confirmed action that restores every configurable preference
+- Restore Defaults… — confirmed action that restores every configurable preference except launch at login
 - Quit WindowHop… — confirmed graceful termination
 
 ### Shortcuts

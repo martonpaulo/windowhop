@@ -21,7 +21,7 @@ final class PreferencesTests: XCTestCase {
 
     func testDefaults() {
         XCTAssertTrue(preferences.switcherEnabled)
-        XCTAssertTrue(preferences.launchAtLogin)
+        XCTAssertFalse(preferences.launchAtLogin)
         XCTAssertEqual(preferences.shortcut, .commandTab)
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
@@ -44,7 +44,7 @@ final class PreferencesTests: XCTestCase {
 
     func testRoundTrip() {
         preferences.switcherEnabled = false
-        preferences.launchAtLogin = false
+        preferences.launchAtLogin = true
         preferences.shortcut = .optionTab
         preferences.persistentShortcut = PersistentShortcut(
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
@@ -67,7 +67,7 @@ final class PreferencesTests: XCTestCase {
         let restored = Preferences(defaults: defaults)
 
         XCTAssertFalse(restored.switcherEnabled)
-        XCTAssertFalse(restored.launchAtLogin)
+        XCTAssertTrue(restored.launchAtLogin)
         XCTAssertEqual(restored.shortcut, .optionTab)
         XCTAssertEqual(restored.persistentShortcut, preferences.persistentShortcut)
         XCTAssertEqual(restored.appearanceMode, .windowPreviews)
@@ -197,6 +197,53 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
     }
 
+    // MARK: - Launch at login default migration
+
+    func testUpgradedInstallKeepsOldLaunchAtLoginDefault() {
+        let (upgradedDefaults, suite) = unregisteredDefaults()
+        upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
+
+        let upgraded = Preferences(defaults: upgradedDefaults)
+
+        XCTAssertTrue(upgraded.launchAtLogin, "the installation accepted the old On default")
+        XCTAssertEqual(stored(.launchAtLogin, in: suite) as? Bool, true)
+    }
+
+    func testNewInstallDefaultsLaunchAtLoginOff() {
+        let (newDefaults, suite) = unregisteredDefaults()
+
+        let fresh = Preferences(defaults: newDefaults)
+
+        XCTAssertFalse(fresh.launchAtLogin)
+        XCTAssertNil(stored(.launchAtLogin, in: suite))
+    }
+
+    func testStoredLaunchAtLoginChoiceSurvivesUpgrade() {
+        for choice in [false, true] {
+            let (upgradedDefaults, suite) = unregisteredDefaults()
+            upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
+            upgradedDefaults.set(choice, forKey: Preferences.Key.launchAtLogin.rawValue)
+
+            let upgraded = Preferences(defaults: upgradedDefaults)
+
+            XCTAssertEqual(upgraded.launchAtLogin, choice)
+            XCTAssertEqual(stored(.launchAtLogin, in: suite) as? Bool, choice)
+        }
+    }
+
+    func testLaunchAtLoginMigrationIsIdempotent() {
+        let (upgradedDefaults, suite) = unregisteredDefaults()
+        upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
+        _ = Preferences(defaults: upgradedDefaults)
+        let migrated = UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?
+
+        let again = Preferences(defaults: UserDefaults(suiteName: suite)!)
+
+        XCTAssertTrue(again.launchAtLogin)
+        XCTAssertEqual(UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?,
+                       migrated)
+    }
+
     // MARK: - Open WindowHop shortcut pair loaded against the switcher shortcut
 
     private var storedPersistentShortcut: Any? {
@@ -323,7 +370,7 @@ final class PreferencesTests: XCTestCase {
 
     func testRestoreDefaultsResetsEveryConfigurablePreferenceAndPreservesInternalState() {
         preferences.switcherEnabled = false
-        preferences.launchAtLogin = false
+        preferences.launchAtLogin = !Preferences.Defaults.launchAtLogin
         preferences.shortcut = .controlTab
         preferences.persistentShortcut = nil
         preferences.appearanceMode = .windowPreviews
@@ -343,7 +390,10 @@ final class PreferencesTests: XCTestCase {
         preferences.restoreDefaults()
 
         XCTAssertTrue(preferences.switcherEnabled)
-        XCTAssertTrue(preferences.launchAtLogin)
+        XCTAssertEqual(preferences.launchAtLogin, !Preferences.Defaults.launchAtLogin,
+                       "launch at login mirrors a system registration; reset leaves it")
+        XCTAssertEqual(stored(.launchAtLogin, in: suiteName) as? Bool,
+                       !Preferences.Defaults.launchAtLogin)
         XCTAssertEqual(preferences.shortcut, .commandTab)
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
@@ -411,9 +461,13 @@ final class PreferencesTests: XCTestCase {
             .navigationPreviewDelay,
             .firstLaunchCompleted,
         ]
+        // configurable, but a mirror of a macOS registration that reset must
+        // not change; a future key still has to choose explicitly
+        let systemMirroredKeys: Set<Preferences.Key> = [.launchAtLogin]
         XCTAssertEqual(
             Preferences.configurableKeys,
-            Set(Preferences.Key.allCases).subtracting(internalKeys),
+            Set(Preferences.Key.allCases).subtracting(internalKeys)
+                .subtracting(systemMirroredKeys),
             "A new configurable preference must be considered by Restore Defaults")
     }
 

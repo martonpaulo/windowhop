@@ -127,7 +127,7 @@ public final class Preferences: ObservableObject {
     /// Restore Defaults, and tests consume these values instead of restating them.
     public enum Defaults {
         public static let switcherEnabled = true
-        public static let launchAtLogin = true
+        public static let launchAtLogin = false
         public static let shortcut = ShortcutSpec.commandTab
         public static let persistentShortcut: PersistentShortcut? = .optionTab
         public static let appearanceMode = AppearanceMode.appIcons
@@ -150,9 +150,10 @@ public final class Preferences: ObservableObject {
     /// Every user-configurable preference. Restore Defaults iterates this
     /// closed contract; the regression test compares it with every non-internal
     /// key so a future preference cannot silently miss reset integration.
+    /// `launchAtLogin` is configurable but deliberately absent: it mirrors a
+    /// macOS login-item registration, and reset never changes system state.
     public static let configurableKeys: Set<Key> = [
         .switcherEnabled,
-        .launchAtLogin,
         .shortcut,
         .persistentShortcut,
         .appearanceMode,
@@ -317,6 +318,7 @@ public final class Preferences: ObservableObject {
         // the new 1.3.1 default so upgrades never overwrite that choice.
         let storedPersistentShortcut = defaults.object(
             forKey: Key.persistentShortcut.rawValue)
+        Self.migrateLaunchAtLoginDefault(in: defaults)
         defaults.register(defaults: Preferences.defaultValues)
         switcherEnabled = Self.bool(
             defaults, .switcherEnabled, fallback: Defaults.switcherEnabled)
@@ -394,6 +396,19 @@ public final class Preferences: ObservableObject {
         return value
     }
 
+    /// Launch at login defaulted to on until the default became off. The value
+    /// is stored only when the user toggles it, so an installation that
+    /// completed its first launch without a stored value accepted the old
+    /// default: persist that on before the new default is registered. New
+    /// installations have neither key and take the new default; a stored
+    /// choice is never changed.
+    private static func migrateLaunchAtLoginDefault(in defaults: UserDefaults) {
+        guard defaults.object(forKey: Key.launchAtLogin.rawValue) == nil,
+              defaults.object(forKey: Key.firstLaunchCompleted.rawValue) as? Bool == true
+        else { return }
+        defaults.set(true, forKey: Key.launchAtLogin.rawValue)
+    }
+
     private static func persistentShortcut(from storedValue: Any?) -> PersistentShortcut? {
         // Missing means this installation has never chosen a value and receives
         // the new default. An explicitly stored empty string means the user
@@ -436,7 +451,6 @@ public final class Preferences: ObservableObject {
         for key in Self.configurableKeys {
             switch key {
             case .switcherEnabled: switcherEnabled = Defaults.switcherEnabled
-            case .launchAtLogin: launchAtLogin = Defaults.launchAtLogin
             case .shortcut: shortcut = Defaults.shortcut
             case .persistentShortcut: persistentShortcut = Defaults.persistentShortcut
             case .appearanceMode: appearanceMode = Defaults.appearanceMode
@@ -459,6 +473,9 @@ public final class Preferences: ObservableObject {
             case .showDockIcon: showDockIcon = Defaults.showDockIcon
             case .automaticUpdateChecks:
                 automaticUpdateChecks = Defaults.automaticUpdateChecks
+            case .launchAtLogin:
+                // mirrors a system registration; Restore Defaults leaves it
+                break
             case .navigationPreviewDelay, .firstLaunchCompleted:
                 preconditionFailure("Internal keys must never participate in Restore Defaults")
             }
