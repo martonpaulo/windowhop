@@ -28,6 +28,13 @@ about AppKit or AX.
    generation; a retry, late result, or window subscription whose generation is no longer
    current does nothing, and `stop` is terminal, so pending work cannot revive a removed
    app. `WindowStore.discoverWindows` also drops requests for an app it no longer tracks.
+   Removal reads the departed app's `processIdentifier` after the main-queue hop and
+   requires `isTerminated`. Measured for #81 on macOS 26 (400 launch/exit cycles of a
+   disposable app: SIGTERM, exit 50 ms after launch, Quit, early SIGKILL): every tracked
+   app's departure arrived with its original pid and `isTerminated == true`, and none
+   stayed tracked. The KVO change can land up to ~2 s after the app leaves
+   `runningApplications`; the few departures that report pid −1 matched no tracked
+   app by identity and carried no bundle identifier.
 2. AX notifications land in `AXNotificationRouter` on the AX thread, hop to the serial
    AX reads queue for one batched attribute call (plus tab-group titles), then hand plain
    values to `WindowStore` on the main thread.
