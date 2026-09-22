@@ -322,9 +322,22 @@ public final class Preferences: ObservableObject {
             defaults, .switcherEnabled, fallback: Defaults.switcherEnabled)
         launchAtLogin = Self.bool(
             defaults, .launchAtLogin, fallback: Defaults.launchAtLogin)
-        shortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "")
+        let loadedShortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "")
             ?? Defaults.shortcut
-        persistentShortcut = Self.persistentShortcut(from: storedPersistentShortcut)
+        shortcut = loadedShortcut
+        let resolvedPersistentShortcut = Self.persistentShortcut(
+            from: storedPersistentShortcut)
+        let validPersistentShortcut = resolvedPersistentShortcut.flatMap {
+            $0.validate(against: loadedShortcut) == nil ? $0 : nil
+        }
+        persistentShortcut = validPersistentShortcut
+        if resolvedPersistentShortcut != nil, validPersistentShortcut == nil {
+            // The same rule the Settings picker applies when the switcher
+            // shortcut changes: a chord the tap would read as the held trigger
+            // can never fire, so it loads unassigned. Storing "" keeps it so on
+            // later launches, as the picker does; observers do not run in init.
+            defaults.set("", forKey: Key.persistentShortcut.rawValue)
+        }
         appearanceMode = AppearanceMode(
             rawValue: Self.string(defaults, .appearanceMode) ?? "")
             ?? Defaults.appearanceMode

@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VoiceOver commands work while the switcher is open**: ⌃⌥ with an arrow, Space, Return
   or Delete now reaches VoiceOver instead of moving the switcher. Keys still navigate with
   the modifier you hold (⌘ + arrows after ⌘Tab) or with none in a persistent session.
+- **Open WindowHop never shadows the switcher shortcut**: an installation that cycles with
+  ⌥Tab and never chose an Open WindowHop shortcut received ⌥Tab for both, so Open WindowHop
+  could not fire. A chord that conflicts with the switcher shortcut now loads as unassigned,
+  exactly as when you pick a conflicting pair in Settings; every other choice is kept.
 
 ## [1.6.2] - 2026-09-09
 

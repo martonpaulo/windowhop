@@ -197,6 +197,130 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
     }
 
+    // MARK: - Open WindowHop shortcut pair loaded against the switcher shortcut
+
+    private var storedPersistentShortcut: Any? {
+        defaults.persistentDomain(forName: suiteName)?[
+            Preferences.Key.persistentShortcut.rawValue]
+    }
+
+    private func tapState(for loaded: Preferences) -> EventTapInterceptionState {
+        EventTapInterceptionState(mode: .watching,
+                                  holdModifier: loaded.shortcut.holdModifier,
+                                  persistentShortcut: loaded.persistentShortcut)
+    }
+
+    /// A new suite in the state of a fresh app launch. The registration domain
+    /// is process-wide, so defaults registered by earlier `Preferences` in this
+    /// test process would answer for keys the suite never stored; the app has
+    /// exactly one `Preferences`, whose migrations read before it registers.
+    private func unregisteredDefaults() -> (UserDefaults, String) {
+        let suite = "windowhop-tests-\(UUID().uuidString)"
+        let clean = UserDefaults(suiteName: suite)!
+        addTeardownBlock { clean.removePersistentDomain(forName: suite) }
+        let registration = UserDefaults.registrationDomain
+        var registered = clean.volatileDomain(forName: registration)
+        for key in Preferences.defaultValues.keys { registered.removeValue(forKey: key) }
+        clean.setVolatileDomain(registered, forName: registration)
+        return (clean, suite)
+    }
+
+    private func stored(_ key: Preferences.Key, in suite: String) -> Any? {
+        UserDefaults.standard.persistentDomain(forName: suite)?[key.rawValue]
+    }
+
+    func testLegacyOptionTabSwitcherWithoutStoredOpenShortcutLoadsUnassigned() {
+        let (legacy, suite) = unregisteredDefaults()
+        legacy.set(ShortcutSpec.optionTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+
+        let loaded = Preferences(defaults: legacy)
+
+        XCTAssertEqual(loaded.shortcut, .optionTab)
+        XCTAssertNil(loaded.persistentShortcut)
+        XCTAssertEqual(stored(.persistentShortcut, in: suite) as? String, "")
+        var state = tapState(for: loaded)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
+            EventTapDecision(disposition: .consume, input: .trigger(backward: false)))
+        // stable across launches, even after the switcher moves back to ⌘Tab
+        loaded.shortcut = .commandTab
+        XCTAssertNil(Preferences(defaults: legacy).persistentShortcut)
+    }
+
+    func testLegacyCommandTabSwitcherStillReceivesOpenDefault() {
+        let (legacy, suite) = unregisteredDefaults()
+        legacy.set(ShortcutSpec.commandTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+
+        let loaded = Preferences(defaults: legacy)
+
+        XCTAssertEqual(loaded.persistentShortcut, .optionTab)
+        XCTAssertNil(stored(.persistentShortcut, in: suite),
+                     "a compatible installation keeps following the registered default")
+        var state = tapState(for: loaded)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
+            EventTapDecision(disposition: .consume, input: .openPersistent))
+    }
+
+    func testExplicitlyClearedOpenShortcutStaysClearedWithAnySwitcher() {
+        for spec in ShortcutSpec.allCases {
+            defaults.set(spec.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+            defaults.set("", forKey: Preferences.Key.persistentShortcut.rawValue)
+
+            let loaded = Preferences(defaults: defaults)
+
+            XCTAssertNil(loaded.persistentShortcut, "\(spec)")
+            XCTAssertEqual(storedPersistentShortcut as? String, "", "\(spec)")
+        }
+    }
+
+    func testValidCustomPairIsPreserved() {
+        let optionSpace = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])
+        defaults.set(ShortcutSpec.optionTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+        defaults.set(optionSpace.encoded, forKey: Preferences.Key.persistentShortcut.rawValue)
+
+        let loaded = Preferences(defaults: defaults)
+
+        XCTAssertEqual(loaded.persistentShortcut, optionSpace)
+        XCTAssertEqual(storedPersistentShortcut as? String, optionSpace.encoded)
+        var state = tapState(for: loaded)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.space, flags: .maskAlternate),
+            EventTapDecision(disposition: .consume, input: .openPersistent))
+    }
+
+    func testStoredConflictingOpenShortcutLoadsUnassigned() {
+        let controlTab = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskControl])
+        defaults.set(ShortcutSpec.controlTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+        defaults.set(controlTab.encoded, forKey: Preferences.Key.persistentShortcut.rawValue)
+
+        let loaded = Preferences(defaults: defaults)
+
+        XCTAssertNil(loaded.persistentShortcut)
+        XCTAssertEqual(storedPersistentShortcut as? String, "")
+        var state = tapState(for: loaded)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskControl),
+            EventTapDecision(disposition: .consume, input: .trigger(backward: false)))
+    }
+
+    func testCorruptOpenShortcutWithConflictingSwitcherLoadsUnassigned() {
+        defaults.set(ShortcutSpec.optionTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
+        defaults.set("broken-shortcut", forKey: Preferences.Key.persistentShortcut.rawValue)
+
+        let loaded = Preferences(defaults: defaults)
+
+        XCTAssertNil(loaded.persistentShortcut)
+        XCTAssertEqual(storedPersistentShortcut as? String, "")
+    }
+
+    func testDefaultPairIsValid() {
+        // Restore Defaults assigns both keys in Set order, so the pair itself
+        // must be valid for any intermediate state to settle correctly
+        XCTAssertNil(Preferences.Defaults.persistentShortcut?.validate(
+            against: Preferences.Defaults.shortcut))
+    }
+
     func testRestoreDefaultsResetsEveryConfigurablePreferenceAndPreservesInternalState() {
         preferences.switcherEnabled = false
         preferences.launchAtLogin = false
