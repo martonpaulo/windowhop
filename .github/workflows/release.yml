@@ -7,12 +7,6 @@ on:
 permissions:
   contents: write
 
-env:
-  # Only supplies the sign_update tool; the embedded framework comes from
-  # Package.resolved. Keep this in step with that resolved version.
-  SPARKLE_VERSION: 2.9.6
-  SPARKLE_SHA256: 52bf9e88cdd972fc0c81501377a880e90d47031bd8ca5462488f843e2609e192
-
 jobs:
   release:
     runs-on: macos-latest
@@ -149,26 +143,27 @@ jobs:
           rm "artifacts/WindowHop-$VERSION.zip"
           ditto -c -k --keepParent build/WindowHop.app "artifacts/WindowHop-$VERSION.zip"
 
-      # The sign_update tool comes from a pinned tarball while the embedded
-      # framework comes from Package.resolved; refuse to release when they drift.
-      - name: Check Sparkle tool version matches Package.resolved
-        run: |
-          RESOLVED=$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Package.resolved"))["pins"] if p["identity"] == "sparkle"))')
-          if [ "$RESOLVED" != "$SPARKLE_VERSION" ]; then
-            echo "SPARKLE_VERSION ($SPARKLE_VERSION) differs from Package.resolved Sparkle ($RESOLVED)." >&2
-            exit 1
-          fi
-
+      # sign_update comes from the same resolved Sparkle binary target that
+      # SwiftPM checksum-verified and embedded, so the tool and the framework
+      # cannot come from different releases.
       - name: Sign update for Sparkle
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          curl -sL -o sparkle.tar.xz \
-            "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-$SPARKLE_VERSION.tar.xz"
-          echo "$SPARKLE_SHA256  sparkle.tar.xz" | shasum -a 256 -c -
-          mkdir -p sparkle-tools && tar -xf sparkle.tar.xz -C sparkle-tools
-          SIG=$(echo "$SPARKLE_PRIVATE_KEY" | sparkle-tools/bin/sign_update --ed-key-file - "artifacts/WindowHop-$VERSION.zip")
+          SIGN_UPDATE=.build/artifacts/sparkle/Sparkle/bin/sign_update
+          test -x "$SIGN_UPDATE" || {
+            echo "Missing $SIGN_UPDATE from the resolved Sparkle package." >&2
+            exit 1
+          }
+          RESOLVED=$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Package.resolved"))["pins"] if p["identity"] == "sparkle"))')
+          EMBEDDED=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/WindowHop.app/Contents/Frameworks/Sparkle.framework/Resources/Info.plist)
+          echo "Sparkle resolved: $RESOLVED; embedded framework: $EMBEDDED"
+          test "$RESOLVED" = "$EMBEDDED" || {
+            echo "Embedded Sparkle ($EMBEDDED) differs from Package.resolved ($RESOLVED)." >&2
+            exit 1
+          }
+          SIG=$(echo "$SPARKLE_PRIVATE_KEY" | "$SIGN_UPDATE" --ed-key-file - "artifacts/WindowHop-$VERSION.zip")
           echo "SPARKLE_SIG_ATTRS=$SIG" >> "$GITHUB_ENV"
 
       - name: DMG

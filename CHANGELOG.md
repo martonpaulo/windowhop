@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the "Show an expanded preview after pausing" picker in App Icons mode and states that it
   works with Window Previews only. Your chosen delay is kept and returns when you switch
   back to Window Previews.
+- **Sparkle 2.10.0 handles updates**: the updater framework moves from 2.9.6 to 2.10.0,
+  with upstream fixes for update download progress and cleanup after a failed delta
+  update. Updates keep the same signature checks.
 
 ### Fixed
 

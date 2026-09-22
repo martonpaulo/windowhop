@@ -109,9 +109,11 @@ The established local fixture validates three paths:
 3. a corrupted `sparkle:edSignature` is rejected and leaves the installed app unchanged.
 
 For release-candidate continuity, build two Developer ID-signed bundles, validate both
-with `verify-update-continuity.sh`, sign the candidate ZIP with Sparkle's `sign_update`,
-serve a local appcast, and run the old bundle's `--updater-e2e` binary. Never put an
-ad-hoc or development-signed app in the update feed.
+with `verify-update-continuity.sh`, sign the candidate ZIP with the resolved package's
+`.build/artifacts/sparkle/Sparkle/bin/sign_update` (the same release as the embedded
+framework; never a separately downloaded copy), serve a local appcast, and run the old
+bundle's `--updater-e2e` binary. Never put an ad-hoc or development-signed app in the
+update feed.
 
 ## Published screenshots
 
