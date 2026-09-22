@@ -65,6 +65,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Sparkle 2.10.0 handles updates**: the updater framework moves from 2.9.6 to 2.10.0,
   with upstream fixes for update download progress and cleanup after a failed delta
   update. Updates keep the same signature checks.
+- **A clearer website icon in browser tabs and search results**: the website's favicon
+  now fills its square with a bolder hop arrow, so the WindowHop mark stays readable at
+  16 to 48 pixels. The app icon itself is unchanged.
 
 ### Fixed
 

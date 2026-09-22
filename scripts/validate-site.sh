@@ -8,6 +8,7 @@ required=(
   site/scripts/main.js
   site/assets/app-icon.png
   site/favicon.ico
+  site/favicon-192.png
   site/apple-touch-icon.png
   site/social-card.jpg
   site/.nojekyll
@@ -89,6 +90,49 @@ for tag in 'property="og:description"' 'name="twitter:description"'; do
 done
 grep -Fq "\"description\": \"$description\"" site/index.html || {
   echo "site/index.html: the JSON-LD description does not equal the meta description" >&2
+  exit 1
+}
+
+# Favicons (issue #93): every declared `sizes` describes the file it names, and the home
+# page declares one larger than 48 px, which Google Search asks for. The files come
+# from `swift scripts/make-icon.swift --favicon site`.
+icon_sizes() {
+  case "$1" in
+    *.ico) python3 -c '
+import struct, sys
+data = open(sys.argv[1], "rb").read()
+reserved, kind, count = struct.unpack("<HHH", data[:6])
+assert reserved == 0 and kind == 1, "not an ICO file"
+sizes = []
+for i in range(count):
+    w, h = data[6 + 16 * i], data[7 + 16 * i]
+    sizes.append(f"{w or 256}x{h or 256}")
+print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
+    *.png) sips -g pixelWidth -g pixelHeight "$1" \
+             | awk '/pixelWidth/ { w = $2 } /pixelHeight/ { h = $2 } END { print w "x" h }' ;;
+    *) echo "unsupported" ;;
+  esac
+}
+largest_icon=0
+while IFS= read -r link; do
+  page=${link%%:*}; tag=${link#*:}
+  href=$(sed -nE 's/.*href="([^"]*)".*/\1/p' <<< "$tag")
+  declared=$(sed -nE 's/.*sizes="([^"]*)".*/\1/p' <<< "$tag")
+  file="site/${href#/}"
+  test -f "$file" || { echo "$page declares a missing icon: $href" >&2; exit 1; }
+  actual=$(icon_sizes "$file")
+  test "$declared" = "$actual" || {
+    echo "$page: icon $href declares sizes=\"$declared\" but the file has $actual" >&2
+    exit 1
+  }
+  if test "$page" = site/index.html; then
+    for size in $actual; do
+      test "${size%%x*}" -gt "$largest_icon" && largest_icon=${size%%x*}
+    done
+  fi
+done < <(grep -oE '<link rel="icon"[^>]*>' "${pages[@]}")
+test "$largest_icon" -gt 48 || {
+  echo "site/index.html declares no favicon larger than 48 px" >&2
   exit 1
 }
 
