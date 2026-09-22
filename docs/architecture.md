@@ -377,7 +377,7 @@ through `scripts/stamp-app-metadata.sh` into the bundle's `Info.plist` as `AppRe
 Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
 requires an Apple-issued Developer ID Application identity plus a team App Store
 Connect API key for notarization, and validates the final app against `Support/ExpectedDesignatedRequirement.txt`
-and the stable public leaf certificate in `Support/WindowHopCodeSigning.cer`. The validator
+and the stable public leaf certificate in `Support/ReleaseCertificate.cer`. The validator
 checks bundle id, Team ID, hardened runtime, entitlements, every nested Mach-O signature,
 and the exact designated requirement. The workflow submits both the app archive and final
 DMG through `scripts/notarize.sh` (`notarytool --wait`), staples and validates both tickets, runs Gatekeeper on the

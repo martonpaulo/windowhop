@@ -12,8 +12,8 @@ cd "$(dirname "$0")/.."
 PREVIOUS=$1
 CANDIDATE=$2
 
-scripts/verify-release-identity.sh "$PREVIOUS"
-scripts/verify-release-identity.sh "$CANDIDATE"
+scripts/verify-release-identity.sh --app "$PREVIOUS"
+scripts/verify-release-identity.sh --app "$CANDIDATE"
 
 requirement() {
     codesign -dr - "$1" 2>&1 | sed -n 's/^designated => //p'

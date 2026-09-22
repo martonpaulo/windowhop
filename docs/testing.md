@@ -47,15 +47,16 @@ Preview regressions pin:
 ## Release and identity validators
 
 ```sh
-scripts/verify-release-identity.sh build/WindowHop.app
+scripts/verify-release-identity.sh --app build/WindowHop.app
 scripts/verify-update-continuity.sh <previous.app> <candidate.app>
-scripts/verify-dmg-branding.sh artifacts/WindowHop-1.3.1.dmg
+scripts/verify-dmg-branding.sh --dmg artifacts/WindowHop-1.3.1.dmg
 ```
 
 `verify-release-identity.sh` fails unless the app has:
 
 - bundle id `com.perso.windowhop` and Team ID `TBN79KU9ML`;
-- the reviewed stable Developer ID Application leaf certificate;
+- the reviewed stable Developer ID Application leaf certificate
+  (`Support/ReleaseCertificate.cer`);
 - the exact expected designated requirement;
 - hardened runtime and the expected entitlement set;
 - a valid deep signature and no nested executable signed by another team.
@@ -118,9 +119,9 @@ The established local fixture validates three paths:
 3. a corrupted `sparkle:edSignature` is rejected and leaves the installed app unchanged.
 
 For release-candidate continuity, build two Developer ID-signed bundles, validate both
-with `verify-update-continuity.sh`, sign the candidate ZIP with the resolved package's
-`.build/artifacts/sparkle/Sparkle/bin/sign_update` (the same release as the embedded
-framework; never a separately downloaded copy), serve a local appcast, and run the old
+with `verify-update-continuity.sh`, sign the candidate ZIP with
+`scripts/sign-update.sh --archive <zip>`, which runs the resolved package's `sign_update`
+(the same release as the embedded framework; never a separately downloaded copy), serve a local appcast, and run the old
 bundle's `--updater-e2e` binary. Never put an ad-hoc or development-signed app in the
 update feed.
 
@@ -181,19 +182,24 @@ Requirements and constraints:
 The updater feed may only ever advertise files that already exist, so
 publication is strictly ordered:
 
-1. `scripts/publish-release.sh <tag> <notes> <artifacts…>` stages every artifact in a
-   **draft** release, verifies the complete set against the local files by name and byte
-   count, publishes, and verifies once more against the now-public release.
+1. `scripts/publish-release.sh --tag <tag> --notes-file <notes> --artifact <file>…` stages
+   every artifact in a **draft** release, verifies the complete set against the local files
+   by name, byte count and SHA-256 digest (GitHub's stored `digest`), publishes, and verifies
+   the draft state and the assets once more against the now-public release.
 2. Only then does `scripts/make-appcast.sh` add the entry and push it to `main`.
 
 Both steps are idempotent under retry, and neither is idempotent by assumption:
 
 - A complete, matching public release is a read-only no-op. An **incomplete** one — a
-  missing asset, or one whose size differs — fails and is left to an operator. A public
-  asset is never overwritten.
+  missing asset, one whose size differs, or a same-size asset with other bytes — fails and
+  is left to an operator. An asset GitHub reports no digest for cannot be verified and also
+  fails. A public asset is never overwritten.
 - An incomplete **draft** is completed rather than recreated.
 - A `gh` failure that is not "release not found" (auth, network) is fatal, never read as
   "no release yet".
+- An unreadable draft state is fatal, never read as public, both before any write and
+  after publishing; a release still a draft after publishing also fails. Either way the
+  appcast step never runs.
 - An existing appcast entry for the version is a no-op only when its build number,
   enclosure URL, signature and length all match. Any mismatch fails and prints the
   conflicting entry.
@@ -201,9 +207,24 @@ Both steps are idempotent under retry, and neither is idempotent by assumption:
 Because the feed is written last, every failure before it leaves `main` unmoved, so the
 workflow's `tag commit == current origin/main` gate still holds for a normal rerun.
 
-`tests/scripts/publish-release-tests.sh` and `tests/scripts/make-appcast-tests.sh` exercise
-this against a fake `gh` and throwaway repositories — no network, no token, no signing
-material, no real release. `scripts/validate.sh` runs both.
+The release scripts are byte-identical copies of skill-deck's `project-release` assets, and
+skill-deck's own suites own their behavior. `scripts/validate.sh` checks that each copy parses
+and answers `--help`; `check_repository_conventions.py` reports a drifted copy.
+
+### Release rehearsal
+
+An ad-hoc rehearsal of every local step, with no secret and no publication:
+
+```sh
+scripts/package-app.sh --force                     # ad-hoc: DEVELOPER_ID_IDENTITY unset
+scripts/make-dmg.sh --force
+scripts/verify-dmg-branding.sh --dmg artifacts/WindowHop-<version>.dmg
+scripts/sign-update.sh --archive artifacts/WindowHop-<version>.zip   # login-Keychain key
+```
+
+Then run `scripts/make-appcast.sh --version … --build-number … --archive … --signature …`
+in a scratch copy of the repository and check that `appcast.xml` gained one well-formed
+entry. Signed, notarized publication is proven only by a real tag.
 
 ## Manual release checklist
 

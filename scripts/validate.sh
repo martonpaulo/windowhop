@@ -169,11 +169,28 @@ else
     fail "GitHub Pages static site validation failed"
 fi
 
-# --- release publication behaves as specified --------------------------------
-# These run the real publication scripts against a fake `gh` and throwaway
-# repositories: no network, no token, no signing material, no real release.
-for fixture in tests/scripts/publish-release-tests.sh tests/scripts/make-appcast-tests.sh \
-    tests/scripts/release-notes-tests.sh tests/scripts/stamp-app-metadata-tests.sh; do
+# --- canonical release scripts ------------------------------------------------
+# These are byte-identical copies of skill-deck's project-release assets, whose
+# own suites own their behavior (the conventions check reports a drifted copy).
+# Here each one must parse and answer --help (notarize.sh has no --help), so a
+# broken copy is caught before a tag.
+script_failures=$failures
+for script in package-app.sh make-dmg.sh make-appcast.sh publish-release.sh notarize.sh \
+    verify-release-identity.sh verify-dmg-branding.sh sign-update.sh make-keys.sh; do
+    if ! bash -n "scripts/$script"; then
+        fail "scripts/$script does not parse"
+    elif [ "$script" != notarize.sh ] && ! "scripts/$script" --help >/dev/null 2>&1; then
+        fail "scripts/$script --help fails"
+    fi
+done
+if [ "$failures" -eq "$script_failures" ]; then
+    pass "canonical release scripts parse and answer --help"
+fi
+
+# --- release-script fixtures -------------------------------------------------
+# These run the real scripts in isolation: no network, no token, no signing
+# material, no real release.
+for fixture in tests/scripts/release-notes-tests.sh tests/scripts/stamp-app-metadata-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"
     else

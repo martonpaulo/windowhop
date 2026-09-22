@@ -111,8 +111,9 @@ jobs:
 
       - name: Build and package
         run: |
-          scripts/package-app.sh "${{ steps.version.outputs.version }}" "${{ steps.version.outputs.build }}"
-          scripts/verify-release-identity.sh build/WindowHop.app
+          scripts/package-app.sh --version "${{ steps.version.outputs.version }}" \
+            --build-number "${{ steps.version.outputs.build }}"
+          scripts/verify-release-identity.sh --app build/WindowHop.app
 
       # The team App Store Connect API key is written to a private temporary file
       # for scripts/notarize.sh and removed by the always-run step at the end.
@@ -143,19 +144,14 @@ jobs:
           rm "artifacts/WindowHop-$VERSION.zip"
           ditto -c -k --keepParent build/WindowHop.app "artifacts/WindowHop-$VERSION.zip"
 
-      # sign_update comes from the same resolved Sparkle binary target that
-      # SwiftPM checksum-verified and embedded, so the tool and the framework
-      # cannot come from different releases.
+      # scripts/sign-update.sh runs the sign_update of the resolved Sparkle
+      # binary target that SwiftPM checksum-verified and embedded, so the tool
+      # and the framework cannot come from different releases.
       - name: Sign update for Sparkle
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          SIGN_UPDATE=.build/artifacts/sparkle/Sparkle/bin/sign_update
-          test -x "$SIGN_UPDATE" || {
-            echo "Missing $SIGN_UPDATE from the resolved Sparkle package." >&2
-            exit 1
-          }
           RESOLVED=$(python3 -c 'import json; print(next(p["state"]["version"] for p in json.load(open("Package.resolved"))["pins"] if p["identity"] == "sparkle"))')
           EMBEDDED=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/WindowHop.app/Contents/Frameworks/Sparkle.framework/Resources/Info.plist)
           echo "Sparkle resolved: $RESOLVED; embedded framework: $EMBEDDED"
@@ -163,13 +159,14 @@ jobs:
             echo "Embedded Sparkle ($EMBEDDED) differs from Package.resolved ($RESOLVED)." >&2
             exit 1
           }
-          SIG=$(echo "$SPARKLE_PRIVATE_KEY" | "$SIGN_UPDATE" --ed-key-file - "artifacts/WindowHop-$VERSION.zip")
+          SIG=$(printf '%s\n' "$SPARKLE_PRIVATE_KEY" \
+            | scripts/sign-update.sh --archive "artifacts/WindowHop-$VERSION.zip" -- --ed-key-file -)
           echo "SPARKLE_SIG_ATTRS=$SIG" >> "$GITHUB_ENV"
 
       - name: DMG
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          scripts/make-dmg.sh "$VERSION"
+          scripts/make-dmg.sh --version "$VERSION"
 
       - name: Notarize, staple, and validate DMG
         run: |
@@ -178,12 +175,12 @@ jobs:
           scripts/notarize.sh "$DMG"
           codesign --verify --verbose=2 "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
-          scripts/verify-dmg-branding.sh "$DMG"
+          scripts/verify-dmg-branding.sh --dmg "$DMG"
           MOUNT=$(mktemp -d)
           hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT"
           trap 'hdiutil detach "$MOUNT" -quiet || true; rmdir "$MOUNT" || true' EXIT
           codesign --verify --deep --strict --verbose=2 "$MOUNT/WindowHop.app"
-          scripts/verify-release-identity.sh "$MOUNT/WindowHop.app"
+          scripts/verify-release-identity.sh --app "$MOUNT/WindowHop.app"
           spctl --assess --type execute --verbose=2 "$MOUNT/WindowHop.app"
           cmp Support/AppInstallerIcon.icns "$MOUNT/.VolumeIcon.icns" || {
             echo "Branded mounted-volume icon is missing or changed." >&2
@@ -232,10 +229,10 @@ jobs:
           # update archive. Every artifact is staged in a draft and verified
           # before the release becomes public, because the appcast step below
           # may only advertise files that already exist.
-          scripts/publish-release.sh "$GITHUB_REF_NAME" release-notes.md \
-            "artifacts/WindowHop-$VERSION-Installer.zip" \
-            "artifacts/WindowHop-$VERSION.dmg" \
-            "artifacts/WindowHop-$VERSION.zip"
+          scripts/publish-release.sh --tag "$GITHUB_REF_NAME" --notes-file release-notes.md \
+            --artifact "artifacts/WindowHop-$VERSION-Installer.zip" \
+            --artifact "artifacts/WindowHop-$VERSION.dmg" \
+            --artifact "artifacts/WindowHop-$VERSION.zip"
 
       # Only now, with the update ZIP verifiably downloadable, does the public
       # feed learn about it. An existing entry for this version is accepted
@@ -247,8 +244,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git checkout main
-          scripts/make-appcast.sh "$VERSION" "${{ steps.version.outputs.build }}" \
-            "artifacts/WindowHop-$VERSION.zip" "$SPARKLE_SIG_ATTRS"
+          scripts/make-appcast.sh --version "$VERSION" \
+            --build-number "${{ steps.version.outputs.build }}" \
+            --archive "artifacts/WindowHop-$VERSION.zip" --signature "$SPARKLE_SIG_ATTRS"
           if ! git diff --quiet appcast.xml; then
             git add appcast.xml
             git commit -m "chore(release): appcast entry for $VERSION"

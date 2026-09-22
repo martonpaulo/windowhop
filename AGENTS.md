@@ -70,8 +70,9 @@ swift build && swift test        # must pass, zero warnings
 make build && make test          # same, with warnings as errors (what CI runs)
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
-scripts/package-app.sh [ver] [build]  # release .app with Sparkle embedded + zip
-scripts/make-dmg.sh [ver]        # DMG (expects build/WindowHop.app)
+scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
+scripts/make-dmg.sh [--version X.Y.Z] [--force]  # DMG (expects build/WindowHop.app)
+scripts/sign-update.sh --archive <zip>  # Sparkle EdDSA attributes (login Keychain key)
 ```
 
 Runtime checks (Accessibility permission is inherited when run from a trusted terminal):
@@ -84,6 +85,9 @@ Runtime checks (Accessibility permission is inherited when run from a trusted te
 .build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end (see docs/testing.md)
 WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
 ```
+
+The release scripts are byte-identical copies of skill-deck's `project-release` assets:
+never edit them here; change the callers, or change them upstream and copy again.
 
 Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunning.
 

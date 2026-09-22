@@ -49,15 +49,17 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | `swift test` | Run the unit suite, which must pass with zero warnings |
 | `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
 | `swift build` | Build the debug binary; add `-c release` for the release build |
-| `scripts/package-app.sh [version] [build]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip |
-| `scripts/make-dmg.sh [version]` | Build the branded DMG from `build/WindowHop.app` |
-| `scripts/make-appcast.sh` | Regenerate `appcast.xml` for Sparkle |
+| `scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip (`--help` lists every option) |
+| `scripts/make-dmg.sh [--version X.Y.Z] [--force]` | Build the branded DMG from `build/WindowHop.app` |
+| `scripts/sign-update.sh --archive <zip>` | Sign an update archive with the resolved Sparkle `sign_update` and print its appcast attributes |
+| `scripts/make-appcast.sh --version … --build-number … --archive … --signature …` | Add one release entry to `appcast.xml` for Sparkle |
+| `scripts/make-keys.sh` | One-time: make sure the login Keychain holds the Sparkle key and `SUPublicEDKey` matches it |
 | `scripts/capture-screenshots.sh` | Capture the published screenshots, which needs a Retina display |
 | `scripts/validate-site.sh` | Check the published site's files and links |
-| `scripts/verify-release-identity.sh` | Compare the code identity against the previous official release |
-| `scripts/verify-dmg-branding.sh` | Check the DMG branding release gate |
+| `scripts/verify-release-identity.sh [--app <App.app>]` | Check the signed app against the recorded release identity |
+| `scripts/verify-dmg-branding.sh --dmg <path.dmg>` | Check the DMG branding release gate |
 | `scripts/verify-update-continuity.sh` | Check the Sparkle update-continuity release gate |
-| `scripts/publish-release.sh` | Run the publication step the tag workflow performs |
+| `scripts/publish-release.sh --tag … --notes-file … --artifact …` | Run the publication step the tag workflow performs |
 
 The debug binary's runtime check flags are documented in [`docs/testing.md`](docs/testing.md).
 
