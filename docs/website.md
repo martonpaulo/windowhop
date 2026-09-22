@@ -23,8 +23,12 @@ verification. If an engine is unavailable, report that exact gap rather than tre
 Chromium pass as WebKit evidence. Adding an automated browser matrix or a browser dependency
 requires a separate scoped change; do not install tooling merely to record this policy.
 
-Project, release, download, license, issue, and attribution URLs are centralized in
-`site/scripts/main.js`. The version and installer filename must match `Support/Info.plist`.
+Project, release, download, license, issue, and attribution URLs and the displayed version
+live in the HTML (`site/index.html`, `site/404.html`), so every link works without
+JavaScript; `site/scripts/main.js` only keeps the copyright year current over a static
+fallback. `scripts/validate-site.sh` fails on any `href="#"` and whenever the download URL,
+release-notes tag, or version text does not match `Support/Info.plist`, so a version bump
+must update the HTML.
 Final user-facing images come from WindowHop's privacy-safe render harness; annotated
 development references never belong in `site/`. `docs/` holds developer documentation
 and is never published.

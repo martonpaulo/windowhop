@@ -25,17 +25,39 @@ grep -Fxq "windowhop.martonpaulo.com" site/CNAME || {
   exit 1
 }
 
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
-grep -Fq "version: \"$VERSION\"" site/scripts/main.js || {
-  echo "website version does not match Support/Info.plist: $VERSION" >&2
+# Link destinations and the displayed version live in the HTML, so the page works
+# without scripts; Support/Info.plist is the one source they must match.
+pages=(site/index.html site/404.html)
+if grep -n 'href="#"' "${pages[@]}"; then
+  echo "website has a link without a destination (href=\"#\")" >&2
   exit 1
-}
-grep -Fq "WindowHop-$VERSION-Installer.zip" site/scripts/main.js || {
-  echo "website installer URL does not match version $VERSION" >&2
-  exit 1
-}
+fi
 
-for marker in 'id="features"' 'id="download"' 'data-link="download"' \
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
+DOWNLOAD_URL="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-$VERSION-Installer.zip"
+downloads=$(grep -hoE 'href="[^"]*/releases/[^"]*/download/[^"]*"' "${pages[@]}" || true)
+test -n "$downloads" || { echo "website has no download link" >&2; exit 1; }
+while IFS= read -r href; do
+  test "$href" = "href=\"$DOWNLOAD_URL\"" || {
+    echo "website download link does not match version $VERSION: $href" >&2
+    exit 1
+  }
+done <<< "$downloads"
+notes=$(grep -hoE 'href="[^"]*/releases/tag/[^"]*"' "${pages[@]}" || true)
+test -n "$notes" || { echo "website has no release-notes link" >&2; exit 1; }
+while IFS= read -r href; do
+  case "$href" in *"/tag/v$VERSION\"") ;; *)
+    echo "website release-notes link does not match version $VERSION: $href" >&2; exit 1 ;;
+  esac
+done <<< "$notes"
+while IFS= read -r span; do
+  test "$span" = "<span data-site-version>$VERSION</span>" || {
+    echo "website version does not match Support/Info.plist ($VERSION): $span" >&2
+    exit 1
+  }
+done < <(grep -hoE '<span data-site-version>[^<]*</span>' "${pages[@]}")
+
+for marker in 'id="features"' 'id="download"' "href=\"$DOWNLOAD_URL\"" \
               'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
               'Developed by Marton Paulo' 'AltTab on GitHub' \
               'Download WindowHop <span data-site-version>' 'class="external-icon"'; do
@@ -63,7 +85,7 @@ while IFS= read -r line; do
     case "$line" in *'class="external-icon"'*) ;; *)
         echo "external link without the external-link icon: $line" >&2; exit 1 ;;
     esac
-done < <(grep -hoE '<a [^>]*(href="https?://[^"]+"|data-link="(github|issues|license|altTab|download|releases|releaseNotes)")[^>]*>.*</a>' \
+done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' \
     site/index.html site/404.html || true)
 
 # Every local path the page names: src and href values, plus each candidate of a
