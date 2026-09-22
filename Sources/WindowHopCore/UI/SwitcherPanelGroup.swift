@@ -11,6 +11,9 @@ import AppKit
 ///
 /// Callbacks are index-based, so which panel a click came from is irrelevant to
 /// the controller and is deliberately not reported.
+///
+/// The selection announcement is posted here, once, rather than by each panel:
+/// every mirrored panel posting it would speak one change once per display.
 public final class SwitcherPanelGroup {
     public var onItemClicked: ((Int) -> Void)?
     public var onItemCloseRequested: ((Int) -> Void)?
@@ -18,6 +21,10 @@ public final class SwitcherPanelGroup {
     public var onPreviewPermissionRequested: (() -> Void)?
 
     private var panels: [SwitcherPanel] = []
+    /// The list the panels present, so a selection index resolves to the same
+    /// window the controller will activate.
+    private var items: [SwitcherItem] = []
+    private let announcer: SelectionAnnouncer
 
     /// Grid geometry of the current layout, for 2D arrow-key navigation. Every
     /// panel reports the same value; the first one is authoritative.
@@ -26,7 +33,13 @@ public final class SwitcherPanelGroup {
     /// The scale a capture must satisfy to look sharp on every target display.
     public private(set) var captureScale: CGFloat = 2
 
-    public init() {}
+    public convenience init() {
+        self.init(announcer: SelectionAnnouncer())
+    }
+
+    init(announcer: SelectionAnnouncer) {
+        self.announcer = announcer
+    }
 
     /// Rebuilds the panel set for the displays this session targets.
     ///
@@ -100,9 +113,12 @@ public final class SwitcherPanelGroup {
     public func show(items: [SwitcherItem],
                      selectedIndex: Int,
                      presentationMode: SwitcherPresentationMode) {
+        self.items = items
         panels.forEach {
             $0.show(items: items, selectedIndex: selectedIndex, presentationMode: presentationMode)
         }
+        announcer.reset()
+        announceItem(at: selectedIndex)
     }
 
     public func presentAgain(presentationMode: SwitcherPresentationMode) {
@@ -110,11 +126,18 @@ public final class SwitcherPanelGroup {
     }
 
     public func update(items: [SwitcherItem], selectedIndex: Int) {
+        self.items = items
         panels.forEach { $0.update(items: items, selectedIndex: selectedIndex) }
     }
 
     public func select(_ index: Int) {
         panels.forEach { $0.select(index) }
+        announceItem(at: index)
+    }
+
+    private func announceItem(at index: Int) {
+        guard !panels.isEmpty, items.indices.contains(index) else { return }
+        announcer.announce(items[index])
     }
 
     public func updatePreview(id: AnyHashable, image: NSImage) {
@@ -144,6 +167,8 @@ public final class SwitcherPanelGroup {
     /// Hides every panel. Ending a session must leave nothing on any display.
     public func hide() {
         panels.forEach { $0.hide() }
+        items = []
+        announcer.reset()
     }
 
     // MARK: - Testing

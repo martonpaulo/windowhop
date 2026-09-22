@@ -283,7 +283,6 @@ public final class SwitcherPanel: NSPanel {
         orderFrontRegardless()
         hostView.refreshPointerLocation()
         updateSettingsButtonVisibility(animated: false)
-        announceSelection()
         DebugLog.log("panel shown: \(items.count) tiles (\(mode.rawValue)), frame \(frame)")
     }
 
@@ -321,7 +320,6 @@ public final class SwitcherPanel: NSPanel {
     public func select(_ index: Int) {
         selectedIndex = index
         applySelection()
-        announceSelection()
     }
 
     /// A capture arrived for a window in the open session: fill in tiles that
@@ -545,14 +543,6 @@ public final class SwitcherPanel: NSPanel {
         if selectedIndex >= 0, selectedIndex < visibleTileCount {
             tilePool[selectedIndex].scrollToVisible(tilePool[selectedIndex].bounds)
         }
-    }
-
-    private func announceSelection() {
-        guard selectedIndex >= 0, selectedIndex < visibleTileCount else { return }
-        NSAccessibility.post(element: NSApp as Any,
-                             notification: .announcementRequested,
-                             userInfo: [.announcement: tilePool[selectedIndex].accessibilityText,
-                                        .priority: NSAccessibilityPriorityLevel.high.rawValue])
     }
 
     /// Test hook: whether the tile at `index` currently shows a snapshot image

@@ -7,10 +7,15 @@ import XCTest
 /// exercises the fan-out without needing multiple monitors attached to CI.
 final class SwitcherPanelGroupTests: XCTestCase {
     private var group: SwitcherPanelGroup!
+    /// Every selection announcement posted, as (window id, spoken text).
+    private var announcements: [(id: AnyHashable, text: String)] = []
 
     override func setUp() {
         super.setUp()
-        group = SwitcherPanelGroup()
+        announcements = []
+        group = SwitcherPanelGroup(announcer: SelectionAnnouncer { [unowned self] id, text in
+            announcements.append((id, text))
+        })
     }
 
     override func tearDown() {
@@ -118,5 +123,77 @@ final class SwitcherPanelGroupTests: XCTestCase {
         group.prepare(for: mixed, tileCount: 2, tileSize: NSSize(width: 200, height: 160))
 
         XCTAssertEqual(group.captureScale, 3)
+    }
+
+    // MARK: - Selection announcement (#77)
+
+    func testShowAcrossThreeDisplaysAnnouncesTheSelectionOnce() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(4)
+        group.prepare(for: targets(3), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+
+        group.show(items: list, selectedIndex: 1, presentationMode: .cycling)
+
+        XCTAssertEqual(announcements.map(\.id), [list[1].id],
+                       "one selection must speak once, not once per display")
+    }
+
+    func testNavigationAcrossMirroredPanelsAnnouncesTheNewTargetOnce() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(4)
+        group.prepare(for: targets(3), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
+        announcements = []
+
+        group.select(2)
+
+        XCTAssertEqual(announcements.count, 1)
+        XCTAssertEqual(announcements.first?.id, AnyHashable("item-2"))
+        XCTAssertEqual(announcements.first?.text, "Window 2, App")
+        for index in 0..<group.panelCountForTesting {
+            let panel = try XCTUnwrap(group.panelForTesting(at: index))
+            XCTAssertEqual(panel.selectedIndexForTesting, 2,
+                           "panel \(index) must still show the selection visually")
+        }
+    }
+
+    func testSingleDisplayShowAnnouncesOnce() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(1), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+
+        group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
+
+        XCTAssertEqual(announcements.map(\.id), [list[0].id])
+    }
+
+    func testANewSessionAfterHideAnnouncesAgain() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(3)
+        group.prepare(for: targets(2), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+        group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
+        group.hide()
+        announcements = []
+
+        group.show(items: list, selectedIndex: 0, presentationMode: .cycling)
+
+        XCTAssertEqual(announcements.map(\.id), [list[0].id])
+    }
+
+    func testTheSpokenTargetMatchesTheTileLabel() throws {
+        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
+        let list = items(2)
+        group.prepare(for: targets(1), tileCount: list.count,
+                      tileSize: NSSize(width: 200, height: 160))
+
+        group.show(items: list, selectedIndex: 1, presentationMode: .cycling)
+
+        let tile = try XCTUnwrap(group.panelForTesting(at: 0)?.tileForTesting(at: 1))
+        let label = try XCTUnwrap(tile.accessibilityLabel())
+        XCTAssertEqual(announcements.last?.text, label)
     }
 }

@@ -181,7 +181,6 @@ final class SwitcherTileView: NSView {
 
     var onClick: (() -> Void)?
     var onCloseRequest: (() -> Void)?
-    private(set) var accessibilityText = ""
 
     private var metrics = Metrics.appIcons(showTabCounts: false)
     private var mode = AppearanceMode.appIcons
@@ -339,6 +338,20 @@ final class SwitcherTileView: NSView {
         applySelectionStyle()
     }
 
+    /// What a screen reader says for `item`: the tile's label and the selection
+    /// announcement share this one composition, so the spoken target always
+    /// matches the tile.
+    static func accessibilityText(for item: SwitcherItem, showTabCounts: Bool) -> String {
+        var parts = [item.title, item.appName]
+        let tabsText = tabsText(for: item)
+        if showTabCounts, !tabsText.isEmpty { parts.append(tabsText) }
+        return parts.joined(separator: ", ")
+    }
+
+    private static func tabsText(for item: SwitcherItem) -> String {
+        item.tabCount.map { "\($0) tabs" } ?? ""
+    }
+
     func configure(item: SwitcherItem,
                    mode: AppearanceMode,
                    showTabCounts: Bool,
@@ -346,15 +359,12 @@ final class SwitcherTileView: NSView {
         self.mode = mode
         self.showTabCounts = showTabCounts
         metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts)
-        let tabsText = item.tabCount.map { "\($0) tabs" } ?? ""
-        var accessibilityParts = [item.title, item.appName]
-        if showTabCounts, !tabsText.isEmpty { accessibilityParts.append(tabsText) }
-        accessibilityText = accessibilityParts.joined(separator: ", ")
+        let tabsText = Self.tabsText(for: item)
         iconView.image = item.icon
         badgeIconView.image = item.icon
         setTypography(title: item.title, metadata: tabsText)
         tabsLabel.isHidden = !showTabCounts
-        setAccessibilityLabel(accessibilityText)
+        setAccessibilityLabel(Self.accessibilityText(for: item, showTabCounts: showTabCounts))
         // a pooled tile may be re-representing another window: any in-flight
         // crossfade belongs to the previous occupant, never the next one
         previewView.layer?.removeAllAnimations()

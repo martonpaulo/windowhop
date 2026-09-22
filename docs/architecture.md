@@ -120,6 +120,8 @@ pieces with one responsibility each:
 - `UI/SwitcherPanelGroup.swift` — one `SwitcherPanel` per target display, presenting
   the same command surface `SwitcherController` used against a single panel. Callbacks
   are index-based, so which panel a click came from never reaches the controller.
+  The group, not each panel, posts the selection announcement
+  (`UI/SelectionAnnouncer.swift`), so one selection speaks once on any number of displays.
 
 Mirrored panels are identical by construction. They share one grid derived from the
 most constrained target display, because `SwitcherState` tracks a single column count
