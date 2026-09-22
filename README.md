@@ -4,7 +4,7 @@
 
 # WindowHop
 
-Switch between windows, not just apps — a fast, native macOS window switcher with large app icons or live previews, free and without telemetry.
+Switch between windows, not just apps. Fast, native macOS window switcher with large app icons or live previews — free, GPL, no telemetry.
 
 [![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Deploy](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
 
