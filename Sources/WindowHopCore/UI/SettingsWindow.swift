@@ -458,10 +458,14 @@ struct AppearancePane: View {
                     }
                 }
                 .pickerStyle(.menu)
+                // App Icons has no snapshot to enlarge; the stored delay is
+                // kept, so switching back to Window Previews restores it
+                .disabled(!preferences.appearanceMode.supportsExpandedPreview)
             } header: {
                 Text("Expanded Preview")
             } footer: {
-                Text("After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds.")
+                // one text for both modes, so the pane height never changes
+                Text("Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

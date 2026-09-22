@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   title, such as two `Notes.txt` documents, each tile and its VoiceOver label now add the
   name of the folder the document is in. Windows without a saved document, such as two
   Untitled ones, keep their title as it is.
+- **The expanded-preview delay says when it applies**: Settings → Appearance now disables
+  the "Show an expanded preview after pausing" picker in App Icons mode and states that it
+  works with Window Previews only. Your chosen delay is kept and returns when you switch
+  back to Window Previews.
 
 ### Fixed
 

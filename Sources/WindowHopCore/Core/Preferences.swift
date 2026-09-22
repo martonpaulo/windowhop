@@ -16,6 +16,11 @@ public enum AppearanceMode: String, CaseIterable, Identifiable {
         case .windowPreviews: return "Window Previews"
         }
     }
+
+    /// Whether pausing on a tile can open the expanded preview. The one rule
+    /// shared by Settings (which disables the delay picker otherwise) and the
+    /// runtime guards that schedule, capture and present the expansion.
+    public var supportsExpandedPreview: Bool { self == .windowPreviews }
 }
 
 /// User-facing dwell presets for expanding the targeted window inside

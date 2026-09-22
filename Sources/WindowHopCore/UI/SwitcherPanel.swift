@@ -302,7 +302,7 @@ public final class SwitcherPanel: NSPanel {
         // preview: only losing the window, the selection or the mode does.
         let selectedID = index >= 0 && index < items.count ? items[index].id : nil
         let stillExpanded = expandedPreviewID.flatMap { id -> SwitcherItem? in
-            guard mode == .windowPreviews, id == selectedID else { return nil }
+            guard mode.supportsExpandedPreview, id == selectedID else { return nil }
             return items.first { $0.id == id }
         }
         self.items = items
@@ -368,7 +368,7 @@ public final class SwitcherPanel: NSPanel {
     /// or repaints the one already showing. This method performs no
     /// application/window action.
     public func showExpandedPreview(id: AnyHashable, image: NSImage) {
-        guard mode == .windowPreviews,
+        guard mode.supportsExpandedPreview,
               let item = items.first(where: { $0.id == id }) else { return }
         let wasShowing = expandedPreviewID == id
         expandedPreviewID = id

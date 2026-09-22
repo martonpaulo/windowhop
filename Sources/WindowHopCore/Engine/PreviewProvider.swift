@@ -139,7 +139,7 @@ public final class PreviewProvider {
     public func requestExpandedPreview(item: SwitcherItem,
                                        targetSize: CGSize,
                                        scale: CGFloat) {
-        guard Preferences.shared.appearanceMode == .windowPreviews,
+        guard Preferences.shared.appearanceMode.supportsExpandedPreview,
               ScreenRecordingPermission.status.isAuthorized,
               let sessionGeneration = activeSessionGeneration,
               let request = makeCaptureRequest(item) else { return }

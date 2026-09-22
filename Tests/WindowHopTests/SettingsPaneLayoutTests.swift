@@ -20,6 +20,27 @@ final class SettingsPaneLayoutTests: XCTestCase {
         }
     }
 
+    /// The Appearance pane disables the expanded-preview picker in App Icons
+    /// and keeps one footer for both modes, so changing modes never moves
+    /// anything. (SwiftUI builds no accessibility tree in-process, so the
+    /// picker's enabled state is checked in the running app instead.)
+    func testAppearancePaneKeepsItsCanvasInEveryMode() {
+        _ = NSApplication.shared
+        let preferences = Preferences.shared
+        let savedMode = preferences.appearanceMode
+        defer { preferences.appearanceMode = savedMode }
+        let canvas = CGSize(width: DesignTokens.settingsPaneWidth,
+                            height: DesignTokens.settingsPaneHeight)
+        let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude,
+                               height: CGFloat.greatestFiniteMagnitude)
+
+        for mode in AppearanceMode.allCases {
+            preferences.appearanceMode = mode
+            XCTAssertEqual(SettingsPane.appearance.makeViewController().sizeThatFits(in: unbounded),
+                           canvas, "the Appearance pane resizes in \(mode.rawValue)")
+        }
+    }
+
     func testPaneIdentifiersAreUnique() {
         // the selected pane is restored by identifier, so duplicates would make
         // reopening Settings land on the wrong pane

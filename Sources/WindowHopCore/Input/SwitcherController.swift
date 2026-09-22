@@ -501,7 +501,7 @@ public final class SwitcherController {
     private func scheduleExpandedPreview(
         _ request: ExpandedPreviewSession<AnyHashable>.Request?
     ) {
-        guard Preferences.shared.appearanceMode == .windowPreviews,
+        guard Preferences.shared.appearanceMode.supportsExpandedPreview,
               let request,
               let delay = Preferences.shared.expandedPreviewDelay.duration else { return }
         let timer = Timer(timeInterval: delay,

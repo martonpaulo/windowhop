@@ -154,6 +154,19 @@ final class PreferencesTests: XCTestCase {
                        ["Off", "1 second", "2 seconds", "3 seconds", "5 seconds"])
     }
 
+    func testOnlyWindowPreviewsSupportsTheExpandedPreview() {
+        XCTAssertFalse(AppearanceMode.appIcons.supportsExpandedPreview)
+        XCTAssertTrue(AppearanceMode.windowPreviews.supportsExpandedPreview)
+    }
+
+    func testChangingTheAppearanceModeKeepsTheChosenExpandedPreviewDelay() {
+        preferences.expandedPreviewDelay = .fiveSeconds
+        preferences.appearanceMode = .windowPreviews
+        preferences.appearanceMode = .appIcons
+        preferences.appearanceMode = .windowPreviews
+        XCTAssertEqual(Preferences(defaults: defaults).expandedPreviewDelay, .fiveSeconds)
+    }
+
     func testExpandedPreviewDelayPublishesRuntimeUpdatesImmediately() {
         var observed: [ExpandedPreviewDelay] = []
         let observation = preferences.$expandedPreviewDelay.sink {

@@ -203,7 +203,7 @@ exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helpe
 - Switcher shows — **App Icons** or Window Previews; default **App Icons**
 - Show tab counts — **off**
 - Show an expanded preview after pausing — **Off, 1, 2, 3, or 5 seconds**; default
-  **3 seconds**
+  **3 seconds** (Window Previews only)
 - Screen Recording status and the single permission action for Window Previews
 
 ### Updates and About
