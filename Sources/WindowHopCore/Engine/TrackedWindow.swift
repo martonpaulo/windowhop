@@ -37,7 +37,7 @@ public final class TrackedWindow {
     /// Identities of this window's tab group members (including itself), when known.
     public internal(set) var tabGroupIds: [UUID]?
 
-    init(ax: AXUIElement, app: TrackedApp, attributes: AXAttributes, tabTitles: [String]?) {
+    init(ax: AXUIElement, app: TrackedApp, attributes: AXAttributes, tabs: TabObservation) {
         self.ax = ax
         self.app = app
         nativeWindow = nil
@@ -46,7 +46,9 @@ public final class TrackedWindow {
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)
-        tabCount = tabTitles?.count
+        if case .group(let titles) = tabs {
+            tabCount = titles.count
+        }
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)
@@ -69,13 +71,17 @@ public final class TrackedWindow {
         isActual = true
     }
 
-    func update(from attributes: AXAttributes, tabTitles: [String]?) {
+    func update(from attributes: AXAttributes, tabs: TabObservation) {
         guard let app else { return }
         documentPath = attributes.document
         title = TitleResolver.resolve(axTitle: attributes.title,
                                       documentPath: attributes.document,
                                       appName: app.name)
-        tabCount = tabTitles?.count
+        switch tabs {
+        case .group(let titles): tabCount = titles.count
+        case .standalone: tabCount = nil
+        case .unknown: break // an incomplete read keeps the last complete count
+        }
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)

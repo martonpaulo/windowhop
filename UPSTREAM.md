@@ -26,7 +26,7 @@ The full upstream history up to that commit is preserved in this repository
 | `src/logic/Application.swift` | `Engine/TrackedApp.swift` | per-app AXObserver, launch-readiness retry pattern |
 | `src/logic/events/AccessibilityEvents.swift` | `Engine/AXNotificationRouter.swift` | notification routing, batched attribute reads |
 | `src/api-wrappers/AXUIElement.swift` | `Engine/AXHelpers.swift` | batched attributes, safe casting, subscription semantics, tab-group counting |
-| `src/logic/TabGroup.swift` | `Core/TabGroupResolver.swift` + `Engine/AXHelpers.swift` (`tabTitles`) | AXTabGroup/AXTabButton detection; tab-sibling resolution so tabs never become entries |
+| `src/logic/TabGroup.swift` | `Core/TabGroupResolver.swift` + `Core/TabObservation.swift` + `Engine/AXHelpers.swift` (`tabObservation`) | AXTabGroup/AXTabButton detection; tab-sibling resolution so tabs never become entries; an incomplete tab-bar read is unknown, not standalone (upstream `8c8d2836`, ported without its private window scanner; WindowHop issue #46) |
 | `src/logic/events/KeyboardEvents.swift` | `Input/EventTap.swift` | tap re-enable on `tapDisabledBy*`, dedicated input thread |
 | `src/logic/BackgroundWork.swift` | `Engine/BackgroundWork.swift` | dedicated run-loop threads, AX off the main thread |
 | `src/logic/events/RunningApplicationsEvents.swift` | `Engine/WindowStore.swift` | KVO on `NSWorkspace.runningApplications` |

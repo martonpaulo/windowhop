@@ -26,13 +26,13 @@ final class TabGroupResolverTests: XCTestCase {
         let windowB = window("B", "News — Safari")
         let changesA = TabGroupResolver.resolve(
             active: windowA,
-            tabTitles: ["Apple — Safari", "Docs", "Mail", "Maps", "Music"],
+            observation: .group(["Apple — Safari", "Docs", "Mail", "Maps", "Music"]),
             sameAppWindows: [windowB])
         XCTAssertEqual(changesA["A"], State(isTabbed: false, groupIds: ["A"]))
         XCTAssertNil(changesA["B"], "the other Safari window must not be marked as a tab")
         let changesB = TabGroupResolver.resolve(
             active: windowB,
-            tabTitles: ["News — Safari", "Weather", "Stocks", "Notes", "Photos"],
+            observation: .group(["News — Safari", "Weather", "Stocks", "Notes", "Photos"]),
             sameAppWindows: [windowA])
         XCTAssertEqual(changesB["B"], State(isTabbed: false, groupIds: ["B"]))
         XCTAssertNil(changesB["A"])
@@ -50,7 +50,7 @@ final class TabGroupResolverTests: XCTestCase {
         let unrelated = window("D", "Pictures")
         let changes = TabGroupResolver.resolve(
             active: active,
-            tabTitles: ["Documents", "Downloads", "Desktop"],
+            observation: .group(["Documents", "Downloads", "Desktop"]),
             sameAppWindows: [sibling1, sibling2, unrelated])
         XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A", "B", "C"]))
         XCTAssertEqual(changes["B"], State(isTabbed: true, groupIds: ["A", "B", "C"]))
@@ -64,7 +64,7 @@ final class TabGroupResolverTests: XCTestCase {
         let sibling2 = window("C", "untitled")
         let changes = TabGroupResolver.resolve(
             active: active,
-            tabTitles: ["untitled", "untitled", "untitled"],
+            observation: .group(["untitled", "untitled", "untitled"]),
             sameAppWindows: [sibling1, sibling2])
         XCTAssertEqual(changes["B"]?.isTabbed, true)
         XCTAssertEqual(changes["C"]?.isTabbed, true)
@@ -77,7 +77,7 @@ final class TabGroupResolverTests: XCTestCase {
         let nowActive = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])
         let changes = TabGroupResolver.resolve(
             active: nowActive,
-            tabTitles: ["Documents", "Downloads"],
+            observation: .group(["Documents", "Downloads"]),
             sameAppWindows: [former])
         XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: ["B", "A"]))
         XCTAssertEqual(changes["A"], State(isTabbed: true, groupIds: ["B", "A"]))
@@ -88,7 +88,7 @@ final class TabGroupResolverTests: XCTestCase {
     func testActiveWindowLeavingGroupIsCleared() {
         // a window that was a group's active tab now reports no tab bar (tab dragged out)
         let active = window("A", "Documents", isTabbed: false, groupIds: ["A", "B"])
-        let changes = TabGroupResolver.resolve(active: active, tabTitles: nil,
+        let changes = TabGroupResolver.resolve(active: active, observation: .standalone,
                                                sameAppWindows: [])
         XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: nil))
     }
@@ -97,7 +97,7 @@ final class TabGroupResolverTests: XCTestCase {
         // inactive tabs have no AXTabGroup child; a title-change event on one must
         // not clear its tabbed state
         let inactive = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])
-        let changes = TabGroupResolver.resolve(active: inactive, tabTitles: nil,
+        let changes = TabGroupResolver.resolve(active: inactive, observation: .standalone,
                                                sameAppWindows: [])
         XCTAssertTrue(changes.isEmpty)
     }
@@ -108,7 +108,7 @@ final class TabGroupResolverTests: XCTestCase {
         // A now reports a tab bar that no longer includes B's title
         let changes = TabGroupResolver.resolve(
             active: active,
-            tabTitles: ["Documents", "Desktop"],
+            observation: .group(["Documents", "Desktop"]),
             sameAppWindows: [formerSibling])
         XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: nil))
     }
@@ -127,7 +127,7 @@ final class TabGroupResolverTests: XCTestCase {
 
         let changes = TabGroupResolver.resolve(
             active: activeOne,
-            tabTitles: ["A", "B"],
+            observation: .group(["A", "B"]),
             sameAppWindows: [inactiveOne, activeTwo, inactiveTwo])
 
         XCTAssertEqual(changes["B"], State(isTabbed: true, groupIds: groupOne))
@@ -147,7 +147,7 @@ final class TabGroupResolverTests: XCTestCase {
 
         let changes = TabGroupResolver.resolve(
             active: activeTwo,
-            tabTitles: ["C", "D"],
+            observation: .group(["C", "D"]),
             sameAppWindows: [window("A", "A", groupIds: groupOne, frame: otherFrame),
                              inactiveOne, inactiveTwo])
 
@@ -167,7 +167,7 @@ final class TabGroupResolverTests: XCTestCase {
 
         let changes = TabGroupResolver.resolve(
             active: window("A", "A", groupIds: groupOne),
-            tabTitles: ["A"],
+            observation: .group(["A"]),
             sameAppWindows: [formerSibling, window("C", "C", groupIds: groupTwo, frame: otherFrame),
                              inactiveTwo])
 
@@ -185,7 +185,7 @@ final class TabGroupResolverTests: XCTestCase {
     /// hid C and left the real tab B visible.
     func testIndependentSameTitleWindowStaysVisibleWhenListedBeforeTheInactiveTab() {
         let (active, tab, independent) = collisionFixture()
-        let changes = TabGroupResolver.resolve(active: active, tabTitles: ["Documents", "Downloads"],
+        let changes = TabGroupResolver.resolve(active: active, observation: .group(["Documents", "Downloads"]),
                                                sameAppWindows: [independent, tab])
         XCTAssertTrue(isDisplayed(independent, applying: changes))
         XCTAssertFalse(isDisplayed(tab, applying: changes))
@@ -194,7 +194,7 @@ final class TabGroupResolverTests: XCTestCase {
 
     func testIndependentSameTitleWindowStaysVisibleWhenListedAfterTheInactiveTab() {
         let (active, tab, independent) = collisionFixture()
-        let changes = TabGroupResolver.resolve(active: active, tabTitles: ["Documents", "Downloads"],
+        let changes = TabGroupResolver.resolve(active: active, observation: .group(["Documents", "Downloads"]),
                                                sameAppWindows: [tab, independent])
         XCTAssertTrue(isDisplayed(independent, applying: changes))
         XCTAssertFalse(isDisplayed(tab, applying: changes))
@@ -212,7 +212,7 @@ final class TabGroupResolverTests: XCTestCase {
         for order in [tabs + [independent], [independent] + tabs.reversed()] {
             let changes = TabGroupResolver.resolve(
                 active: window("A", "untitled"),
-                tabTitles: ["untitled", "untitled", "untitled"],
+                observation: .group(["untitled", "untitled", "untitled"]),
                 sameAppWindows: order)
             XCTAssertFalse(isDisplayed(tabs[0], applying: changes))
             XCTAssertFalse(isDisplayed(tabs[1], applying: changes))
@@ -229,7 +229,7 @@ final class TabGroupResolverTests: XCTestCase {
         let second = window("C", "Downloads")
         for order in [[first, second], [second, first]] {
             let changes = TabGroupResolver.resolve(
-                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
                 sameAppWindows: order)
             XCTAssertTrue(isDisplayed(first, applying: changes))
             XCTAssertTrue(isDisplayed(second, applying: changes))
@@ -244,7 +244,7 @@ final class TabGroupResolverTests: XCTestCase {
         for order in [[member, stranger], [stranger, member]] {
             let changes = TabGroupResolver.resolve(
                 active: window("A", "Documents", groupIds: ["A", "B"]),
-                tabTitles: ["Documents", "Downloads"], sameAppWindows: order)
+                observation: .group(["Documents", "Downloads"]), sameAppWindows: order)
             XCTAssertFalse(isDisplayed(member, applying: changes))
             XCTAssertTrue(isDisplayed(stranger, applying: changes))
         }
@@ -256,7 +256,7 @@ final class TabGroupResolverTests: XCTestCase {
         let otherActive = window("C", "Downloads", groupIds: ["C", "D"])
         let otherTab = window("D", "Music", isTabbed: true, groupIds: ["C", "D"])
         let changes = TabGroupResolver.resolve(
-            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
             sameAppWindows: [otherActive, otherTab])
         XCTAssertNil(changes["C"])
         XCTAssertTrue(isDisplayed(otherActive, applying: changes))
@@ -268,7 +268,7 @@ final class TabGroupResolverTests: XCTestCase {
         let unknown = window("C", "Downloads", frame: .some(nil))
         for order in [[unknown, tab], [tab, unknown]] {
             let changes = TabGroupResolver.resolve(
-                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
                 sameAppWindows: order)
             XCTAssertFalse(isDisplayed(tab, applying: changes))
             XCTAssertTrue(isDisplayed(unknown, applying: changes))
@@ -280,7 +280,7 @@ final class TabGroupResolverTests: XCTestCase {
     func testASingleUnknownFrameCandidateIsStillMatched() {
         let unknown = window("B", "Downloads", frame: .some(nil))
         let changes = TabGroupResolver.resolve(
-            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
             sameAppWindows: [unknown])
         XCTAssertFalse(isDisplayed(unknown, applying: changes))
     }
@@ -291,7 +291,7 @@ final class TabGroupResolverTests: XCTestCase {
     func testMergedTabWithStalePreMergeFrameIsStillMatched() {
         let stale = window("B", "Downloads", frame: otherFrame)
         let changes = TabGroupResolver.resolve(
-            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
             sameAppWindows: [stale])
         XCTAssertFalse(isDisplayed(stale, applying: changes))
     }
@@ -303,7 +303,7 @@ final class TabGroupResolverTests: XCTestCase {
         let independent = window("C", "Downloads", frame: otherFrame.offsetBy(dx: 40, dy: 40))
         for order in [[stale, independent], [independent, stale]] {
             let changes = TabGroupResolver.resolve(
-                active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+                active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
                 sameAppWindows: order)
             XCTAssertTrue(isDisplayed(stale, applying: changes))
             XCTAssertTrue(isDisplayed(independent, applying: changes))
@@ -314,9 +314,129 @@ final class TabGroupResolverTests: XCTestCase {
     func testSubPointFrameDifferenceStillMatches() {
         let nudged = window("B", "Downloads", frame: groupFrame.offsetBy(dx: 0.3, dy: -0.2))
         let changes = TabGroupResolver.resolve(
-            active: window("A", "Documents"), tabTitles: ["Documents", "Downloads"],
+            active: window("A", "Documents"), observation: .group(["Documents", "Downloads"]),
             sameAppWindows: [nudged])
         XCTAssertFalse(isDisplayed(nudged, applying: changes))
+    }
+
+    // MARK: - Incomplete observations (a failed AX read is not evidence)
+
+    func testFailedTabTitleReadIsUnknown() {
+        let observation = classify(tabGroup: [tab("A"), tab("B"), tab(title: .failed)])
+        XCTAssertEqual(observation, .unknown)
+    }
+
+    func testFailedTabSubroleReadIsUnknown() {
+        let failedSubrole = TabObservation.TabButtonFacts(subrole: .failed, title: .value("C"))
+        XCTAssertEqual(classify(tabGroup: [tab("A"), tab("B"), failedSubrole]), .unknown)
+    }
+
+    func testFailedChildrenReadIsUnknown() {
+        XCTAssertEqual(TabObservation.classify(children: .failed), .unknown)
+        let failedTabBar = TabObservation.ChildFacts(role: .value("AXTabGroup"), tabs: .failed)
+        XCTAssertEqual(TabObservation.classify(children: .value([failedTabBar])), .unknown)
+        let unreadableChild = TabObservation.ChildFacts(role: .failed, tabs: .failed)
+        XCTAssertEqual(TabObservation.classify(children: .value([unreadableChild])), .unknown,
+                       "an unreadable child could have been the tab bar")
+    }
+
+    func testNoTabGroupIsStandalone() {
+        let button = TabObservation.ChildFacts(role: .value("AXButton"), tabs: .absent)
+        let roleless = TabObservation.ChildFacts(role: .absent, tabs: .absent)
+        XCTAssertEqual(TabObservation.classify(children: .value([button, roleless])), .standalone)
+        XCTAssertEqual(TabObservation.classify(children: .value([])), .standalone)
+        XCTAssertEqual(TabObservation.classify(children: .absent), .standalone)
+        XCTAssertEqual(classify(tabGroup: [tab("A")]), .standalone,
+                       "a tab bar with one tab is no group")
+    }
+
+    func testEmptyTitleWithNoValueIsAGroupMember() {
+        XCTAssertEqual(classify(tabGroup: [tab("A"), tab(title: .absent)]), .group(["A", ""]))
+    }
+
+    func testNonTabButtonChildrenOfTheTabBarAreIgnored() {
+        let addButton = TabObservation.TabButtonFacts(subrole: .value("AXButton"), title: .value("+"))
+        let noSubrole = TabObservation.TabButtonFacts(subrole: .absent, title: .failed)
+        XCTAssertEqual(classify(tabGroup: [tab("A"), addButton, noSubrole, tab("B")]),
+                       .group(["A", "B"]))
+    }
+
+    /// A complete tab bar decides even when an unrelated child could not be read.
+    func testCompleteTabBarDecidesDespiteAnUnreadableSibling() {
+        let unreadable = TabObservation.ChildFacts(role: .failed, tabs: .failed)
+        let tabBar = TabObservation.ChildFacts(role: .value("AXTabGroup"),
+                                               tabs: .value([tab("A"), tab("B")]))
+        XCTAssertEqual(TabObservation.classify(children: .value([unreadable, tabBar])),
+                       .group(["A", "B"]))
+    }
+
+    /// A/B/C group; C's read fails while A and B succeed. The partial list used to
+    /// be treated as complete and C was released as its own entry.
+    func testUnknownObservationKeepsAThreeMemberGroup() {
+        let members = ["A", "B", "C"]
+        let tabB = window("B", "B", isTabbed: true, groupIds: members)
+        let tabC = window("C", "C", isTabbed: true, groupIds: members)
+        let observation = classify(tabGroup: [tab("A"), tab("B"), tab(title: .failed)])
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "A", groupIds: members), observation: observation,
+            sameAppWindows: [tabB, tabC])
+        XCTAssertTrue(changes.isEmpty)
+        XCTAssertFalse(isDisplayed(tabB, applying: changes))
+        XCTAssertFalse(isDisplayed(tabC, applying: changes))
+    }
+
+    func testUnknownObservationLeavesUnrelatedGroupsUntouched() {
+        let otherTab = window("D", "D", isTabbed: true, groupIds: ["C", "D"], frame: otherFrame)
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "A", groupIds: ["A", "B"]), observation: .unknown,
+            sameAppWindows: [window("B", "B", isTabbed: true, groupIds: ["A", "B"]),
+                             window("C", "C", groupIds: ["C", "D"], frame: otherFrame), otherTab])
+        XCTAssertTrue(changes.isEmpty)
+        XCTAssertFalse(isDisplayed(otherTab, applying: changes))
+    }
+
+    /// The first complete read after a failed one restores the group: no restart,
+    /// no retry timer.
+    func testCompleteObservationAfterUnknownRecoversTheGroup() {
+        let active = window("A", "A")
+        let tabB = window("B", "B")
+        let tabC = window("C", "C")
+        let failed = TabGroupResolver.resolve(active: active, observation: .unknown,
+                                              sameAppWindows: [tabB, tabC])
+        XCTAssertTrue(failed.isEmpty)
+        let recovered = TabGroupResolver.resolve(active: active, observation: .group(["A", "B", "C"]),
+                                                 sameAppWindows: [tabB, tabC])
+        XCTAssertFalse(isDisplayed(tabB, applying: recovered))
+        XCTAssertFalse(isDisplayed(tabC, applying: recovered))
+        XCTAssertEqual(recovered["A"], State(isTabbed: false, groupIds: ["A", "B", "C"]))
+    }
+
+    /// A complete read that no longer lists C still releases C: only incomplete
+    /// reads are ignored.
+    func testCompleteObservationStillRemovesADepartedMember() {
+        let members = ["A", "B", "C"]
+        let tabC = window("C", "C", isTabbed: true, groupIds: members)
+        let changes = TabGroupResolver.resolve(
+            active: window("A", "A", groupIds: members), observation: .group(["A", "B"]),
+            sameAppWindows: [window("B", "B", isTabbed: true, groupIds: members), tabC])
+        XCTAssertEqual(changes["C"], State(isTabbed: false, groupIds: nil))
+        XCTAssertTrue(isDisplayed(tabC, applying: changes))
+        XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A", "B"]))
+    }
+
+    private func tab(_ title: String) -> TabObservation.TabButtonFacts {
+        tab(title: .value(title))
+    }
+
+    private func tab(title: AttributeRead<String>) -> TabObservation.TabButtonFacts {
+        TabObservation.TabButtonFacts(subrole: .value("AXTabButton"), title: title)
+    }
+
+    /// A window whose only child is a tab bar holding `tabs`.
+    private func classify(tabGroup tabs: [TabObservation.TabButtonFacts]) -> TabObservation {
+        TabObservation.classify(children: .value([
+            TabObservation.ChildFacts(role: .value("AXTabGroup"), tabs: .value(tabs)),
+        ]))
     }
 
     /// Applies the resolver's sparse change map the way WindowStore does, then

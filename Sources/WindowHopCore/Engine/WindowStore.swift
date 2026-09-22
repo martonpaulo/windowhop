@@ -132,12 +132,12 @@ public final class WindowStore {
     }
 
     func windowEvent(_ notification: String, element: AXUIElement, pid: pid_t,
-                     attributes: AXAttributes, tabTitles: [String]?) {
+                     attributes: AXAttributes, tabs: TabObservation) {
         guard started, let app = apps[pid] else { return }
         let existing = windows.first { $0.ax == element }
         let window: TrackedWindow
         if let existing {
-            existing.update(from: attributes, tabTitles: tabTitles)
+            existing.update(from: attributes, tabs: tabs)
             window = existing
         } else {
             let facts = app.windowFacts(from: attributes)
@@ -146,14 +146,14 @@ public final class WindowStore {
             // unknown non-windows (menus, tooltips, …) are ignored entirely, but a window
             // that just got focused is real even if its subrole looks wrong mid-animation
             guard WindowEligibility.isActualWindow(facts) || isFocusEvent else { return }
-            window = TrackedWindow(ax: element, app: app, attributes: attributes, tabTitles: tabTitles)
+            window = TrackedWindow(ax: element, app: app, attributes: attributes, tabs: tabs)
             windowsById[window.stableId] = window
             order.add(window.stableId)
             BackgroundWork.axReadsQueue.async {
                 app.subscribeToWindowNotifications(element)
             }
         }
-        updateTabGroup(for: window, tabTitles: tabTitles)
+        updateTabGroup(for: window, tabs: tabs)
         switch notification {
         case kAXFocusedWindowChangedNotification, kAXMainWindowChangedNotification:
             // Photoshop focuses a window after you focus another app; ignore those
@@ -284,12 +284,17 @@ public final class WindowStore {
                                           frame: window.frame)
     }
 
-    private func updateTabGroup(for window: TrackedWindow, tabTitles: [String]?) {
-        // cheap fast path: nothing reported and no group membership to maintain
-        guard tabTitles != nil || window.tabGroupIds != nil else { return }
+    private func updateTabGroup(for window: TrackedWindow, tabs: TabObservation) {
+        // cheap fast path: an incomplete read changes nothing, and a window with no
+        // tab bar and no group membership has nothing to maintain
+        switch tabs {
+        case .unknown: return
+        case .standalone: guard window.tabGroupIds != nil else { return }
+        case .group: break
+        }
         let sameApp = windows.filter { $0.app === window.app && $0 !== window }
         applyTabStates(TabGroupResolver.resolve(active: tabDescriptor(window),
-                                                tabTitles: tabTitles,
+                                                observation: tabs,
                                                 sameAppWindows: sameApp.map(tabDescriptor)))
     }
 

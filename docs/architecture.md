@@ -49,6 +49,10 @@ freshly merged inactive tab keeps reporting its pre-merge frame, so a different 
 ranks last instead of being excluded), then by recorded membership, never by discovery
 order. When the best-ranked candidates outnumber the titles left to fill, none of them is
 matched: an ambiguous window stays a visible entry rather than being hidden by a guess.
+Each read of a window's tab bar is a `TabObservation`: `.group` (every tab button read),
+`.standalone` (children read, no tab bar of 2 or more tabs), or `.unknown` (some AX read
+failed). Only a complete read changes membership; `.unknown` keeps the last known group
+and tab count, and the next complete read recovers without a retry timer.
 Safari-style browsers expose one AX window per browser window, so nothing matches and
 each window simply carries its own tab count. Counts come only from counting
 `AXTabButton` children — never guessed, never parsed from titles.

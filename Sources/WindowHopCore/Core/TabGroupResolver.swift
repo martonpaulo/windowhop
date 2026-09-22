@@ -40,22 +40,30 @@ public enum TabGroupResolver {
         }
     }
 
-    /// A window (`active`) just reported its AXTabGroup tab titles (nil when it has
-    /// no tab bar). `sameAppWindows` are the other windows of the same app.
+    /// A window (`active`) was just observed (see `TabObservation`).
+    /// `sameAppWindows` are the other windows of the same app.
     /// Returns per-window state changes; windows not in the result are unchanged.
     public static func resolve<ID: Hashable>(
         active: WindowDescriptor<ID>,
-        tabTitles: [String]?,
+        observation: TabObservation,
         sameAppWindows: [WindowDescriptor<ID>]
     ) -> [ID: WindowTabState<ID>] {
         var changes = [ID: WindowTabState<ID>]()
-        guard let tabTitles else {
-            // inactive tabs also report nil (they have no AXTabGroup child) but are
-            // still tabbed; only clear a window that was its group's *active* tab
+        let tabTitles: [String]
+        switch observation {
+        case .unknown:
+            // missing evidence is not an observation: a partial read must never
+            // shrink or dissolve a known group (upstream 8c8d2836 draws the same line)
+            return changes
+        case .standalone:
+            // inactive tabs also have no AXTabGroup child but are still tabbed;
+            // only clear a window that was its group's *active* tab
             if active.groupIds != nil, !active.isTabbed {
                 changes[active.id] = WindowTabState(isTabbed: false, groupIds: nil)
             }
             return changes
+        case .group(let titles):
+            tabTitles = titles
         }
         // one tab title belongs to the active window itself; remove one occurrence
         // (not all — different tabs can share a title)

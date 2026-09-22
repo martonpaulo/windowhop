@@ -54,10 +54,10 @@ enum AXNotificationRouter {
         let isOwnProcess = pid == ProcessInfo.processInfo.processIdentifier
         let keys = windowAttributeKeys + (isOwnProcess ? [] : [kAXChildrenAttribute])
         guard let attributes = try? element.attributes(keys) else { return }
-        let tabTitles = AXUIElement.tabTitles(fromWindowChildren: attributes.children)
+        let tabs = AXUIElement.tabObservation(fromWindow: attributes)
         DispatchQueue.main.async {
             WindowStore.shared.windowEvent(notification, element: element, pid: pid,
-                                           attributes: attributes, tabTitles: tabTitles)
+                                           attributes: attributes, tabs: tabs)
         }
     }
 }

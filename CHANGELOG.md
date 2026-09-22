@@ -69,6 +69,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   independent window could be hidden while the tab showed up instead. Tabs are now
   matched by position as well as title, and a window that cannot be told apart stays
   visible.
+- **A tab no longer pops out as its own window when an app answers slowly**: if one
+  tab of a native tab group could not be read, the remaining tabs were treated as the
+  whole group and the unread tab appeared as a separate switcher entry. An incomplete
+  read now leaves the group as it was until the next complete one.
 
 ## [1.6.2] - 2026-09-09
 

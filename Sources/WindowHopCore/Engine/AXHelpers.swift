@@ -26,6 +26,21 @@ public struct AXAttributes {
     public var windows: [AXUIElement]?
     public var position: CGPoint?
     public var size: CGSize?
+    /// The AX error each requested key answered with instead of a value.
+    public var errors: [String: ApplicationServices.AXError] = [:]
+
+    /// Whether `key`'s read failed. `.noValue` and `.attributeUnsupported` are
+    /// legitimate absence, not failure.
+    public func readFailed(_ key: String) -> Bool {
+        guard let error = errors[key] else { return false }
+        return error != .noValue && error != .attributeUnsupported
+    }
+
+    /// `value` (the field read for `key`) as a value, a legitimate absence, or a failure.
+    public func read<Value>(_ key: String, _ value: Value?) -> AttributeRead<Value> {
+        if let value { return .value(value) }
+        return readFailed(key) ? .failed : .absent
+    }
 }
 
 extension AXUIElement {
@@ -62,8 +77,16 @@ extension AXUIElement {
         let array = values as? [CFTypeRef] ?? []
         var result = AXAttributes()
         for (index, key) in keys.enumerated() {
-            guard index < array.count else { continue }
+            guard index < array.count else {
+                // no answer at all for this key (the whole call failed)
+                result.errors[key] = .failure
+                continue
+            }
             let value = array[index]
+            if let error = axErrorCode(value) {
+                result.errors[key] = error
+                continue
+            }
             switch key {
             case kAXTitleAttribute: result.title = castSafely(value)
             case kAXRoleAttribute: result.role = castSafely(value)
@@ -84,7 +107,17 @@ extension AXUIElement {
     }
 
     /// AXUIElementCopyMultipleAttributeValues without .stopOnError returns placeholder
-    /// AXValues of type .axError for missing attributes; those must map to nil.
+    /// AXValues of type .axError for attributes it could not read; this is their code.
+    private func axErrorCode(_ value: CFTypeRef) -> ApplicationServices.AXError? {
+        guard CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+        let axValue = value as! AXValue
+        guard AXValueGetType(axValue) == .axError else { return nil }
+        var code = ApplicationServices.AXError.failure.rawValue
+        guard AXValueGetValue(axValue, .axError, &code) else { return .failure }
+        return ApplicationServices.AXError(rawValue: code) ?? .failure
+    }
+
+    /// Placeholder .axError values map to nil (their code is recorded separately).
     private func castSafely<T>(_ value: CFTypeRef) -> T? {
         switch CFGetTypeID(value) {
         case AXValueGetTypeID():
@@ -158,22 +191,45 @@ extension AXUIElement {
         try throwIfNotSuccess(AXUIElementPerformAction(self, action as CFString))
     }
 
-    /// OS-level tab titles, from the window's AXTabGroup child (Safari, Finder,
-    /// Terminal, …). Returns one title per AXTabButton when the window shows a tab
-    /// bar with 2 or more tabs, nil otherwise. Never guessed, never parsed from the
-    /// window title. Only the group's visible tab exposes this.
-    public static func tabTitles(fromWindowChildren children: [AXUIElement]?) -> [String]? {
-        guard let children else { return nil }
+    /// OS-level tab bar of a window, from its AXTabGroup child (Finder, Terminal,
+    /// Safari, …): one title per AXTabButton, never guessed, never parsed from the
+    /// window title. Only the group's visible tab exposes this. `window` holds the
+    /// window's batched attributes including kAXChildren. This gathers AX facts
+    /// only; `TabObservation.classify` decides what they establish.
+    public static func tabObservation(fromWindow window: AXAttributes) -> TabObservation {
+        let children = window.read(kAXChildrenAttribute, window.children)
+        return TabObservation.classify(children: children.map(childFacts))
+    }
+
+    /// Reads children until the first AXTabGroup, which is the one that decides.
+    private static func childFacts(_ children: [AXUIElement]) -> [TabObservation.ChildFacts] {
+        var facts = [TabObservation.ChildFacts]()
         for child in children {
-            let attributes = try? child.attributes([kAXRoleAttribute, kAXChildrenAttribute])
-            guard attributes?.role == "AXTabGroup", let tabChildren = attributes?.children else { continue }
-            let titles = tabChildren.compactMap { tab -> String? in
-                let tabAttributes = try? tab.attributes([kAXSubroleAttribute, kAXTitleAttribute])
-                guard tabAttributes?.subrole == "AXTabButton" else { return nil }
-                return tabAttributes?.title ?? ""
+            // a thrown read means the app did not answer: that is a failure, not "not a tab"
+            guard let attributes = try? child.attributes([kAXRoleAttribute, kAXChildrenAttribute]) else {
+                facts.append(TabObservation.ChildFacts(role: .failed, tabs: .failed))
+                continue
             }
-            return titles.count >= 2 ? titles : nil
+            let role = attributes.read(kAXRoleAttribute, attributes.role)
+            guard case .value("AXTabGroup") = role else {
+                facts.append(TabObservation.ChildFacts(role: role, tabs: .absent))
+                continue
+            }
+            let tabs = attributes.read(kAXChildrenAttribute, attributes.children).map { tabs in
+                tabs.map(tabButtonFacts)
+            }
+            facts.append(TabObservation.ChildFacts(role: role, tabs: tabs))
+            break
         }
-        return nil
+        return facts
+    }
+
+    private static func tabButtonFacts(_ tab: AXUIElement) -> TabObservation.TabButtonFacts {
+        guard let attributes = try? tab.attributes([kAXSubroleAttribute, kAXTitleAttribute]) else {
+            return TabObservation.TabButtonFacts(subrole: .failed, title: .failed)
+        }
+        return TabObservation.TabButtonFacts(
+            subrole: attributes.read(kAXSubroleAttribute, attributes.subrole),
+            title: attributes.read(kAXTitleAttribute, attributes.title))
     }
 }
