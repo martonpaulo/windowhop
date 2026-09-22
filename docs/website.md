@@ -40,6 +40,14 @@ then deploys that commit with GitHub's official Pages actions. The repository Pa
 source must be **GitHub Actions**. The workflow uses only read access to repository content
 plus the scoped `pages: write` and `id-token: write` permissions required for deployment.
 
+Its `scope` job (`deployments: read`) skips the upload and deployment when `site/` and
+`deploy.yml` are identical to the commit of the last **successful** `github-pages`
+deployment, so a documentation-only push publishes nothing. It compares against that
+deployment rather than the previous push, so a site change whose deploy failed or was
+cancelled still publishes next time. A manual `workflow_dispatch` always publishes (the
+recovery path), and any doubt — API error, no successful deployment, unfetchable commit —
+publishes too. The job log prints the compared SHAs and the changed paths.
+
 No generated website files require manual editing after deployment. The release checklist
 must confirm the public page, direct installer, release notes, source, issue, license, and
 AltTab links before tagging a release.

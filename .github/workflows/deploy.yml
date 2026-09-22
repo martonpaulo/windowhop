@@ -17,11 +17,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Publishing is skipped when the published input (site/ plus this workflow) is
+  # identical to the last *successful* Pages deployment. Comparing against that,
+  # not the previous push, means a site change whose deploy failed or was
+  # cancelled still publishes on the next push. Every doubt publishes.
+  scope:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: read
+    outputs:
+      publish: ${{ steps.check.outputs.publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+      - name: Compare with the last successful deployment
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          publish() { echo "publish=$1" >> "$GITHUB_OUTPUT"; echo "publish=$1: $2"; exit 0; }
+
+          # Manual dispatch is the explicit recovery path: always publish.
+          [ "$EVENT" = workflow_dispatch ] && publish true "manual dispatch"
+
+          # Newest first. Superseded deployments later turn `inactive`, so look
+          # for any `success` status rather than the latest one; failed and
+          # cancelled deployments never reach `success`.
+          deployments=$(gh api "repos/$REPO/deployments?environment=github-pages&per_page=30" \
+            --jq '.[] | "\(.id) \(.sha)"') || publish true "deployments API error"
+          LAST=""
+          while read -r id sha; do
+            [ -n "$id" ] || continue
+            ok=$(gh api "repos/$REPO/deployments/$id/statuses?per_page=100" \
+              --jq 'any(.[]; .state == "success")') || publish true "statuses API error"
+            if [ "$ok" = true ]; then LAST=$sha; break; fi
+          done <<< "$deployments"
+
+          [ -n "$LAST" ] || publish true "no successful deployment found"
+          git cat-file -e "$LAST^{commit}" 2>/dev/null || publish true "last deployed $LAST not fetchable"
+
+          echo "last deployed: $LAST"
+          echo "candidate:     $HEAD_SHA"
+          CHANGED=$(git diff --name-only "$LAST" "$HEAD_SHA" -- site .github/workflows/deploy.yml) \
+            || publish true "diff failed"
+          echo "changed published input:"; echo "${CHANGED:-(none)}"
+          if [ -n "$CHANGED" ]; then publish true "site changed"; else publish false "site unchanged"; fi
+
+  build:
+    needs: scope
+    if: needs.scope.outputs.publish == 'true'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
