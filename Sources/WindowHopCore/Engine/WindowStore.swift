@@ -44,7 +44,7 @@ public final class WindowStore {
         guard !started else { return }
         started = true
         AXUIElement.setGlobalTimeout()
-        runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) { _, change in
+        runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) { [weak self] _, change in
             DispatchQueue.main.async { [weak self] in
                 (change.newValue ?? []).forEach { self?.addApp($0) }
                 (change.oldValue ?? []).forEach { self?.removeApp($0.processIdentifier) }
@@ -290,7 +290,7 @@ public final class WindowStore {
     /// updates each window's current-Space flag.
     @objc private func activeSpaceChanged() {
         let appsSnapshot = Array(apps.values)
-        BackgroundWork.axReadsQueue.async {
+        BackgroundWork.axReadsQueue.async { [weak self] in
             for app in appsSnapshot {
                 let elements = (try? app.axElement.windowElements()) ?? []
                 for windowElement in elements {
@@ -321,7 +321,7 @@ public final class WindowStore {
     /// dead ones. Cheap (one attribute read per suspect) and strictly event-driven.
     func pruneIfDead(_ elements: [AXUIElement]) {
         guard !elements.isEmpty else { return }
-        BackgroundWork.axReadsQueue.async {
+        BackgroundWork.axReadsQueue.async { [weak self] in
             let dead = elements.filter { !$0.isStillValid() }
             guard !dead.isEmpty else { return }
             DispatchQueue.main.async { [weak self] in
