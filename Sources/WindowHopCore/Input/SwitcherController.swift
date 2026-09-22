@@ -212,6 +212,12 @@ public final class SwitcherController {
         }
     }
 
+    /// Names the window the way its tile does, so two same-app windows sharing a
+    /// raw title stay distinguishable where the destructive action is confirmed.
+    static func closeConfirmationMessage(for item: SwitcherItem) -> String {
+        "Close “\(item.displayTitle)” in \(item.appName)?"
+    }
+
     private func presentCloseConfirmation(for item: SwitcherItem, sessionID: UInt64) {
         let app = item.window?.app
         let isOwnEntry = item.window?.isOwnSettingsEntry ?? false
@@ -220,7 +226,7 @@ public final class SwitcherController {
 
         let alert = NSAlert()
         alert.alertStyle = .warning
-        alert.messageText = "Close “\(item.title)” in \(item.appName)?"
+        alert.messageText = Self.closeConfirmationMessage(for: item)
         alert.informativeText = quitEscalatesToForce
             ? "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path."
             : "If the window has unsaved changes, \(item.appName) will ask about them."

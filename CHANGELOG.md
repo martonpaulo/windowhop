@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now reads the real login-item status instead of remembering what you last clicked.
   When macOS waits for your approval, it says so and offers Open Login Items Settings….
   Changes you make in System Settings appear as soon as you return to WindowHop.
+- **Closing a same-named window names its folder**: the close confirmation and the
+  expanded preview now show the same folder-qualified title as the tile, such as
+  "Notes.txt — Work", so you can tell which of two same-named windows you are closing.
 - **VoiceOver reads the Open WindowHop shortcut field completely**: the recorder now
   speaks the current chord in words ("Option Tab"), says "None" when it is cleared and
   "Recording" while it waits for a chord, explains that Escape cancels and Delete clears,

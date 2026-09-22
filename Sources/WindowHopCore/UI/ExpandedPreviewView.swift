@@ -62,8 +62,8 @@ final class ExpandedPreviewView: NSView {
     /// keeps the image that is already on screen.
     func updateMetadata(item: SwitcherItem) {
         badgeView.image = item.icon
-        titleLabel.stringValue = item.title
-        setAccessibilityValue("Expanded preview of \(item.title), \(item.appName)")
+        titleLabel.stringValue = item.displayTitle
+        setAccessibilityValue("Expanded preview of \(item.displayTitle), \(item.appName)")
         needsLayout = true
     }
 

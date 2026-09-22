@@ -79,6 +79,27 @@ final class SwitcherTileAccessibilityTests: XCTestCase {
         XCTAssertEqual(work.title, "Notes.txt", "the raw title stays for matching")
     }
 
+    /// The expanded preview and the close confirmation name a colliding window
+    /// the same way its tile does (issue #112).
+    func testCollidingTitlesStayDistinctInPreviewAndCloseConfirmation() {
+        let work = SwitcherItem(id: AnyHashable("w"), window: nil, title: "Notes.txt",
+                                displayTitle: "Notes.txt — Work",
+                                appName: "TextEdit", icon: nil, tabCount: nil)
+        let home = SwitcherItem(id: AnyHashable("h"), window: nil, title: "Notes.txt",
+                                displayTitle: "Notes.txt — Home",
+                                appName: "TextEdit", icon: nil, tabCount: nil)
+
+        XCTAssertEqual(SwitcherController.closeConfirmationMessage(for: work),
+                       "Close “Notes.txt — Work” in TextEdit?")
+        XCTAssertNotEqual(SwitcherController.closeConfirmationMessage(for: work),
+                          SwitcherController.closeConfirmationMessage(for: home))
+
+        let preview = ExpandedPreviewView()
+        preview.updateMetadata(item: work)
+        XCTAssertEqual(preview.accessibilityValue() as? String,
+                       "Expanded preview of Notes.txt — Work, TextEdit")
+    }
+
     func testDisplayTitleDefaultsToTheRawTitle() {
         let item = makeItem(id: "a", title: "Untitled")
         XCTAssertEqual(item.displayTitle, "Untitled")
