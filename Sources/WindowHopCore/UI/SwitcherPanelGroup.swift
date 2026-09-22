@@ -175,6 +175,11 @@ public final class SwitcherPanelGroup {
         announcer.reset()
     }
 
+    /// Ends every view's hold on preview images once a session is over.
+    public func releasePreviewContent() {
+        panels.forEach { $0.releasePreviewContent() }
+    }
+
     // MARK: - Testing
 
     var panelCountForTesting: Int { panels.count }

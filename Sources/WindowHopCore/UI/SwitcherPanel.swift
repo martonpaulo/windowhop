@@ -395,12 +395,22 @@ public final class SwitcherPanel: NSPanel {
     private func collapseExpandedPreview() {
         expandedPreviewID = nil
         expandedPreviewView.isHidden = true
+        expandedPreviewView.releaseImage()
         scrollView.isHidden = false
     }
 
     public func hide() {
         hostView.setPointerInside(false)
         orderOut(nil)
+    }
+
+    /// Drops every preview image the views hold. Called when a session ends
+    /// (not from `hide()`, which a close confirmation uses mid-session): the
+    /// provider cache stays the only warm owner between sessions, and the
+    /// next `show` reloads visible tiles from it.
+    public func releasePreviewContent() {
+        tilePool.forEach { $0.releasePreviewContent() }
+        expandedPreviewView.releaseImage()
     }
 
     // MARK: - Layout
@@ -428,6 +438,8 @@ public final class SwitcherPanel: NSPanel {
             } else {
                 tile.resetHoverState()
                 tile.isHidden = true
+                // a hidden slot must not keep a removed window's image alive
+                tile.releasePreviewContent()
             }
         }
         visibleTileCount = items.count

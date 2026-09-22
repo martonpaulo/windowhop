@@ -106,3 +106,120 @@ final class PreviewEvictionTests: XCTestCase {
         XCTAssertEqual(cached(ids).count, 1)
     }
 }
+
+/// Views hold a preview image only while they present it; between sessions
+/// the provider cache is the only warm owner (#54). Each image is created in
+/// an autorelease pool and observed through a weak reference, so these fail
+/// if any hidden, collapsed, or ended view still retains it.
+final class PreviewViewReleaseTests: XCTestCase {
+    private var savedAppearanceMode: AppearanceMode!
+    private var seeded: [AnyHashable] = []
+
+    override func setUp() {
+        super.setUp()
+        savedAppearanceMode = Preferences.shared.appearanceMode
+        Preferences.shared.appearanceMode = .windowPreviews
+    }
+
+    override func tearDown() {
+        seeded.forEach { PreviewProvider.shared.evict($0) }
+        seeded = []
+        Preferences.shared.appearanceMode = savedAppearanceMode
+        super.tearDown()
+    }
+
+    private func item(_ id: String) -> SwitcherItem {
+        SwitcherItem(id: id, window: nil, title: "Window \(id)",
+                     appName: "TestApp", icon: nil, tabCount: nil)
+    }
+
+    /// Hands a fresh image to `deliver` and returns only a weak reference.
+    private func weakImage(_ deliver: (NSImage) -> Void) -> () -> NSImage? {
+        weak var reference: NSImage?
+        autoreleasepool {
+            let image = NSImage(size: NSSize(width: 40, height: 30))
+            reference = image
+            deliver(image)
+        }
+        return { reference }
+    }
+
+    /// Runs a release step and drains the autorelease pool it fills, as the
+    /// run loop would after the event that triggered it.
+    private func drained(_ body: () -> Void) {
+        autoreleasepool(invoking: body)
+    }
+
+    func testASlotHiddenByAnUpdateReleasesItsImage() {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        let image = weakImage { panel.updatePreview(id: "b", image: $0) }
+        XCTAssertNotNil(image(), "the visible tile presents the image")
+
+        drained { panel.update(items: [item("a")], selectedIndex: 0) }
+
+        XCTAssertNil(image(), "a hidden slot kept a removed window's image")
+    }
+
+    func testReleasedHiddenTilesDoNotPulse() throws {
+        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+                      "Reduce Motion is on, so no skeleton ever pulses")
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        let hidden = try XCTUnwrap(panel.tileForTesting(at: 1))
+        XCTAssertTrue(hidden.skeletonIsAnimatingForTesting, "a loading tile pulses")
+
+        panel.update(items: [item("a")], selectedIndex: 0)
+
+        XCTAssertFalse(hidden.skeletonIsAnimatingForTesting)
+    }
+
+    func testHidingTheExpandedPreviewReleasesItsImage() {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a")], selectedIndex: 0)
+        let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
+        XCTAssertNotNil(image())
+
+        drained { panel.hideExpandedPreview() }
+
+        XCTAssertNil(image())
+    }
+
+    func testAnUpdateThatCollapsesTheExpandedPreviewReleasesItsImage() {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
+
+        // the expanded window leaves the list
+        drained { panel.update(items: [item("b")], selectedIndex: 0) }
+
+        XCTAssertNil(panel.expandedPreviewID)
+        XCTAssertNil(image())
+    }
+
+    func testEndingASessionReleasesViewsButKeepsTheWarmCache() {
+        let panel = SwitcherPanel(rasterizableBackground: true)
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        let delivered = weakImage { panel.updatePreview(id: "a", image: $0) }
+        let expanded = weakImage { panel.showExpandedPreview(id: "b", image: $0) }
+        seeded.append("b")
+        PreviewProvider.shared.storeForTesting(NSImage(size: NSSize(width: 40, height: 30)),
+                                               for: "b")
+
+        drained {
+            panel.hideExpandedPreview()
+            panel.hide()
+            panel.releasePreviewContent()
+        }
+
+        XCTAssertNil(delivered(), "a tile kept its image after the session ended")
+        XCTAssertNil(expanded())
+        XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 0))
+        XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 1))
+
+        // the next session reloads the living window straight from the cache
+        panel.update(items: [item("a"), item("b")], selectedIndex: 0)
+        XCTAssertTrue(panel.tileShowsPreviewForTesting(at: 1))
+        XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 0))
+    }
+}

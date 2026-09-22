@@ -200,7 +200,10 @@ the fade), and tiles that opened with none fill in. Captures are taken without
 the system window shadow (`ignoreShadowsSingleWindow`); the tile draws its own
 shadow along the preview's rounded clip. WindowHop's own Settings window is
 captured too (own pid + converted frame). Entries are evicted the moment their
-window disappears and when the user switches back to App Icons.
+window disappears and when the user switches back to App Icons. Views hold an image only
+while they present it: hidden pool slots and a collapsed expanded preview drop theirs at
+once, and every view releases its image when the session ends, so the provider cache is
+the only warm owner between sessions and an evicted snapshot is actually freed.
 
 Captures finish asynchronously and out of order, so the pure, unit-tested
 `PreviewLedger` decides what a late result may do: results for evicted windows

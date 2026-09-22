@@ -52,6 +52,12 @@ final class ExpandedPreviewView: NSView {
         updateMetadata(item: item)
     }
 
+    /// Drops the snapshot once the view is collapsed; `configure` always
+    /// supplies a new one before the view is shown again.
+    func releaseImage() {
+        imageView.image = nil
+    }
+
     /// Refreshes everything but the snapshot, so a metadata-only store refresh
     /// keeps the image that is already on screen.
     func updateMetadata(item: SwitcherItem) {

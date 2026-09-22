@@ -418,6 +418,17 @@ final class SwitcherTileView: NSView {
         needsLayout = true
     }
 
+    /// Drops the snapshot this tile holds once it no longer presents it (a
+    /// hidden pool slot, or every tile after a session ends), so the provider
+    /// cache stays the only warm owner. Deliberately not `setPreview(nil)`:
+    /// that path switches to the loading variant and would start a pulse on
+    /// a tile nobody sees. The next `configure` restores everything.
+    func releasePreviewContent() {
+        previewView.layer?.removeAllAnimations()
+        previewView.image = nil
+        skeletonView.stopAnimation()
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 

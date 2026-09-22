@@ -451,6 +451,10 @@ public final class SwitcherController {
         cancelExpandedPreviewTimer()
         panels.hideExpandedPreview()
         panels.hide()
+        // views hold images only while presenting them; the provider cache is
+        // the only warm owner between sessions (so a closed window or a switch
+        // to App Icons, which evicts the cache, leaves no image alive)
+        panels.releasePreviewContent()
         // capture is session-scoped: pending results stop delivering live, but
         // the memory-only cache remains warm for the next instant open
         PreviewProvider.shared.endSession()
