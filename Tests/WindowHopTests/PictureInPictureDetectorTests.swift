@@ -53,6 +53,49 @@ final class PictureInPictureDetectorTests: XCTestCase {
             onScreenWindows: [onScreen(3, pid: 100)], screenFrames: [screen]))
     }
 
+    // Measured facts (#90): an AppKit titled document window set to .floating
+    // (layer 3, 360×252) keeps enabled close/minimize/zoom buttons; Chromium PiP
+    // (Chrome for Testing and Brave, layer 3, 308×173) keeps all three buttons
+    // but disabled.
+    private let floatingDocument = CGRect(x: 440, y: 128, width: 360, height: 252)
+    private let chromiumPiP = CGRect(x: 1114, y: 709, width: 308, height: 173)
+
+    func testFloatingDocumentWithStandardButtonsIsNotPictureInPicture() {
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: floatingDocument, closeButtonEnabled: true,
+            onScreenWindows: [onScreen(3, frame: floatingDocument)], screenFrames: [screen]))
+        // a closable-only floating window at modal-panel level is ordinary too
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: floatingDocument, closeButtonEnabled: true,
+            onScreenWindows: [onScreen(8, frame: floatingDocument)], screenFrames: [screen]))
+    }
+
+    func testChromiumPiPWithDisabledButtonsIsPictureInPicture() {
+        XCTAssertTrue(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: chromiumPiP, closeButtonEnabled: false,
+            onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
+    }
+
+    func testButtonlessOrUnreadFloatingWindowKeepsTheLayerRule() {
+        // no close button, or its state never read: the floating layer alone decides
+        XCTAssertTrue(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: chromiumPiP, closeButtonEnabled: nil,
+            onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
+    }
+
+    func testFullscreenFloatingSurfaceStaysEligible() {
+        // the fullscreen exception holds whatever the title bar reports
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: screen, closeButtonEnabled: false,
+            onScreenWindows: [onScreen(20, frame: screen)], screenFrames: [screen]))
+    }
+
+    func testDisabledButtonsAloneNeverMakeANormalWindowPiP() {
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: floatingDocument, closeButtonEnabled: false,
+            onScreenWindows: [onScreen(0, frame: floatingDocument)], screenFrames: [screen]))
+    }
+
     func testSmallFrameDriftStillMatches() {
         // AX and window-server frames can disagree by a pixel or two
         let drifted = pipFrame.offsetBy(dx: 2, dy: -2)

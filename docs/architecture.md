@@ -328,7 +328,17 @@ floating above normal windows (nonzero `kCGWindowLayer`, public
 `CGWindowListCopyWindowInfo` — bounds and layer need no capture permission).
 The pure rule lives in `PictureInPictureDetector` (unit-tested): a floating
 window is PiP unless it covers (almost) a whole screen — Keynote presentations
-and fullscreen overlays stay eligible. Each window's floating status is resolved
+and fullscreen overlays stay eligible — or its AX close button is enabled.
+Floating level alone is not PiP: any app can float an ordinary document, palette or
+dialog. Measured for #90 on macOS 26: Chromium PiP (Chrome and Brave, layer 3) keeps its
+close, minimize and zoom buttons but disables all three, while AppKit titled windows at
+`.floating` or `.modalPanel` keep an enabled close button. System PiP (PIPAgent, measured
+through AVKit) is an `AXSystemFloatingWindow` at layer 19, which `isActualWindow`
+already rejects; borderless floating windows report `AXUnknown` and are rejected there
+too, and `NSPanel` utilities (`AXFloatingWindow`) never reach the rule. The close
+button's state is read once per window creation on the AX reads queue (one extra read,
+never per move or resize); an unread or missing button leaves the layer rule in charge.
+Each window's floating status is resolved
 once, lazily, at snapshot time, and only when an unresolved on-screen window
 exists — idle stays query-free. Core safety invariants remain non-configurable: actual
 top-level windows only, one visible tab-group member, no menus/tooltips/system overlays,

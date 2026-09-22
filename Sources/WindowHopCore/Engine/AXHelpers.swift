@@ -23,6 +23,8 @@ public struct AXAttributes {
     public var children: [AXUIElement]?
     public var focusedWindow: AXUIElement?
     public var closeButton: AXUIElement?
+    /// The close button's kAXEnabled, read separately (see AXNotificationRouter).
+    public var closeButtonEnabled: Bool?
     public var windows: [AXUIElement]?
     public var position: CGPoint?
     public var size: CGSize?

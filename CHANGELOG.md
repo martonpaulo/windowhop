@@ -80,6 +80,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Floating windows stay in the switcher**: an app's ordinary window that floats above
+  the others, such as a pinned document or an always-on-top dialog, is no longer mistaken
+  for Picture in Picture and hidden. Browser Picture in Picture is still left out unless
+  you include it in Settings.
 - **Launch at login shows what macOS actually holds**: the toggle in Settings → General
   now reads the real login-item status instead of remembering what you last clicked.
   When macOS waits for your approval, it says so and offers Open Login Items Settings….

@@ -52,8 +52,20 @@ enum AXNotificationRouter {
     static func routeWindowEvent(_ notification: String, _ element: AXUIElement, _ pid: pid_t) {
         // reading our own AX children would call AppKit layout from this thread
         let isOwnProcess = pid == ProcessInfo.processInfo.processIdentifier
+        // The close button's enabled state separates Chromium PiP from ordinary floating
+        // windows (PictureInPictureDetector). It is fixed for a window's lifetime, so it
+        // costs one extra read per window creation, never one per move or resize.
+        let isCreation = notification == kAXWindowCreatedNotification
         let keys = windowAttributeKeys + (isOwnProcess ? [] : [kAXChildrenAttribute])
-        guard let attributes = try? element.attributes(keys) else { return }
+            + (isCreation ? [kAXCloseButtonAttribute] : [])
+        guard var read = try? element.attributes(keys) else { return }
+        if isCreation, let closeButton = read.closeButton {
+            var enabled: CFTypeRef?
+            if AXUIElementCopyAttributeValue(closeButton, kAXEnabledAttribute as CFString, &enabled) == .success {
+                read.closeButtonEnabled = enabled as? Bool
+            }
+        }
+        let attributes = read
         let tabs = AXUIElement.tabObservation(fromWindow: attributes)
         DispatchQueue.main.async {
             WindowStore.shared.windowEvent(notification, element: element, pid: pid,
