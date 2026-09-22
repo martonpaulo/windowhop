@@ -20,7 +20,7 @@ body:
     id: windowhop-version
     attributes:
       label: WindowHop version
-      description: Shown in Settings under Updates.
+      description: Shown in Settings › About.
       placeholder: e.g. 1.0.0
     validations:
       required: true

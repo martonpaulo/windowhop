@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **One About for WindowHop**: WindowHop › About WindowHop now opens Settings → About, the
   same page the Settings toolbar shows, instead of a separate About window. Its copyright
   line is the one the app bundle carries.
+- **Report an Issue… fills in your versions**: from Settings → About or the Help menu, it
+  now opens the bug report form with your WindowHop version, build, release date and macOS
+  version already entered. Nothing else is included, and nothing is sent until you review
+  and submit the form.
 - **Launch at login is off for new installs**: turn it on in Settings → General. Existing
   installations keep their current choice, including the previous On default.
 - **Restore Defaults leaves launch at login alone**: it no longer registers or removes the

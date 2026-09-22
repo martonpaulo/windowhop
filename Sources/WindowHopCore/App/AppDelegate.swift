@@ -39,7 +39,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     }
 
     @objc public func reportIssue(_ sender: Any?) {
-        NSWorkspace.shared.open(ProjectLinks.issues)
+        NSWorkspace.shared.open(ProjectLinks.issueReport(
+            for: AppVersion.main, macOS: ProcessInfo.processInfo.operatingSystemVersion))
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {

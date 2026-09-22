@@ -69,6 +69,16 @@ else
     pass "release date is left to packaging"
 fi
 
+# "Report an Issue…" prefills these bug-report inputs by id (Core/ProjectLinks.swift);
+# renaming one would silently drop the prefill
+for field_id in windowhop-version macos-version; do
+    if grep -qE "^[[:space:]]*id: $field_id[[:space:]]*$" .github/ISSUE_TEMPLATE/bug_report.yml; then
+        pass "bug report form declares id: $field_id"
+    else
+        fail "bug_report.yml no longer declares id: $field_id, which ProjectLinks.issueReport prefills"
+    fi
+done
+
 # --- appcast/release metadata consistency ------------------------------------
 if [ -f appcast.xml ]; then
     if grep -q "sparkle:edSignature=" appcast.xml && grep -q "https://github.com/martonpaulo/windowhop/releases/download/" appcast.xml; then

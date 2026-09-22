@@ -666,8 +666,11 @@ struct AboutPane: View {
                 Link("WindowHop Website", destination: ProjectLinks.website)
                 Link("WindowHop on GitHub",
                      destination: ProjectLinks.repository)
-                Link("Report an issue",
-                     destination: ProjectLinks.issues)
+                // opens the prefilled form in the browser; nothing is sent
+                // until the person reviews and submits it there
+                Link("Report an Issue…",
+                     destination: ProjectLinks.issueReport(
+                         for: appVersion, macOS: ProcessInfo.processInfo.operatingSystemVersion))
             }
             Section {
                 LabeledContent("License", value: "GPL-3.0")
