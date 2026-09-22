@@ -19,13 +19,24 @@ public enum TabGroupResolver {
         public let groupIds: [ID]?
         /// The window's AX frame, when known. Native tabs of one window share its frame.
         public let frame: CGRect?
+        /// The titles of the window's last complete tab bar read (`.group`), if any.
+        public let reportedTabTitles: [String]?
 
-        public init(id: ID, title: String, isTabbed: Bool, groupIds: [ID]?, frame: CGRect?) {
+        public init(id: ID, title: String, isTabbed: Bool, groupIds: [ID]?, frame: CGRect?,
+                    reportedTabTitles: [String]?) {
             self.id = id
             self.title = title
             self.isTabbed = isTabbed
             self.groupIds = groupIds
             self.frame = frame
+            self.reportedTabTitles = reportedTabTitles
+        }
+
+        func applying(_ change: WindowTabState<ID>?) -> WindowDescriptor<ID> {
+            guard let change else { return self }
+            return WindowDescriptor(id: id, title: title, isTabbed: change.isTabbed,
+                                    groupIds: change.groupIds, frame: frame,
+                                    reportedTabTitles: reportedTabTitles)
         }
     }
 
@@ -158,6 +169,52 @@ public enum TabGroupResolver {
     private static func rounded(_ frame: CGRect) -> CGRect {
         CGRect(x: frame.origin.x.rounded(), y: frame.origin.y.rounded(),
                width: frame.width.rounded(), height: frame.height.rounded())
+    }
+
+    /// A window (`newWindow`, already resolved on its own) was just discovered.
+    /// Discovery order is arbitrary: an active tab can be resolved before its inactive
+    /// sibling exists in the store, and the sibling's own read shows no tab bar. So
+    /// every active tab whose last complete tab bar still has an unmatched title equal
+    /// to the new window's title is resolved again with the new window present.
+    /// Groups with nothing unmatched are not touched, which keeps unrelated groups
+    /// intact. `sameAppWindows` are the app's other windows; the result is sparse.
+    public static func resolveArrival<ID: Hashable>(
+        newWindow: WindowDescriptor<ID>,
+        sameAppWindows: [WindowDescriptor<ID>]
+    ) -> [ID: WindowTabState<ID>] {
+        var changes = [ID: WindowTabState<ID>]()
+        var windows = [newWindow] + sameAppWindows
+        for (index, window) in windows.enumerated() where index > 0 {
+            // earlier re-resolutions may have changed this window
+            let current = window.applying(changes[window.id])
+            guard !current.isTabbed, let titles = current.reportedTabTitles,
+                  (current.groupIds?.count ?? 1) < titles.count,
+                  unmatchedTitles(of: current, titles: titles, among: windows)
+                      .contains(newWindow.title) else { continue }
+            let others = windows.filter { $0.id != current.id }
+            let resolved = resolve(active: current, observation: .group(titles),
+                                   sameAppWindows: others)
+            changes.merge(resolved) { _, new in new }
+            windows = windows.map { $0.applying(resolved[$0.id]) }
+            // the new window belongs to at most one group
+            if resolved[newWindow.id]?.isTabbed == true { break }
+        }
+        return changes
+    }
+
+    /// `titles` minus one occurrence for the active window and for each recorded member.
+    private static func unmatchedTitles<ID: Hashable>(
+        of active: WindowDescriptor<ID>, titles: [String], among windows: [WindowDescriptor<ID>]
+    ) -> [String] {
+        var remaining = titles
+        let memberIds = Set(active.groupIds ?? []).subtracting([active.id])
+        let memberTitles = [active.title] + windows.filter { memberIds.contains($0.id) }.map(\.title)
+        for title in memberTitles {
+            if let index = remaining.firstIndex(of: title) {
+                remaining.remove(at: index)
+            }
+        }
+        return remaining
     }
 
     /// A window disappeared; shrink its group. A group of one is no group at all.

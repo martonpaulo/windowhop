@@ -11,9 +11,9 @@ final class TabGroupResolverTests: XCTestCase {
 
     private func window(_ id: String, _ title: String,
                         isTabbed: Bool = false, groupIds: [String]? = nil,
-                        frame: CGRect?? = nil) -> Descriptor {
+                        frame: CGRect?? = nil, reportedTabTitles: [String]? = nil) -> Descriptor {
         Descriptor(id: id, title: title, isTabbed: isTabbed, groupIds: groupIds,
-                   frame: frame ?? groupFrame)
+                   frame: frame ?? groupFrame, reportedTabTitles: reportedTabTitles)
     }
 
     // MARK: - The canonical requirement
@@ -437,6 +437,113 @@ final class TabGroupResolverTests: XCTestCase {
         TabObservation.classify(children: .value([
             TabObservation.ChildFacts(role: .value("AXTabGroup"), tabs: .value(tabs)),
         ]))
+    }
+
+    // MARK: - Discovery order (an active tab can be discovered before its siblings)
+
+    func testInactiveSiblingArrivingAfterItsActiveTabIsHidden() {
+        let store = discover([activeArrival("A", tabs: ["A", "B"]), inactiveArrival("B")])
+        XCTAssertEqual(visibleIds(store), ["A"])
+        XCTAssertEqual(store["B"]?.groupIds.map(Set.init), ["A", "B"])
+    }
+
+    func testActiveTabArrivingAfterItsInactiveSiblingHidesIt() {
+        let store = discover([inactiveArrival("B"), activeArrival("A", tabs: ["A", "B"])])
+        XCTAssertEqual(visibleIds(store), ["A"])
+        XCTAssertEqual(store["B"]?.groupIds.map(Set.init), ["A", "B"])
+    }
+
+    /// Resolving the arrival directly: only the waiting group changes.
+    func testArrivalOfAnUnrelatedTitleChangesNothing() {
+        let active = window("A", "A", groupIds: ["A"], reportedTabTitles: ["A", "B"])
+        let changes = TabGroupResolver.resolveArrival(newWindow: window("X", "Unrelated"),
+                                                      sameAppWindows: [active])
+        XCTAssertTrue(changes.isEmpty)
+    }
+
+    /// A complete group (nothing unmatched) is not re-resolved when a window with
+    /// one of its titles arrives: the newcomer stays visible and the group intact.
+    func testArrivalDoesNotDisturbAnotherCompleteGroup() {
+        let members = ["C", "D"]
+        let completeActive = window("C", "C", groupIds: members, reportedTabTitles: ["C", "D"])
+        let completeTab = window("D", "D", isTabbed: true, groupIds: members)
+        let waitingActive = window("A", "A", groupIds: ["A"], frame: otherFrame,
+                                   reportedTabTitles: ["A", "B"])
+        let newcomer = window("B", "B", frame: otherFrame)
+        let lookalike = window("E", "D")
+        for others in [[completeActive, completeTab, waitingActive],
+                       [waitingActive, completeTab, completeActive]] {
+            let changes = TabGroupResolver.resolveArrival(newWindow: newcomer, sameAppWindows: others)
+            XCTAssertEqual(changes["B"], State(isTabbed: true, groupIds: ["A", "B"]))
+            XCTAssertNil(changes["C"])
+            XCTAssertNil(changes["D"])
+            let lookalikeChanges = TabGroupResolver.resolveArrival(newWindow: lookalike,
+                                                                   sameAppWindows: others)
+            XCTAssertTrue(lookalikeChanges.isEmpty, "C's group has no unmatched title")
+        }
+    }
+
+    /// Startup enumeration returns windows in arbitrary order (Array(Set(...))).
+    /// Every order of one active tab and two inactive siblings, plus an
+    /// independent window, yields one entry for the group.
+    func testStartupEnumerationInEitherOrderYieldsOneEntry() {
+        let arrivals = [activeArrival("A", tabs: ["A", "B", "C"]), inactiveArrival("B"),
+                        inactiveArrival("C"), inactiveArrival("X", frame: otherFrame)]
+        for order in permutations(arrivals) {
+            let store = discover(order)
+            XCTAssertEqual(visibleIds(store), ["A", "X"], "order \(order.map(\.id))")
+            XCTAssertEqual(store["A"]?.groupIds.map(Set.init), ["A", "B", "C"])
+        }
+    }
+
+    private struct Arrival {
+        let id: String
+        let observation: TabObservation
+        let frame: CGRect
+    }
+
+    private func activeArrival(_ id: String, tabs: [String]) -> Arrival {
+        Arrival(id: id, observation: .group(tabs), frame: groupFrame)
+    }
+
+    private func inactiveArrival(_ id: String, frame: CGRect? = nil) -> Arrival {
+        Arrival(id: id, observation: .standalone, frame: frame ?? groupFrame)
+    }
+
+    /// Discovers windows (titled by their id) one by one the way
+    /// WindowStore.windowEvent does: the window's own resolution, then the arrival.
+    private func discover(_ arrivals: [Arrival]) -> [String: Descriptor] {
+        var store = [Descriptor]()
+        func apply(_ changes: [String: State]) {
+            store = store.map { $0.applying(changes[$0.id]) }
+        }
+        for arrival in arrivals {
+            var reported: [String]?
+            if case .group(let titles) = arrival.observation { reported = titles }
+            store.append(window(arrival.id, arrival.id, frame: arrival.frame,
+                                reportedTabTitles: reported))
+            let newWindow = { store.first { $0.id == arrival.id }! }
+            let others = { store.filter { $0.id != arrival.id } }
+            if case .group = arrival.observation {
+                apply(TabGroupResolver.resolve(active: newWindow(), observation: arrival.observation,
+                                               sameAppWindows: others()))
+            }
+            apply(TabGroupResolver.resolveArrival(newWindow: newWindow(), sameAppWindows: others()))
+        }
+        return Dictionary(uniqueKeysWithValues: store.map { ($0.id, $0) })
+    }
+
+    private func visibleIds(_ store: [String: Descriptor]) -> Set<String> {
+        Set(store.values.filter { isDisplayed($0, applying: [:]) }.map(\.id))
+    }
+
+    private func permutations<T>(_ items: [T]) -> [[T]] {
+        guard items.count > 1 else { return [items] }
+        return items.indices.flatMap { index -> [[T]] in
+            var rest = items
+            let head = rest.remove(at: index)
+            return permutations(rest).map { [head] + $0 }
+        }
     }
 
     /// Applies the resolver's sparse change map the way WindowStore does, then

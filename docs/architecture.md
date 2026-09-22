@@ -53,6 +53,9 @@ Each read of a window's tab bar is a `TabObservation`: `.group` (every tab butto
 `.standalone` (children read, no tab bar of 2 or more tabs), or `.unknown` (some AX read
 failed). Only a complete read changes membership; `.unknown` keeps the last known group
 and tab count, and the next complete read recovers without a retry timer.
+Discovery order is arbitrary, so a late-arriving sibling is matched against the active
+tab's last complete tab bar (`TabGroupResolver.resolveArrival`); only groups with an
+unmatched title equal to the newcomer's are resolved again.
 Safari-style browsers expose one AX window per browser window, so nothing matches and
 each window simply carries its own tab count. Counts come only from counting
 `AXTabButton` children — never guessed, never parsed from titles.

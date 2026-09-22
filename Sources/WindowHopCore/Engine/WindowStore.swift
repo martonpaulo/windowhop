@@ -154,6 +154,12 @@ public final class WindowStore {
             }
         }
         updateTabGroup(for: window, tabs: tabs)
+        if existing == nil {
+            // an active tab discovered earlier may be waiting for this window
+            let sameApp = windows.filter { $0.app === app && $0 !== window }
+            applyTabStates(TabGroupResolver.resolveArrival(newWindow: tabDescriptor(window),
+                                                           sameAppWindows: sameApp.map(tabDescriptor)))
+        }
         switch notification {
         case kAXFocusedWindowChangedNotification, kAXMainWindowChangedNotification:
             // Photoshop focuses a window after you focus another app; ignore those
@@ -281,7 +287,8 @@ public final class WindowStore {
                                           title: window.title,
                                           isTabbed: window.isTabbed,
                                           groupIds: window.tabGroupIds,
-                                          frame: window.frame)
+                                          frame: window.frame,
+                                          reportedTabTitles: window.reportedTabTitles)
     }
 
     private func updateTabGroup(for window: TrackedWindow, tabs: TabObservation) {

@@ -20,7 +20,10 @@ public final class TrackedWindow {
     public private(set) var title: String
     /// The raw AXDocument value, kept for CollisionLabel; nil for the Settings entry.
     public private(set) var documentPath: String?
-    public private(set) var tabCount: Int?
+    /// Titles of this window's last complete tab bar read; nil when it showed none.
+    /// Derived AX cache, never persisted.
+    public private(set) var reportedTabTitles: [String]?
+    public var tabCount: Int? { reportedTabTitles?.count }
     public internal(set) var isMinimized: Bool
     public internal(set) var isFullscreen: Bool
     public internal(set) var isOnCurrentSpace = true
@@ -47,7 +50,7 @@ public final class TrackedWindow {
                                       documentPath: attributes.document,
                                       appName: app.name)
         if case .group(let titles) = tabs {
-            tabCount = titles.count
+            reportedTabTitles = titles
         }
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false
@@ -64,7 +67,6 @@ public final class TrackedWindow {
         nativeWindow = settingsWindow
         isOwnSettingsEntry = true
         title = SettingsWindowController.switcherEntryTitle
-        tabCount = nil
         isMinimized = settingsWindow.isMiniaturized
         isFullscreen = false
         frame = settingsWindow.frame
@@ -78,9 +80,9 @@ public final class TrackedWindow {
                                       documentPath: attributes.document,
                                       appName: app.name)
         switch tabs {
-        case .group(let titles): tabCount = titles.count
-        case .standalone: tabCount = nil
-        case .unknown: break // an incomplete read keeps the last complete count
+        case .group(let titles): reportedTabTitles = titles
+        case .standalone: reportedTabTitles = nil
+        case .unknown: break // an incomplete read keeps the last complete tab bar
         }
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false

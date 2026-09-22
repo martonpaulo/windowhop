@@ -73,6 +73,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tab of a native tab group could not be read, the remaining tabs were treated as the
   whole group and the unread tab appeared as a separate switcher entry. An incomplete
   read now leaves the group as it was until the next complete one.
+- **Tabs of a background app stay grouped at startup**: when WindowHop found a window's
+  visible tab before its other tabs, those tabs could show up as separate entries until
+  the app was focused. Tabs are now grouped whichever order they are found in.
 
 ## [1.6.2] - 2026-09-09
 
