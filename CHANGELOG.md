@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Settings shows how to switch windows**: General now opens with a "Switch windows"
+  section that explains holding the switcher shortcut and releasing it to switch, and
+  opening WindowHop with its own shortcut and confirming with Return or Space. It uses
+  the shortcuts you have set and updates as soon as you change them.
+
 ### Changed
 
 - **Launch at login is off for new installs**: turn it on in Settings → General. Existing

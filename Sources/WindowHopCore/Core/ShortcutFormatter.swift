@@ -26,13 +26,24 @@ public enum ShortcutFormatter {
 
     /// Spoken form for accessibility labels ("Command Tab", not "⌘⇥").
     public static func spokenChord(modifiers: CGEventFlags, keyCode: Int64) -> String {
+        let spokenModifiers = spokenModifiers(modifiers)
+        let key = spokenKeyName(for: keyCode)
+        return spokenModifiers.isEmpty ? key : spokenModifiers + " " + key
+    }
+
+    /// Spoken modifier names in the same canonical order as `modifierSymbols`.
+    public static func spokenModifiers(_ modifiers: CGEventFlags) -> String {
         var parts = [String]()
         if modifiers.contains(.maskControl) { parts.append("Control") }
         if modifiers.contains(.maskAlternate) { parts.append("Option") }
         if modifiers.contains(.maskShift) { parts.append("Shift") }
         if modifiers.contains(.maskCommand) { parts.append("Command") }
-        parts.append(spokenKeyNames[keyCode] ?? KeyCodeNames.name(for: keyCode))
         return parts.joined(separator: " ")
+    }
+
+    /// Spoken name of a single key ("Escape", not "⎋").
+    public static func spokenKeyName(for keyCode: Int64) -> String {
+        spokenKeyNames[keyCode] ?? KeyCodeNames.name(for: keyCode)
     }
 
     private static let spokenKeyNames: [Int64: String] = [

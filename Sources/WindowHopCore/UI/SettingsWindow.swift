@@ -203,8 +203,24 @@ struct GeneralPane: View {
         preferences.launchAtLogin = newValue
     }
 
+    private var switchingGuide: SwitchingGuide {
+        SwitchingGuide(switcherShortcut: preferences.shortcut,
+                       persistentShortcut: preferences.persistentShortcut,
+                       enabled: preferences.switcherEnabled)
+    }
+
     var body: some View {
         Form {
+            // first, so the pane Settings opens on after the permission grant
+            // says how to switch; derived from the current shortcuts
+            Section {
+                ForEach(switchingGuide.firstSteps, id: \.display) { step in
+                    Text(step.display)
+                        .accessibilityLabel(step.spoken)
+                }
+            } header: {
+                Text("Switch windows")
+            }
             Section {
                 Toggle("Enable WindowHop", isOn: $preferences.switcherEnabled)
                 // The binding, not onChange: the rollback assigns the state
@@ -219,7 +235,7 @@ struct GeneralPane: View {
                         .foregroundStyle(.secondary)
                 }
             } footer: {
-                Text("Disabling WindowHop hands ⌘⇥ back to the native app switcher without quitting.")
+                Text("Disabling WindowHop hands \(SwitchingGuide.nativeSwitcherChord.display) back to the native app switcher without quitting.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -257,7 +273,7 @@ struct GeneralPane: View {
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
-                    Text("The native ⌘⇥ app switcher takes over until you open WindowHop again.")
+                    Text("The native \(SwitchingGuide.nativeSwitcherChord.display) app switcher takes over until you open WindowHop again.")
                 }
             }
         }
@@ -303,9 +319,13 @@ struct ShortcutsPane: View {
                         .foregroundStyle(.secondary)
                 }
             } footer: {
-                Text("The switcher shortcut cycles while you hold the modifier (add ⇧ to go backward); releasing it switches windows. Open WindowHop keeps the switcher open without holding anything: ⇥ and arrows navigate, ↩ or Space switches, ⎋ cancels, ⌫ closes a window after confirmation.")
+                let reference = SwitchingGuide(switcherShortcut: preferences.shortcut,
+                                               persistentShortcut: preferences.persistentShortcut,
+                                               enabled: preferences.switcherEnabled).keyReference
+                Text(reference.map(\.display).joined(separator: " "))
                     .font(.callout)
                     .foregroundStyle(.secondary)
+                    .accessibilityLabel(reference.map(\.spoken).joined(separator: " "))
             }
         }
         .settingsPane()
