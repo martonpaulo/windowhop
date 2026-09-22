@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   since WindowHop would take it over in every app; so are the Force Quit shortcuts. A
   chord that macOS itself uses, such as ⌘Space, asks first, and Cancel keeps your previous
   shortcut. Shortcuts you already have are kept as they are.
+- **About shows when your build was released**: Settings → About and Updates now show the
+  release date next to the version and build, in your language's date format. Development
+  builds say "Development build" instead of an invented version.
 
 ### Changed
 

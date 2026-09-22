@@ -61,6 +61,14 @@ case "$FEED" in
     *) fail "appcast feed is not HTTPS: $FEED" ;;
 esac
 
+# the release date is stamped at packaging time (scripts/stamp-app-metadata.sh),
+# never typed into the source Info.plist
+if /usr/libexec/PlistBuddy -c 'Print :AppReleaseDate' Support/Info.plist >/dev/null 2>&1; then
+    fail "Support/Info.plist must not contain AppReleaseDate; packaging stamps it"
+else
+    pass "release date is left to packaging"
+fi
+
 # --- appcast/release metadata consistency ------------------------------------
 if [ -f appcast.xml ]; then
     if grep -q "sparkle:edSignature=" appcast.xml && grep -q "https://github.com/martonpaulo/windowhop/releases/download/" appcast.xml; then
@@ -155,7 +163,7 @@ fi
 # These run the real publication scripts against a fake `gh` and throwaway
 # repositories: no network, no token, no signing material, no real release.
 for fixture in tests/scripts/publish-release-tests.sh tests/scripts/make-appcast-tests.sh \
-    tests/scripts/release-notes-tests.sh; do
+    tests/scripts/release-notes-tests.sh tests/scripts/stamp-app-metadata-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"
     else

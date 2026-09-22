@@ -349,6 +349,13 @@ changes nothing. The appcast lives at
 EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI secret).
 Update checks are the app's only network activity.
 
+Build metadata has one reader, `Core/AppVersion` (version, build, release date), used by
+Settings › About, the Updates pane and support reports. The release date is the packaged
+commit's committer date (`git log -1 --format=%cs`), written by `scripts/package-app.sh`
+through `scripts/stamp-app-metadata.sh` into the bundle's `Info.plist` as `AppReleaseDate`
+(`YYYY-MM-DD`). Nothing else writes it: `Support/Info.plist` never carries it
+(`scripts/validate.sh` checks), and unbundled development builds have no date.
+
 Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
 requires an Apple-issued Developer ID Application identity plus a team App Store
 Connect API key for notarization, and validates the final app against `Support/ExpectedDesignatedRequirement.txt`

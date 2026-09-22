@@ -549,6 +549,7 @@ struct AppearancePane: View {
 struct UpdatesPane: View {
     @ObservedObject private var preferences = Preferences.shared
     @ObservedObject private var updateManager = UpdateManager.shared
+    private let appVersion = AppVersion.main
 
     var body: some View {
         Form {
@@ -574,11 +575,16 @@ struct UpdatesPane: View {
                         UpdateManager.shared.automaticallyChecksForUpdates = newValue
                     }
                     .disabled(!UpdateManager.shared.isAvailable)
-                LabeledContent("Version \(UpdateManager.shared.currentVersion)") {
+                LabeledContent {
                     Button("Check for Updates…") {
                         UpdateManager.shared.checkForUpdates()
                     }
                     .disabled(!UpdateManager.shared.isAvailable)
+                } label: {
+                    Text(appVersion.versionLabel)
+                    if let released = appVersion.releaseDateText() {
+                        Text("Released \(released)")
+                    }
                 }
                 if !UpdateManager.shared.isAvailable {
                     Text("Updates are available in the installed app (WindowHop.app), not in development builds.")
@@ -598,13 +604,7 @@ struct UpdatesPane: View {
 // MARK: - About
 
 struct AboutPane: View {
-    private var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
-    }
-
-    private var build: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
-    }
+    private let appVersion = AppVersion.main
 
     private var bundleIdentifier: String {
         Bundle.main.bundleIdentifier ?? "com.perso.windowhop"
@@ -631,7 +631,10 @@ struct AboutPane: View {
                     }
                 }
                 .padding(.vertical, DesignTokens.settingsAboutHeaderPadding)
-                LabeledContent("Version", value: "\(version) (build \(build))")
+                LabeledContent("Version", value: appVersion.displayVersion)
+                if let released = appVersion.releaseDateText() {
+                    LabeledContent("Released", value: released)
+                }
                 LabeledContent("Bundle identifier", value: bundleIdentifier)
             }
             Section {

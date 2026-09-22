@@ -29,8 +29,10 @@ cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # ditto preserves the framework's symlink structure; cp -R would break it
 ditto .build/release/Sparkle.framework "$APP/Contents/Frameworks/Sparkle.framework"
 
-/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$APP/Contents/Info.plist"
+# the release date is the packaged commit's committer date, so rebuilding the
+# same commit stamps the same value
+RELEASE_DATE=$(git log -1 --format=%cs)
+scripts/stamp-app-metadata.sh "$APP/Contents/Info.plist" "$VERSION" "$BUILD_NUMBER" "$RELEASE_DATE"
 
 # sign nested code first (Sparkle's helpers), then the framework, then the app
 SIGN_FLAGS=(--force --sign "$IDENTITY")
@@ -57,5 +59,5 @@ rm -f "$ZIP"
 # ditto -c -k preserves symlinks and signatures, as Sparkle requires
 ditto -c -k --keepParent "$APP" "$ZIP"
 
-echo "built $APP (version $VERSION, build $BUILD_NUMBER, identity: $IDENTITY)"
+echo "built $APP (version $VERSION, build $BUILD_NUMBER, released $RELEASE_DATE, identity: $IDENTITY)"
 echo "zipped $ZIP"

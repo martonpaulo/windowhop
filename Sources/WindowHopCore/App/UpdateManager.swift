@@ -27,10 +27,6 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
     /// false while a check or an update session is already in progress.
     public var canCheckForUpdates: Bool { controller?.updater.canCheckForUpdates ?? false }
 
-    public var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
-    }
-
     /// Requires the Info.plist SUFeedURL/SUPublicEDKey, so only a bundled,
     /// properly configured WindowHop.app starts the updater.
     public func startIfBundled() {
