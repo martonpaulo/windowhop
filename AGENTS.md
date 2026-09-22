@@ -185,6 +185,11 @@ notes. A missing configurability decision is a review failure.
 - Code is evidence of current behavior. This file is normative for process. An approved
   specification is normative for desired behavior. Expose divergence among them; do not
   silently resolve every conflict in favor of one source.
+- When two sources disagree — issues, comments, edits, this file, the agent's own memory, or
+  the owner's current instruction — a newer trusted statement is the recommended side, never
+  the decided one. Ask the owner about every divergence before acting on either side, and
+  record the answer in the newer issue. The `skd-agent-context-validation` skill owns the
+  precedence order and the ranking.
 - Keep one canonical source for each rule. `docs/architecture.md`, `docs/testing.md`,
   `docs/feature-defaults.md`, and `docs/website.md` own their details; this file links to
   them instead of restating them.
@@ -269,10 +274,20 @@ notes. A missing configurability decision is a review failure.
 
 - Prefer native platform components and established macOS patterns. Custom UI must provide
   clear product value.
+- Before creating or changing an interface, a style, or a visual asset, name what the product
+  should communicate and how it should feel to the person using it, from `docs/product.md` and
+  recorded brand decisions. Judge typography, colour, density, contrast, motion, imagery and
+  copy tone by that intent, not only as layout mechanics. When no intent is recorded, state the
+  one you infer and ask before a consequential visual change.
 - Define layout, hierarchy, controls, loading, content, empty, error, retry, disabled,
   cancellation, and destructive states when applicable.
 - Include keyboard navigation, focus, screen-reader labels, scalable text, contrast, reduced
   motion, and non-color status cues in the same change.
+- Accessibility evidence is automated and inspectable: semantics, roles, names and states,
+  focus and keyboard order, contrast, and automated audits. Manual screen-reader passes are
+  not run; the owner accepts that gap, recorded once in `docs/product.md` under
+  `## Accepted evidence gaps`. A missing screen-reader pass never blocks completion, and an
+  old criterion that asks for one is struck with a link to that line.
 - Keep visible copy centralized and consistent with the English-only copy strategy.
 - Keep expensive work out of render paths and latency-sensitive paths. Prefer event-driven,
   on-demand, bounded, incremental, and cancelable work.
@@ -290,6 +305,12 @@ notes. A missing configurability decision is a review failure.
 
 - Conventional Commits; English in code, comments, commits, filenames, tests, configuration,
   and developer documentation.
+- Write human-facing English (README, documentation, landing page, product copy, error
+  messages) in plain international English that non-native readers understand: one precise
+  verb instead of a phrasal verb (`investigate`, not `look into`), internationally known
+  words, no idioms or slang, and short active sentences. Established technical terms
+  (`log in`, `set up`, `roll back`), commands, identifiers and quoted text stay exactly as they
+  are. Clarity comes first; never replace a clear everyday word with a rare formal one.
 - Follow the existing formatter, naming, file layout, and architectural conventions.
 - Prefer clear types, explicit ownership, and simple control flow over cleverness.
 - Comments state constraints the code can't show (ported-rule provenance, macOS quirks). Link
@@ -299,6 +320,15 @@ notes. A missing configurability decision is a review failure.
   upstream rules (include the upstream commit hash). Never remove upstream notices.
 - Update the smallest canonical documentation section when a durable contract changes. Do not
   create empty documentation for possible future use.
+- Record a consequential decision in the canonical document that owns the rule, with the
+  deciding issue cited beside it as `Decided on #N`. Consequential means that reversing it
+  later would cost real work or surprise a user: for example, what opens at launch, the
+  supported OS floor, or a data-retention choice. No issue, wiki page or long-lived comment
+  serves as a decision register.
+- Index those decisions in the `## Decision index` of `docs/product.md`, one row per decision:
+  the decision, its outcome, the canonical document, and the deciding issue. The index points
+  to the rule and never restates it; an ADR in `docs/adr/` stays the owner of an architectural
+  decision, and its row links the ADR.
 - Keep the README easy to scan: benefit, behavior, requirements, install, usage, validation,
   privacy, limitations, landing page, download. It opens with the social card
   (`site/social-card.jpg`) and shows no screenshots; screenshots belong to the landing page.
@@ -319,6 +349,37 @@ An adjacent proposal names `Evidence`, `Canonical owner`, `Smallest change`, `Dr
 section or script can own it. Do not persist hypotheses, raw logs, personal data, transient
 machine state, or issue-specific implementation details as general guidance. Behavior-changing
 scripts or configuration require their own authorized scope.
+
+## Output shape
+
+Shape every message to the user so it can be acted on at once, including by a reader with ADHD.
+Adapted from [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) (MIT, Ayoub Ghriss).
+
+1. **Lead with the next action.** When the answer is a command, path or snippet, it comes first;
+   prose follows, if at all.
+2. **Number multi-step work.** One bounded action per step, and the fewest steps that still work.
+3. **End with one concrete next action** the reader can do in under two minutes, when anything is
+   left open.
+4. **Suppress tangents.** Finish the first thing, then offer the second as a separate question.
+5. **Restate the state every turn**: "Step 3 of 5 done: schema updated. Next: backfill." When the
+   client has a task or plan tool, the checklist does the restating.
+6. **Give time estimates in concrete units**, never "some work".
+7. **Make completed work visible** in concrete terms: what now works and how to see it.
+8. **State errors plainly**: the cause, then the fix.
+9. **Keep lists short.** Group related items and rank the most relevant first, with at most five
+   visible per group. Never drop a relevant item: this shapes presentation, not analysis.
+10. **No preamble, no recap, no closing pleasantries.**
+
+The shape gives way when:
+
+- the user asks to explain or walk through something: explain fully, still without preamble;
+- a destructive action is ahead: confirm first;
+- repeated attempts keep failing: name the assumption that may be wrong and ask one diagnostic
+  question;
+- the request is really ambiguous: ask one short question;
+- the user asks for options: give two to four, ranked, recommendation first;
+- a required format applies: an attention card below, an execution plan, a completion report, or
+  a machine-read output keeps its structure, and the shape applies to the prose around it.
 
 ## User attention
 
@@ -344,14 +405,30 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 - Add or update focused tests for changed behavior, regressions, persistence, migrations,
   validation, and critical accessibility. Business rules in `Core/` ship with unit tests.
+- A behavioral bug fix includes a regression test proven to fail without the fix: run it
+  against the unfixed code and see it fail before committing.
 - Test observable contracts at stable seams; avoid tests that only mirror implementation
   details or framework behavior.
 - Run the smallest relevant check during iteration. Inspect the first useful failure and make a
   relevant change before rerunning.
 - Once stable, run `swift build && swift test` plus `make validate` — both must pass with
   zero warnings before a commit.
+- When a change alters behavior, run the real app with its native diagnostics (the runtime
+  check flags above, `WINDOWHOP_DEBUG=1`) and observe the changed behavior. Green tests are not
+  seeing it run.
 - Never claim a check passed unless it ran successfully. Report exact skips, blockers, residual
-  risk, and manual gaps.
+  risk, what was verified manually, and what remains unverified.
+- A piped check reports the exit code of the last command, not its own: `swift test | tail -3`
+  exits 0 when a test fails, and `set -e` does not catch it. Run a gating check unpiped; to
+  trim its output, use `set -o pipefail`, or capture it to a file and check the status
+  separately. Never chain `&&` off a piped check. A check whose exit code you did not observe
+  has not run and is never reported as passing.
+- Local browser checks of the website (`docs/website.md`) stay inside these limits:
+  - during iteration, check one engine and only the affected pages;
+  - run browser automation with one worker;
+  - check `uptime` before launching a browser, and do not launch one while the 1-minute load
+    average is above 8; wait for the load to fall;
+  - run the full two-engine check only as the final step before commit.
 
 ## Artifacts and processes
 
@@ -394,6 +471,9 @@ to publish an issue or change code. Do not ask again for a decision already reco
   may already be public, stop its spread and require revocation or rotation before considering
   cleanup; deleting it from the latest tree does not remove the exposure.
 - If a commit or push fails, report the exact failure without claiming success.
+- Close an issue resolved as `completed` only with one signed closing comment on the issue that
+  names the resolving commit, what was verified (checks, tests, manual runs), and what was not
+  verified. `skd-github-publishing-conventions` owns the format.
 - Release flow: bump the version and build number, move `CHANGELOG.md`'s `[Unreleased]` to
   `[X.Y.Z] - date` (and its link reference), build and validate
   from a clean tree, sign and notarize, verify the install and Sparkle update paths, then tag
@@ -404,12 +484,14 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 ## Completion report
 
-Lead with the outcome and include:
+Lead with the outcome, in the output shape above, and include:
 
 - what changed and why;
 - files touched;
 - validation commands and actual results;
 - warnings, failures, skips, manual gaps, and remaining risks;
+- what was verified by running the application, and what remains unverified;
+- each issue closed, with the resolving commit its closing comment names;
 - temporary artifacts kept or removed;
-- commit and push status;
+- commit, branch, and push status;
 - final worktree status and unrelated dirty files left untouched.

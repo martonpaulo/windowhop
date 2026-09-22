@@ -109,6 +109,10 @@ restate it.
 | --- | --- | --- | --- |
 | What opens at launch and reopen | Settings opens at a normal launch only on first run or when both icons are hidden; missing Accessibility opens onboarding on any launch, login included | [architecture.md](architecture.md), "Launch and reopen" | [#80](https://github.com/martonpaulo/windowhop/issues/80) |
 
+## Accepted evidence gaps
+
+- Manual screen-reader passes: not run; accepted by the owner on 2026-09-13 (martonpaulo/skill-deck#266).
+
 ## What this document is not
 
 A specification. Individual requirements, acceptance criteria, and edge cases belong in issues.
