@@ -128,6 +128,52 @@ check "#52 a matching public release is a no-op" "$STATUS" "0"
 check "#52 the no-op only reads" "$(operations)" "view view"
 check "#52 the no-op leaves the release unchanged" "$(state)" "$before"
 
+# --- #53: equal name and size is not equal content ------------------------------------
+
+# The audit's counterexample: the public update archive holds OLD-DATA, the rebuilt one
+# NEW-DATA — eight bytes each, so a size-only check accepted the rerun.
+fresh
+release false WindowHop-1.2.3-Installer.zip WindowHop-1.2.3.dmg WindowHop-1.2.3.zip=OLD-DATA
+before=$(state)
+publish
+check "#53 a same-size public asset with other bytes fails" "$STATUS" "1"
+check "#53 a same-size mismatch only reads" "$(operations)" "view view"
+check "#53 a same-size mismatch leaves the public release unchanged" "$(state)" "$before"
+check "#53 a same-size mismatch is reported" \
+    "$(grep -c 'asset WindowHop-1.2.3.zip is sha256:' "$SANDBOX/err.log")" "1"
+
+# An identical rerun is still a read-only no-op, now proven by digest.
+fresh
+release false "${ALL[@]}"
+publish
+check "#53 an identical public release is a no-op" "$STATUS" "0"
+check "#53 an identical rerun only reads" "$(operations)" "view view"
+
+# An asset GitHub reports no digest for cannot be verified, so it is never a match.
+fresh
+release false WindowHop-1.2.3-Installer.zip WindowHop-1.2.3.dmg WindowHop-1.2.3.zip=nodigest
+publish
+check "#53 a public asset without a digest fails" "$STATUS" "1"
+check "#53 a public asset without a digest writes nothing" "$(writes)" "0"
+
+# A draft is not yet public, so a same-size wrong asset there is re-uploaded, verified
+# and published: drafts heal, public releases never do.
+fresh
+release true WindowHop-1.2.3-Installer.zip WindowHop-1.2.3.dmg WindowHop-1.2.3.zip=OLD-DATA
+publish
+check "#53 a draft with a same-size wrong asset is repaired" "$STATUS" "0"
+check "#53 the repaired draft ends public" "$(draft)" "False"
+
+# Bytes altered on the way up keep their size but not their digest: the draft is never
+# published, so release.yml never writes an appcast entry whose signature describes the
+# local archive rather than the stored one.
+fresh
+FAKE_GH_FAIL=upload:WindowHop-1.2.3.zip:corrupt publish
+check "#53 an upload stored with other bytes fails" "$STATUS" "1"
+check "#53 an upload stored with other bytes is never published" \
+    "$(grep -c '^edit:publish$' "$FAKE_GH_LOG" || true)" "0"
+check "#53 an upload stored with other bytes stays a draft" "$(draft)" "True"
+
 if [ "$FAILED" -gt 0 ]; then
     echo "publish-release: $FAILED failed, $PASSED passed" >&2
     exit 1
