@@ -109,7 +109,7 @@ public final class WindowStore {
         let element = app.axElement
         let pid = app.pid
         BackgroundWork.axReadsQueue.async {
-            guard let elements = try? element.windowElements() else { return }
+            guard let elements = element.windowElements().listedWindows else { return }
             for windowElement in elements {
                 AXNotificationRouter.routeWindowEvent(kAXWindowCreatedNotification, windowElement, pid)
             }
@@ -292,26 +292,26 @@ public final class WindowStore {
         let appsSnapshot = Array(apps.values)
         BackgroundWork.axReadsQueue.async { [weak self] in
             for app in appsSnapshot {
-                let elements = (try? app.axElement.windowElements()) ?? []
-                for windowElement in elements {
+                let enumeration = app.axElement.windowElements()
+                for windowElement in enumeration.listedWindows ?? [] {
                     AXNotificationRouter.routeWindowEvent(kAXWindowCreatedNotification, windowElement, app.pid)
                 }
-                let currentElements = Set(elements)
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }
-                    var missing = [AXUIElement]()
-                    for window in self.windows where window.app === app {
-                        guard let ax = window.ax else { continue }
-                        window.isOnCurrentSpace = currentElements.contains(ax)
-                        if !window.isOnCurrentSpace {
-                            missing.append(ax)
-                        }
+                    let appWindows = self.windows.filter { $0.app === app }
+                    // a failed read keeps each window's last known Space flag; see
+                    // SpaceMembership for why an empty success still updates it
+                    let reconciliation = SpaceMembership.reconcile(
+                        tracked: appWindows.compactMap(\.ax), enumeration: enumeration)
+                    for window in appWindows {
+                        guard let ax = window.ax, let isCurrent = reconciliation.currentSpace[ax] else { continue }
+                        window.isOnCurrentSpace = isCurrent
                     }
                     self.onChange?()
                     // a window absent from kAXWindows is either on another Space
                     // (keep it) or silently dead — a missed destroy notification
                     // once produced duplicate entries. Validate and prune.
-                    self.pruneIfDead(missing)
+                    self.pruneIfDead(reconciliation.suspects)
                 }
             }
         }

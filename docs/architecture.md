@@ -13,7 +13,7 @@ about AppKit or AX.
 ├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
 └─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
                                 MRUOrder, TitleResolver, PersistentShortcut, Preferences,
-                                ExpandedPreviewSession (pure, unit-tested)
+                                ExpandedPreviewSession, SpaceMembership (pure, unit-tested)
 ```
 
 ## Window model (event-driven, no polling)
@@ -29,7 +29,9 @@ about AppKit or AX.
    collide. `snapshot()` applies eligibility + display rules and returns value items.
 4. On `activeSpaceDidChange`, every app is re-enumerated: this discovers windows the
    public AX API hides until their Space is visited and refreshes each window's
-   current-Space flag.
+   current-Space flag. `SpaceMembership` applies only a successful read: a failed
+   enumeration (timeout, `.cannotComplete`) keeps each window's last known Space flag,
+   while an empty successful list still marks the app's windows off-Space.
 
 ### Tabs are never entries
 

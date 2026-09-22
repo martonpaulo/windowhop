@@ -111,10 +111,32 @@ extension AXUIElement {
     /// The app's window list. Public AX only: windows on other Spaces are not returned
     /// until visited; the store compensates by re-enumerating on Space changes and by
     /// keeping already-discovered elements alive.
-    public func windowElements() throws -> [AXUIElement] {
-        let windows = try attributes([kAXWindowsAttribute]).windows ?? []
-        // macOS sometimes returns duplicate entries (e.g. Mail starting at login)
-        return Array(Set(windows))
+    ///
+    /// A single-attribute read is used so the AX error code survives: a timeout must stay
+    /// distinguishable from an app that successfully lists zero windows.
+    public func windowElements() -> WindowEnumeration<AXUIElement> {
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(self, kAXWindowsAttribute as CFString, &value)
+        return Self.windowEnumeration(result: result, value: value)
+    }
+
+    /// Maps a `kAXWindows` read to its enumeration outcome. `.noValue` and
+    /// `.attributeUnsupported` are answers (no windows); `.invalidUIElement` means the
+    /// app element is dead; every other error is a failed read.
+    static func windowEnumeration(result: ApplicationServices.AXError,
+                                  value: CFTypeRef?) -> WindowEnumeration<AXUIElement> {
+        switch result {
+        case .success:
+            guard let windows = value as? [AXUIElement] else { return .unavailable }
+            // macOS sometimes returns duplicate entries (e.g. Mail starting at login)
+            return .listed(Set(windows))
+        case .noValue, .attributeUnsupported:
+            return .listed([])
+        case .invalidUIElement:
+            return .applicationInvalid
+        default:
+            return .unavailable
+        }
     }
 
     /// Detects dead elements: a window that was destroyed while its

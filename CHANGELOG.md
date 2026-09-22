@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Windows no longer vanish when an app is slow during a Space switch**: with other Spaces
+  hidden, an app that did not answer in time had all its windows treated as off-Space until
+  the next focus change. They now stay where they were last seen.
+
 ## [1.6.2] - 2026-09-09
 
 ### Changed
