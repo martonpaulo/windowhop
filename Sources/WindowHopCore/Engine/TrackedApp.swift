@@ -27,7 +27,7 @@ public final class TrackedApp {
     public let runningApplication: NSRunningApplication
     public let pid: pid_t
     public let axElement: AXUIElement
-    public private(set) var name: String?
+    public let name: String?
     public let bundleIdentifier: String?
     let executablePath: String?
     public internal(set) var isHidden: Bool
@@ -35,8 +35,12 @@ public final class TrackedApp {
     /// offer escalates to a confirmed Force Quit (ported from AltTab's
     /// alreadyRequestedToQuit, with an explicit confirmation added).
     public internal(set) var quitRequested = false
+    // Observer state is confined to BackgroundWork.axReadsQueue: only `handle(_:)`
+    // and the work it schedules on that queue read or write these two fields
+    // (tests read `lifecycle` from a block on that queue).
     private var axObserver: AXObserver?
-    private var isReallyFinishedLaunching = false
+    private(set) var lifecycle = ObserverLifecycle(maxAttempts: TrackedApp.subscriptionRetries,
+                                                   retryDelay: TrackedApp.subscriptionRetryDelay)
     private var kvObservers: [NSKeyValueObservation] = []
     private var cachedIcon: NSImage?
 
@@ -78,76 +82,135 @@ public final class TrackedApp {
                     executablePath: executablePath)
     }
 
+    /// Reads eligibility on main, then hands a `start` to the AX reads queue, which
+    /// owns the observer lifecycle.
     func observeIfEligible() {
-        guard runningApplication.activationPolicy != .prohibited, !isReallyFinishedLaunching else { return }
-        if axObserver == nil {
-            var observer: AXObserver?
-            AXObserverCreate(pid, AXNotificationRouter.axObserverCallback, &observer)
-            guard let observer else { return }
-            axObserver = observer
-            CFRunLoopAddSource(BackgroundWork.axEventsThread.runLoop,
-                               AXObserverGetRunLoopSource(observer), .commonModes)
+        guard runningApplication.activationPolicy != .prohibited else { return }
+        startObserving()
+    }
+
+    func startObserving() {
+        BackgroundWork.axReadsQueue.async { [weak self] in
+            self?.handle(.start)
         }
-        subscribeToAppNotifications()
+    }
+
+    /// Stops observing for good: pending retries, late subscription results and
+    /// window subscriptions of this app all find their generation stale afterwards.
+    func stopObserving() {
+        kvObservers = []
+        // strong capture: the store drops the app right after this call, and the stop
+        // must still run to detach the observer's run-loop source
+        BackgroundWork.axReadsQueue.async {
+            self.handle(.stop)
+        }
+    }
+
+    // MARK: - AX reads queue only
+
+    /// Feeds one event to the lifecycle and runs its commands. Runs on the AX reads queue.
+    private func handle(_ event: ObserverLifecycle.Event) {
+        dispatchPrecondition(condition: .onQueue(BackgroundWork.axReadsQueue))
+        let commands = lifecycle.handle(event)
+        DebugLog.log("observer pid=\(pid) \(event) -> \(lifecycle.phase) \(commands)")
+        for command in commands {
+            run(command)
+        }
+    }
+
+    private func run(_ command: ObserverLifecycle.Command) {
+        switch command {
+        case let .subscribe(generation):
+            handle(subscribeFirstNotification(generation: generation))
+        case let .scheduleRetry(generation, delay):
+            BackgroundWork.axReadsQueue.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.handle(.retryDue(generation: generation))
+            }
+        case let .subscribeRemainingNotifications(generation):
+            guard let axObserver else { return }
+            for notification in TrackedApp.appNotifications.dropFirst() {
+                subscribe(axElement, to: notification, with: axObserver, generation: generation)
+            }
+        case .discoverWindows:
+            // the store drops the request when this app is no longer the tracked one
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                WindowStore.shared.discoverWindows(of: self)
+            }
+        case .removeObserver:
+            if let axObserver {
+                CFRunLoopRemoveSource(BackgroundWork.axEventsThread.runLoop,
+                                      AXObserverGetRunLoopSource(axObserver), .commonModes)
+            }
+            axObserver = nil
+        }
     }
 
     /// The first successful subscription marks the app as really finished launching
     /// (some apps report isFinishedLaunching but still return .cannotComplete);
     /// only then are its existing windows discovered.
-    private func subscribeToAppNotifications() {
-        guard let axObserver else { return }
-        let element = axElement
-        BackgroundWork.axReadsQueue.retrying(attempts: TrackedApp.subscriptionRetries,
-                                             delay: TrackedApp.subscriptionRetryDelay) { [weak self] in
-            guard let self, !self.isReallyFinishedLaunching else { return }
-            if try element.subscribe(axObserver, TrackedApp.appNotifications.first!) {
-                self.isReallyFinishedLaunching = true
-                for notification in TrackedApp.appNotifications.dropFirst() {
-                    BackgroundWork.axReadsQueue.retrying(attempts: TrackedApp.subscriptionRetries,
-                                                         delay: TrackedApp.subscriptionRetryDelay) {
-                        try element.subscribe(axObserver, notification)
-                    }
-                }
-                DispatchQueue.main.async {
-                    WindowStore.shared.discoverWindows(of: self)
-                }
+    private func subscribeFirstNotification(generation: UInt64) -> ObserverLifecycle.Event {
+        let observer: AXObserver
+        if let axObserver {
+            observer = axObserver
+        } else {
+            var created: AXObserver?
+            AXObserverCreate(pid, AXNotificationRouter.axObserverCallback, &created)
+            guard let created else {
+                return .subscriptionFailed(generation: generation, retryable: false)
             }
+            // a CFRunLoop source may be added to another thread's run loop
+            CFRunLoopAddSource(BackgroundWork.axEventsThread.runLoop,
+                               AXObserverGetRunLoopSource(created), .commonModes)
+            axObserver = created
+            observer = created
+        }
+        do {
+            let accepted = try axElement.subscribe(observer, TrackedApp.appNotifications.first!)
+            return accepted ? .subscriptionSucceeded(generation: generation)
+                : .subscriptionFailed(generation: generation, retryable: false)
+        } catch {
+            return .subscriptionFailed(generation: generation, retryable: true)
         }
     }
 
     /// Adds window-level notifications for a newly discovered window element.
-    /// Runs on the AX reads queue.
+    /// Runs on the AX reads queue; does nothing once the app stopped being observed.
     func subscribeToWindowNotifications(_ windowElement: AXUIElement) {
-        guard let axObserver else { return }
+        dispatchPrecondition(condition: .onQueue(BackgroundWork.axReadsQueue))
+        guard case let .ready(generation) = lifecycle.phase, let axObserver else { return }
         for notification in TrackedApp.windowNotifications {
-            BackgroundWork.axReadsQueue.retrying(attempts: TrackedApp.subscriptionRetries,
-                                                 delay: TrackedApp.subscriptionRetryDelay) {
-                try windowElement.subscribe(axObserver, notification)
-            }
+            subscribe(windowElement, to: notification, with: axObserver, generation: generation)
         }
     }
 
-    func stopObserving() {
-        kvObservers = []
-        if let axObserver {
-            CFRunLoopRemoveSource(BackgroundWork.axEventsThread.runLoop,
-                                  AXObserverGetRunLoopSource(axObserver), .commonModes)
+    private func subscribe(_ element: AXUIElement, to notification: String,
+                           with observer: AXObserver, generation: UInt64) {
+        BackgroundWork.axReadsQueue.retrying(attempts: TrackedApp.subscriptionRetries,
+                                             delay: TrackedApp.subscriptionRetryDelay,
+                                             isCurrent: { [weak self] in
+                                                 self?.lifecycle.isCurrent(generation) ?? false
+                                             }) {
+            try element.subscribe(observer, notification)
         }
-        axObserver = nil
     }
 }
 
 extension DispatchQueue {
     /// Runs a throwing block, retrying after a delay while it throws.
     /// Used for AX subscriptions against apps that are still launching.
-    func retrying(attempts: Int, delay: TimeInterval, _ block: @escaping () throws -> Void) {
+    /// `isCurrent` runs on this queue before each attempt; once it returns false the
+    /// chain ends, so work scheduled for a stopped owner never reaches AX.
+    func retrying(attempts: Int, delay: TimeInterval, isCurrent: @escaping () -> Bool,
+                  _ block: @escaping () throws -> Void) {
         async { [weak self] in
+            guard isCurrent() else { return }
             do {
                 try block()
             } catch {
                 guard attempts > 1 else { return }
                 self?.asyncAfter(deadline: .now() + delay) {
-                    self?.retrying(attempts: attempts - 1, delay: delay, block)
+                    self?.retrying(attempts: attempts - 1, delay: delay, isCurrent: isCurrent, block)
                 }
             }
         }

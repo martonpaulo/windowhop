@@ -13,7 +13,8 @@ about AppKit or AX.
 ├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
 └─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
                                 MRUOrder, TitleResolver, PersistentShortcut, Preferences,
-                                ExpandedPreviewSession, SpaceMembership (pure, unit-tested)
+                                ExpandedPreviewSession, SpaceMembership, ObserverLifecycle
+                                (pure, unit-tested)
 ```
 
 ## Window model (event-driven, no polling)
@@ -21,6 +22,12 @@ about AppKit or AX.
 1. `WindowStore.start()` KVO-observes `NSWorkspace.runningApplications`; each app gets a
    `TrackedApp` with one `AXObserver` (run-loop source on the dedicated AX events thread).
    Subscription retries handle apps that are still launching (ported from AltTab).
+   The AX reads queue is the single owner of each app's observer state: main reads
+   eligibility and hands `start`/`stop` to that queue, where the pure `ObserverLifecycle`
+   turns them and each subscription result into commands. Every attempt carries a
+   generation; a retry, late result, or window subscription whose generation is no longer
+   current does nothing, and `stop` is terminal, so pending work cannot revive a removed
+   app. `WindowStore.discoverWindows` also drops requests for an app it no longer tracks.
 2. AX notifications land in `AXNotificationRouter` on the AX thread, hop to the serial
    AX reads queue for one batched attribute call (plus tab-group titles), then hand plain
    values to `WindowStore` on the main thread.

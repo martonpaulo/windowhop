@@ -13,6 +13,15 @@ the shared inclusion policy for minimized, hidden-app, PiP, other-Space, and
 other-display windows; centralized defaults/reset coverage; and complete event-tap
 sequence ownership.
 
+AX observer lifecycle changes also run under the Thread Sanitizer:
+
+```sh
+swift test --sanitize=thread   # must report no "WARNING: ThreadSanitizer"
+```
+
+`TrackedAppLifecycleTests` overlaps start/stop requests on real observers (it observes
+Finder and skips without it); `ObserverLifecycleTests` pins the generation rules.
+
 Preview regressions pin:
 
 - authorized, denied, restricted, not-determined, and revoked-during-use permission

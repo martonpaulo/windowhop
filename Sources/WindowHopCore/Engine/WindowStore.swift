@@ -116,6 +116,8 @@ public final class WindowStore {
     /// becomes observable and again on Space changes (public AX only returns windows
     /// of the current Space; re-enumerating on Space change builds the full inventory).
     func discoverWindows(of app: TrackedApp) {
+        // a request that outlived the app's removal (or a pid reused by a new app) is stale
+        guard started, apps[app.pid] === app else { return }
         let element = app.axElement
         let pid = app.pid
         BackgroundWork.axReadsQueue.async {
