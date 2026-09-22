@@ -56,6 +56,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build (release)
-        run: swift build -c release
+        run: make build CONFIGURATION=release
       - name: Tests
-        run: swift test
+        run: make test

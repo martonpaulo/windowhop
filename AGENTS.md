@@ -67,6 +67,7 @@ effects.
 
 ```sh
 swift build && swift test        # must pass, zero warnings
+make build && make test          # same, with warnings as errors (what CI runs)
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [ver] [build]  # release .app with Sparkle embedded + zip
