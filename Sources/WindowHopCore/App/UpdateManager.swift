@@ -23,6 +23,10 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
 
     public var isAvailable: Bool { controller != nil }
 
+    /// Whether a user-initiated check can start right now. Sparkle reports
+    /// false while a check or an update session is already in progress.
+    public var canCheckForUpdates: Bool { controller?.updater.canCheckForUpdates ?? false }
+
     public var currentVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
     }

@@ -41,6 +41,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ⌥Tab and never chose an Open WindowHop shortcut received ⌥Tab for both, so Open WindowHop
   could not fire. A chord that conflicts with the switcher shortcut now loads as unassigned,
   exactly as when you pick a conflicting pair in Settings; every other choice is kept.
+### Fixed
+
+- **Check for Updates… stays in the menu bar item**: when the menu bar item was already on
+  at launch, its menu never offered Check for Updates…. The menu now shows it whenever the
+  updater is running, and dims it while a check is already in progress.
 
 ## [1.6.2] - 2026-09-09
 
