@@ -1,19 +1,47 @@
 name: Release
 
+# A pushed vX.Y.Z tag starts a release. workflow_dispatch reruns one by hand, and only on
+# such a tag: publication always happens here, never from a Mac.
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+# The same Xcode pin as validate.yml; change both together.
+env:
+  XCODE_VERSION: "26.6"
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
 jobs:
   release:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
+      - name: Require a release tag
+        run: |
+          case "$GITHUB_REF" in
+            refs/tags/v*.*.*) ;;
+            *) echo "Release runs only on a vX.Y.Z tag; dispatch it on the tag, not $GITHUB_REF." >&2
+               exit 1 ;;
+          esac
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+
+      - name: Confirm the pinned Xcode
+        run: |
+          xcodebuild -version
+          xcodebuild -version | grep -qx "Xcode $XCODE_VERSION"
+
+      # Keyed like validate.yml, so a release restores the cache main already built.
+      - name: Restore the SwiftPM build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: swiftpm-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('Package.resolved') }}
 
       - name: Tests and validation
         run: |

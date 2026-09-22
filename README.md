@@ -66,7 +66,7 @@ The debug binary's runtime check flags are documented in [`docs/testing.md`](doc
 <br />
 
 ## 🔐 Secrets and variables
-The app itself reads none of these: every secret below belongs to the release pipeline (`.github/workflows/release.yml`), which is push-only on a `vX.Y.Z` tag and so is never exposed to pull requests or fork workflows.
+The app itself reads none of these: every secret below belongs to the release pipeline (`.github/workflows/release.yml`), which runs only on a `vX.Y.Z` tag, pushed or dispatched by hand by someone with write access, and so is never exposed to pull requests or fork workflows.
 
 | Name | Where | What for |
 | --- | --- | --- |

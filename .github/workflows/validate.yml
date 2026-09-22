@@ -8,11 +8,18 @@ on:
 permissions:
   contents: read
 
+# The Xcode pin: one version on one runner image, so a build means the same thing on every
+# run. The cache key carries it, so an Xcode upgrade never restores another compiler's
+# products. Change XCODE_VERSION and DEVELOPER_DIR together, here and in release.yml.
+env:
+  XCODE_VERSION: "26.6"
+  DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+
 jobs:
   # Repository invariants cover markdown, the site and screenshots too, so this
   # runs for every change. It is seconds of shell.
   validate:
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Repository validation
@@ -52,9 +59,20 @@ jobs:
   build-and-test:
     needs: scope
     if: needs.scope.outputs.swift == 'true'
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Confirm the pinned Xcode
+        run: |
+          xcodebuild -version
+          xcodebuild -version | grep -qx "Xcode $XCODE_VERSION"
+      # Sparkle's clone and binary download dominate a cold build. No restore-keys: a
+      # partial hit would bring products from another Xcode or another dependency set.
+      - name: Restore the SwiftPM build cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .build
+          key: swiftpm-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('Package.resolved') }}
       - name: Build (release)
         run: make build CONFIGURATION=release
       - name: Tests

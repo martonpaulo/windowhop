@@ -41,8 +41,8 @@ repository has all of these Actions secrets:
 - `NOTARY_API_ISSUER_ID` — the App Store Connect Issuer ID
 - `SPARKLE_PRIVATE_KEY` — EdDSA key used only for the update archive
 
-The tag workflow is push-only, so release secrets are not exposed to pull requests or
-fork workflows. `scripts/notarize.sh` submits each artifact; on a Mac the same script uses
+The release workflow runs only on a `vX.Y.Z` tag, pushed or dispatched by hand, so release
+secrets are not exposed to pull requests or fork workflows. `scripts/notarize.sh` submits each artifact; on a Mac the same script uses
 the `skd-notary` Keychain profile, so a local rehearsal runs the release code. It waits for Apple to accept both the app archive and DMG, staples and
 validates both tickets, and runs Gatekeeper checks before publishing. Never tag a release
 to test credentials; use the local packaging commands and Apple tooling directly.

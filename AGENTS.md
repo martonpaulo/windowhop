@@ -67,8 +67,8 @@
   - Keychain profile: `skd-notary`, for local rehearsals only; CI notarizes with the team API
     key from the `NOTARY_API_KEY*` secrets.
   - Release workflow: `.github/workflows/release.yml`, run by a `vX.Y.Z` tag on the current
-    `main` commit. It is the only thing that publishes; the local `scripts/` rehearse and
-    diagnose, and never publish a release.
+    `main` commit, pushed or dispatched by hand on that tag. It is the only thing that
+    publishes; the local `scripts/` rehearse and diagnose, and never publish a release.
   - Update feed: Sparkle, from `appcast.xml` on `raw.githubusercontent.com`, written by
     `release.yml` only after the update ZIP is downloadable.
   - Publishing authority: the owner, by pushing the tag; only artifacts that passed
