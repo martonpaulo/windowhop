@@ -36,6 +36,7 @@ The full upstream history up to that commit is preserved in this repository
 | `src/ui/MainMenu.swift` (`appMenuItem`, `helpMenuItem`) | `UI/MainMenuBuilder.swift` | Services submenu registered through `NSApp.servicesMenu`, Show All in the app menu, a Help menu registered through `NSApp.helpMenu`; installed only while the Dock icon setting makes the app regular, and Help holds Report an Issue… instead of a help book WindowHop does not ship (WindowHop issue #64) |
 | `src/logic/Screens.swift` (`withMouse()`, `uuid()`) | `Engine/DisplayRegistry.swift` | pointer-display detection via `NSMouseInRect`; stable display identity via `CGDisplayCreateUUIDFromDisplayID` with the nil checks those implicitly-unwrapped APIs actually need; the documented unreliability of `NSScreen.main` |
 | `Pods/ShortcutRecorder/Library/SRRecorderControl.m` (`viewWillMoveToWindow:`) | `UI/ShortcutRecorderControl.swift` | recording ends when the recorder's window resigns key, with the observer scoped to the current window; WindowHop also ends it on window close (WindowHop issue #50) |
+| `Pods/ShortcutRecorder/Library/SRRecorderControl.m` (`accessibilityValue`, `setObjectValue:`, `beginRecording`) | `UI/ShortcutRecorderControl.swift` (`refreshTitle`) | the accessibility value names the chord in words (a word for no chord) and title/value changes are posted when the chord or recording state changes; WindowHop says "Recording" while recording and exposes the validation message as help (WindowHop issue #78) |
 
 ## Corrected (ported rule intentionally diverges from upstream)
 

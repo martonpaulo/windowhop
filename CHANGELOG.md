@@ -33,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **VoiceOver reads the Open WindowHop shortcut field completely**: the recorder now
+  speaks the current chord in words ("Option Tab"), says "None" when it is cleared and
+  "Recording" while it waits for a chord, explains that Escape cancels and Delete clears,
+  and announces why a chord was rejected.
 - **Windows no longer vanish when an app is slow during a Space switch**: with other Spaces
   hidden, an app that did not answer in time had all its windows treated as off-Space until
   the next focus change. They now stay where they were last seen.

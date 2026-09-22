@@ -28,7 +28,24 @@ final class ShortcutRecorderControl: NSButton {
     }
 
     var shortcut: PersistentShortcut? {
-        didSet { refreshTitle() }
+        // SwiftUI assigns on every update; only a change is worth announcing
+        didSet { if shortcut != oldValue { refreshTitle() } }
+    }
+
+    /// Why the last chord was rejected, shown next to the control by Settings.
+    /// The control carries it as its accessibility help, so the error is
+    /// reachable from the field itself, and announces a new one.
+    var validationMessage: String? {
+        didSet {
+            guard validationMessage != oldValue else { return }
+            refreshTitle()
+            if let validationMessage {
+                NSAccessibility.post(
+                    element: self, notification: .announcementRequested,
+                    userInfo: [.announcement: validationMessage,
+                               .priority: NSAccessibilityPriorityLevel.high.rawValue])
+            }
+        }
     }
 
     init() {
@@ -101,14 +118,28 @@ final class ShortcutRecorderControl: NSButton {
         endRecording()
     }
 
+    /// Title, accessibility value and help for the current state. The title
+    /// shows glyphs; the value names the chord in words, so VoiceOver reads the
+    /// label ("Open WindowHop shortcut") and then the current chord, "None", or
+    /// "Recording". AltTab's recorder posts the same value and title changes
+    /// when recording begins and ends
+    /// (`317a485b:Pods/ShortcutRecorder/Library/SRRecorderControl.m`).
     private func refreshTitle() {
+        let escape = KeyCode.escape
+        let delete = KeyCode.delete
         if isRecording {
-            title = "Type shortcut… (⎋ cancels, ⌫ clears)"
-        } else if let shortcut {
-            title = shortcut.displayString
+            title = "Type shortcut… (\(ShortcutFormatter.keySymbol(for: escape)) cancels, "
+                + "\(ShortcutFormatter.keySymbol(for: delete)) clears)"
+            setAccessibilityValue("Recording")
+            setAccessibilityHelp("Press a shortcut. \(ShortcutFormatter.spokenKeyName(for: escape)) "
+                + "cancels, \(ShortcutFormatter.spokenKeyName(for: delete)) clears.")
         } else {
-            title = "Record Shortcut…"
+            title = shortcut?.displayString ?? "Record Shortcut…"
+            setAccessibilityValue(shortcut?.spokenString ?? "None")
+            setAccessibilityHelp(validationMessage)
         }
+        NSAccessibility.post(element: self, notification: .valueChanged)
+        NSAccessibility.post(element: self, notification: .titleChanged)
     }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
@@ -165,6 +196,7 @@ struct ShortcutRecorderField: NSViewRepresentable {
 
     func updateNSView(_ control: ShortcutRecorderControl, context: Context) {
         control.shortcut = shortcut
+        control.validationMessage = validationMessage
         // SwiftUI reuses this native control across updates, so the callbacks
         // must be re-bound: otherwise they keep validating against the primary
         // shortcut and writing to the bindings that existed at creation time,
