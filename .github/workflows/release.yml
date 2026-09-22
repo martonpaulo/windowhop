@@ -111,6 +111,11 @@ jobs:
 
       - name: Build and package
         run: |
+          # The canonical package-app.sh copies Support/Info.plist into the bundle
+          # before signing, so the release date is stamped into this runner's copy
+          # (never committed): the packaged commit's date, reproducible per commit.
+          scripts/stamp-app-metadata.sh Support/Info.plist "${{ steps.version.outputs.version }}" \
+            "${{ steps.version.outputs.build }}" "$(git log -1 --format=%cs)"
           scripts/package-app.sh --version "${{ steps.version.outputs.version }}" \
             --build-number "${{ steps.version.outputs.build }}"
           scripts/verify-release-identity.sh --app build/WindowHop.app

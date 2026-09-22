@@ -369,10 +369,11 @@ Update checks are the app's only network activity.
 
 Build metadata has one reader, `Core/AppVersion` (version, build, release date), used by
 Settings › About, the Updates pane and support reports. The release date is the packaged
-commit's committer date (`git log -1 --format=%cs`), written by `scripts/package-app.sh`
-through `scripts/stamp-app-metadata.sh` into the bundle's `Info.plist` as `AppReleaseDate`
-(`YYYY-MM-DD`). Nothing else writes it: `Support/Info.plist` never carries it
-(`scripts/validate.sh` checks), and unbundled development builds have no date.
+commit's committer date (`git log -1 --format=%cs`), written as `AppReleaseDate`
+(`YYYY-MM-DD`) by `scripts/stamp-app-metadata.sh`. `release.yml` runs it on the runner's
+copy of `Support/Info.plist` right before the canonical `scripts/package-app.sh` copies that
+plist into the bundle and signs it; the repository copy never carries the key
+(`scripts/validate.sh` checks), so local packages and development builds have no date.
 
 Official tag builds are fail-closed: the workflow accepts only the current `main` commit,
 requires an Apple-issued Developer ID Application identity plus a team App Store
