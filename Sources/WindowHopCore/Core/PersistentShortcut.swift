@@ -36,6 +36,11 @@ public struct PersistentShortcut: Equatable {
     public enum ValidationError: Equatable {
         case needsModifier
         case conflictsWithSwitcherShortcut
+        /// A chord macOS keeps for itself, such as Force Quit (⌘⌥⎋).
+        case reservedByMacOS(chord: String)
+        /// A standard app command such as Quit (⌘Q): taking it globally would
+        /// disable that command in every app while WindowHop runs.
+        case standardApplicationCommand(chord: String, command: String)
 
         /// The modifiers that make a chord valid on their own (Shift alone does not),
         /// listed in the order the explanation names them.
@@ -51,6 +56,11 @@ public struct PersistentShortcut: Equatable {
                 return "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop."
             case .conflictsWithSwitcherShortcut:
                 return "This is already the switcher shortcut. Choose a different combination."
+            case let .reservedByMacOS(chord):
+                return "\(chord) is reserved by macOS. Choose a different combination."
+            case let .standardApplicationCommand(chord, command):
+                return "\(chord) is the \(command) command in apps. "
+                    + "Choose a combination that isn't a standard app command."
             }
         }
     }

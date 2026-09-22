@@ -21,7 +21,8 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
         var body: some View {
             ShortcutRecorderField(shortcut: $model.shortcut,
                                   validationMessage: $model.validationMessage,
-                                  switcherShortcut: .commandTab)
+                                  switcherShortcut: .commandTab,
+                                  systemShortcuts: { [] })
         }
     }
 

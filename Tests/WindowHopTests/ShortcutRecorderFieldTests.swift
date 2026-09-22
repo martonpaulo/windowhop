@@ -16,6 +16,12 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         @Published var validationMessage: String?
         /// Every value the field forwarded through `onRecordingChanged`.
         var forwardedRecording: [Bool] = []
+        /// The fixture standing in for the machine's enabled macOS shortcuts.
+        var systemShortcuts: [PersistentShortcut] = []
+        /// The answer the injected confirmation gives (true = Use Anyway).
+        var confirmationAnswer = false
+        /// Every chord the field asked to confirm.
+        var confirmationRequests: [PersistentShortcut] = []
     }
 
     private struct Host: View {
@@ -25,7 +31,12 @@ final class ShortcutRecorderFieldTests: XCTestCase {
             ShortcutRecorderField(shortcut: $model.shortcut,
                                   validationMessage: $model.validationMessage,
                                   switcherShortcut: model.switcherShortcut,
-                                  onRecordingChanged: { model.forwardedRecording.append($0) })
+                                  onRecordingChanged: { model.forwardedRecording.append($0) },
+                                  systemShortcuts: { model.systemShortcuts },
+                                  confirmSystemShortcut: { captured, _, completion in
+                                      model.confirmationRequests.append(captured)
+                                      completion(model.confirmationAnswer)
+                                  })
         }
     }
 
@@ -307,6 +318,64 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         XCTAssertEqual(model.shortcut, installed)
         XCTAssertNil(model.validationMessage)
         XCTAssertEqual(transitions.values, [true, false])
+    }
+
+    // MARK: - Conflicts with macOS and standard app commands (#56)
+
+    private static let commandSpace = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskCommand])
+    private static let controlOptionK = PersistentShortcut(keyCode: keyK, modifiers: [.maskControl, .maskAlternate])
+
+    func testStandardAppCommandIsRejectedWithItsName() throws {
+        model.shortcut = Self.controlOptionK
+        flushUpdates()
+        let control = try recorder()
+
+        control.onCapture?(PersistentShortcut(keyCode: 12 /* Q */, modifiers: [.maskCommand]))
+
+        XCTAssertEqual(model.shortcut, Self.controlOptionK, "nothing is persisted")
+        XCTAssertEqual(model.validationMessage,
+                       "⌘Q is the Quit command in apps. Choose a combination that isn't a standard app command.")
+        XCTAssertEqual(model.confirmationRequests, [])
+    }
+
+    func testSystemShortcutCancelKeepsThePreviousChord() throws {
+        model.shortcut = Self.controlOptionK
+        model.systemShortcuts = [Self.commandSpace]
+        model.confirmationAnswer = false
+        flushUpdates()
+        let control = try recorder()
+
+        control.onCapture?(Self.commandSpace)
+
+        XCTAssertEqual(model.confirmationRequests, [Self.commandSpace])
+        XCTAssertEqual(model.shortcut, Self.controlOptionK, "Cancel persists nothing")
+        XCTAssertNil(model.validationMessage)
+    }
+
+    func testSystemShortcutUseAnywayPersists() throws {
+        model.systemShortcuts = [Self.commandSpace]
+        model.confirmationAnswer = true
+        model.validationMessage = "an earlier rejection"
+        flushUpdates()
+        let control = try recorder()
+
+        control.onCapture?(Self.commandSpace)
+
+        XCTAssertEqual(model.confirmationRequests, [Self.commandSpace])
+        XCTAssertEqual(model.shortcut, Self.commandSpace)
+        XCTAssertNil(model.validationMessage)
+    }
+
+    func testReRecordingTheStoredSystemChordNeedsNoConfirmation() throws {
+        model.shortcut = Self.commandSpace
+        model.systemShortcuts = [Self.commandSpace]
+        flushUpdates()
+        let control = try recorder()
+
+        control.onCapture?(Self.commandSpace)
+
+        XCTAssertEqual(model.confirmationRequests, [])
+        XCTAssertEqual(model.shortcut, Self.commandSpace)
     }
 
     /// Selecting another input source relabels the recorded key while the

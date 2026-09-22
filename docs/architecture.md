@@ -136,6 +136,13 @@ failed translation use the fixed ANSI table in `KeyCodeNames`. Special keys (Tab
 Space, arrows, F-keys…) never consult the layout. The recorder refreshes its title on
 `kTISNotifySelectedKeyboardInputSourceChanged` only while it is in a window.
 
+Conflict knowledge for a recorded chord has one owner, `Core/ShortcutConflicts.swift`
+(`PersistentShortcut.assessCapture`): accept, reject with a named reason (reserved by
+macOS, standard app command), or confirm (an enabled macOS shortcut). Its inputs are
+fixtures in tests; in the app, `Engine/SystemShortcuts` reads the enabled symbolic hotkeys
+with the read-only `CopySymbolicHotKeys` at capture time, and `ShortcutRecorderField` shows
+the reason inline or the confirmation sheet. The load path never re-assesses a stored chord.
+
 ## Placement across displays
 
 Where the panel is drawn is display *behavior*, not appearance, and is owned by three

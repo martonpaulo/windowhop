@@ -203,6 +203,31 @@ struct ShortcutRecorderField: NSViewRepresentable {
     /// Forwarded from the recorder: `true` when recording starts, `false` once
     /// when it ends. Settings uses it to pause global interception meanwhile.
     var onRecordingChanged: ((Bool) -> Void)?
+    /// The enabled macOS shortcuts, read when a chord is captured. Tests inject
+    /// a fixture so they never depend on the machine's configuration.
+    var systemShortcuts: () -> [PersistentShortcut] = SystemShortcuts.enabled
+    /// Asks whether to take over a macOS shortcut and reports `true` only for
+    /// Use Anyway. Tests inject an answer so no modal ever runs.
+    var confirmSystemShortcut: (PersistentShortcut, NSWindow?, @escaping (Bool) -> Void) -> Void =
+        ShortcutRecorderField.presentSystemShortcutAlert
+
+    /// A warning sheet on the Settings window; Cancel is the default button and
+    /// also answers Escape, so the safe choice is the easy one.
+    static func presentSystemShortcutAlert(for captured: PersistentShortcut, in window: NSWindow?,
+                                           completion: @escaping (Bool) -> Void) {
+        let copy = captured.systemShortcutConfirmation
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = copy.title
+        alert.informativeText = copy.message
+        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: "Use Anyway")
+        if let window {
+            alert.beginSheetModal(for: window) { completion($0 == .alertSecondButtonReturn) }
+        } else {
+            completion(alert.runModal() == .alertSecondButtonReturn)
+        }
+    }
 
     func makeNSView(context: Context) -> ShortcutRecorderControl {
         let control = ShortcutRecorderControl()
@@ -221,12 +246,22 @@ struct ShortcutRecorderField: NSViewRepresentable {
     }
 
     private func applyConfiguration(to control: ShortcutRecorderControl) {
-        control.onCapture = { captured in
-            if let error = captured.validate(against: switcherShortcut) {
-                validationMessage = error.explanation
-            } else {
+        control.onCapture = { [weak control] captured in
+            let assessment = captured.assessCapture(against: switcherShortcut, current: shortcut,
+                                                    systemShortcuts: systemShortcuts())
+            switch assessment {
+            case .accept:
                 validationMessage = nil
                 shortcut = captured
+            case let .reject(error):
+                validationMessage = error.explanation
+            case .confirmSystemShortcut:
+                // Cancel keeps the previous chord and persists nothing.
+                confirmSystemShortcut(captured, control?.window) { useAnyway in
+                    guard useAnyway else { return }
+                    validationMessage = nil
+                    shortcut = captured
+                }
             }
         }
         control.onClear = {

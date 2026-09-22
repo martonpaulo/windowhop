@@ -13,6 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section that explains holding the switcher shortcut and releasing it to switch, and
   opening WindowHop with its own shortcut and confirming with Return or Space. It uses
   the shortcuts you have set and updates as soon as you change them.
+- **The shortcut recorder warns about conflicts**: recording ⌘Q, ⌘W, ⌘, or another
+  standard app command as the Open WindowHop shortcut is refused with the command's name,
+  since WindowHop would take it over in every app; so are the Force Quit shortcuts. A
+  chord that macOS itself uses, such as ⌘Space, asks first, and Cancel keeps your previous
+  shortcut. Shortcuts you already have are kept as they are.
 
 ### Changed
 

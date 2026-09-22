@@ -52,10 +52,12 @@ public enum ShortcutFormatter {
     /// layout reports it (not uppercased), or nil when the key is special, out
     /// of range, or the layout gives no single visible character. Shortcut
     /// conflict rules compare this with menu key equivalents.
-    public static func printableCharacter(for keyCode: Int64) -> String? {
+    public static func printableCharacter(
+        for keyCode: Int64, using labels: KeyLabelSource = ShortcutFormatter.keyLabels
+    ) -> String? {
         guard !KeyCodeNames.isSpecial(keyCode),
               let code = UInt16(exactly: keyCode),
-              let character = keyLabels.character(forKeyCode: code),
+              let character = labels.character(forKeyCode: code),
               isSingleVisibleCharacter(character)
         else { return nil }
         return character

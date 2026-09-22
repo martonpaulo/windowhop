@@ -176,7 +176,11 @@ defaults.
 - Open WindowHop shortcut — **⌥Tab**
 
 A recorded Open WindowHop chord that conflicts with the switcher shortcut is rejected with
-an explanation instead of being stored.
+an explanation instead of being stored. So are chords macOS reserves (Force Quit, ⌥⌘⎋) and
+the standard app commands such as ⌘Q, ⌘W, ⌘, and ⌘C, because WindowHop would take them over
+in every app. A chord that is also an enabled macOS shortcut, such as ⌘Space, asks first:
+Cancel keeps your previous shortcut, Use Anyway lets WindowHop take it over while it runs.
+A shortcut you already have is never rejected or changed.
 
 ### Windows
 
