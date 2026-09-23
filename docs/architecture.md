@@ -264,7 +264,14 @@ layout model) — there is no horizontal scrolling and tiles never shrink; ←/�
 step linearly while ↑/↓ move by one row. Only an extreme window count exceeds
 the ~85 % height budget and falls back to vertical scrolling with the selection
 kept visible. Tile views are pooled and reconfigured, so repeated opens and
-live updates are single-digit milliseconds even with 100+ windows. System
+live updates are single-digit milliseconds even with 100+ windows. A list refresh
+keeps each window on the tile that already shows it and reconfigures only tiles whose
+data changed (title, icon, tab count, appearance); a reordered window moves with its
+tile, and only new windows take a free one. The pure `TileReusePlan` (in
+`WindowHopKit`) makes that decision. Before, every refresh redrew every tile, and one
+window dragged at 60 Hz cost 13–24 ms of main-thread time per event at 120 windows;
+now it costs about 5 ms at the 95th percentile
+([#119](https://github.com/martonpaulo/windowhop/issues/119)). System
 materials and semantic colors handle Light/Dark, Increase Contrast, and Reduce
 Transparency.
 

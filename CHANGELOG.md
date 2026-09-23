@@ -38,6 +38,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The switcher stays responsive while windows move**: with many windows open, dragging
+  or resizing a window, or a changing window title, no longer redraws every card in the
+  open switcher. Only the cards whose window changed are redrawn, so the arrow keys keep
+  responding at once.
 - **Diagnostics go to the macOS unified log**: to investigate a switching or shortcut
   problem, run `log stream --level debug --process WindowHop` in Terminal while you
   reproduce it. The `WINDOWHOP_DEBUG` environment variable no longer exists.

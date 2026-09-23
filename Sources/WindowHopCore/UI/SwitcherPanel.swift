@@ -87,7 +87,8 @@ public final class SwitcherPanel: NSPanel {
     private let settingsButton = NSButton()
     private let permissionButton = NSButton()
     private let expandedPreviewView = ExpandedPreviewView()
-    /// Pooled tiles, reconfigured in place; index i shows item i.
+    /// Pooled tiles; index i shows item i. A refresh reuses each window's tile
+    /// and reconfigures only tiles whose data changed (TileReusePlan).
     private var tilePool: [SwitcherTileView] = []
     private var visibleTileCount = 0
     private var selectedIndex = 0
@@ -241,10 +242,7 @@ public final class SwitcherPanel: NSPanel {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             while self.tilePool.count < 24 {
-                let tile = SwitcherTileView()
-                tile.isHidden = true
-                self.tilesContainer.addSubview(tile)
-                self.tilePool.append(tile)
+                self.tilePool.append(self.makeTile())
             }
         }
     }
@@ -284,6 +282,9 @@ public final class SwitcherPanel: NSPanel {
         self.presentationMode = presentationMode
         hostView.setPointerInside(false)
         availability.beginSession()
+        // a new session re-reads every preview and acquisition state, so no
+        // tile may be skipped as unchanged
+        tilePool.forEach { $0.releasePreviewContent() }
         update(items: items, selectedIndex: selectedIndex)
         orderFrontRegardless()
         hostView.refreshPointerLocation()
@@ -420,32 +421,74 @@ public final class SwitcherPanel: NSPanel {
 
     // MARK: - Layout
 
-    private func rebuildTiles(items: [SwitcherItem]) {
-        while tilePool.count < items.count {
-            let tile = SwitcherTileView()
-            tilesContainer.addSubview(tile)
-            tilePool.append(tile)
+    /// A hidden tile, wired to report its current position: tiles move between
+    /// pool slots when the list changes, so no callback may capture an index.
+    private func makeTile() -> SwitcherTileView {
+        let tile = SwitcherTileView()
+        tile.isHidden = true
+        tile.onClick = { [weak self, weak tile] in
+            guard let self, let index = self.visibleIndex(of: tile) else { return }
+            self.onItemClicked?(index)
         }
-        for (index, tile) in tilePool.enumerated() {
-            if index < items.count {
-                let item = items[index]
+        tile.onCloseRequest = { [weak self, weak tile] in
+            guard let self, let index = self.visibleIndex(of: tile) else { return }
+            self.onItemCloseRequested?(index)
+        }
+        tilesContainer.addSubview(tile)
+        return tile
+    }
+
+    private func visibleIndex(of tile: SwitcherTileView?) -> Int? {
+        tilePool.prefix(visibleTileCount).firstIndex { $0 === tile }
+    }
+
+    /// Keeps each listed window on the tile that already shows it and
+    /// reconfigures only tiles whose content changed. A burst of window events
+    /// (a window dragged or resized) then costs no tile redraw at all (#119).
+    private func rebuildTiles(items: [SwitcherItem]) {
+        let showTabCounts = Preferences.shared.showTabCounts
+        let contents = items.map {
+            SwitcherTileView.Content(item: $0, mode: mode, showTabCounts: showTabCounts)
+        }
+        let plan = TileReusePlan.make(
+            current: tilePool.map(\.shown),
+            items: zip(items, contents).map { (id: $0.id, content: $1) })
+        var reordered: [SwitcherTileView] = []
+        reordered.reserveCapacity(max(tilePool.count, items.count))
+        for (index, assignment) in plan.assignments.enumerated() {
+            let tile = assignment.slot < tilePool.count ? tilePool[assignment.slot] : makeTile()
+            let item = items[index]
+            if assignment.needsConfigure {
                 let cached = PreviewProvider.shared.cachedPreview(for: item.id)
                 tile.configure(item: item,
                                mode: mode,
-                               showTabCounts: Preferences.shared.showTabCounts,
+                               showTabCounts: showTabCounts,
                                preview: cached,
                                presentation: availability.presentation(
                                    for: item.id, hasImage: cached != nil))
-                tile.onClick = { [weak self] in self?.onItemClicked?(index) }
-                tile.onCloseRequest = { [weak self] in self?.onItemCloseRequested?(index) }
+            }
+            // a tile that moved or changed windows is no longer under the pointer
+            if assignment.needsConfigure || assignment.slot != index {
                 tile.resetHoverState()
-                tile.isHidden = false
-            } else {
+            }
+            tile.isHidden = false
+            reordered.append(tile)
+        }
+        for slot in plan.unusedSlots {
+            let tile = tilePool[slot]
+            if !tile.isHidden {
                 tile.resetHoverState()
                 tile.isHidden = true
-                // a hidden slot must not keep a removed window's image alive
-                tile.releasePreviewContent()
             }
+            // a hidden slot must not keep a removed window's image alive
+            tile.releasePreviewContent()
+            reordered.append(tile)
+        }
+        if !reordered.elementsEqual(tilePool, by: ===) {
+            tilePool = reordered
+            // subview order is the accessibility order of the list: keep it
+            // equal to the item order after tiles moved
+            tilesContainer.subviews = tilePool
         }
         visibleTileCount = items.count
     }

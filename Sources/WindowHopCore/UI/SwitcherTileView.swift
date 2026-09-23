@@ -188,8 +188,43 @@ final class SwitcherTileView: NSView {
         }
     }
 
+    /// Everything `configure` renders from its arguments. The panel compares
+    /// it to skip tiles whose data did not change (TileReusePlan, #119); the
+    /// preview image is not part of it, because deliveries reach the tile
+    /// directly by window id.
+    struct Content: Equatable {
+        let displayTitle: String
+        let appName: String
+        let icon: NSImage?
+        let tabCount: Int?
+        let mode: AppearanceMode
+        let showTabCounts: Bool
+
+        init(item: SwitcherItem, mode: AppearanceMode, showTabCounts: Bool) {
+            displayTitle = item.displayTitle
+            appName = item.appName
+            icon = item.icon
+            tabCount = item.tabCount
+            self.mode = mode
+            self.showTabCounts = showTabCounts
+        }
+
+        static func == (lhs: Content, rhs: Content) -> Bool {
+            // an app's icon is one cached instance, so identity is the cheap,
+            // exact test; comparing image data would cost more than a redraw
+            lhs.displayTitle == rhs.displayTitle && lhs.appName == rhs.appName
+                && lhs.icon === rhs.icon && lhs.tabCount == rhs.tabCount
+                && lhs.mode == rhs.mode && lhs.showTabCounts == rhs.showTabCounts
+        }
+    }
+
     var onClick: (() -> Void)?
     var onCloseRequest: (() -> Void)?
+
+    /// The window this tile presents and what it last rendered for it; nil
+    /// when the tile is released or was never configured, so its next use
+    /// always configures it.
+    private(set) var shown: (id: AnyHashable, content: Content)?
 
     private var metrics = Metrics.appIcons(showTabCounts: false)
     private var mode = AppearanceMode.appIcons
@@ -216,11 +251,13 @@ final class SwitcherTileView: NSView {
     private var suppressHoverForRendering = false
 
     var isSelected = false {
-        didSet { applySelectionStyle() }
+        // every refresh sets the selection on every tile: restyling only on a
+        // real change keeps a 100+ tile refresh from relaying out all of them
+        didSet { if isSelected != oldValue { applySelectionStyle() } }
     }
 
     private var isHovered = false {
-        didSet { applySelectionStyle() }
+        didSet { if isHovered != oldValue { applySelectionStyle() } }
     }
 
     /// Whether the tile currently shows a window snapshot (test hook for the
@@ -370,6 +407,7 @@ final class SwitcherTileView: NSView {
                    showTabCounts: Bool,
                    preview: NSImage?,
                    presentation: PreviewPresentationState = .loading) {
+        shown = (item.id, Content(item: item, mode: mode, showTabCounts: showTabCounts))
         self.mode = mode
         self.showTabCounts = showTabCounts
         metrics = Metrics.metrics(for: mode, showTabCounts: showTabCounts)
@@ -444,6 +482,7 @@ final class SwitcherTileView: NSView {
     /// that path switches to the loading variant and would start a pulse on
     /// a tile nobody sees. The next `configure` restores everything.
     func releasePreviewContent() {
+        shown = nil
         previewView.layer?.removeAllAnimations()
         previewView.image = nil
         skeletonView.stopAnimation()
