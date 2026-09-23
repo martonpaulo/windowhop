@@ -30,8 +30,8 @@ help: ## List the targets
 build: ## Build (CONFIGURATION=debug|release); fails on any warning
 	scripts/fail-on-warnings.sh swift build -c $(CONFIGURATION)
 
-test: ## Unit and integration tests; fails on any warning
-	scripts/fail-on-warnings.sh swift test
+test: ## Unit and integration tests; fails on any warning or a leaked test defaults suite
+	scripts/check-test-defaults-leak.sh scripts/fail-on-warnings.sh swift test
 
 # Both tools read the repository-root .swiftlint.yml and .swift-format, which are unchanged
 # copies of the shared skill-deck files; --strict turns every warning into a failure.

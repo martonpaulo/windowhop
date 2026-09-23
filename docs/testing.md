@@ -35,6 +35,15 @@ Swift Testing runs suites in parallel, where XCTest ran one test at a time:
   the main actor and restores the ANSI table before it returns, and every suite that
   reads printable-key labels runs on the main actor, so no test sees another's layout.
 - Setup is the suite's `init`; teardown is the `deinit` of a `final class` suite.
+- A test that needs its own `UserDefaults` suite makes it with `TestDefaults`
+  (`Tests/WindowHopTestSupport/`, shared by both test targets) and calls `remove()` in
+  teardown; `IsolatedPreferences` wraps it. The suite name is an absolute path under
+  `$TMPDIR/windowhop-tests/`. A suite named without a path leaks
+  `~/Library/Preferences/<name>.plist`, and no teardown can prevent it: cfprefsd writes
+  the emptied domain back after the test process exits, even when the file was deleted
+  (#129). `scripts/validate.sh` rejects any other `UserDefaults(suiteName:)` in `Tests/`,
+  and `make test` (through `scripts/check-test-defaults-leak.sh`) fails when a run leaves
+  new `windowhop-tests-*.plist` files in `~/Library/Preferences`.
 - A test that needs a display uses the `.needsDisplay` trait; Reduce Motion skips are
   `.disabled(if:)` traits; a condition known only inside the test calls `Test.cancel`.
 

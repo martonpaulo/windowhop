@@ -62,6 +62,14 @@ if grep -rln "ScreenCaptureKit\|SCShareableContent\|SCScreenshotManager" Sources
 else
     pass "ScreenCaptureKit confined to the preview provider"
 fi
+# a test suite named without a path leaks a plist into ~/Library/Preferences that no
+# teardown can remove; TestDefaults puts every test suite under $TMPDIR (#129)
+if grep -rn "UserDefaults(suiteName\|windowhop-tests-" Tests/ 2>/dev/null \
+    | grep -v "^Tests/WindowHopTestSupport/TestDefaults.swift:"; then
+    fail "a test makes a UserDefaults suite outside TestDefaults"
+else
+    pass "test UserDefaults suites confined to TestDefaults"
+fi
 # WindowHopKit holds the pure rules: value-type frameworks only (AGENTS.md, Kit import
 # contract), and no AX, workspace or capture reference even through a transitive import
 KIT_IMPORTS='^(Foundation|CoreGraphics|Observation|Synchronization)$'
