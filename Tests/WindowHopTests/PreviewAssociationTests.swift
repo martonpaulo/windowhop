@@ -11,6 +11,7 @@ import XCTest
 final class PreviewAssociationTests: XCTestCase {
     private var isolated: IsolatedPreferences!
     private var preferences: Preferences { isolated.preferences }
+    private var previews: PreviewProvider { isolated.previews }
 
     override func setUp() async throws {
         try await super.setUp()
@@ -44,7 +45,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testDeliveryIsKeyedByWindowIdNotTilePosition() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreview(id: "b", image: image)
         XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 0))
@@ -52,7 +53,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testReorderingNeverMovesASnapshotToAnotherCard() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreview(id: "b", image: image)
         // the tile that showed b's snapshot now represents a — it must not
@@ -62,7 +63,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testDeliveryForARemovedWindowIsIgnored() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b"), item("c")], selectedIndex: 0)
         panel.updatePreview(id: "b", image: image)
         // b closes mid-session; a late capture for it must go nowhere
@@ -84,7 +85,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testUnavailableTileStaysUnavailableAfterAMetadataRefresh() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreviewUnavailable(id: "b")
         XCTAssertTrue(try tile(panel, 1).showsUnavailableStateForTesting)
@@ -97,7 +98,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testPermissionBlockedTilesStayBlockedAfterARefresh() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.setPreviewPermissionStatus(.denied)
 
@@ -110,7 +111,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testFailedStateFollowsItsWindowAcrossAReorder() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreviewUnavailable(id: "b")
 
@@ -121,7 +122,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testSlotReusedForAnotherWindowResetsToLoading() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreviewUnavailable(id: "b")
 
@@ -132,7 +133,7 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     func testANewSessionStartsWithoutThePreviousFailures() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.show(items: [item("a")], selectedIndex: 0, presentationMode: .persistent)
         panel.updatePreviewUnavailable(id: "a")
         panel.hide()

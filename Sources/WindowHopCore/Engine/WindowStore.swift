@@ -35,8 +35,6 @@ public struct SwitcherItem {
 /// NSWorkspace notifications, and KVO; nothing polls.
 @MainActor
 public final class WindowStore {
-    public static let shared = WindowStore()
-
     public private(set) var apps: [pid_t: TrackedApp] = [:]
     /// MRU order: index 0 is the focused window. Derived from `order`, the one
     /// owner of ordering policy (Core/MRUOrder), so its tests cover production.
@@ -46,12 +44,19 @@ public final class WindowStore {
     /// Fired on any change that can affect the visible list.
     public var onChange: (() -> Void)?
 
-    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
-    /// harness) before first use. It moves to the initializer when this type
-    /// stops being a singleton (#108).
-    public var preferences: Preferences!
+    private let preferences: Preferences
+    /// Evicts a removed window's preview (see `discardPreviews`).
+    private let previews: PreviewProvider
+    /// Carried by every app's AXObserver; holds this store weakly.
+    private(set) lazy var router = AXNotificationRouter(store: self)
     private var runningAppsObserver: NSKeyValueObservation?
     private var started = false
+
+    /// Owned by `AppDelegate`; tests and the debug harness build their own.
+    public init(preferences: Preferences, previews: PreviewProvider) {
+        self.preferences = preferences
+        self.previews = previews
+    }
 
     /// Requires Accessibility permission. Safe to call again after stop().
     public func start() {
@@ -89,7 +94,7 @@ public final class WindowStore {
         let pid = runningApplication.processIdentifier
         guard started, pid != ProcessInfo.processInfo.processIdentifier, pid > 0,
               apps[pid] == nil, !runningApplication.isTerminated else { return }
-        apps[pid] = TrackedApp(runningApplication)
+        apps[pid] = TrackedApp(runningApplication, router: router)
     }
 
     private func removeApp(_ pid: pid_t) {
@@ -125,15 +130,16 @@ public final class WindowStore {
         guard started, let app = apps[observer.pid], app.observer === observer else { return }
         let element = app.axElement
         let pid = app.pid
+        let router = router
         BackgroundWork.axReadsQueue.async {
             guard let elements = element.windowElements().listedWindows else { return }
             for windowElement in elements {
-                AXNotificationRouter.routeWindowEvent(kAXWindowCreatedNotification, windowElement, pid)
+                router.routeWindowEvent(kAXWindowCreatedNotification, windowElement, pid)
             }
             // seed MRU: the frontmost app's focused window belongs at the front
             if app.runningApplication.isActive,
                let focused = (try? element.attributes([kAXFocusedWindowAttribute]))?.focusedWindow {
-                AXNotificationRouter.routeWindowEvent(kAXFocusedWindowChangedNotification, focused, pid)
+                router.routeWindowEvent(kAXFocusedWindowChangedNotification, focused, pid)
             }
         }
     }
@@ -254,7 +260,7 @@ public final class WindowStore {
     /// the preview cache — reopening Settings mints a fresh id each time, and
     /// the old ones would otherwise survive until the appearance changed.
     private func discardPreviews(of removed: [TrackedWindow]) {
-        removed.forEach { PreviewProvider.shared.evict($0.stableId) }
+        removed.forEach { previews.evict($0.stableId) }
     }
 
     private func ownEntry(for window: NSWindow) -> TrackedWindow? {
@@ -374,11 +380,12 @@ public final class WindowStore {
     /// updates each window's current-Space flag.
     @objc private func activeSpaceChanged() {
         let appsSnapshot = Array(apps.values)
+        let router = router
         BackgroundWork.axReadsQueue.async { [weak self] in
             for app in appsSnapshot {
                 let enumeration = app.axElement.windowElements()
                 for windowElement in enumeration.listedWindows ?? [] {
-                    AXNotificationRouter.routeWindowEvent(kAXWindowCreatedNotification, windowElement, app.pid)
+                    router.routeWindowEvent(kAXWindowCreatedNotification, windowElement, app.pid)
                 }
                 DispatchQueue.main.async { [weak self] in
                     guard let self else { return }

@@ -27,6 +27,7 @@ public final class SwitcherPanelGroup {
     /// window the controller will activate.
     private var items: [SwitcherItem] = []
     private let preferences: Preferences
+    private let previews: PreviewProvider
     private let announcer: SelectionAnnouncer
 
     /// Grid geometry of the current layout, for 2D arrow-key navigation. Every
@@ -36,13 +37,14 @@ public final class SwitcherPanelGroup {
     /// The scale a capture must satisfy to look sharp on every target display.
     public private(set) var captureScale: CGFloat = 2
 
-    public convenience init(preferences: Preferences) {
-        self.init(preferences: preferences,
+    public convenience init(preferences: Preferences, previews: PreviewProvider) {
+        self.init(preferences: preferences, previews: previews,
                   announcer: SelectionAnnouncer(preferences: preferences))
     }
 
-    init(preferences: Preferences, announcer: SelectionAnnouncer) {
+    init(preferences: Preferences, previews: PreviewProvider, announcer: SelectionAnnouncer) {
         self.preferences = preferences
+        self.previews = previews
         self.announcer = announcer
     }
 
@@ -103,7 +105,7 @@ public final class SwitcherPanelGroup {
     }
 
     private func makePanel() -> SwitcherPanel {
-        let panel = SwitcherPanel(preferences: preferences)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews)
         panel.onItemClicked = { [weak self] index in self?.onItemClicked?(index) }
         panel.onItemCloseRequested = { [weak self] index in self?.onItemCloseRequested?(index) }
         panel.onSettingsRequested = { [weak self] in self?.onSettingsRequested?() }

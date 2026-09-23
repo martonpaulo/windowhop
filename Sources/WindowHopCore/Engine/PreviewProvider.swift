@@ -22,12 +22,7 @@ import WindowHopKit
 ///   placeholder and corner badge; a wrong preview is worse than none.
 @MainActor
 public final class PreviewProvider {
-    public static let shared = PreviewProvider()
-
-    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
-    /// harness) before first use. It moves to the initializer when this type
-    /// stops being a singleton (#108).
-    public var preferences: Preferences!
+    private let preferences: Preferences
 
     /// Delivered on the main thread for windows of the current session, keyed
     /// by the window's stable id (fill-ins and refreshes of cached snapshots).
@@ -71,7 +66,10 @@ public final class PreviewProvider {
     }
 
 
-    private init() {}
+    /// Owned by `AppDelegate`; tests and the debug harness build their own.
+    public init(preferences: Preferences) {
+        self.preferences = preferences
+    }
 
     // MARK: - Cache (memory-only, app lifetime, evicted with the window)
 

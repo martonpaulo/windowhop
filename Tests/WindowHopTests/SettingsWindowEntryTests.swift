@@ -5,7 +5,7 @@ import XCTest
 
 /// The own-Settings-window exception: it appears exactly once while open,
 /// participates in MRU, hides while minimized, and disappears on close.
-/// Uses a fresh WindowStore instance (not .shared) and drives NSWindow
+/// Uses a fresh WindowStore instance and drives NSWindow
 /// lifecycle via the notifications the store observes.
 @MainActor
 final class SettingsWindowEntryTests: XCTestCase {
@@ -16,8 +16,7 @@ final class SettingsWindowEntryTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
         isolated = IsolatedPreferences()
-        store = WindowStore()
-        store.preferences = isolated.preferences
+        store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
                           backing: .buffered, defer: true)

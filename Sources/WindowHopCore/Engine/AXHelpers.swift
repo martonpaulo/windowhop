@@ -77,8 +77,9 @@ extension AXUIElement {
     /// Returns false when the notification can never be delivered, true on success,
     /// and throws when the app was unresponsive and a retry may succeed.
     @discardableResult
-    public func subscribe(_ observer: AXObserver, _ notification: String) throws -> Bool {
-        let result = AXObserverAddNotification(observer, self, notification as CFString, nil)
+    func subscribe(_ observer: AXObserver, _ notification: String,
+                   refcon: UnsafeMutableRawPointer) throws -> Bool {
+        let result = AXObserverAddNotification(observer, self, notification as CFString, refcon)
         if result == .success || result == .notificationAlreadyRegistered {
             return true
         }

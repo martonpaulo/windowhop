@@ -23,11 +23,11 @@ public final class TrackedApp {
     private var kvObservers: [NSKeyValueObservation] = []
     private var cachedIcon: NSImage?
 
-    init(_ runningApplication: NSRunningApplication) {
+    init(_ runningApplication: NSRunningApplication, router: AXNotificationRouter) {
         self.runningApplication = runningApplication
         pid = runningApplication.processIdentifier
         axElement = AXUIElementCreateApplication(pid)
-        observer = AppObserver(pid: pid, axElement: axElement)
+        observer = AppObserver(pid: pid, axElement: axElement, router: router)
         name = runningApplication.localizedName
         bundleIdentifier = runningApplication.bundleIdentifier
         executablePath = runningApplication.executableURL?.path
@@ -110,6 +110,9 @@ actor AppObserver {
 
     nonisolated let pid: pid_t
     private nonisolated let axElement: AXUIElement
+    /// Held strongly: the AXObserver's notifications carry it as an unretained
+    /// `refcon`, so it must outlive `axObserver`.
+    private nonisolated let router: AXNotificationRouter
     private var axObserver: AXObserver?
     private(set) var lifecycle = ObserverLifecycle(maxAttempts: AppObserver.subscriptionRetries,
                                                    retryDelay: AppObserver.subscriptionRetryDelay)
@@ -118,9 +121,10 @@ actor AppObserver {
         BackgroundWork.axReadsQueue.asUnownedSerialExecutor()
     }
 
-    init(pid: pid_t, axElement: AXUIElement) {
+    init(pid: pid_t, axElement: AXUIElement, router: AXNotificationRouter) {
         self.pid = pid
         self.axElement = axElement
+        self.router = router
     }
 
     /// Queues one lifecycle event behind the AX reads already scheduled.
@@ -160,7 +164,7 @@ actor AppObserver {
             // the store drops the request when this app is no longer the tracked one
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
-                WindowStore.shared.discoverWindows(of: self)
+                self.router.store?.discoverWindows(of: self)
             }
         case .removeObserver:
             if let axObserver {
@@ -191,7 +195,8 @@ actor AppObserver {
             observer = created
         }
         do {
-            let accepted = try axElement.subscribe(observer, AppObserver.appNotifications.first!)
+            let accepted = try axElement.subscribe(observer, AppObserver.appNotifications.first!,
+                                                   refcon: router.refcon)
             return accepted ? .subscriptionSucceeded(generation: generation)
                 : .subscriptionFailed(generation: generation, retryable: false)
         } catch {
@@ -223,7 +228,7 @@ actor AppObserver {
                            generation: UInt64, attemptsLeft: Int) {
         guard lifecycle.isCurrent(generation), let axObserver else { return }
         do {
-            try element.subscribe(axObserver, notification)
+            try element.subscribe(axObserver, notification, refcon: router.refcon)
         } catch {
             guard attemptsLeft > 1 else { return }
             BackgroundWork.axReadsQueue.asyncAfter(

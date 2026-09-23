@@ -44,9 +44,16 @@ menu bar item. `UpdateManager`, `ConnectedDisplaysModel` and `LaunchAtLoginModel
 and their initializers. The menu bar item and the switcher reach the windows through
 closures, not by naming a global.
 
-Until #108 removes them, `WindowStore`, `PreviewProvider`, `EventTap` and
-`SwitcherController` are still singletons; `AppDelegate` gives each one its `Preferences`
-before first use.
+The engine and input objects follow the same rule. `AppDelegate` creates `PreviewProvider`,
+`WindowStore`, `EventTap` and `SwitcherController` in that order and keeps them for the
+whole process. There is no `static let shared` in `Sources/`. The two C callbacks reach
+their object without a global:
+
+- the event-tap callback gets the `EventTap` through `userInfo`, as an unretained pointer
+  that is sound because `AppDelegate` keeps the tap alive for the process lifetime;
+- the AX observer callback gets the store's `AXNotificationRouter` through the
+  notification's `refcon`. Every `AppObserver` holds that router strongly, so the pointer
+  outlives the observer; the router holds the `WindowStore` weakly.
 
 ## Window model (event-driven, no polling)
 
@@ -566,7 +573,8 @@ rules above.
   which keeps FIFO order with other main-queue work where a `Task` would not.
 - **AX reads queue.** `BackgroundWork.axReadsQueue` is a serial queue and the executor of
   every `AppObserver` actor, so observer state is actor-isolated while AX reads keep their
-  order. Values handed to main are plain `Sendable` values.
+  order. Values handed to main are plain `Sendable` values. The `AXNotificationRouter` is
+  `Sendable`: its only state is a `weak let` to the store, read on main.
 - **Event tap.** `EventTap.handle` stays a synchronous `nonisolated` function: the C
   callback captures nothing and reaches the tap through `userInfo`; everything the tap
   thread touches sits in one `Mutex`.

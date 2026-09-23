@@ -11,6 +11,9 @@ import WindowHopKit
 @MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions {
     private let preferences: Preferences
+    private let store: WindowStore
+    private let tap: EventTap
+    private let switcher: SwitcherController
     private let updateManager: UpdateManager
     private let settingsWindow: SettingsWindowController
     private let onboarding: PermissionOnboardingController
@@ -20,15 +23,28 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
 
     override public init() {
         let preferences = Preferences()
+        let previews = PreviewProvider(preferences: preferences)
+        let store = WindowStore(preferences: preferences, previews: previews)
+        let tap = EventTap()
         let updateManager = UpdateManager(preferences: preferences)
-        let settingsWindow = SettingsWindowController(dependencies: SettingsDependencies(
-            preferences: preferences,
-            restorer: SettingsDefaultsRestorer(
+        let settingsWindow = SettingsWindowController(
+            dependencies: SettingsDependencies(
                 preferences: preferences,
-                applyAutomaticUpdateChecks: { updateManager.automaticallyChecksForUpdates = $0 }),
-            updateManager: updateManager))
+                restorer: SettingsDefaultsRestorer(
+                    preferences: preferences,
+                    applyAutomaticUpdateChecks: { updateManager.automaticallyChecksForUpdates = $0 }),
+                updateManager: updateManager,
+                // while the recorder records, the tap passes every key in `watching`,
+                // so pressing an already-active chord reaches the recorder
+                setShortcutRecordingActive: { tap.isRecordingShortcut = $0 },
+                evictPreviews: { previews.evictAll() }),
+            registerOwnWindow: { store.registerOwnWindow($0) })
         let onboarding = PermissionOnboardingController()
         self.preferences = preferences
+        self.store = store
+        self.tap = tap
+        switcher = SwitcherController(preferences: preferences, store: store, previews: previews,
+                                      tap: tap, showSettings: { settingsWindow.show() })
         self.updateManager = updateManager
         self.settingsWindow = settingsWindow
         self.onboarding = onboarding
@@ -41,11 +57,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
                 openAccessibilitySetup: { onboarding.show() },
                 openSettings: { settingsWindow.show() },
                 checkForUpdates: { updateManager.checkForUpdates() }))
-        // the singletons that remain until #108 hold these instances
-        WindowStore.shared.preferences = preferences
-        PreviewProvider.shared.preferences = preferences
-        SwitcherController.shared.preferences = preferences
-        SwitcherController.shared.showSettings = { settingsWindow.show() }
         super.init()
     }
 
@@ -90,7 +101,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         let isFirstRun = !preferences.firstLaunchCompleted
         ShortcutFormatter.keyLabels = KeyboardLayout.current
         BackgroundWork.start()
-        SwitcherController.shared.wire()
+        switcher.wire()
         statusItem.apply()
         updateManager.startIfBundled()
         observeSystemEvents()
@@ -130,7 +141,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
 
     public func applicationWillTerminate(_ notification: Notification) {
         // nothing system-wide to restore: WindowHop never modifies the native switcher
-        EventTap.shared.stop()
+        tap.stop()
     }
 
     // MARK: - Engine
@@ -138,19 +149,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     private func startEngine() {
         guard !engineRunning else { return }
         engineRunning = true
-        WindowStore.shared.start()
+        store.start()
         applyConfiguration()
     }
 
     private func stopEngine() {
         guard engineRunning else { return }
         engineRunning = false
-        SwitcherController.shared.applyConfiguration(enabled: false, granted: false)
-        WindowStore.shared.stop()
+        switcher.applyConfiguration(enabled: false, granted: false)
+        store.stop()
     }
 
     private func applyConfiguration() {
-        SwitcherController.shared.applyConfiguration(
+        switcher.applyConfiguration(
             enabled: preferences.switcherEnabled && engineRunning,
             granted: AccessibilityPermission.isGranted)
     }
@@ -171,8 +182,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         NotificationCenter.default.addObserver(
             forName: Preferences.windowFiltersDidChange,
             object: preferences,
-            queue: .main) { _ in
-                MainActor.assumeIsolated { WindowStore.shared.windowFiltersChanged() }
+            queue: .main) { [store] _ in
+                MainActor.assumeIsolated { store.windowFiltersChanged() }
             }
         // permission granted or revoked while running
         AccessibilityPermission.observeChanges { [weak self] granted in
@@ -191,17 +202,17 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         }
         // macOS can silently disable event taps across sleep/wake and session switches
         NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [tap] _ in
+            MainActor.assumeIsolated { tap.reEnableIfNeeded() }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.screensDidWakeNotification,
-            object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
+            object: nil, queue: .main) { [tap] _ in
+                MainActor.assumeIsolated { tap.reEnableIfNeeded() }
             }
         NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { _ in
-            MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
+            forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { [tap] _ in
+            MainActor.assumeIsolated { tap.reEnableIfNeeded() }
         }
     }
 

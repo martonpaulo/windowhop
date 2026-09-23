@@ -35,7 +35,9 @@ enum DebugHarness {
             preferences: preferences,
             restorer: SettingsDefaultsRestorer(preferences: preferences,
                                                applyAutomaticUpdateChecks: { _ in }),
-            updateManager: UpdateManager(preferences: preferences))
+            updateManager: UpdateManager(preferences: preferences),
+            setShortcutRecordingActive: { _ in },
+            evictPreviews: {})
     }
 
     static func runIfRequested(_ arguments: [String]) -> Bool {
@@ -127,7 +129,10 @@ enum DebugHarness {
         }
 
         // overflow check: 120 synthetic windows in a wrapping, vertically scrolling grid
-        let overflowPanel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        // synthetic images only: nothing is captured, so the caches stay empty
+        let previews = PreviewProvider(preferences: preferences)
+        let overflowPanel = SwitcherPanel(preferences: preferences, previews: previews,
+                                          rasterizableBackground: true)
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
@@ -152,6 +157,7 @@ enum DebugHarness {
         // captures need Screen Recording; the layout under test is identical)
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
             let previewPanel = SwitcherPanel(preferences: previewPreferences,
+                                             previews: PreviewProvider(preferences: previewPreferences),
                                              rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
             // Wrapping otherwise follows whatever display the developer has, so
@@ -198,7 +204,8 @@ enum DebugHarness {
         // Standard switcher renders always exercise the permission-free default,
         // independent of the developer's persisted local preference.
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+            let panel = SwitcherPanel(preferences: preferences, previews: previews,
+                                      rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
             // one row, regardless of the developer's display width
             panel.sharedColumnLimit = demoItems().count
@@ -353,7 +360,8 @@ enum DebugHarness {
         let expanded = arguments.contains("--expanded")
         let preferences = makePreferences()
         preferences.appearanceMode = previews ? .windowPreviews : .appIcons
-        let panel = SwitcherPanel(preferences: preferences)
+        let panel = SwitcherPanel(preferences: preferences,
+                                  previews: PreviewProvider(preferences: preferences))
         panel.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         if let index = arguments.firstIndex(of: "--columns"), arguments.count > index + 1,
            let columns = Int(arguments[index + 1]) {
@@ -417,14 +425,16 @@ enum DebugHarness {
         app.setActivationPolicy(.prohibited)
         BackgroundWork.start()
         let started = Date()
-        WindowStore.shared.preferences = makePreferences()
-        WindowStore.shared.start()
+        let preferences = makePreferences()
+        let store = WindowStore(preferences: preferences,
+                                previews: PreviewProvider(preferences: preferences))
+        store.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let snapshotStart = Date()
-            let items = WindowStore.shared.snapshot()
+            let items = store.snapshot()
             let snapshotMs = Date().timeIntervalSince(snapshotStart) * 1000
             let totalMs = Date().timeIntervalSince(started) * 1000
-            writeLine("discovered \(WindowStore.shared.windows.count) windows "
+            writeLine("discovered \(store.windows.count) windows "
                 + "(\(items.count) eligible) within \(String(format: "%.0f", totalMs))ms of engine start; "
                 + "snapshot took \(String(format: "%.3f", snapshotMs))ms")
             for (index, item) in items.enumerated() {
@@ -486,12 +496,12 @@ enum DebugHarness {
         app.setActivationPolicy(.prohibited)
         BackgroundWork.start()
         let preferences = makePreferences()
-        WindowStore.shared.preferences = preferences
-        PreviewProvider.shared.preferences = preferences
-        WindowStore.shared.start()
+        let previews = PreviewProvider(preferences: preferences)
+        let store = WindowStore(preferences: preferences, previews: previews)
+        store.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            let items = WindowStore.shared.snapshot()
-            PreviewProvider.shared.dumpMatching(items: items) { lines in
+            let items = store.snapshot()
+            previews.dumpMatching(items: items) { lines in
                 lines.forEach { writeLine($0) }
                 exit(0)
             }

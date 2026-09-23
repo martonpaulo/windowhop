@@ -14,6 +14,8 @@ import WindowHopKit
 public final class SettingsWindowController {
     /// What the panes read and act on.
     private let dependencies: SettingsDependencies
+    /// Makes the window a switcher entry while it is open.
+    private let registerOwnWindow: (NSWindow) -> Void
 
     /// The switcher-entry title; the window's visible title follows the pane name.
     public static let switcherEntryTitle = String(localized: "WindowHop Settings")
@@ -25,8 +27,10 @@ public final class SettingsWindowController {
 
     /// Owned by `AppDelegate`; tests pass their own autosave name.
     public init(dependencies: SettingsDependencies,
+                registerOwnWindow: @escaping (NSWindow) -> Void,
                 frameAutosaveName: String = SettingsWindowController.defaultFrameAutosaveName) {
         self.dependencies = dependencies
+        self.registerOwnWindow = registerOwnWindow
         self.frameAutosaveName = frameAutosaveName
     }
 
@@ -61,7 +65,7 @@ public final class SettingsWindowController {
         window.makeKeyAndOrderFront(nil)
         // the Settings window is a normal switcher entry while open (the one
         // sanctioned exception to the own-window exclusion)
-        WindowStore.shared.registerOwnWindow(window)
+        registerOwnWindow(window)
     }
 
     /// The retained window, created on first use at its saved position (or
@@ -117,13 +121,21 @@ public struct SettingsDependencies {
     public let preferences: Preferences
     public let restorer: SettingsDefaultsRestorer
     public let updateManager: UpdateManager
+    /// Tells the event tap that the shortcut recorder is recording.
+    public let setShortcutRecordingActive: (Bool) -> Void
+    /// Drops every cached preview (a switch back to App Icons).
+    public let evictPreviews: () -> Void
 
     public init(preferences: Preferences,
                 restorer: SettingsDefaultsRestorer,
-                updateManager: UpdateManager) {
+                updateManager: UpdateManager,
+                setShortcutRecordingActive: @escaping (Bool) -> Void,
+                evictPreviews: @escaping () -> Void) {
         self.preferences = preferences
         self.restorer = restorer
         self.updateManager = updateManager
+        self.setShortcutRecordingActive = setShortcutRecordingActive
+        self.evictPreviews = evictPreviews
     }
 }
 
@@ -165,9 +177,12 @@ enum SettingsPane: String, CaseIterable {
         switch self {
         case .general:
             GeneralPane(preferences: preferences, restorer: dependencies.restorer)
-        case .shortcuts: ShortcutsPane(preferences: preferences)
+        case .shortcuts:
+            ShortcutsPane(preferences: preferences,
+                          setShortcutRecordingActive: dependencies.setShortcutRecordingActive)
         case .windows: WindowsPane(preferences: preferences)
-        case .appearance: AppearancePane(preferences: preferences)
+        case .appearance:
+            AppearancePane(preferences: preferences, evictPreviews: dependencies.evictPreviews)
         case .updates:
             UpdatesPane(preferences: preferences, updateManager: dependencies.updateManager)
         case .about: AboutPane()
@@ -356,6 +371,7 @@ struct GeneralPane: View {
 
 struct ShortcutsPane: View {
     @Bindable var preferences: Preferences
+    let setShortcutRecordingActive: (Bool) -> Void
     @State private var shortcutValidationMessage: String?
 
     var body: some View {
@@ -379,10 +395,7 @@ struct ShortcutsPane: View {
                     ShortcutRecorderField(shortcut: $preferences.persistentShortcut,
                                           validationMessage: $shortcutValidationMessage,
                                           switcherShortcut: preferences.shortcut,
-                                          onRecordingChanged: { recording in
-                                              SwitcherController.shared
-                                                  .setShortcutRecordingActive(recording)
-                                          })
+                                          onRecordingChanged: setShortcutRecordingActive)
                 }
                 if let shortcutValidationMessage {
                     Text(shortcutValidationMessage)
@@ -511,6 +524,7 @@ struct WindowsPane: View {
 
 struct AppearancePane: View {
     @Bindable var preferences: Preferences
+    let evictPreviews: () -> Void
     @State private var screenRecordingStatus = ScreenRecordingPermission.status
 
     private var previewsSelected: Bool { preferences.appearanceMode == .windowPreviews }
@@ -532,7 +546,7 @@ struct AppearancePane: View {
                     }
                     if newValue == .appIcons {
                         // back to icons: no reason to retain any snapshot
-                        PreviewProvider.shared.evictAll()
+                        evictPreviews()
                     }
                 }
                 Toggle("Show tab counts", isOn: $preferences.showTabCounts)

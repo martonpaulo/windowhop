@@ -16,13 +16,12 @@ final class PreviewSessionPermissionTests: XCTestCase {
     private var readStatus: ScreenRecordingPermission.Status = .authorized
     private var permissionReports: [ScreenRecordingPermission.Status] = []
 
-    private var provider: PreviewProvider { PreviewProvider.shared }
+    private var provider: PreviewProvider { isolated.previews }
 
     override func setUp() async throws {
         try await super.setUp()
         isolated = IsolatedPreferences()
         isolated.preferences.appearanceMode = .windowPreviews
-        provider.preferences = isolated.preferences
         savedPermissionRequired = provider.onPermissionRequired
         savedUnavailable = provider.onPreviewUnavailable
         provider.readPermissionStatus = { [unowned self] in

@@ -18,7 +18,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
         announcements = []
         isolated = IsolatedPreferences()
         let preferences = isolated.preferences
-        group = SwitcherPanelGroup(preferences: preferences,
+        group = SwitcherPanelGroup(preferences: preferences, previews: isolated.previews,
                                    announcer: SelectionAnnouncer(preferences: preferences) { [unowned self] id, text in
             announcements.append((id, text))
         })

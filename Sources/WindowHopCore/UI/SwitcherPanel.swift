@@ -93,6 +93,8 @@ public final class SwitcherPanel: NSPanel {
     private var visibleTileCount = 0
     private var selectedIndex = 0
     private let preferences: Preferences
+    /// The warm cache a tile shows first, before its live capture arrives.
+    private let previews: PreviewProvider
     private var mode = AppearanceMode.appIcons
     private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
@@ -141,8 +143,10 @@ public final class SwitcherPanel: NSPanel {
     /// `rasterizableBackground` is for the offscreen render harness only: the
     /// glass background cannot be rasterized with cacheDisplay (it
     /// draws empty), so layout renders use the visual-effect fallback instead.
-    public init(preferences: Preferences, rasterizableBackground: Bool = false) {
+    public init(preferences: Preferences, previews: PreviewProvider,
+                rasterizableBackground: Bool = false) {
         self.preferences = preferences
+        self.previews = previews
         super.init(contentRect: .zero,
                    styleMask: [.nonactivatingPanel, .borderless],
                    backing: .buffered,
@@ -461,7 +465,7 @@ public final class SwitcherPanel: NSPanel {
             let tile = assignment.slot < tilePool.count ? tilePool[assignment.slot] : makeTile()
             let item = items[index]
             if assignment.needsConfigure {
-                let cached = PreviewProvider.shared.cachedPreview(for: item.id)
+                let cached = previews.cachedPreview(for: item.id)
                 tile.configure(item: item,
                                mode: mode,
                                showTabCounts: showTabCounts,

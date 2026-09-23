@@ -160,6 +160,8 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 
 ## Architecture (see docs/architecture.md)
 
+- There are no singletons: `AppDelegate` is the composition root and passes every
+  long-lived object through initializers (docs/architecture.md › Composition root).
 - `WindowHopKit` (`Sources/WindowHopKit/`, the Core) — pure logic in its own target with
   no dependencies. All business rules live here (eligibility, MRU, title fallback,
   tab-group resolution, PiP detection, preview-result ledger, session state machine,

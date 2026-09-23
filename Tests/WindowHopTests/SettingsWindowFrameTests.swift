@@ -35,6 +35,7 @@ final class SettingsWindowFrameTests: XCTestCase {
     /// A new controller stands in for a new process: nothing retained.
     private func launch() -> NSWindow {
         let window = SettingsWindowController(dependencies: isolated.settingsDependencies,
+                                              registerOwnWindow: { _ in },
                                               frameAutosaveName: autosaveName).preparedWindow()
         windows.append(window)
         return window

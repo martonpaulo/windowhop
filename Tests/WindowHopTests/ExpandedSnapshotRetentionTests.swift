@@ -7,14 +7,20 @@ import XCTest
 /// the current session, while the tile keeps its own tile-sized snapshot (#87).
 @MainActor
 final class ExpandedSnapshotRetentionTests: XCTestCase {
-    private let provider = PreviewProvider.shared
+    private var isolated: IsolatedPreferences!
+    private var provider: PreviewProvider { isolated.previews }
     private var seeded: [AnyHashable] = []
 
+    override func setUp() async throws {
+        try await super.setUp()
+        isolated = IsolatedPreferences()
+    }
+
     override func tearDown() async throws {
-        // the provider is a singleton: leave no test ids or snapshot behind
-        seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
-        PreviewProvider.shared.endSession()
+        provider.endSession()
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 

@@ -195,7 +195,6 @@ struct EventTapInterceptionState: Sendable {
 /// events flow again and the native macOS switcher is untouched.
 @MainActor
 public final class EventTap {
-    public static let shared = EventTap()
 
     /// Everything the tap thread touches, behind one lock: the interception state
     /// the callback decides with, and the port it re-enables after a timeout.
@@ -222,7 +221,9 @@ public final class EventTap {
     /// Called on the main queue with each semantic event.
     public var onEvent: ((SwitcherInputEvent) -> Void)?
 
-    private init() {}
+    /// Owned by `AppDelegate` for the whole process, which is what makes the
+    /// unretained `userInfo` pointer the C callback receives sound.
+    public init() {}
 
     public var mode: TapMode {
         get { tapThreadState.withLock { $0.interception.mode } }
@@ -261,8 +262,8 @@ public final class EventTap {
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
         // The C callback captures nothing: it reaches the tap through `userInfo`.
-        // Unretained is safe because `shared` is the only instance and lives for the
-        // whole process.
+        // Unretained is safe because `AppDelegate` owns this instance for the whole
+        // process.
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,

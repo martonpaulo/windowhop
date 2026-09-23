@@ -7,9 +7,11 @@ import XCTest
 /// the first key event, which no main-thread test would notice.
 final class EventTapCallbackTests: XCTestCase {
     func testCallbackRunsOffTheMainThreadWithoutAnIsolationTrap() {
-        // an address is Sendable as an integer; the tap itself lives for the process
+        // an address is Sendable as an integer; the tap outlives the callback
+        // because this test holds it until the wait below returns
+        let tap = MainActor.assumeIsolated { EventTap() }
         let tapAddress = MainActor.assumeIsolated {
-            Int(bitPattern: Unmanaged.passUnretained(EventTap.shared).toOpaque())
+            Int(bitPattern: Unmanaged.passUnretained(tap).toOpaque())
         }
         let passed = expectation(description: "callback returned on a background thread")
         Thread.detachNewThread {
@@ -22,5 +24,6 @@ final class EventTapCallbackTests: XCTestCase {
             passed.fulfill()
         }
         wait(for: [passed], timeout: 5)
+        withExtendedLifetime(tap) {}
     }
 }

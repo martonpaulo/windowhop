@@ -37,6 +37,7 @@ final class SettingsPaneSelectionTests: XCTestCase {
 
     private func makeController() -> SettingsWindowController {
         SettingsWindowController(dependencies: isolated.settingsDependencies,
+                                 registerOwnWindow: { _ in },
                                  frameAutosaveName: autosaveName)
     }
 

@@ -9,6 +9,7 @@ import XCTest
 @MainActor
 final class PreviewEvictionTests: XCTestCase {
     private var isolated: IsolatedPreferences!
+    private var previews: PreviewProvider { isolated.previews }
     private var store: WindowStore!
     private var window: NSWindow!
     private var seeded: [AnyHashable] = []
@@ -16,8 +17,7 @@ final class PreviewEvictionTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
         isolated = IsolatedPreferences()
-        store = WindowStore()
-        store.preferences = isolated.preferences
+        store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
                           backing: .buffered, defer: true)
@@ -25,8 +25,6 @@ final class PreviewEvictionTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        // the provider is a singleton: leave no test ids behind
-        seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
         window = nil
         store = nil
@@ -39,7 +37,7 @@ final class PreviewEvictionTests: XCTestCase {
     private func seedPreviews() -> [AnyHashable] {
         let ids = store.windows.map { $0.stableId as AnyHashable }
         for id in ids {
-            PreviewProvider.shared.storeForTesting(NSImage(size: NSSize(width: 8, height: 8)),
+            previews.storeForTesting(NSImage(size: NSSize(width: 8, height: 8)),
                                                    for: id)
         }
         seeded.append(contentsOf: ids)
@@ -47,7 +45,7 @@ final class PreviewEvictionTests: XCTestCase {
     }
 
     private func cached(_ ids: [AnyHashable]) -> [AnyHashable] {
-        ids.filter { PreviewProvider.shared.cachedPreview(for: $0) != nil }
+        ids.filter { previews.cachedPreview(for: $0) != nil }
     }
 
     func testClosingTheSettingsWindowEvictsItsPreview() {
@@ -96,7 +94,7 @@ final class PreviewEvictionTests: XCTestCase {
         let ids = seedPreviews()
         window.close()
 
-        for id in ids where PreviewProvider.shared.ledgerShouldStoreForTesting(id) {
+        for id in ids where previews.ledgerShouldStoreForTesting(id) {
             XCTFail("an evicted id must not accept a late capture")
         }
         XCTAssertTrue(cached(ids).isEmpty)
@@ -108,7 +106,7 @@ final class PreviewEvictionTests: XCTestCase {
         store.registerOwnWindow(window)
         let ids = seedPreviews()
 
-        PreviewProvider.shared.endSession()
+        previews.endSession()
 
         XCTAssertEqual(cached(ids).count, 1)
     }
@@ -122,6 +120,7 @@ final class PreviewEvictionTests: XCTestCase {
 final class PreviewViewReleaseTests: XCTestCase {
     private var isolated: IsolatedPreferences!
     private var preferences: Preferences { isolated.preferences }
+    private var previews: PreviewProvider { isolated.previews }
     private var seeded: [AnyHashable] = []
 
     override func setUp() async throws {
@@ -131,7 +130,6 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
         isolated.remove()
         isolated = nil
@@ -161,7 +159,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testASlotHiddenByAnUpdateReleasesItsImage() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let image = weakImage { panel.updatePreview(id: "b", image: $0) }
         XCTAssertNotNil(image(), "the visible tile presents the image")
@@ -174,7 +172,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     func testReleasedHiddenTilesDoNotPulse() throws {
         try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
                       "Reduce Motion is on, so no skeleton ever pulses")
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let hidden = try XCTUnwrap(panel.tileForTesting(at: 1))
         XCTAssertTrue(hidden.skeletonIsAnimatingForTesting, "a loading tile pulses")
@@ -185,7 +183,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testHidingTheExpandedPreviewReleasesItsImage() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
         XCTAssertNotNil(image())
@@ -196,7 +194,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testAnUpdateThatCollapsesTheExpandedPreviewReleasesItsImage() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
 
@@ -208,12 +206,12 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testEndingASessionReleasesViewsButKeepsTheWarmCache() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let delivered = weakImage { panel.updatePreview(id: "a", image: $0) }
         let expanded = weakImage { panel.showExpandedPreview(id: "b", image: $0) }
         seeded.append("b")
-        PreviewProvider.shared.storeForTesting(NSImage(size: NSSize(width: 40, height: 30)),
+        previews.storeForTesting(NSImage(size: NSSize(width: 40, height: 30)),
                                                for: "b")
 
         drained {

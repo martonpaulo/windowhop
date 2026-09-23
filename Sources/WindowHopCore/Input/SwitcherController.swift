@@ -6,21 +6,19 @@ import WindowHopKit
 /// close-confirmation dialog. Main thread only.
 @MainActor
 public final class SwitcherController {
-    public static let shared = SwitcherController()
-
-    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
-    /// harness) before first use. It moves to the initializer when this type
-    /// stops being a singleton (#108).
-    public var preferences: Preferences!
-    /// Opens the Settings window; set once by `AppDelegate`, which owns it.
-    public var showSettings: () -> Void = {}
+    private let preferences: Preferences
+    private let store: WindowStore
+    private let previews: PreviewProvider
+    private let tap: EventTap
+    /// Opens the Settings window, which `AppDelegate` owns.
+    private let showSettings: () -> Void
 
     private var state = SwitcherState()
     /// The session list: seeded at session start and kept in that order while the
     /// switcher is open. Store changes remove or refresh entries in place and append
     /// windows that appeared, but never reorder (see SessionListReconciler).
     private var items: [SwitcherItem] = []
-    private lazy var panels = SwitcherPanelGroup(preferences: preferences)
+    private let panels: SwitcherPanelGroup
     private var mouseMonitor: Any?
     private var heldModifierGuard: Timer?
     private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
@@ -34,11 +32,20 @@ public final class SwitcherController {
     private var isRevealed = false
     private var configuredEnabled = false
 
-    private init() {}
+    /// Owned by `AppDelegate`.
+    public init(preferences: Preferences, store: WindowStore, previews: PreviewProvider,
+                tap: EventTap, showSettings: @escaping () -> Void) {
+        self.preferences = preferences
+        self.store = store
+        self.previews = previews
+        self.tap = tap
+        self.showSettings = showSettings
+        panels = SwitcherPanelGroup(preferences: preferences, previews: previews)
+    }
 
     public func wire() {
-        EventTap.shared.onEvent = { [weak self] event in self?.handle(event) }
-        WindowStore.shared.onChange = { [weak self] in self?.storeChanged() }
+        tap.onEvent = { [weak self] event in self?.handle(event) }
+        store.onChange = { [weak self] in self?.storeChanged() }
         panels.onItemClicked = { [weak self] index in
             guard let self else { return }
             self.perform(self.state.itemClicked(index: index))
@@ -53,16 +60,16 @@ public final class SwitcherController {
         panels.onPreviewPermissionRequested = { [weak self] in
             self?.openScreenRecordingSettingsFromSession()
         }
-        PreviewProvider.shared.onPreview = { [weak self] id, image in
+        previews.onPreview = { [weak self] id, image in
             self?.panels.updatePreview(id: id, image: image)
         }
-        PreviewProvider.shared.onPreviewUnavailable = { [weak self] id in
+        previews.onPreviewUnavailable = { [weak self] id in
             self?.panels.updatePreviewUnavailable(id: id)
         }
-        PreviewProvider.shared.onPermissionRequired = { [weak self] status in
+        previews.onPermissionRequired = { [weak self] status in
             self?.panels.setPreviewPermissionStatus(status)
         }
-        PreviewProvider.shared.onExpandedPreview = { [weak self] id, image in
+        previews.onExpandedPreview = { [weak self] id, image in
             self?.deliverExpandedPreview(id: id, image: image)
         }
     }
@@ -71,18 +78,18 @@ public final class SwitcherController {
     /// is both enabled and permitted, so a disabled WindowHop adds zero input latency
     /// and native Cmd-Tab behaves exactly as without WindowHop.
     public func applyConfiguration(enabled: Bool, granted: Bool) {
-        EventTap.shared.holdModifier = preferences.shortcut.holdModifier
-        EventTap.shared.persistentShortcut = preferences.persistentShortcut
+        tap.holdModifier = preferences.shortcut.holdModifier
+        tap.persistentShortcut = preferences.persistentShortcut
         configuredEnabled = enabled && granted
         if configuredEnabled {
-            if EventTap.shared.start(), !state.isActive {
-                EventTap.shared.mode = .watching
+            if tap.start(), !state.isActive {
+                tap.mode = .watching
             }
         } else {
             // teardown, not escape: escape belongs to the dialog while confirming,
             // but disabling must release every session resource in every phase
             perform(state.teardown())
-            EventTap.shared.stop()
+            tap.stop()
         }
     }
 
@@ -90,14 +97,14 @@ public final class SwitcherController {
     /// every key in `watching`, so pressing an already-active chord reaches the
     /// recorder instead of opening a session.
     public func setShortcutRecordingActive(_ active: Bool) {
-        EventTap.shared.isRecordingShortcut = active
+        tap.isRecordingShortcut = active
     }
 
     private func handle(_ event: SwitcherInputEvent) {
         switch event {
         case .trigger(let backward):
             let triggerStart = CFAbsoluteTimeGetCurrent()
-            items = WindowStore.shared.snapshot()
+            items = store.snapshot()
             perform(state.trigger(backward: backward, itemCount: items.count))
             let triggerMs = (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000
             Log.session.debug("""
@@ -107,12 +114,12 @@ public final class SwitcherController {
                 """)
             if !state.isActive {
                 // the tap flipped to .session optimistically; nothing to show after all
-                EventTap.shared.mode = configuredEnabled ? .watching : .off
+                tap.mode = configuredEnabled ? .watching : .off
             }
         case .openPersistent:
             let openStart = CFAbsoluteTimeGetCurrent()
             if !state.isActive {
-                items = WindowStore.shared.snapshot()
+                items = store.snapshot()
             }
             perform(state.openPersistent(itemCount: items.count))
             let openMs = (CFAbsoluteTimeGetCurrent() - openStart) * 1000
@@ -122,7 +129,7 @@ public final class SwitcherController {
                 \(openMs, format: .fixed(precision: 2), privacy: .public)ms
                 """)
             if !state.isActive {
-                EventTap.shared.mode = configuredEnabled ? .watching : .off
+                tap.mode = configuredEnabled ? .watching : .off
             }
         case .step(let backward):
             perform(state.step(backward: backward))
@@ -178,13 +185,13 @@ public final class SwitcherController {
         case .show:
             // the session exists from here on: input is intercepted and modifier
             // release activates, whether or not the panels are drawn yet
-            EventTap.shared.mode = sessionTapMode()
+            tap.mode = sessionTapMode()
             startSessionSupports()
             // a missed destroy notification once produced a duplicate entry;
             // validate the visible windows in the background and prune the dead
-            WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
+            store.pruneIfDead(items.compactMap { $0.window?.ax })
             // a live window merge sends no notification; see the tab bars now
-            WindowStore.shared.rereadTabGroups(of: items)
+            store.rereadTabGroups(of: items)
             scheduleReveal()
         case .select(let index):
             guard isRevealed else { break }
@@ -194,7 +201,7 @@ public final class SwitcherController {
             cancelExpandedPreviewTimer()
             let item = index >= 0 && index < items.count ? items[index] : nil
             let window = item?.window.flatMap { candidate in
-                WindowStore.shared.windows.contains(where: { $0 === candidate }) ? candidate : nil
+                store.windows.contains(where: { $0 === candidate }) ? candidate : nil
             }
             endSession()
             if let window {
@@ -225,7 +232,7 @@ public final class SwitcherController {
         cancelExpandedPreviewTimer()
         expandedPreview.reset()
         panels.hideExpandedPreview()
-        EventTap.shared.mode = .passthrough
+        tap.mode = .passthrough
         panels.hide()
         let sessionID = state.sessionID
         WindowActions.afterPendingActions { [weak self] in
@@ -271,7 +278,7 @@ public final class SwitcherController {
         switch response {
         case .alertSecondButtonReturn:
             if let window = item.window,
-               WindowStore.shared.windows.contains(where: { $0 === window }) {
+               store.windows.contains(where: { $0 === window }) {
                 WindowActions.close(window)
             }
         case .alertThirdButtonReturn:
@@ -292,7 +299,7 @@ public final class SwitcherController {
         guard state.isConfirming(sessionID: sessionID) else { return }
         _ = state.confirmationFinished()
         if configuredEnabled {
-            EventTap.shared.mode = state.isActive ? sessionTapMode() : .watching
+            tap.mode = state.isActive ? sessionTapMode() : .watching
         }
         refreshDuringSession()
         if state.isActive {
@@ -332,7 +339,7 @@ public final class SwitcherController {
     private func refreshDuringSession() {
         guard state.isActive else { return }
         let selectedId = state.selectedIndex < items.count ? items[state.selectedIndex].id : nil
-        let fresh = WindowStore.shared.snapshot()
+        let fresh = store.snapshot()
         let freshById = Dictionary(fresh.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let sessionById = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let preserved = Set(items.lazy
@@ -350,7 +357,7 @@ public final class SwitcherController {
                 session list grew by \(plan.appeared.count, privacy: .public): \
                 now \(self.items.count, privacy: .public) items
                 """)
-            PreviewProvider.shared.extendSession(
+            previews.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
                 targetSize: SwitcherPanel.previewContentSize(
                     showTabCounts: preferences.showTabCounts),
@@ -377,7 +384,7 @@ public final class SwitcherController {
     private func shouldPreserveAcrossLocationRefresh(_ item: SwitcherItem) -> Bool {
         guard let window = item.window,
               window.isActual,
-              WindowStore.shared.windows.contains(where: { $0 === window }) else { return false }
+              store.windows.contains(where: { $0 === window }) else { return false }
         let state = WindowDisplayState(
             isMinimized: window.isMinimized,
             isAppHidden: window.app?.isHidden ?? false,
@@ -414,7 +421,7 @@ public final class SwitcherController {
             MainActor.assumeIsolated {
                 guard let self, self.state.phase == .held else { return }
                 let flags = NSEvent.modifierFlags
-                if !flags.contains(self.nsModifier(of: EventTap.shared.holdModifier)) {
+                if !flags.contains(self.nsModifier(of: self.tap.holdModifier)) {
                     self.perform(self.state.modifierReleased())
                 }
             }
@@ -487,7 +494,7 @@ public final class SwitcherController {
         scheduleExpandedPreview(request)
         // previews (cached ones already showed instantly) refresh live,
         // asynchronously, never gating panel presentation
-        PreviewProvider.shared.beginSession(
+        previews.beginSession(
             items: items,
             targetSize: SwitcherPanel.previewContentSize(
                 showTabCounts: preferences.showTabCounts),
@@ -512,14 +519,14 @@ public final class SwitcherController {
         panels.releasePreviewContent()
         // capture is session-scoped: pending results stop delivering live, but
         // the memory-only cache remains warm for the next instant open
-        PreviewProvider.shared.endSession()
+        previews.endSession()
         if let mouseMonitor {
             NSEvent.removeMonitor(mouseMonitor)
             self.mouseMonitor = nil
         }
         heldModifierGuard?.invalidate()
         heldModifierGuard = nil
-        EventTap.shared.mode = configuredEnabled ? .watching : .off
+        tap.mode = configuredEnabled ? .watching : .off
     }
 
     // MARK: - Non-activating expanded preview
@@ -535,7 +542,7 @@ public final class SwitcherController {
         guard expandedPreview.targetedWindowID != id else { return }
         cancelExpandedPreviewTimer()
         panels.hideExpandedPreview()
-        PreviewProvider.shared.cancelExpandedPreview()
+        previews.cancelExpandedPreview()
         scheduleExpandedPreview(expandedPreview.target(id))
     }
 
@@ -570,10 +577,10 @@ public final class SwitcherController {
                 request, availableWindowIDs: Set(items.map(\.id))),
               let item = items.first(where: { $0.id == id }),
               item.window != nil else { return }
-        if let image = PreviewProvider.shared.expandedPreview(for: id) {
+        if let image = previews.expandedPreview(for: id) {
             panels.showExpandedPreview(id: id, image: image)
         }
-        PreviewProvider.shared.requestExpandedPreview(
+        previews.requestExpandedPreview(
             item: item,
             targetSize: SwitcherPanel.expandedPreviewContentSize,
             scale: panels.captureScale)

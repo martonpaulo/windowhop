@@ -15,7 +15,7 @@ final class ExpandedPreviewPresentationTests: XCTestCase {
         try await super.setUp()
         isolated = IsolatedPreferences()
         preferences.appearanceMode = .windowPreviews
-        group = SwitcherPanelGroup(preferences: preferences)
+        group = SwitcherPanelGroup(preferences: preferences, previews: isolated.previews)
     }
 
     override func tearDown() async throws {

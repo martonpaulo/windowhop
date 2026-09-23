@@ -41,7 +41,12 @@ final class TrackedAppLifecycleTests: XCTestCase {
             withBundleIdentifier: "com.apple.finder").first else {
             throw XCTSkip("needs a logged-in session with Finder running")
         }
-        let apps = (0..<40).map { _ in TrackedApp(process) }
+        // a store that never starts: the discovery each first subscription requests
+        // reaches it and is dropped, as it is for an app the store no longer tracks
+        let isolated = IsolatedPreferences()
+        defer { isolated.remove() }
+        let store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
+        let apps = (0..<40).map { _ in TrackedApp(process, router: store.router) }
         for (index, app) in apps.enumerated() {
             app.startObserving()
             app.startObserving()

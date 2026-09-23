@@ -7,6 +7,7 @@ import XCTest
 final class SwitcherLayoutTests: XCTestCase {
     private var isolated: IsolatedPreferences!
     private var preferences: Preferences { isolated.preferences }
+    private var previews: PreviewProvider { isolated.previews }
 
     override func setUp() async throws {
         try await super.setUp()
@@ -172,7 +173,7 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     func testPanelUsesOneHorizontalSpacingAndNoSettingsChromeRow() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b"), item("c")], selectedIndex: 0)
         let first = try XCTUnwrap(panel.tileFrameForTesting(at: 0))
         let second = try XCTUnwrap(panel.tileFrameForTesting(at: 1))
@@ -200,7 +201,7 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     func testSettingsButtonIsContextualInCyclingAndPersistentModes() {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         let items = [item("a")]
 
         panel.show(items: items, selectedIndex: 0, presentationMode: .cycling)
@@ -223,7 +224,7 @@ final class SwitcherLayoutTests: XCTestCase {
         let saved = preferences.showTabCounts
         defer { preferences.showTabCounts = saved }
         preferences.showTabCounts = true
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         let visibleFrame = try XCTUnwrap(panel.tileFrameForTesting(at: 0))
         let visibleCanvas = try XCTUnwrap(panel.tileForTesting(at: 0))
@@ -260,7 +261,7 @@ final class SwitcherLayoutTests: XCTestCase {
         try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
                       "Reduce Motion is on, so no skeleton ever pulses")
         preferences.appearanceMode = .appIcons
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         let tile = try XCTUnwrap(panel.tileForTesting(at: 0))
         XCTAssertFalse(tile.skeletonIsAnimatingForTesting,
@@ -274,7 +275,7 @@ final class SwitcherLayoutTests: XCTestCase {
     func testPulseFollowsTileVisibility() throws {
         try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
                       "Reduce Motion is on, so no skeleton ever pulses")
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let slot = try XCTUnwrap(panel.tileForTesting(at: 1))
         XCTAssertTrue(slot.skeletonIsAnimatingForTesting)
@@ -303,7 +304,7 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     func testWrappedRowsUseOneFullCardSpacing() throws {
-        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: (0..<100).map { item("\($0)") }, selectedIndex: 0)
         let columns = panel.columnsPerRow
         XCTAssertGreaterThan(columns, 0)
