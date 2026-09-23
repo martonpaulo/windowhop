@@ -257,11 +257,7 @@ public final class EventTap {
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,
-            callback: { _, type, event, userInfo in
-                guard let userInfo else { return Unmanaged.passUnretained(event) }
-                return Unmanaged<EventTap>.fromOpaque(userInfo).takeUnretainedValue()
-                    .handle(type: type, event: event)
-            },
+            callback: eventTapCallback,
             userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return false }
         tapThreadState.withLock { $0.eventTap = TapPort(port: tap) }
         let source = CFMachPortCreateRunLoopSource(nil, tap, 0)
@@ -297,7 +293,7 @@ public final class EventTap {
 
     // MARK: - Callback (runs on the tap thread; must stay small and non-blocking)
 
-    private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+    fileprivate nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByUserInput || type == .tapDisabledByTimeout {
             if let eventTap = tapThreadState.withLock({ $0.eventTap?.port }) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
@@ -336,4 +332,13 @@ public enum DebugLog {
         print("[\(String(format: "%.3f", CFAbsoluteTimeGetCurrent()))] \(message())")
         fflush(stdout)
     }
+}
+
+/// The tap's C callback runs on the event-tap thread. It is a file-scope constant, not a
+/// closure written inside the `@MainActor` class: Swift 6 would give such a closure the
+/// class's isolation and trap on the tap thread at the first key event.
+let eventTapCallback: CGEventTapCallBack = { _, type, event, userInfo in
+    guard let userInfo else { return Unmanaged.passUnretained(event) }
+    return Unmanaged<EventTap>.fromOpaque(userInfo).takeUnretainedValue()
+        .handle(type: type, event: event)
 }
