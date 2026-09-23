@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// Expanded capture must never start after its session, target or request has
@@ -34,11 +35,12 @@ final class ExpandedCaptureFlowTests: XCTestCase {
         func wait() { semaphore.wait() }
     }
 
-    private static func run(isCurrent: @escaping @MainActor @Sendable () -> Bool,
-                     lookup: @escaping () async -> Candidate? = { Candidate() },
-                     capture: @escaping (Candidate) async -> String? = { _ in "image" },
-                     recorder: Recorder,
-                     delivered: @escaping @MainActor @Sendable (String) -> Void = { _ in }
+    private static func run(
+        isCurrent: @escaping @MainActor @Sendable () -> Bool,
+        lookup: @escaping () async -> Candidate? = { Candidate() },
+        capture: @escaping (Candidate) async -> String? = { _ in "image" },
+        recorder: Recorder,
+        delivered: @escaping @MainActor @Sendable (String) -> Void = { _ in }
     ) async -> ExpandedCaptureFlow.Outcome {
         await ExpandedCaptureFlow.run(
             lookup: lookup,
@@ -57,7 +59,10 @@ final class ExpandedCaptureFlowTests: XCTestCase {
 
         async let outcome = Self.run(
             isCurrent: { state.isCurrent() },
-            lookup: { gate.wait(); return Candidate() },
+            lookup: {
+                gate.wait()
+                return Candidate()
+            },
             recorder: recorder,
             delivered: { _ in state.deliveries += 1 })
 
@@ -77,8 +82,9 @@ final class ExpandedCaptureFlowTests: XCTestCase {
         let recorder = Recorder()
         let state = State()
 
-        let result = await Self.run(isCurrent: { true }, recorder: recorder,
-                               delivered: { _ in state.deliveries += 1 })
+        let result = await Self.run(
+            isCurrent: { true }, recorder: recorder,
+            delivered: { _ in state.deliveries += 1 })
 
         let captures = await recorder.captures
         let deliveries = await state.deliveries
@@ -93,8 +99,9 @@ final class ExpandedCaptureFlowTests: XCTestCase {
         await MainActor.run { state.isCurrentRemaining = 1 }
 
         // current before the capture, obsolete once it has finished
-        let result = await Self.run(isCurrent: { state.isCurrent() }, recorder: recorder,
-                               delivered: { _ in state.deliveries += 1 })
+        let result = await Self.run(
+            isCurrent: { state.isCurrent() }, recorder: recorder,
+            delivered: { _ in state.deliveries += 1 })
 
         let captures = await recorder.captures
         let deliveries = await state.deliveries
@@ -117,8 +124,9 @@ final class ExpandedCaptureFlowTests: XCTestCase {
         let recorder = Recorder()
         let state = State()
 
-        let result = await Self.run(isCurrent: { true }, capture: { _ in nil }, recorder: recorder,
-                               delivered: { _ in state.deliveries += 1 })
+        let result = await Self.run(
+            isCurrent: { true }, capture: { _ in nil }, recorder: recorder,
+            delivered: { _ in state.deliveries += 1 })
 
         let deliveries = await state.deliveries
         XCTAssertEqual(result, .captureFailed)

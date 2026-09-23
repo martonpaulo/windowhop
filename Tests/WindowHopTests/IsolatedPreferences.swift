@@ -1,4 +1,5 @@
 import Foundation
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -23,8 +24,9 @@ final class IsolatedPreferences {
     var settingsDependencies: SettingsDependencies {
         SettingsDependencies(
             preferences: preferences,
-            restorer: SettingsDefaultsRestorer(preferences: preferences,
-                                               applyAutomaticUpdateChecks: { _ in }),
+            restorer: SettingsDefaultsRestorer(
+                preferences: preferences,
+                applyAutomaticUpdateChecks: { _ in }),
             updateManager: UpdateManager(preferences: preferences),
             setShortcutRecordingActive: { _ in },
             evictPreviews: {})

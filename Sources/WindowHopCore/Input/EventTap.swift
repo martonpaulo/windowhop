@@ -67,9 +67,11 @@ struct EventTapInterceptionState: Sendable {
         suppressedKeyUps.removeAll()
     }
 
-    mutating func decide(type: CGEventType,
-                         keyCode: Int64,
-                         flags: CGEventFlags) -> EventTapDecision {
+    mutating func decide(
+        type: CGEventType,
+        keyCode: Int64,
+        flags: CGEventFlags
+    ) -> EventTapDecision {
         if type == .flagsChanged {
             guard mode == .sessionHeld, !flags.contains(holdModifier) else {
                 return .pass
@@ -106,7 +108,8 @@ struct EventTapInterceptionState: Sendable {
                     input: .trigger(backward: flags.contains(.maskShift)))
             }
             if let persistentShortcut,
-               persistentShortcut.matches(keyCode: keyCode, flags: flags) {
+                persistentShortcut.matches(keyCode: keyCode, flags: flags)
+            {
                 mode = .sessionSticky
                 suppressedKeyUps.insert(keyCode)
                 return EventTapDecision(disposition: .consume, input: .openPersistent)
@@ -115,12 +118,15 @@ struct EventTapInterceptionState: Sendable {
         case .sessionHeld, .sessionSticky:
             let sticky = mode == .sessionSticky
             if let persistentShortcut,
-               persistentShortcut.matches(keyCode: keyCode, flags: flags) {
+                persistentShortcut.matches(keyCode: keyCode, flags: flags)
+            {
                 if type == .keyDown { suppressedKeyUps.insert(keyCode) }
                 return .consume
             }
-            guard let input = sessionEvent(
-                for: keyCode, flags: flags, sticky: sticky) else { return .pass }
+            guard
+                let input = sessionEvent(
+                    for: keyCode, flags: flags, sticky: sticky)
+            else { return .pass }
             if type == .keyDown {
                 suppressedKeyUps.insert(keyCode)
                 return EventTapDecision(disposition: .consume, input: input)
@@ -143,9 +149,11 @@ struct EventTapInterceptionState: Sendable {
     /// created last (`headInsertEventTap`), so matching cannot rely on order.
     /// Caps Lock, Fn and the keypad flag are ignored. Two exceptions: the
     /// switcher trigger keeps stepping in any session, and ⌘, needs ⌘.
-    private func sessionEvent(for keyCode: Int64,
-                              flags: CGEventFlags,
-                              sticky: Bool) -> SwitcherInputEvent? {
+    private func sessionEvent(
+        for keyCode: Int64,
+        flags: CGEventFlags,
+        sticky: Bool
+    ) -> SwitcherInputEvent? {
         let owner = sticky ? persistentShortcut?.modifiers ?? [] : holdModifier
         let foreign = flags.intersection(Self.chordModifiers).subtracting(owner)
         if keyCode == KeyCode.comma {
@@ -258,19 +266,22 @@ public final class EventTap {
             }
             return true
         }
-        let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
+        let mask: CGEventMask =
+            (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
         // The C callback captures nothing: it reaches the tap through `userInfo`.
         // Unretained is safe because `AppDelegate` owns this instance for the whole
         // process.
-        guard let tap = CGEvent.tapCreate(
-            tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
-            options: .defaultTap,
-            eventsOfInterest: mask,
-            callback: eventTapCallback,
-            userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return false }
+        guard
+            let tap = CGEvent.tapCreate(
+                tap: .cgSessionEventTap,
+                place: .headInsertEventTap,
+                options: .defaultTap,
+                eventsOfInterest: mask,
+                callback: eventTapCallback,
+                userInfo: Unmanaged.passUnretained(self).toOpaque())
+        else { return false }
         tapThreadState.withLock { $0.eventTap = TapPort(port: tap) }
         let source = CFMachPortCreateRunLoopSource(nil, tap, 0)
         runLoopSource = source
@@ -299,7 +310,8 @@ public final class EventTap {
     /// tapDisabled events; callers re-arm on wake and unlock notifications.
     public func reEnableIfNeeded() {
         guard let eventTap = tapThreadState.withLock({ $0.eventTap?.port }),
-              !CGEvent.tapIsEnabled(tap: eventTap) else { return }
+            !CGEvent.tapIsEnabled(tap: eventTap)
+        else { return }
         CGEvent.tapEnable(tap: eventTap, enable: true)
     }
 
@@ -337,7 +349,8 @@ public final class EventTap {
         DispatchQueue.main.async { [weak self] in
             // Logged here on main, not in `handle`: the tap callback only decides and posts.
             let hopMs = (CFAbsoluteTimeGetCurrent() - postedAt) * 1000
-            Log.input.debug("""
+            Log.input.debug(
+                """
                 tap: consumed \(String(describing: inputEvent), privacy: .public) \
                 (+\(hopMs, format: .fixed(precision: 2), privacy: .public)ms hop)
                 """)

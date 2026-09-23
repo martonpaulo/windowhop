@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -36,10 +37,11 @@ final class LaunchAtLoginModelTests: XCTestCase {
     }
 
     private func makeModel(_ fake: FakeLoginItem, preferences: Preferences) -> LaunchAtLoginModel {
-        LaunchAtLoginModel(preferences: preferences,
-                           readStatus: { fake.status },
-                           change: fake.change,
-                           openLoginItemsSettings: { fake.settingsOpened += 1 })
+        LaunchAtLoginModel(
+            preferences: preferences,
+            readStatus: { fake.status },
+            change: fake.change,
+            openLoginItemsSettings: { fake.settingsOpened += 1 })
     }
 
     func testStartsFromTheReportedStatusNotTheStoredIntent() {
@@ -112,8 +114,9 @@ final class LaunchAtLoginModelTests: XCTestCase {
         XCTAssertTrue(model.failed)
         XCTAssertEqual(model.status, .disabled)
         XCTAssertFalse(preferences.launchAtLogin)
-        XCTAssertNil(defaults.persistentDomain(forName: suiteName)?[Preferences.Key.launchAtLogin.rawValue],
-                     "a failed request must not store an intent")
+        XCTAssertNil(
+            defaults.persistentDomain(forName: suiteName)?[Preferences.Key.launchAtLogin.rawValue],
+            "a failed request must not store an intent")
     }
 
     /// Approving in System Settings after a failure: the new status replaces

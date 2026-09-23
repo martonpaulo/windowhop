@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -17,9 +18,10 @@ final class SettingsWindowEntryTests: XCTestCase {
         try await super.setUp()
         isolated = IsolatedPreferences()
         store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-                          styleMask: [.titled, .closable, .miniaturizable],
-                          backing: .buffered, defer: true)
+        window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
         window.title = "WindowHop Settings"
     }
@@ -74,9 +76,10 @@ final class SettingsWindowEntryTests: XCTestCase {
     /// The registered entries are the only store path tests can drive without AX;
     /// they exercise the same MRUOrder owner that orders AX windows.
     private func makeWindow(_ title: String) -> NSWindow {
-        let other = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-                             styleMask: [.titled, .closable, .miniaturizable],
-                             backing: .buffered, defer: true)
+        let other = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered, defer: true)
         other.isReleasedWhenClosed = false
         other.title = title
         return other
@@ -113,13 +116,15 @@ final class SettingsWindowEntryTests: XCTestCase {
 
     func testOtherOwnWindowsRemainExcludedByTheDisplayRule() {
         // panels, alerts, onboarding: own windows that are NOT the settings exception
-        let ownWindow = WindowDisplayState(isMinimized: false, isAppHidden: false,
-                                           isOwnWindow: true, isOwnSettingsWindow: false,
-                                           isOnCurrentSpace: true, isOnActiveDisplay: true)
+        let ownWindow = WindowDisplayState(
+            isMinimized: false, isAppHidden: false,
+            isOwnWindow: true, isOwnSettingsWindow: false,
+            isOnCurrentSpace: true, isOnActiveDisplay: true)
         XCTAssertFalse(WindowEligibility.shouldDisplay(ownWindow, policy: .init()))
-        let settingsWindow = WindowDisplayState(isMinimized: false, isAppHidden: false,
-                                                isOwnWindow: true, isOwnSettingsWindow: true,
-                                                isOnCurrentSpace: true, isOnActiveDisplay: true)
+        let settingsWindow = WindowDisplayState(
+            isMinimized: false, isAppHidden: false,
+            isOwnWindow: true, isOwnSettingsWindow: true,
+            isOnCurrentSpace: true, isOnActiveDisplay: true)
         XCTAssertTrue(WindowEligibility.shouldDisplay(settingsWindow, policy: .init()))
     }
 
@@ -137,29 +142,38 @@ final class SettingsWindowEntryTests: XCTestCase {
     /// another display left it filed under the display it opened on.
     func testMovingTheWindowUpdatesItsDisplayMembership() throws {
         let screen = try XCTUnwrap(NSScreen.screens.first)
-        window.setFrame(NSRect(x: screen.frame.midX, y: screen.frame.midY,
-                               width: 400, height: 300), display: false)
+        window.setFrame(
+            NSRect(
+                x: screen.frame.midX, y: screen.frame.midY,
+                width: 400, height: 300), display: false)
         store.registerOwnWindow(window)
         let entry = try XCTUnwrap(store.windows.first)
         XCTAssertTrue(entry.isOn(screen: screen))
 
-        window.setFrame(NSRect(x: screen.frame.maxX + 2000, y: screen.frame.midY,
-                               width: 400, height: 300), display: false)
+        window.setFrame(
+            NSRect(
+                x: screen.frame.maxX + 2000, y: screen.frame.midY,
+                width: 400, height: 300), display: false)
 
-        XCTAssertFalse(entry.isOn(screen: screen),
-                       "the entry must follow the window's live location")
+        XCTAssertFalse(
+            entry.isOn(screen: screen),
+            "the entry must follow the window's live location")
     }
 
     func testResizingBackOntoTheScreenRestoresMembership() throws {
         let screen = try XCTUnwrap(NSScreen.screens.first)
-        window.setFrame(NSRect(x: screen.frame.maxX + 2000, y: screen.frame.midY,
-                               width: 400, height: 300), display: false)
+        window.setFrame(
+            NSRect(
+                x: screen.frame.maxX + 2000, y: screen.frame.midY,
+                width: 400, height: 300), display: false)
         store.registerOwnWindow(window)
         let entry = try XCTUnwrap(store.windows.first)
         XCTAssertFalse(entry.isOn(screen: screen))
 
-        window.setFrame(NSRect(x: screen.frame.midX, y: screen.frame.midY,
-                               width: 400, height: 300), display: false)
+        window.setFrame(
+            NSRect(
+                x: screen.frame.midX, y: screen.frame.midY,
+                width: 400, height: 300), display: false)
 
         XCTAssertTrue(entry.isOn(screen: screen))
     }
@@ -195,8 +209,9 @@ final class SettingsWindowEntryTests: XCTestCase {
         let belowFrame = CGRect(x: 0, y: -1080, width: 1920, height: 1080)
         // mirrors TrackedWindow.quartzFrame's arithmetic on plain rectangles
         func quartz(_ frame: CGRect) -> CGRect {
-            CGRect(x: frame.origin.x, y: primaryFrame.maxY - frame.maxY,
-                   width: frame.width, height: frame.height)
+            CGRect(
+                x: frame.origin.x, y: primaryFrame.maxY - frame.maxY,
+                width: frame.width, height: frame.height)
         }
 
         XCTAssertEqual(quartz(primaryFrame).origin.y, 0)

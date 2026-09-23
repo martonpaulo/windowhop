@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -23,14 +24,17 @@ final class SettingsPaneLayoutTests: XCTestCase {
 
     func testEveryPaneRendersIntoTheSameCanvas() {
         _ = NSApplication.shared
-        let canvas = CGSize(width: DesignTokens.settingsPaneWidth,
-                            height: DesignTokens.settingsPaneHeight)
+        let canvas = CGSize(
+            width: DesignTokens.settingsPaneWidth,
+            height: DesignTokens.settingsPaneHeight)
         XCTAssertGreaterThan(SettingsPane.allCases.count, 1)
-        let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude,
-                               height: CGFloat.greatestFiniteMagnitude)
+        let unbounded = CGSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude)
         for pane in SettingsPane.allCases {
-            XCTAssertEqual(pane.makeViewController(isolated.settingsDependencies).sizeThatFits(in: unbounded), canvas,
-                           "the \(pane.rawValue) pane resizes the Settings window")
+            XCTAssertEqual(
+                pane.makeViewController(isolated.settingsDependencies).sizeThatFits(in: unbounded), canvas,
+                "the \(pane.rawValue) pane resizes the Settings window")
         }
     }
 
@@ -41,16 +45,19 @@ final class SettingsPaneLayoutTests: XCTestCase {
     func testAppearancePaneKeepsItsCanvasInEveryMode() {
         _ = NSApplication.shared
         let preferences = isolated.preferences
-        let canvas = CGSize(width: DesignTokens.settingsPaneWidth,
-                            height: DesignTokens.settingsPaneHeight)
-        let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude,
-                               height: CGFloat.greatestFiniteMagnitude)
+        let canvas = CGSize(
+            width: DesignTokens.settingsPaneWidth,
+            height: DesignTokens.settingsPaneHeight)
+        let unbounded = CGSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude)
 
         for mode in AppearanceMode.allCases {
             preferences.appearanceMode = mode
-            XCTAssertEqual(SettingsPane.appearance.makeViewController(isolated.settingsDependencies)
-                            .sizeThatFits(in: unbounded),
-                           canvas, "the Appearance pane resizes in \(mode.rawValue)")
+            XCTAssertEqual(
+                SettingsPane.appearance.makeViewController(isolated.settingsDependencies)
+                    .sizeThatFits(in: unbounded),
+                canvas, "the Appearance pane resizes in \(mode.rawValue)")
         }
     }
 

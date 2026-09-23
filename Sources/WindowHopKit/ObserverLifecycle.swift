@@ -66,7 +66,7 @@ public struct ObserverLifecycle: Equatable, Sendable {
     /// subscription is in flight or established, and the app was not stopped.
     public func isCurrent(_ generation: UInt64) -> Bool {
         switch phase {
-        case let .subscribing(current, _), let .ready(current):
+        case .subscribing(let current, _), .ready(let current):
             return current == generation
         case .idle, .stopped:
             return false
@@ -87,11 +87,14 @@ public struct ObserverLifecycle: Equatable, Sendable {
         case (.subscribing, .start), (.ready, .start):
             // an attempt is already running, or the app is already observed
             return []
-        case let (.subscribing(current, _), .subscriptionSucceeded(result)) where result == current:
+        case (.subscribing(let current, _), .subscriptionSucceeded(let result)) where result == current:
             phase = .ready(generation: current)
-            return [.subscribeRemainingNotifications(generation: current),
-                    .discoverWindows(generation: current)]
-        case let (.subscribing(current, attemptsLeft), .subscriptionFailed(result, retryable)) where result == current:
+            return [
+                .subscribeRemainingNotifications(generation: current),
+                .discoverWindows(generation: current),
+            ]
+        case (.subscribing(let current, let attemptsLeft), .subscriptionFailed(let result, let retryable))
+        where result == current:
             guard retryable, attemptsLeft > 1 else {
                 // retries exhausted or refused: a later `start` restarts with a new generation
                 phase = .idle
@@ -99,7 +102,7 @@ public struct ObserverLifecycle: Equatable, Sendable {
             }
             phase = .subscribing(generation: current, attemptsLeft: attemptsLeft - 1)
             return [.scheduleRetry(generation: current, delay: retryDelay)]
-        case let (.subscribing(current, _), .retryDue(result)) where result == current:
+        case (.subscribing(let current, _), .retryDue(let result)) where result == current:
             return [.subscribe(generation: current)]
         case (_, .subscriptionSucceeded), (_, .subscriptionFailed), (_, .retryDue):
             // a result or retry of an older generation, or one that arrives out of phase

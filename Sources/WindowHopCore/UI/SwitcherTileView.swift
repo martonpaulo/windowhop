@@ -6,21 +6,27 @@ import WindowHopKit
 private final class OverlayCloseButton: NSButton {
     override func draw(_ dirtyRect: NSRect) {
         let visible = DesignTokens.closeButtonVisibleSize
-        let circleRect = NSRect(x: bounds.midX - visible / 2,
-                                y: bounds.midY - visible / 2,
-                                width: visible, height: visible)
+        let circleRect = NSRect(
+            x: bounds.midX - visible / 2,
+            y: bounds.midY - visible / 2,
+            width: visible, height: visible)
         DesignTokens.overlayCircleColor.setFill()
         NSBezierPath(ovalIn: circleRect).fill()
         let configuration = NSImage.SymbolConfiguration(
             pointSize: DesignTokens.closeButtonGlyphSize,
-            weight: .semibold)
-            .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor]))
-        guard let glyph = NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)?
-            .withSymbolConfiguration(configuration) else { return }
+            weight: .semibold
+        )
+        .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor]))
+        guard
+            let glyph = NSImage(systemSymbolName: "xmark", accessibilityDescription: nil)?
+                .withSymbolConfiguration(configuration)
+        else { return }
         let glyphSize = glyph.size
-        glyph.draw(at: NSPoint(x: bounds.midX - glyphSize.width / 2,
-                               y: bounds.midY - glyphSize.height / 2),
-                   from: .zero, operation: .sourceOver, fraction: 1)
+        glyph.draw(
+            at: NSPoint(
+                x: bounds.midX - glyphSize.width / 2,
+                y: bounds.midY - glyphSize.height / 2),
+            from: .zero, operation: .sourceOver, fraction: 1)
     }
 }
 
@@ -53,15 +59,18 @@ private final class PreviewSkeletonView: NSView {
         super.draw(dirtyRect)
         effectiveAppearance.performAsCurrentDrawingAppearance {
             DesignTokens.previewSkeletonChromeFill.setFill()
-            NSRect(x: bounds.minX,
-                   y: bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight,
-                   width: bounds.width,
-                   height: DesignTokens.previewSkeletonTitleBarHeight).fill()
+            NSRect(
+                x: bounds.minX,
+                y: bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight,
+                width: bounds.width,
+                height: DesignTokens.previewSkeletonTitleBarHeight
+            ).fill()
 
             DesignTokens.previewSkeletonDotFill.setFill()
             let dot = DesignTokens.previewSkeletonDotSize
             for index in 0..<3 {
-                let x = DesignTokens.previewSkeletonInset
+                let x =
+                    DesignTokens.previewSkeletonInset
                     + CGFloat(index) * (dot + DesignTokens.previewSkeletonDotSpacing)
                 let y = bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight / 2 - dot / 2
                 NSBezierPath(ovalIn: NSRect(x: x, y: y, width: dot, height: dot)).fill()
@@ -77,17 +86,22 @@ private final class PreviewSkeletonView: NSView {
                 fractions = DesignTokens.previewSkeletonUnavailableLineFractions
             }
             let availableWidth = bounds.width - DesignTokens.previewSkeletonInset * 2
-            var y = bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight
+            var y =
+                bounds.maxY - DesignTokens.previewSkeletonTitleBarHeight
                 - DesignTokens.previewSkeletonInset - DesignTokens.previewSkeletonLineHeight
             for fraction in fractions where y >= DesignTokens.previewSkeletonInset {
-                let line = NSRect(x: DesignTokens.previewSkeletonInset,
-                                  y: y,
-                                  width: availableWidth * fraction,
-                                  height: DesignTokens.previewSkeletonLineHeight)
-                NSBezierPath(roundedRect: line,
-                             xRadius: DesignTokens.previewSkeletonLineRadius,
-                             yRadius: DesignTokens.previewSkeletonLineRadius).fill()
-                y -= DesignTokens.previewSkeletonLineHeight
+                let line = NSRect(
+                    x: DesignTokens.previewSkeletonInset,
+                    y: y,
+                    width: availableWidth * fraction,
+                    height: DesignTokens.previewSkeletonLineHeight)
+                NSBezierPath(
+                    roundedRect: line,
+                    xRadius: DesignTokens.previewSkeletonLineRadius,
+                    yRadius: DesignTokens.previewSkeletonLineRadius
+                ).fill()
+                y -=
+                    DesignTokens.previewSkeletonLineHeight
                     + DesignTokens.previewSkeletonLineSpacing
             }
         }
@@ -121,9 +135,10 @@ private final class PreviewSkeletonView: NSView {
         layer?.removeAnimation(forKey: "previewSkeletonPulse")
         layer?.opacity = 1
         guard variant == .loading,
-              window != nil,
-              !isHiddenOrHasHiddenAncestor,
-              !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion else { return }
+            window != nil,
+            !isHiddenOrHasHiddenAncestor,
+            !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        else { return }
         let pulse = CABasicAnimation(keyPath: "opacity")
         pulse.fromValue = DesignTokens.previewSkeletonMinimumOpacity
         pulse.toValue = 1
@@ -155,7 +170,7 @@ private final class PreviewSkeletonView: NSView {
 final class SwitcherTileView: NSView {
     struct Metrics {
         let tileSize: NSSize
-        let contentHeight: CGFloat // icon or preview area height
+        let contentHeight: CGFloat  // icon or preview area height
 
         static func appIcons(showTabCounts: Bool) -> Metrics {
             Metrics(
@@ -173,15 +188,18 @@ final class SwitcherTileView: NSView {
             let contentHeight = DesignTokens.previewContentHeight(
                 width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2)
             return Metrics(
-                tileSize: NSSize(width: DesignTokens.previewsTileWidth,
-                                 height: DesignTokens.tileHeight(
-                                    contentHeight: contentHeight,
-                                    showMetadata: showTabCounts)),
+                tileSize: NSSize(
+                    width: DesignTokens.previewsTileWidth,
+                    height: DesignTokens.tileHeight(
+                        contentHeight: contentHeight,
+                        showMetadata: showTabCounts)),
                 contentHeight: contentHeight)
         }
 
-        static func metrics(for mode: AppearanceMode,
-                            showTabCounts: Bool) -> Metrics {
+        static func metrics(
+            for mode: AppearanceMode,
+            showTabCounts: Bool
+        ) -> Metrics {
             mode == .appIcons
                 ? .appIcons(showTabCounts: showTabCounts)
                 : .windowPreviews(showTabCounts: showTabCounts)
@@ -299,9 +317,10 @@ final class SwitcherTileView: NSView {
     /// Tiles are pooled and reconfigured (never recreated per session) so the
     /// panel opens fast even with 100+ windows.
     init() {
-        super.init(frame: NSRect(
-            origin: .zero,
-            size: Metrics.appIcons(showTabCounts: false).tileSize))
+        super.init(
+            frame: NSRect(
+                origin: .zero,
+                size: Metrics.appIcons(showTabCounts: false).tileSize))
 
         selectionBackgroundView.wantsLayer = true
         selectionBackgroundView.layer?.cornerRadius = DesignTokens.iconSelectionCornerRadius
@@ -378,7 +397,7 @@ final class SwitcherTileView: NSView {
             NSAccessibilityCustomAction(name: String(localized: "Close Window")) { [weak self] in
                 self?.onCloseRequest?()
                 return true
-            },
+            }
         ])
 
         applySelectionStyle()
@@ -402,11 +421,13 @@ final class SwitcherTileView: NSView {
         } ?? ""
     }
 
-    func configure(item: SwitcherItem,
-                   mode: AppearanceMode,
-                   showTabCounts: Bool,
-                   preview: NSImage?,
-                   presentation: PreviewPresentationState = .loading) {
+    func configure(
+        item: SwitcherItem,
+        mode: AppearanceMode,
+        showTabCounts: Bool,
+        preview: NSImage?,
+        presentation: PreviewPresentationState = .loading
+    ) {
         shown = (item.id, Content(item: item, mode: mode, showTabCounts: showTabCounts))
         self.mode = mode
         self.showTabCounts = showTabCounts
@@ -437,7 +458,8 @@ final class SwitcherTileView: NSView {
         let hadPreview = hasPreview
         previewState = mode == .windowPreviews && image != nil ? .loaded : .loading
         updateSkeletonPresentation()
-        let animatable = fadeIn && hasPreview && window != nil && !isHidden
+        let animatable =
+            fadeIn && hasPreview && window != nil && !isHidden
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         if animatable, hadPreview {
             // cached → fresh: crossfade the layer contents in place
@@ -495,16 +517,19 @@ final class SwitcherTileView: NSView {
         super.layout()
         let size = metrics.tileSize
         let contentHeight = metrics.contentHeight
-        let contentBox = NSRect(x: DesignTokens.tileLabelInset,
-                                y: size.height - DesignTokens.contentTopInset - contentHeight,
-                                width: size.width - DesignTokens.tileLabelInset * 2,
-                                height: contentHeight)
-        let selectionPadding = mode == .appIcons
+        let contentBox = NSRect(
+            x: DesignTokens.tileLabelInset,
+            y: size.height - DesignTokens.contentTopInset - contentHeight,
+            width: size.width - DesignTokens.tileLabelInset * 2,
+            height: contentHeight)
+        let selectionPadding =
+            mode == .appIcons
             ? DesignTokens.iconSelectionPadding
             : DesignTokens.previewSelectionPadding
         selectionBackgroundView.frame = contentBox.insetBy(
             dx: -selectionPadding, dy: -selectionPadding)
-        selectionBackgroundView.layer?.cornerRadius = mode == .appIcons
+        selectionBackgroundView.layer?.cornerRadius =
+            mode == .appIcons
             ? DesignTokens.iconSelectionCornerRadius
             : DesignTokens.previewCornerRadius + selectionPadding
         if hasPreview {
@@ -520,21 +545,24 @@ final class SwitcherTileView: NSView {
             // Both overlays belong to the fixed display-aspect canvas, never
             // the source image's fitted bounds.
             let badge = DesignTokens.previewBadgeSize
-            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
-                                         y: contentBox.minY - DesignTokens.previewOverlayOverlap,
-                                         width: badge, height: badge)
+            badgeIconView.frame = NSRect(
+                x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
+                y: contentBox.minY - DesignTokens.previewOverlayOverlap,
+                width: badge, height: badge)
         } else if mode == .windowPreviews {
             // placeholder card keeps the geometry stable until a snapshot fades in
             previewSurfaceView.frame = contentBox
             let badge = DesignTokens.previewBadgeSize
-            badgeIconView.frame = NSRect(x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
-                                         y: contentBox.minY - DesignTokens.previewOverlayOverlap,
-                                         width: badge, height: badge)
+            badgeIconView.frame = NSRect(
+                x: contentBox.maxX - badge + DesignTokens.previewOverlayOverlap,
+                y: contentBox.minY - DesignTokens.previewOverlayOverlap,
+                width: badge, height: badge)
         } else {
             let iconSize = DesignTokens.largeIconSize
-            iconView.frame = NSRect(x: contentBox.midX - iconSize / 2,
-                                    y: contentBox.midY - iconSize / 2,
-                                    width: iconSize, height: iconSize)
+            iconView.frame = NSRect(
+                x: contentBox.midX - iconSize / 2,
+                y: contentBox.midY - iconSize / 2,
+                width: iconSize, height: iconSize)
         }
         iconView.isHidden = mode == .windowPreviews
         previewSurfaceView.frame = contentBox
@@ -553,13 +581,15 @@ final class SwitcherTileView: NSView {
         let zone = NSRect(
             x: DesignTokens.tileLabelInset,
             y: DesignTokens.titleY(showMetadata: showTabCounts),
-                          width: labelWidth, height: DesignTokens.titleZoneHeight)
-        let textHeight = min(titleLabel.cell?.cellSize(forBounds: zone).height
-                                 ?? DesignTokens.titleZoneHeight,
-                             DesignTokens.titleZoneHeight)
-        titleLabel.frame = NSRect(x: zone.minX,
-                                  y: zone.minY + ((zone.height - textHeight) / 2).rounded(.down),
-                                  width: labelWidth, height: textHeight)
+            width: labelWidth, height: DesignTokens.titleZoneHeight)
+        let textHeight = min(
+            titleLabel.cell?.cellSize(forBounds: zone).height
+                ?? DesignTokens.titleZoneHeight,
+            DesignTokens.titleZoneHeight)
+        titleLabel.frame = NSRect(
+            x: zone.minX,
+            y: zone.minY + ((zone.height - textHeight) / 2).rounded(.down),
+            width: labelWidth, height: textHeight)
         tabsLabel.frame = NSRect(
             x: DesignTokens.tileLabelInset,
             y: DesignTokens.labelBottomInset,
@@ -569,18 +599,20 @@ final class SwitcherTileView: NSView {
         // canvas's top-left point. Its overlay frame never participates in
         // measurement and intentionally extends beyond the canvas.
         let button = DesignTokens.closeButtonHitSize
-        closeButton.frame = NSRect(x: contentBox.minX - button / 2,
-                                   y: contentBox.maxY - button / 2,
-                                   width: button, height: button)
+        closeButton.frame = NSRect(
+            x: contentBox.minX - button / 2,
+            y: contentBox.maxY - button / 2,
+            width: button, height: button)
     }
 
     private func fittedImageRect(in frame: NSRect, imageSize: NSSize?) -> NSRect {
         guard let imageSize, imageSize.width > 0, imageSize.height > 0 else { return frame }
         let scale = min(frame.width / imageSize.width, frame.height / imageSize.height, 1)
         let fittedSize = NSSize(width: imageSize.width * scale, height: imageSize.height * scale)
-        return NSRect(x: frame.midX - fittedSize.width / 2,
-                      y: frame.midY - fittedSize.height / 2,
-                      width: fittedSize.width, height: fittedSize.height)
+        return NSRect(
+            x: frame.midX - fittedSize.width / 2,
+            y: frame.midY - fittedSize.height / 2,
+            width: fittedSize.width, height: fittedSize.height)
     }
 
     private func applySelectionStyle() {
@@ -590,11 +622,13 @@ final class SwitcherTileView: NSView {
             let emphasized = isHovered
             let fill: NSColor
             if mode == .appIcons {
-                fill = isSelected
+                fill =
+                    isSelected
                     ? DesignTokens.iconSelectionFill
                     : (emphasized ? DesignTokens.iconEmphasisFill : .clear)
             } else {
-                fill = isSelected
+                fill =
+                    isSelected
                     ? DesignTokens.previewSelectionFill
                     : (emphasized ? DesignTokens.previewEmphasisFill : .clear)
             }
@@ -665,9 +699,10 @@ final class SwitcherTileView: NSView {
         if let trackingArea {
             removeTrackingArea(trackingArea)
         }
-        let area = NSTrackingArea(rect: bounds,
-                                  options: [.mouseEnteredAndExited, .activeAlways],
-                                  owner: self, userInfo: nil)
+        let area = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways],
+            owner: self, userInfo: nil)
         addTrackingArea(area)
         trackingArea = area
     }

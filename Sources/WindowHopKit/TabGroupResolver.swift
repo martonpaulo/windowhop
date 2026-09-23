@@ -22,8 +22,10 @@ public enum TabGroupResolver {
         /// The titles of the window's last complete tab bar read (`.group`), if any.
         public let reportedTabTitles: [String]?
 
-        public init(id: ID, title: String, isTabbed: Bool, groupIds: [ID]?, frame: CGRect?,
-                    reportedTabTitles: [String]?) {
+        public init(
+            id: ID, title: String, isTabbed: Bool, groupIds: [ID]?, frame: CGRect?,
+            reportedTabTitles: [String]?
+        ) {
             self.id = id
             self.title = title
             self.isTabbed = isTabbed
@@ -34,9 +36,10 @@ public enum TabGroupResolver {
 
         func applying(_ change: WindowTabState<ID>?) -> WindowDescriptor<ID> {
             guard let change else { return self }
-            return WindowDescriptor(id: id, title: title, isTabbed: change.isTabbed,
-                                    groupIds: change.groupIds, frame: frame,
-                                    reportedTabTitles: reportedTabTitles)
+            return WindowDescriptor(
+                id: id, title: title, isTabbed: change.isTabbed,
+                groupIds: change.groupIds, frame: frame,
+                reportedTabTitles: reportedTabTitles)
         }
     }
 
@@ -69,8 +72,9 @@ public enum TabGroupResolver {
             // shrink or dissolve a known group (upstream 8c8d2836 draws the same line)
             return changes
         case .standalone:
-            return resolveStandalone(active: active, sameAppWindows: sameAppWindows,
-                                     isFocusEvent: isFocusEvent)
+            return resolveStandalone(
+                active: active, sameAppWindows: sameAppWindows,
+                isFocusEvent: isFocusEvent)
         case .group(let titles):
             tabTitles = titles
         }
@@ -80,8 +84,9 @@ public enum TabGroupResolver {
         if let index = remainingTitles.firstIndex(of: active.title) {
             remainingTitles.remove(at: index)
         }
-        let matched = matchSiblings(of: active, titles: remainingTitles,
-                                    sameAppWindows: sameAppWindows)
+        let matched = matchSiblings(
+            of: active, titles: remainingTitles,
+            sameAppWindows: sameAppWindows)
         let groupIds = [active.id] + matched.map { $0.id }
         changes[active.id] = WindowTabState(isTabbed: false, groupIds: groupIds)
         for sibling in matched {
@@ -95,7 +100,8 @@ public enum TabGroupResolver {
         for window in sameAppWindows
         where window.id != active.id
             && !matched.contains(where: { $0.id == window.id })
-            && window.groupIds?.contains(active.id) == true {
+            && window.groupIds?.contains(active.id) == true
+        {
             changes[window.id] = WindowTabState(isTabbed: false, groupIds: nil)
         }
         return changes
@@ -131,12 +137,16 @@ public enum TabGroupResolver {
             return changes
         }
         guard isFocusEvent,
-              let groupActive = sameAppWindows.first(where: { groupIds.contains($0.id) && !$0.isTabbed }),
-              let frame = active.frame, let groupFrame = groupActive.frame,
-              rounded(frame) != rounded(groupFrame) else { return changes }
+            let groupActive = sameAppWindows.first(where: { groupIds.contains($0.id) && !$0.isTabbed }),
+            let frame = active.frame, let groupFrame = groupActive.frame,
+            rounded(frame) != rounded(groupFrame)
+        else { return changes }
         changes[active.id] = WindowTabState(isTabbed: false, groupIds: nil)
-        changes.merge(resolveRemoval(removedId: active.id, groupIds: groupIds,
-                                     remainingWindows: sameAppWindows)) { _, new in new }
+        changes.merge(
+            resolveRemoval(
+                removedId: active.id, groupIds: groupIds,
+                remainingWindows: sameAppWindows)
+        ) { _, new in new }
         return changes
     }
 
@@ -204,8 +214,9 @@ public enum TabGroupResolver {
     }
 
     private static func rounded(_ frame: CGRect) -> CGRect {
-        CGRect(x: frame.origin.x.rounded(), y: frame.origin.y.rounded(),
-               width: frame.width.rounded(), height: frame.height.rounded())
+        CGRect(
+            x: frame.origin.x.rounded(), y: frame.origin.y.rounded(),
+            width: frame.width.rounded(), height: frame.height.rounded())
     }
 
     /// A window (`newWindow`, already resolved on its own) was just discovered.
@@ -225,12 +236,14 @@ public enum TabGroupResolver {
             // earlier re-resolutions may have changed this window
             let current = window.applying(changes[window.id])
             guard !current.isTabbed, let titles = current.reportedTabTitles,
-                  (current.groupIds?.count ?? 1) < titles.count,
-                  unmatchedTitles(of: current, titles: titles, among: windows)
-                      .contains(newWindow.title) else { continue }
+                (current.groupIds?.count ?? 1) < titles.count,
+                unmatchedTitles(of: current, titles: titles, among: windows)
+                    .contains(newWindow.title)
+            else { continue }
             let others = windows.filter { $0.id != current.id }
-            let resolved = resolve(active: current, observation: .group(titles),
-                                   sameAppWindows: others)
+            let resolved = resolve(
+                active: current, observation: .group(titles),
+                sameAppWindows: others)
             changes.merge(resolved) { _, new in new }
             windows = windows.map { $0.applying(resolved[$0.id]) }
             // the new window belongs to at most one group

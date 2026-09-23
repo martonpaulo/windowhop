@@ -9,8 +9,10 @@ public struct SettingsDefaultsRestorer {
     private let preferences: Preferences
     private let applyAutomaticUpdateChecks: (Bool) -> Void
 
-    public init(preferences: Preferences,
-         applyAutomaticUpdateChecks: @escaping (Bool) -> Void) {
+    public init(
+        preferences: Preferences,
+        applyAutomaticUpdateChecks: @escaping (Bool) -> Void
+    ) {
         self.preferences = preferences
         self.applyAutomaticUpdateChecks = applyAutomaticUpdateChecks
     }

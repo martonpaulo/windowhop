@@ -42,10 +42,11 @@ public enum DisplayRegistry {
 
     public static func descriptor(for screen: NSScreen) -> DisplayDescriptor? {
         guard let id = persistentID(for: screen) else { return nil }
-        return DisplayDescriptor(id: id,
-                                 name: screen.localizedName,
-                                 visibleFrame: screen.visibleFrame,
-                                 backingScale: screen.backingScaleFactor)
+        return DisplayDescriptor(
+            id: id,
+            name: screen.localizedName,
+            visibleFrame: screen.visibleFrame,
+            backingScale: screen.backingScaleFactor)
     }
 
     /// A display identity that survives reconnect, sleep, and reboot.
@@ -63,7 +64,8 @@ public enum DisplayRegistry {
         guard let number = screen.deviceDescription[key] as? NSNumber else { return nil }
         let displayID = CGDirectDisplayID(number.uint32Value)
         guard let cfUUID = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue(),
-              let string = CFUUIDCreateString(nil, cfUUID) else { return nil }
+            let string = CFUUIDCreateString(nil, cfUUID)
+        else { return nil }
         return string as String
     }
 }
@@ -93,11 +95,12 @@ public final class ConnectedDisplaysModel {
         observer = NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
-            queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    self?.displays = DisplayRegistry.availableDisplays()
-                }
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.displays = DisplayRegistry.availableDisplays()
             }
+        }
     }
 
     public func stopObserving() {

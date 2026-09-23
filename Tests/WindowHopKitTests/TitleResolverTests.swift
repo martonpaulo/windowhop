@@ -1,15 +1,18 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class TitleResolverTests: XCTestCase {
     func testWindowTitleWins() {
-        XCTAssertEqual(TitleResolver.resolve(axTitle: "Report.pdf", documentPath: "/tmp/Other.txt", appName: "Preview"),
-                       "Report.pdf")
+        XCTAssertEqual(
+            TitleResolver.resolve(axTitle: "Report.pdf", documentPath: "/tmp/Other.txt", appName: "Preview"),
+            "Report.pdf")
     }
 
     func testEmptyTitleFallsBackToDocumentName() {
-        XCTAssertEqual(TitleResolver.resolve(axTitle: "", documentPath: "/Users/me/Notes/Groceries.md", appName: "Editor"),
-                       "Groceries.md")
+        XCTAssertEqual(
+            TitleResolver.resolve(axTitle: "", documentPath: "/Users/me/Notes/Groceries.md", appName: "Editor"),
+            "Groceries.md")
     }
 
     func testWhitespaceTitleFallsBack() {
@@ -21,8 +24,9 @@ final class TitleResolverTests: XCTestCase {
     }
 
     func testPercentEncodedDocumentNameIsDecoded() {
-        XCTAssertEqual(TitleResolver.resolve(axTitle: nil, documentPath: "file:///tmp/My%20Doc.txt", appName: "App"),
-                       "My Doc.txt")
+        XCTAssertEqual(
+            TitleResolver.resolve(axTitle: nil, documentPath: "file:///tmp/My%20Doc.txt", appName: "App"),
+            "My Doc.txt")
     }
 
     func testUnicodeTitlesPassThroughUnchanged() {

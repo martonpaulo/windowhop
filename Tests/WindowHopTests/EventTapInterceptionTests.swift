@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -31,13 +32,17 @@ final class EventTapInterceptionTests: XCTestCase {
         XCTAssertEqual(
             state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: reverseFlags),
             EventTapDecision(disposition: .consume, input: .trigger(backward: true)))
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab,
-                                    flags: reverseFlags), .consume)
+        XCTAssertEqual(
+            state.decide(
+                type: .keyUp, keyCode: KeyCode.tab,
+                flags: reverseFlags), .consume)
         XCTAssertEqual(
             state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
             EventTapDecision(disposition: .consume, input: .step(backward: false)))
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab,
-                                    flags: .maskCommand), .consume)
+        XCTAssertEqual(
+            state.decide(
+                type: .keyUp, keyCode: KeyCode.tab,
+                flags: .maskCommand), .consume)
     }
 
     func testRapidSessionEndStillConsumesOwnedKeyUp() {
@@ -62,10 +67,14 @@ final class EventTapInterceptionTests: XCTestCase {
             holdModifier: .maskCommand,
             persistentShortcut: .optionTab)
 
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab,
-                                    flags: .maskControl), .pass)
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.comma,
-                                    flags: .maskCommand), .pass)
+        XCTAssertEqual(
+            state.decide(
+                type: .keyDown, keyCode: KeyCode.tab,
+                flags: .maskControl), .pass)
+        XCTAssertEqual(
+            state.decide(
+                type: .keyDown, keyCode: KeyCode.comma,
+                flags: .maskCommand), .pass)
         XCTAssertEqual(
             state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
             EventTapDecision(disposition: .consume, input: .openPersistent))
@@ -81,8 +90,10 @@ final class EventTapInterceptionTests: XCTestCase {
 
         XCTAssertEqual(state.mode, .off)
         XCTAssertTrue(state.suppressedKeyUps.isEmpty)
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab,
-                                    flags: .maskCommand), .pass)
+        XCTAssertEqual(
+            state.decide(
+                type: .keyUp, keyCode: KeyCode.tab,
+                flags: .maskCommand), .pass)
     }
 
     // MARK: - Shortcut recording (#83)
@@ -126,8 +137,9 @@ final class EventTapInterceptionTests: XCTestCase {
         state.mode = .watching
         state.isRecordingShortcut = true
 
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskAlternate),
-                       .consume)
+        XCTAssertEqual(
+            state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskAlternate),
+            .consume)
         XCTAssertTrue(state.suppressedKeyUps.isEmpty)
     }
 
@@ -147,8 +159,9 @@ final class EventTapInterceptionTests: XCTestCase {
         state.mode = .watching
 
         XCTAssertTrue(state.isRecordingShortcut)
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
-                       .pass)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+            .pass)
     }
 
     func testFlagsChangedPassesWhetherOrNotRecording() {
@@ -178,30 +191,37 @@ final class EventTapInterceptionTests: XCTestCase {
         let ownsControlOption: Bool
 
         func state() -> EventTapInterceptionState {
-            EventTapInterceptionState(mode: mode, holdModifier: holdModifier,
-                                      persistentShortcut: persistentShortcut)
+            EventTapInterceptionState(
+                mode: mode, holdModifier: holdModifier,
+                persistentShortcut: persistentShortcut)
         }
     }
 
     private static let keyK: Int64 = 40
 
     private static let sessions = [
-        Session(name: "held ⌘Tab", mode: .sessionHeld, holdModifier: .maskCommand,
-                persistentShortcut: .optionTab, owner: .maskCommand, ownsControlOption: false),
-        Session(name: "held ⌃Tab", mode: .sessionHeld, holdModifier: .maskControl,
-                persistentShortcut: .optionTab, owner: .maskControl, ownsControlOption: false),
-        Session(name: "sticky ⌥Tab", mode: .sessionSticky, holdModifier: .maskCommand,
-                persistentShortcut: .optionTab, owner: .maskAlternate, ownsControlOption: false),
+        Session(
+            name: "held ⌘Tab", mode: .sessionHeld, holdModifier: .maskCommand,
+            persistentShortcut: .optionTab, owner: .maskCommand, ownsControlOption: false),
+        Session(
+            name: "held ⌃Tab", mode: .sessionHeld, holdModifier: .maskControl,
+            persistentShortcut: .optionTab, owner: .maskControl, ownsControlOption: false),
+        Session(
+            name: "sticky ⌥Tab", mode: .sessionSticky, holdModifier: .maskCommand,
+            persistentShortcut: .optionTab, owner: .maskAlternate, ownsControlOption: false),
         // documented overlap: an Open WindowHop chord made of ⌃⌥ owns ⌃⌥ keys
-        Session(name: "sticky ⌃⌥K", mode: .sessionSticky, holdModifier: .maskCommand,
-                persistentShortcut: PersistentShortcut(keyCode: keyK,
-                                                       modifiers: [.maskControl, .maskAlternate]),
-                owner: [.maskControl, .maskAlternate], ownsControlOption: true),
+        Session(
+            name: "sticky ⌃⌥K", mode: .sessionSticky, holdModifier: .maskCommand,
+            persistentShortcut: PersistentShortcut(
+                keyCode: keyK,
+                modifiers: [.maskControl, .maskAlternate]),
+            owner: [.maskControl, .maskAlternate], ownsControlOption: true),
     ]
 
     /// Every key a session handles, with the input it produces when matched.
     private static func sessionKeys(sticky: Bool, flags: CGEventFlags)
-        -> [(name: String, keyCode: Int64, input: SwitcherInputEvent?)] {
+        -> [(name: String, keyCode: Int64, input: SwitcherInputEvent?)]
+    {
         [
             ("Tab", KeyCode.tab, .step(backward: flags.contains(.maskShift))),
             ("Escape", KeyCode.escape, .escape),
@@ -252,45 +272,61 @@ final class EventTapInterceptionTests: XCTestCase {
                     XCTAssertEqual(state.mode, session.mode, "\(label): the session stays open")
                 }
                 var state = session.state()
-                XCTAssertEqual(state.decide(type: .flagsChanged, keyCode: 59,
-                                            flags: variant.flags).disposition,
-                               .pass, "\(session.name): flagsChanged \(variant.name) passes")
+                XCTAssertEqual(
+                    state.decide(
+                        type: .flagsChanged, keyCode: 59,
+                        flags: variant.flags
+                    ).disposition,
+                    .pass, "\(session.name): flagsChanged \(variant.name) passes")
             }
         }
     }
 
     func testVoiceOverChordsPassInDefaultSessions() {
         var held = Self.sessions[0].state()
-        XCTAssertEqual(held.decide(type: .keyDown, keyCode: KeyCode.rightArrow,
-                                   flags: [.maskControl, .maskAlternate]), .pass)
-        XCTAssertEqual(held.decide(type: .keyDown, keyCode: KeyCode.rightArrow,
-                                   flags: .maskCommand),
-                       EventTapDecision(disposition: .consume, input: .arrow(.right)),
-                       "held ⌘ + arrow still navigates")
+        XCTAssertEqual(
+            held.decide(
+                type: .keyDown, keyCode: KeyCode.rightArrow,
+                flags: [.maskControl, .maskAlternate]), .pass)
+        XCTAssertEqual(
+            held.decide(
+                type: .keyDown, keyCode: KeyCode.rightArrow,
+                flags: .maskCommand),
+            EventTapDecision(disposition: .consume, input: .arrow(.right)),
+            "held ⌘ + arrow still navigates")
 
         var sticky = Self.sessions[2].state()
-        XCTAssertEqual(sticky.decide(type: .keyDown, keyCode: KeyCode.space,
-                                     flags: [.maskControl, .maskAlternate]), .pass)
-        XCTAssertEqual(sticky.decide(type: .keyDown, keyCode: KeyCode.space, flags: []),
-                       EventTapDecision(disposition: .consume, input: .spaceKey))
+        XCTAssertEqual(
+            sticky.decide(
+                type: .keyDown, keyCode: KeyCode.space,
+                flags: [.maskControl, .maskAlternate]), .pass)
+        XCTAssertEqual(
+            sticky.decide(type: .keyDown, keyCode: KeyCode.space, flags: []),
+            EventTapDecision(disposition: .consume, input: .spaceKey))
     }
 
     func testSwitcherTriggerStepsInAStickySession() {
         var state = Self.sessions[2].state()
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
-                       EventTapDecision(disposition: .consume, input: .step(backward: false)))
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab,
-                                    flags: [.maskCommand, .maskShift]),
-                       EventTapDecision(disposition: .consume, input: .step(backward: true)))
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab,
-                                    flags: [.maskCommand, .maskControl]), .pass)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+            EventTapDecision(disposition: .consume, input: .step(backward: false)))
+        XCTAssertEqual(
+            state.decide(
+                type: .keyDown, keyCode: KeyCode.tab,
+                flags: [.maskCommand, .maskShift]),
+            EventTapDecision(disposition: .consume, input: .step(backward: true)))
+        XCTAssertEqual(
+            state.decide(
+                type: .keyDown, keyCode: KeyCode.tab,
+                flags: [.maskCommand, .maskControl]), .pass)
     }
 
     func testSettingsChordRequiresCommandAndNoForeignModifier() {
         let settings = EventTapDecision(disposition: .consume, input: .openSettings)
         var held = Self.sessions[0].state()
-        XCTAssertEqual(held.decide(type: .keyDown, keyCode: KeyCode.comma, flags: .maskCommand),
-                       settings)
+        XCTAssertEqual(
+            held.decide(type: .keyDown, keyCode: KeyCode.comma, flags: .maskCommand),
+            settings)
 
         let cases: [(CGEventFlags, EventTapDecision)] = [
             (.maskCommand, settings),
@@ -302,8 +338,9 @@ final class EventTapInterceptionTests: XCTestCase {
         ]
         for (flags, expected) in cases {
             var sticky = Self.sessions[2].state()
-            XCTAssertEqual(sticky.decide(type: .keyDown, keyCode: KeyCode.comma, flags: flags),
-                           expected, "sticky ⌥Tab, comma with \(flags.rawValue)")
+            XCTAssertEqual(
+                sticky.decide(type: .keyDown, keyCode: KeyCode.comma, flags: flags),
+                expected, "sticky ⌥Tab, comma with \(flags.rawValue)")
         }
     }
 
@@ -323,18 +360,19 @@ final class EventTapInterceptionTests: XCTestCase {
     func testMissedHeldKeyUpHealsAtTheNextPlainPress() {
         var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
         XCTAssertEqual(state.mode, .sessionHeld)
-        state.mode = .watching // the held session ended
+        state.mode = .watching  // the held session ended
 
         XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: []), .pass)
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: []), .pass,
-                       "a plain Tab release belongs to the app that got its key-down")
+        XCTAssertEqual(
+            state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: []), .pass,
+            "a plain Tab release belongs to the app that got its key-down")
         XCTAssertTrue(state.suppressedKeyUps.isEmpty)
     }
 
     func testMissedStickyKeyUpHealsAtTheNextPlainPress() {
         var state = missedOwnedTabKeyUp(openedWith: .maskAlternate)
         XCTAssertEqual(state.mode, .sessionSticky)
-        state.mode = .watching // the sticky session ended with Return
+        state.mode = .watching  // the sticky session ended with Return
 
         XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: []), .pass)
         XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: []), .pass)
@@ -343,35 +381,42 @@ final class EventTapInterceptionTests: XCTestCase {
 
     func testMissedKeyUpDoesNotSwallowTheNativeCommandTabRelease() {
         var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
-        state.mode = .off // switcher disabled or permission lost
+        state.mode = .off  // switcher disabled or permission lost
 
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
-                       .pass)
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
-                       .pass, "the native switcher gets both halves of ⌘Tab")
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+            .pass)
+        XCTAssertEqual(
+            state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
+            .pass, "the native switcher gets both halves of ⌘Tab")
     }
 
     func testMissedKeyUpInsideAHeldSessionStillOwnsTheNextPair() {
         var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
 
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
-                       EventTapDecision(disposition: .consume, input: .step(backward: false)))
-        state.mode = .watching // modifier released between the halves
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
-                       .consume, "no orphaned Tab release reaches the native switcher")
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+            EventTapDecision(disposition: .consume, input: .step(backward: false)))
+        state.mode = .watching  // modifier released between the halves
+        XCTAssertEqual(
+            state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
+            .consume, "no orphaned Tab release reaches the native switcher")
         XCTAssertTrue(state.suppressedKeyUps.isEmpty)
     }
 
     func testReleaseOfARepeatThatPassedAfterTheSessionEndedPasses() {
-        var state = EventTapInterceptionState(mode: .sessionHeld, holdModifier: .maskCommand,
-                                              persistentShortcut: .optionTab)
-        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.rightArrow, flags: .maskCommand),
-                       EventTapDecision(disposition: .consume, input: .arrow(.right)))
+        var state = EventTapInterceptionState(
+            mode: .sessionHeld, holdModifier: .maskCommand,
+            persistentShortcut: .optionTab)
+        XCTAssertEqual(
+            state.decide(type: .keyDown, keyCode: KeyCode.rightArrow, flags: .maskCommand),
+            EventTapDecision(disposition: .consume, input: .arrow(.right)))
         state.mode = .watching
         // autorepeat continues after the session ended, and the app receives it
         XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.rightArrow, flags: []), .pass)
-        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.rightArrow, flags: []), .pass,
-                       "the app that received the repeats also receives the release")
+        XCTAssertEqual(
+            state.decide(type: .keyUp, keyCode: KeyCode.rightArrow, flags: []), .pass,
+            "the app that received the repeats also receives the release")
     }
 
     func testAnotherKeysPressLeavesOwnershipAlone() {

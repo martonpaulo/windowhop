@@ -54,13 +54,25 @@ public struct SessionAvailability: Equatable, Sendable {
         let wasUsable = isUsable
         let endsDarkPeriod: Bool
         switch event {
-        case .screenLocked: conditions.insert(.screenLocked); endsDarkPeriod = false
-        case .sessionResignedActive: conditions.insert(.sessionInactive); endsDarkPeriod = false
-        case .systemWillSleep: conditions.insert(.systemAsleep); endsDarkPeriod = false
+        case .screenLocked:
+            conditions.insert(.screenLocked)
+            endsDarkPeriod = false
+        case .sessionResignedActive:
+            conditions.insert(.sessionInactive)
+            endsDarkPeriod = false
+        case .systemWillSleep:
+            conditions.insert(.systemAsleep)
+            endsDarkPeriod = false
         case .displaysSlept: endsDarkPeriod = false
-        case .screenUnlocked: conditions.remove(.screenLocked); endsDarkPeriod = true
-        case .sessionBecameActive: conditions.remove(.sessionInactive); endsDarkPeriod = true
-        case .systemDidWake: conditions.remove(.systemAsleep); endsDarkPeriod = true
+        case .screenUnlocked:
+            conditions.remove(.screenLocked)
+            endsDarkPeriod = true
+        case .sessionBecameActive:
+            conditions.remove(.sessionInactive)
+            endsDarkPeriod = true
+        case .systemDidWake:
+            conditions.remove(.systemAsleep)
+            endsDarkPeriod = true
         case .displaysWoke: endsDarkPeriod = true
         }
         if wasUsable != isUsable { epoch &+= 1 }

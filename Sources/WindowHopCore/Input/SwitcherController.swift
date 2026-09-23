@@ -33,8 +33,10 @@ public final class SwitcherController {
     private var configuredEnabled = false
 
     /// Owned by `AppDelegate`.
-    public init(preferences: Preferences, store: WindowStore, previews: PreviewProvider,
-                tap: EventTap, showSettings: @escaping () -> Void) {
+    public init(
+        preferences: Preferences, store: WindowStore, previews: PreviewProvider,
+        tap: EventTap, showSettings: @escaping () -> Void
+    ) {
         self.preferences = preferences
         self.store = store
         self.previews = previews
@@ -107,7 +109,8 @@ public final class SwitcherController {
             items = store.snapshot()
             perform(state.trigger(backward: backward, itemCount: items.count))
             let triggerMs = (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000
-            Log.session.debug("""
+            Log.session.debug(
+                """
                 trigger handled: \(self.items.count, privacy: .public) items, \
                 phase \(String(describing: self.state.phase), privacy: .public), \
                 \(triggerMs, format: .fixed(precision: 2), privacy: .public)ms to session start
@@ -123,7 +126,8 @@ public final class SwitcherController {
             }
             perform(state.openPersistent(itemCount: items.count))
             let openMs = (CFAbsoluteTimeGetCurrent() - openStart) * 1000
-            Log.session.debug("""
+            Log.session.debug(
+                """
                 persistent open handled: \(self.items.count, privacy: .public) items, \
                 phase \(String(describing: self.state.phase), privacy: .public), \
                 \(openMs, format: .fixed(precision: 2), privacy: .public)ms
@@ -175,7 +179,8 @@ public final class SwitcherController {
     }
 
     private func perform(_ command: SwitcherState.Command) {
-        Log.session.debug("""
+        Log.session.debug(
+            """
             perform \(String(describing: command), privacy: .public), \
             phase \(String(describing: self.state.phase), privacy: .public)
             """)
@@ -246,8 +251,9 @@ public final class SwitcherController {
     /// Names the window the way its tile does, so two same-app windows sharing a
     /// raw title stay distinguishable where the destructive action is confirmed.
     static func closeConfirmationMessage(for item: SwitcherItem) -> String {
-        String(localized: "Close “\(item.displayTitle)” in \(item.appName)?",
-               comment: "Placeholders are the window title and the application name.")
+        String(
+            localized: "Close “\(item.displayTitle)” in \(item.appName)?",
+            comment: "Placeholders are the window title and the application name.")
     }
 
     private func presentCloseConfirmation(for item: SwitcherItem, sessionID: UInt64) {
@@ -259,14 +265,19 @@ public final class SwitcherController {
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = Self.closeConfirmationMessage(for: item)
-        alert.informativeText = quitEscalatesToForce
-            ? String(localized: "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path.")
+        alert.informativeText =
+            quitEscalatesToForce
+            ? String(
+                localized:
+                    "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path."
+            )
             : String(localized: "If the window has unsaved changes, \(item.appName) will ask about them.")
         alert.addButton(withTitle: String(localized: "Cancel"))
         let closeButton = alert.addButton(withTitle: String(localized: "Close Window"))
         closeButton.hasDestructiveAction = true
         if offersQuit {
-            let quitTitle = quitEscalatesToForce
+            let quitTitle =
+                quitEscalatesToForce
                 ? String(localized: "Force Quit \(item.appName)…")
                 : String(localized: "Quit \(item.appName)")
             let quitButton = alert.addButton(withTitle: quitTitle)
@@ -278,7 +289,8 @@ public final class SwitcherController {
         switch response {
         case .alertSecondButtonReturn:
             if let window = item.window,
-               store.windows.contains(where: { $0 === window }) {
+                store.windows.contains(where: { $0 === window })
+            {
                 WindowActions.close(window)
             }
         case .alertThirdButtonReturn:
@@ -315,12 +327,18 @@ public final class SwitcherController {
     /// Force Quit is never the default, never silent, and always a second,
     /// explicitly destructive confirmation after a failed graceful Quit.
     private func runForceQuitConfirmation(_ app: TrackedApp) {
-        let name = app.name ?? String(localized: "the application",
-                                             comment: "Stands in for an application name in the Force Quit alert.")
+        let name =
+            app.name
+            ?? String(
+                localized: "the application",
+                comment: "Stands in for an application name in the Force Quit alert.")
         let alert = NSAlert()
         alert.alertStyle = .critical
         alert.messageText = String(localized: "Force Quit \(name)?")
-        alert.informativeText = String(localized: "\(name) didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost.")
+        alert.informativeText = String(
+            localized:
+                "\(name) didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost."
+        )
         alert.addButton(withTitle: String(localized: "Cancel"))
         let forceButton = alert.addButton(withTitle: String(localized: "Force Quit"))
         forceButton.hasDestructiveAction = true
@@ -342,18 +360,21 @@ public final class SwitcherController {
         let fresh = store.snapshot()
         let freshById = Dictionary(fresh.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         let sessionById = Dictionary(items.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let preserved = Set(items.lazy
-            .filter { freshById[$0.id] == nil && self.shouldPreserveAcrossLocationRefresh($0) }
-            .map(\.id))
-        let plan = SessionListReconciler.reconcile(sessionIds: items.map(\.id),
-                                                   freshIds: fresh.map(\.id),
-                                                   preserving: preserved)
+        let preserved = Set(
+            items.lazy
+                .filter { freshById[$0.id] == nil && self.shouldPreserveAcrossLocationRefresh($0) }
+                .map(\.id))
+        let plan = SessionListReconciler.reconcile(
+            sessionIds: items.map(\.id),
+            freshIds: fresh.map(\.id),
+            preserving: preserved)
         items = plan.ids.compactMap { freshById[$0] ?? sessionById[$0] }
         // a window that appeared mid-session has no capture in flight yet; without
         // this its tile would stay a placeholder for the rest of the session.
         // Before the reveal no capture session exists; revealing captures them all.
         if isRevealed, !plan.appeared.isEmpty {
-            Log.session.debug("""
+            Log.session.debug(
+                """
                 session list grew by \(plan.appeared.count, privacy: .public): \
                 now \(self.items.count, privacy: .public) items
                 """)
@@ -364,9 +385,10 @@ public final class SwitcherController {
                 scale: panels.captureScale)
         }
         expandedPreview.retainAvailable(Set(items.map(\.id)))
-        let preferredIndex = selectedId.flatMap { id in
-            items.firstIndex { $0.id == id }
-        } ?? state.selectedIndex
+        let preferredIndex =
+            selectedId.flatMap { id in
+                items.firstIndex { $0.id == id }
+            } ?? state.selectedIndex
         let command = state.listChanged(itemCount: items.count, preferredIndex: preferredIndex)
         if state.isActive, isRevealed {
             panels.update(items: items, selectedIndex: state.selectedIndex)
@@ -383,8 +405,9 @@ public final class SwitcherController {
     /// invariant; the external window is never activated by dwell preview.
     private func shouldPreserveAcrossLocationRefresh(_ item: SwitcherItem) -> Bool {
         guard let window = item.window,
-              window.isActual,
-              store.windows.contains(where: { $0 === window }) else { return false }
+            window.isActual,
+            store.windows.contains(where: { $0 === window })
+        else { return false }
         let state = WindowDisplayState(
             isMinimized: window.isMinimized,
             isAppHidden: window.app?.isHidden ?? false,
@@ -406,12 +429,12 @@ public final class SwitcherController {
         if mouseMonitor == nil {
             mouseMonitor = NSEvent.addGlobalMonitorForEvents(
                 matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
-                // global monitors deliver on the main thread
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    self.perform(self.state.outsideClick())
+                    // global monitors deliver on the main thread
+                    MainActor.assumeIsolated {
+                        guard let self else { return }
+                        self.perform(self.state.outsideClick())
+                    }
                 }
-            }
         }
         // fail-safe for missed flagsChanged events (unusual event order, sleep, secure
         // input): while held, verify the modifier is really still down. Session-scoped;
@@ -436,17 +459,20 @@ public final class SwitcherController {
     /// path to get wrong.
     private func preparePanels(tileCount: Int) {
         let connected = DisplayRegistry.connectedDisplays()
-        let targetIDs = Set(PanelDisplayResolver.targets(
-            placement: preferences.switcherDisplayPlacement,
-            chosenDisplayID: preferences.switcherDisplayID,
-            available: connected.map(\.descriptor),
-            pointerDisplayID: DisplayRegistry.pointerDisplayID()).map(\.id))
+        let targetIDs = Set(
+            PanelDisplayResolver.targets(
+                placement: preferences.switcherDisplayPlacement,
+                chosenDisplayID: preferences.switcherDisplayID,
+                available: connected.map(\.descriptor),
+                pointerDisplayID: DisplayRegistry.pointerDisplayID()
+            ).map(\.id))
         let targets = connected.filter { targetIDs.contains($0.descriptor.id) }
         let metrics = SwitcherTileView.Metrics.metrics(
             for: preferences.appearanceMode,
             showTabCounts: preferences.showTabCounts)
         panels.prepare(for: targets, tileCount: tileCount, tileSize: metrics.tileSize)
-        Log.panel.debug("""
+        Log.panel.debug(
+            """
             panels prepared: \(targets.count, privacy: .public) display(s), \
             placement \(self.preferences.switcherDisplayPlacement.rawValue, privacy: .public)
             """)
@@ -557,11 +583,14 @@ public final class SwitcherController {
         _ request: ExpandedPreviewSession<AnyHashable>.Request?
     ) {
         guard preferences.appearanceMode.supportsExpandedPreview,
-              let request,
-              let delay = preferences.expandedPreviewDelay.duration else { return }
+            let request,
+            let delay = preferences.expandedPreviewDelay.duration
+        else { return }
         pendingExpandedPreview = request
-        let timer = Timer(timeInterval: delay,
-                          repeats: false) { [weak self] _ in
+        let timer = Timer(
+            timeInterval: delay,
+            repeats: false
+        ) { [weak self] _ in
             MainActor.assumeIsolated { self?.presentExpandedPreview() }
         }
         expandedPreviewTimer = timer
@@ -573,10 +602,11 @@ public final class SwitcherController {
         guard let request = pendingExpandedPreview else { return }
         pendingExpandedPreview = nil
         guard state.isActive,
-              let id = expandedPreview.settle(
+            let id = expandedPreview.settle(
                 request, availableWindowIDs: Set(items.map(\.id))),
-              let item = items.first(where: { $0.id == id }),
-              item.window != nil else { return }
+            let item = items.first(where: { $0.id == id }),
+            item.window != nil
+        else { return }
         if let image = previews.expandedPreview(for: id) {
             panels.showExpandedPreview(id: id, image: image)
         }

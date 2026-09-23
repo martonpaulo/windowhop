@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// #38: a locked screen makes every app publish zero windows, so nothing learned while
@@ -13,8 +14,9 @@ final class SessionAvailabilityTests: XCTestCase {
         var session = SessionAvailability()
         session.apply(.screenLocked)
         // what an app publishes over AX while the screen is locked: zero windows
-        let result = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed([]),
-                                               session: session, readEpoch: session.epoch)
+        let result = SpaceMembership.reconcile(
+            tracked: tracked, enumeration: .listed([]),
+            session: session, readEpoch: session.epoch)
         XCTAssertTrue(result.currentSpace.isEmpty, "a locked read may not move any window off-Space")
         XCTAssertTrue(result.suspects.isEmpty, "a locked read may not make any window a prune suspect")
     }
@@ -24,8 +26,9 @@ final class SessionAvailabilityTests: XCTestCase {
         let readEpoch = session.epoch
         session.apply(.screenLocked)
         session.apply(.screenUnlocked)
-        let result = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed([]),
-                                               session: session, readEpoch: readEpoch)
+        let result = SpaceMembership.reconcile(
+            tracked: tracked, enumeration: .listed([]),
+            session: session, readEpoch: readEpoch)
         XCTAssertTrue(result.currentSpace.isEmpty, "a read started before the lock was taken in the dark")
         XCTAssertTrue(result.suspects.isEmpty)
     }
@@ -34,14 +37,16 @@ final class SessionAvailabilityTests: XCTestCase {
         var session = SessionAvailability()
         var flags = ["a": true, "b": false, "c": true]
         XCTAssertFalse(session.apply(.screenLocked), "locking asks for no refresh")
-        let locked = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed([]),
-                                               session: session, readEpoch: session.epoch)
+        let locked = SpaceMembership.reconcile(
+            tracked: tracked, enumeration: .listed([]),
+            session: session, readEpoch: session.epoch)
         flags.merge(locked.currentSpace) { _, new in new }
         XCTAssertEqual(flags, ["a": true, "b": false, "c": true], "the locked read kept every flag")
 
         XCTAssertTrue(session.apply(.screenUnlocked), "the unlock asks for one recovery re-enumeration")
-        let recovery = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed(["a", "b"]),
-                                                 session: session, readEpoch: session.epoch)
+        let recovery = SpaceMembership.reconcile(
+            tracked: tracked, enumeration: .listed(["a", "b"]),
+            session: session, readEpoch: session.epoch)
         flags.merge(recovery.currentSpace) { _, new in new }
         XCTAssertEqual(flags, ["a": true, "b": true, "c": false], "the recovery read is the truth")
         XCTAssertEqual(recovery.suspects, ["c"])
@@ -49,10 +54,12 @@ final class SessionAvailabilityTests: XCTestCase {
 
     func testUsableSessionKeepsTodaysReconciliation() {
         let session = SessionAvailability()
-        let result = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed([]),
-                                               session: session, readEpoch: session.epoch)
-        XCTAssertEqual(result.currentSpace, ["a": false, "b": false, "c": false],
-                       "an empty success in a usable session still marks windows off-Space")
+        let result = SpaceMembership.reconcile(
+            tracked: tracked, enumeration: .listed([]),
+            session: session, readEpoch: session.epoch)
+        XCTAssertEqual(
+            result.currentSpace, ["a": false, "b": false, "c": false],
+            "an empty success in a usable session still marks windows off-Space")
         XCTAssertEqual(result.suspects, tracked)
     }
 
@@ -61,15 +68,18 @@ final class SessionAvailabilityTests: XCTestCase {
     func testNothingIsPrunedWhileLocked() {
         var session = SessionAvailability()
         session.apply(.screenLocked)
-        XCTAssertEqual(SpaceMembership.confirmedDead(tracked, session: session, readEpoch: session.epoch), [],
-                       "a liveness probe in the dark proves nothing")
-        XCTAssertFalse(SpaceMembership.acceptsDestroyNotification(session: session),
-                       "a destroy notification in the dark waits for the recovery pass")
+        XCTAssertEqual(
+            SpaceMembership.confirmedDead(tracked, session: session, readEpoch: session.epoch), [],
+            "a liveness probe in the dark proves nothing")
+        XCTAssertFalse(
+            SpaceMembership.acceptsDestroyNotification(session: session),
+            "a destroy notification in the dark waits for the recovery pass")
 
         let probeEpoch = session.epoch
         session.apply(.screenUnlocked)
-        XCTAssertEqual(SpaceMembership.confirmedDead(tracked, session: session, readEpoch: probeEpoch), [],
-                       "a probe started while locked stays void after the unlock")
+        XCTAssertEqual(
+            SpaceMembership.confirmedDead(tracked, session: session, readEpoch: probeEpoch), [],
+            "a probe started while locked stays void after the unlock")
         XCTAssertEqual(SpaceMembership.confirmedDead(["b"], session: session, readEpoch: session.epoch), ["b"])
         XCTAssertTrue(SpaceMembership.acceptsDestroyNotification(session: session))
     }

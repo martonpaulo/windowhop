@@ -18,8 +18,10 @@ final class SelectionAnnouncer {
     /// The window identity spoken last, or nil when no session is presented.
     private(set) var lastAnnouncedID: AnyHashable?
 
-    init(preferences: Preferences,
-         post: @escaping Post = SelectionAnnouncer.postToApplication) {
+    init(
+        preferences: Preferences,
+        post: @escaping Post = SelectionAnnouncer.postToApplication
+    ) {
         self.preferences = preferences
         self.post = post
     }
@@ -28,8 +30,10 @@ final class SelectionAnnouncer {
     /// target even when it did not move (a one-item wrap).
     func announce(_ item: SwitcherItem) {
         lastAnnouncedID = item.id
-        post(item.id, SwitcherTileView.accessibilityText(
-            for: item, showTabCounts: preferences.showTabCounts))
+        post(
+            item.id,
+            SwitcherTileView.accessibilityText(
+                for: item, showTabCounts: preferences.showTabCounts))
     }
 
     /// Announces `item` only when it is a different window from the last one
@@ -46,9 +50,12 @@ final class SelectionAnnouncer {
     }
 
     private static func postToApplication(_: AnyHashable, text: String) {
-        NSAccessibility.post(element: NSApp as Any,
-                             notification: .announcementRequested,
-                             userInfo: [.announcement: text,
-                                        .priority: NSAccessibilityPriorityLevel.high.rawValue])
+        NSAccessibility.post(
+            element: NSApp as Any,
+            notification: .announcementRequested,
+            userInfo: [
+                .announcement: text,
+                .priority: NSAccessibilityPriorityLevel.high.rawValue,
+            ])
     }
 }

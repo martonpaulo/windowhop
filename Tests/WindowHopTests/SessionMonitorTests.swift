@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -18,7 +19,8 @@ final class SessionMonitorTests: XCTestCase {
         distributed = NotificationCenter()
         workspace = NotificationCenter()
         received = []
-        monitor = SessionMonitor(distributedCenter: distributed, workspaceCenter: workspace) { [weak self] event, needsRecovery in
+        monitor = SessionMonitor(distributedCenter: distributed, workspaceCenter: workspace) {
+            [weak self] event, needsRecovery in
             self?.received.append((event, needsRecovery))
         }
     }

@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -43,15 +44,18 @@ final class SwitcherLayoutTests: XCTestCase {
 
     /// Source images of any shape stay inside that canvas without cropping.
     func testEverySourceAspectFitsInsideTheCanvas() {
-        for size in [NSSize(width: 3440, height: 1440), NSSize(width: 100, height: 900),
-                     NSSize(width: 4, height: 4), NSSize(width: 1, height: 1)] {
+        for size in [
+            NSSize(width: 3440, height: 1440), NSSize(width: 100, height: 900),
+            NSSize(width: 4, height: 4), NSSize(width: 1, height: 1),
+        ] {
             let tile = configuredTile(imageSize: size)
             let canvas = tile.previewCanvasFrameForTesting
             let image = tile.previewImageFrameForTesting
 
             // a whole-pixel tolerance: proportional scaling lands on fractions
-            XCTAssertTrue(canvas.insetBy(dx: -1, dy: -1).contains(image),
-                          "\(size) overflows the canvas")
+            XCTAssertTrue(
+                canvas.insetBy(dx: -1, dy: -1).contains(image),
+                "\(size) overflows the canvas")
             XCTAssertLessThanOrEqual(image.width, canvas.width + 1)
             XCTAssertLessThanOrEqual(image.height, canvas.height + 1)
         }
@@ -65,10 +69,12 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(wide.badgeFrameForTesting, tall.badgeFrameForTesting)
         XCTAssertEqual(wide.closeFrameForTesting, tall.closeFrameForTesting)
         XCTAssertNotEqual(wide.previewImageFrameForTesting, tall.previewImageFrameForTesting)
-        XCTAssertEqual(wide.badgeFrameForTesting.maxX,
-                       wide.previewCanvasFrameForTesting.maxX + DesignTokens.previewOverlayOverlap)
-        XCTAssertEqual(wide.badgeFrameForTesting.minY,
-                       wide.previewCanvasFrameForTesting.minY - DesignTokens.previewOverlayOverlap)
+        XCTAssertEqual(
+            wide.badgeFrameForTesting.maxX,
+            wide.previewCanvasFrameForTesting.maxX + DesignTokens.previewOverlayOverlap)
+        XCTAssertEqual(
+            wide.badgeFrameForTesting.minY,
+            wide.previewCanvasFrameForTesting.minY - DesignTokens.previewOverlayOverlap)
         XCTAssertLessThanOrEqual(wide.badgeFrameForTesting.maxX, wide.bounds.maxX)
         XCTAssertGreaterThanOrEqual(wide.badgeFrameForTesting.minY, wide.bounds.minY)
 
@@ -92,15 +98,18 @@ final class SwitcherLayoutTests: XCTestCase {
             tile.isSelected = true
             tile.layoutSubtreeIfNeeded()
             XCTAssertTrue(borderedLayers(in: tile).isEmpty)
-            XCTAssertEqual(tile.selectionBackgroundFrameForTesting,
-                           loaded.selectionBackgroundFrameForTesting)
-            XCTAssertEqual(tile.selectionBackgroundAlphaForTesting,
-                           DesignTokens.previewSelectionFill.alphaComponent,
-                           accuracy: 0.001)
+            XCTAssertEqual(
+                tile.selectionBackgroundFrameForTesting,
+                loaded.selectionBackgroundFrameForTesting)
+            XCTAssertEqual(
+                tile.selectionBackgroundAlphaForTesting,
+                DesignTokens.previewSelectionFill.alphaComponent,
+                accuracy: 0.001)
         }
-        XCTAssertEqual(try rgba(try XCTUnwrap(loaded.selectionBackgroundColorForTesting)).3,
-                       try rgba(try XCTUnwrap(permissionUnavailable.selectionBackgroundColorForTesting)).3,
-                       accuracy: 0.001)
+        XCTAssertEqual(
+            try rgba(try XCTUnwrap(loaded.selectionBackgroundColorForTesting)).3,
+            try rgba(try XCTUnwrap(permissionUnavailable.selectionBackgroundColorForTesting)).3,
+            accuracy: 0.001)
         XCTAssertTrue(unavailable.showsUnavailableStateForTesting)
         XCTAssertTrue(permissionUnavailable.showsPermissionUnavailableStateForTesting)
     }
@@ -112,8 +121,9 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(tile.selectionBackgroundAlphaForTesting, 0)
         tile.isSelected = true
         XCTAssertTrue(borderedLayers(in: tile).isEmpty)
-        XCTAssertEqual(tile.selectionBackgroundAlphaForTesting,
-                       DesignTokens.iconSelectionFill.alphaComponent)
+        XCTAssertEqual(
+            tile.selectionBackgroundAlphaForTesting,
+            DesignTokens.iconSelectionFill.alphaComponent)
     }
 
     func testUnselectedPreviewHasSurfaceButNoPermanentSelectionFrame() {
@@ -138,10 +148,12 @@ final class SwitcherLayoutTests: XCTestCase {
         tile.isSelected = true
         let dark = try rgba(try XCTUnwrap(tile.selectionBackgroundColorForTesting))
 
-        XCTAssertEqual(light.3, DesignTokens.previewSelectionFill.alphaComponent,
-                       accuracy: 0.001)
-        XCTAssertEqual(dark.3, DesignTokens.previewSelectionFill.alphaComponent,
-                       accuracy: 0.001)
+        XCTAssertEqual(
+            light.3, DesignTokens.previewSelectionFill.alphaComponent,
+            accuracy: 0.001)
+        XCTAssertEqual(
+            dark.3, DesignTokens.previewSelectionFill.alphaComponent,
+            accuracy: 0.001)
         XCTAssertGreaterThan(light.0 + light.1 + light.2, 0)
         XCTAssertGreaterThan(dark.0 + dark.1 + dark.2, 0)
     }
@@ -166,10 +178,12 @@ final class SwitcherLayoutTests: XCTestCase {
 
     func testCloseButtonCenterMatchesLoadedPreviewTopLeftPoint() {
         let tile = configuredTile(imageSize: NSSize(width: 400, height: 200))
-        XCTAssertEqual(tile.closeFrameForTesting.midX,
-                       tile.previewCanvasFrameForTesting.minX)
-        XCTAssertEqual(tile.closeFrameForTesting.midY,
-                       tile.previewCanvasFrameForTesting.maxY)
+        XCTAssertEqual(
+            tile.closeFrameForTesting.midX,
+            tile.previewCanvasFrameForTesting.minX)
+        XCTAssertEqual(
+            tile.closeFrameForTesting.midY,
+            tile.previewCanvasFrameForTesting.maxY)
     }
 
     func testPanelUsesOneHorizontalSpacingAndNoSettingsChromeRow() throws {
@@ -179,25 +193,31 @@ final class SwitcherLayoutTests: XCTestCase {
         let second = try XCTUnwrap(panel.tileFrameForTesting(at: 1))
 
         XCTAssertEqual(second.minX - first.maxX, DesignTokens.tileSpacing)
-        XCTAssertEqual(panel.panelBackgroundFrameForTesting.height,
-                       panel.gridFrameForTesting.height
-                           - DesignTokens.closeButtonTopOverflow
-                           + DesignTokens.panelPadding * 2)
-        XCTAssertEqual(panel.settingsButtonFrameForTesting.maxX,
-                       panel.panelBackgroundFrameForTesting.maxX
-                           + DesignTokens.chromeButtonOutsideOverlap)
+        XCTAssertEqual(
+            panel.panelBackgroundFrameForTesting.height,
+            panel.gridFrameForTesting.height
+                - DesignTokens.closeButtonTopOverflow
+                + DesignTokens.panelPadding * 2)
+        XCTAssertEqual(
+            panel.settingsButtonFrameForTesting.maxX,
+            panel.panelBackgroundFrameForTesting.maxX
+                + DesignTokens.chromeButtonOutsideOverlap)
         let close = try XCTUnwrap(panel.closeFrameForTesting(at: 0))
-        XCTAssertTrue(panel.panelBackgroundFrameForTesting.contains(close),
-                      "the existing panel padding must keep the complete Close control visible")
-        XCTAssertEqual(panel.settingsButtonFrameForTesting.maxY,
-                       panel.panelBackgroundFrameForTesting.maxY
-                           + DesignTokens.chromeButtonOutsideOverlap)
-        XCTAssertEqual(panel.frame.width,
-                       panel.panelBackgroundFrameForTesting.width
-                           + DesignTokens.chromeButtonOutsideOverlap)
-        XCTAssertEqual(panel.frame.height,
-                       panel.panelBackgroundFrameForTesting.height
-                           + DesignTokens.chromeButtonOutsideOverlap)
+        XCTAssertTrue(
+            panel.panelBackgroundFrameForTesting.contains(close),
+            "the existing panel padding must keep the complete Close control visible")
+        XCTAssertEqual(
+            panel.settingsButtonFrameForTesting.maxY,
+            panel.panelBackgroundFrameForTesting.maxY
+                + DesignTokens.chromeButtonOutsideOverlap)
+        XCTAssertEqual(
+            panel.frame.width,
+            panel.panelBackgroundFrameForTesting.width
+                + DesignTokens.chromeButtonOutsideOverlap)
+        XCTAssertEqual(
+            panel.frame.height,
+            panel.panelBackgroundFrameForTesting.height
+                + DesignTokens.chromeButtonOutsideOverlap)
     }
 
     func testSettingsButtonIsContextualInCyclingAndPersistentModes() {
@@ -258,14 +278,16 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     func testAppIconsTilesNeverPulseTheirHiddenSkeleton() throws {
-        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-                      "Reduce Motion is on, so no skeleton ever pulses")
+        try XCTSkipIf(
+            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+            "Reduce Motion is on, so no skeleton ever pulses")
         preferences.appearanceMode = .appIcons
         let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         let tile = try XCTUnwrap(panel.tileForTesting(at: 0))
-        XCTAssertFalse(tile.skeletonIsAnimatingForTesting,
-                       "an App Icons tile animated a skeleton nobody sees")
+        XCTAssertFalse(
+            tile.skeletonIsAnimatingForTesting,
+            "an App Icons tile animated a skeleton nobody sees")
 
         preferences.appearanceMode = .windowPreviews
         panel.update(items: [item("a")], selectedIndex: 0)
@@ -273,8 +295,9 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     func testPulseFollowsTileVisibility() throws {
-        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-                      "Reduce Motion is on, so no skeleton ever pulses")
+        try XCTSkipIf(
+            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+            "Reduce Motion is on, so no skeleton ever pulses")
         let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let slot = try XCTUnwrap(panel.tileForTesting(at: 1))
@@ -315,14 +338,19 @@ final class SwitcherLayoutTests: XCTestCase {
         XCTAssertEqual(firstRow.minY - secondRow.maxY, DesignTokens.tileRowSpacing)
     }
 
-    private func configuredTile(imageSize: NSSize?,
-                                mode: AppearanceMode = .windowPreviews) -> SwitcherTileView {
+    private func configuredTile(
+        imageSize: NSSize?,
+        mode: AppearanceMode = .windowPreviews
+    ) -> SwitcherTileView {
         let tile = SwitcherTileView()
-        tile.configure(item: item("tile"), mode: mode, showTabCounts: false,
-                       preview: imageSize.map(NSImage.init(size:)))
-        tile.frame = NSRect(origin: .zero,
-                            size: SwitcherTileView.Metrics.metrics(
-                                for: mode, showTabCounts: false).tileSize)
+        tile.configure(
+            item: item("tile"), mode: mode, showTabCounts: false,
+            preview: imageSize.map(NSImage.init(size:)))
+        tile.frame = NSRect(
+            origin: .zero,
+            size: SwitcherTileView.Metrics.metrics(
+                for: mode, showTabCounts: false
+            ).tileSize)
         tile.layoutSubtreeIfNeeded()
         return tile
     }
@@ -359,7 +387,8 @@ final class SwitcherLayoutTests: XCTestCase {
     }
 
     private func item(_ id: String) -> SwitcherItem {
-        SwitcherItem(id: id, window: nil, title: "Window \(id)",
-                     appName: "TestApp", icon: nil, tabCount: nil)
+        SwitcherItem(
+            id: id, window: nil, title: "Window \(id)",
+            appName: "TestApp", icon: nil, tabCount: nil)
     }
 }

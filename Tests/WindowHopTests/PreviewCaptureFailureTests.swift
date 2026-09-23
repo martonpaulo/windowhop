@@ -1,6 +1,7 @@
 import Foundation
 import ScreenCaptureKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -43,8 +44,9 @@ final class PreviewCaptureFailureTests: XCTestCase {
     /// The framework reports errors as NSError in its own domain.
     @MainActor
     func testABridgedNSErrorIsClassifiedByItsCode() {
-        let error = NSError(domain: SCStreamErrorDomain,
-                            code: SCStreamError.Code.internalError.rawValue)
+        let error = NSError(
+            domain: SCStreamErrorDomain,
+            code: SCStreamError.Code.internalError.rawValue)
         XCTAssertEqual(PreviewProvider.failure(for: error), .captureFailed(transient: true))
     }
 

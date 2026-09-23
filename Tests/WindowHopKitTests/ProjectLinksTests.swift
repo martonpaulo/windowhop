@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+
 @testable import WindowHopKit
 
 /// "Report an Issue…" opens the public bug-report form with public build
@@ -22,11 +23,13 @@ final class ProjectLinksTests: XCTestCase {
         XCTAssertEqual(url.scheme, "https")
         XCTAssertEqual(url.host, "github.com")
         XCTAssertEqual(url.path, "/martonpaulo/windowhop/issues/new")
-        XCTAssertEqual(try queryItems(url), [
-            URLQueryItem(name: "template", value: "bug_report.yml"),
-            URLQueryItem(name: "windowhop-version", value: "1.6.2 (build 10602, released 2026-09-15)"),
-            URLQueryItem(name: "macos-version", value: "macOS 26.6.2"),
-        ])
+        XCTAssertEqual(
+            try queryItems(url),
+            [
+                URLQueryItem(name: "template", value: "bug_report.yml"),
+                URLQueryItem(name: "windowhop-version", value: "1.6.2 (build 10602, released 2026-09-15)"),
+                URLQueryItem(name: "macos-version", value: "macOS 26.6.2"),
+            ])
     }
 
     func testMissingReleaseDateIsLeftOut() throws {
@@ -35,22 +38,26 @@ final class ProjectLinksTests: XCTestCase {
     }
 
     func testDevelopmentBuildSaysSo() throws {
-        let items = try queryItems(ProjectLinks.issueReport(for: AppVersion(infoDictionary: [:]),
-                                                            macOS: macOS))
+        let items = try queryItems(
+            ProjectLinks.issueReport(
+                for: AppVersion(infoDictionary: [:]),
+                macOS: macOS))
         XCTAssertEqual(items.first { $0.name == "windowhop-version" }?.value, "Development build")
     }
 
     func testMacOSWithoutPatchNumber() {
-        XCTAssertEqual(ProjectLinks.reportedMacOS(
-            OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)), "macOS 26.0")
+        XCTAssertEqual(
+            ProjectLinks.reportedMacOS(
+                OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)), "macOS 26.0")
     }
 
     func testSpacesAndParenthesesArePercentEncoded() {
         let query = ProjectLinks.issueReport(for: version(), macOS: macOS).query ?? ""
         XCTAssertFalse(query.contains(" "), query)
         XCTAssertTrue(query.contains("macOS%2026.6.2"), query)
-        XCTAssertTrue(query.contains("1.6.2%20(build%2010602,%20released%202026-09-15)")
-                      || query.contains("1.6.2%20%28build%2010602%2C%20released%202026-09-15%29"), query)
+        XCTAssertTrue(
+            query.contains("1.6.2%20(build%2010602,%20released%202026-09-15)")
+                || query.contains("1.6.2%20%28build%2010602%2C%20released%202026-09-15%29"), query)
     }
 
     func testNothingBeyondTheThreeFields() throws {

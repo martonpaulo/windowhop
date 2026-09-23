@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class ExpandedPreviewSessionTests: XCTestCase {
@@ -17,8 +18,10 @@ final class ExpandedPreviewSessionTests: XCTestCase {
 
         XCTAssertNil(session.settle(closedRequest, availableWindowIDs: ["neighbor"]))
         let neighborRequest = session.target("neighbor")!
-        XCTAssertEqual(session.settle(neighborRequest,
-                                      availableWindowIDs: ["neighbor"]), "neighbor")
+        XCTAssertEqual(
+            session.settle(
+                neighborRequest,
+                availableWindowIDs: ["neighbor"]), "neighbor")
     }
 
     func testRapidNavigationExpandsOnlyLatestSettledTarget() {
@@ -65,8 +68,9 @@ final class ExpandedPreviewSessionTests: XCTestCase {
         let pending = session.begin(targetedWindowID: "A")
 
         XCTAssertNil(session.target("A"), "an unchanged target creates no new request")
-        XCTAssertEqual(session.settle(try! XCTUnwrap(pending), availableWindowIDs: ["A"]), "A",
-                       "the original request must still settle")
+        XCTAssertEqual(
+            session.settle(try! XCTUnwrap(pending), availableWindowIDs: ["A"]), "A",
+            "the original request must still settle")
     }
 
     func testRetargetingTheSameWindowAfterSettleKeepsItExpanded() {
@@ -85,8 +89,9 @@ final class ExpandedPreviewSessionTests: XCTestCase {
         let fresh = session.target("B")
 
         XCTAssertEqual(fresh?.windowID, "B")
-        XCTAssertNil(session.settle(try! XCTUnwrap(stale), availableWindowIDs: ["A", "B"]),
-                     "the superseded request must not settle")
+        XCTAssertNil(
+            session.settle(try! XCTUnwrap(stale), availableWindowIDs: ["A", "B"]),
+            "the superseded request must not settle")
     }
 
     /// Navigating away and back is a real change in both directions, so it

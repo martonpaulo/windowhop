@@ -43,8 +43,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         self.preferences = preferences
         self.store = store
         self.tap = tap
-        switcher = SwitcherController(preferences: preferences, store: store, previews: previews,
-                                      tap: tap, showSettings: { settingsWindow.show() })
+        switcher = SwitcherController(
+            preferences: preferences, store: store, previews: previews,
+            tap: tap, showSettings: { settingsWindow.show() })
         self.updateManager = updateManager
         self.settingsWindow = settingsWindow
         self.onboarding = onboarding
@@ -90,8 +91,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     }
 
     @objc public func reportIssue(_ sender: Any?) {
-        NSWorkspace.shared.open(ProjectLinks.issueReport(
-            for: AppVersion.main, macOS: ProcessInfo.processInfo.operatingSystemVersion))
+        NSWorkspace.shared.open(
+            ProjectLinks.issueReport(
+                for: AppVersion.main, macOS: ProcessInfo.processInfo.operatingSystemVersion))
     }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
@@ -117,8 +119,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     /// Opening the app again (Finder, Spotlight, Dock) is the route back when both
     /// icons are hidden: Settings, or onboarding while Accessibility is missing.
     public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        present(trigger: .reopen, granted: AccessibilityPermission.isGranted,
-                isFirstRun: !preferences.firstLaunchCompleted)
+        present(
+            trigger: .reopen, granted: AccessibilityPermission.isGranted,
+            isFirstRun: !preferences.firstLaunchCompleted)
         return false
     }
 
@@ -171,7 +174,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     private func observeSystemEvents() {
         // settings changes (from the Settings window or the menu bar item)
         NotificationCenter.default.addObserver(
-            forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
             MainActor.assumeIsolated {
                 guard let self else { return }
                 self.applyActivationPolicy()
@@ -182,9 +186,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         NotificationCenter.default.addObserver(
             forName: Preferences.windowFiltersDidChange,
             object: preferences,
-            queue: .main) { [store] _ in
-                MainActor.assumeIsolated { store.windowFiltersChanged() }
-            }
+            queue: .main
+        ) { [store] _ in
+            MainActor.assumeIsolated { store.windowFiltersChanged() }
+        }
         // permission granted or revoked while running
         AccessibilityPermission.observeChanges { [weak self] granted in
             guard let self else { return }
@@ -202,16 +207,19 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         }
         // macOS can silently disable event taps across sleep/wake and session switches
         NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [tap] _ in
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [tap] _ in
             MainActor.assumeIsolated { tap.reEnableIfNeeded() }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.screensDidWakeNotification,
-            object: nil, queue: .main) { [tap] _ in
-                MainActor.assumeIsolated { tap.reEnableIfNeeded() }
-            }
+            object: nil, queue: .main
+        ) { [tap] _ in
+            MainActor.assumeIsolated { tap.reEnableIfNeeded() }
+        }
         NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { [tap] _ in
+            forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main
+        ) { [tap] _ in
             MainActor.assumeIsolated { tap.reEnableIfNeeded() }
         }
     }
@@ -242,7 +250,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
 
     private func isLoginItemLaunch() -> Bool {
         guard let event = NSAppleEventManager.shared().currentAppleEvent,
-              event.eventID == kAEOpenApplication else { return false }
+            event.eventID == kAEOpenApplication
+        else { return false }
         return event.paramDescriptor(forKeyword: keyAEPropData)?.enumCodeValue
             == keyAELaunchedAsLogInItem
     }

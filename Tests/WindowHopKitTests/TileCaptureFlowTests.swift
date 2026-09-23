@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// A tile capture that fails for a reason that can pass on its own gets one
@@ -45,7 +46,8 @@ final class TileCaptureFlowTests: XCTestCase {
                     self.lookups += 1
                     self.events.append("lookup")
                     let index = min(self.lookups - 1, max(self.lookupResults.count - 1, 0))
-                    let matchable = self.lookupResults.isEmpty
+                    let matchable =
+                        self.lookupResults.isEmpty
                         ? Set(requested) : self.lookupResults[index]
                     guard let matchable else { return nil }
                     var matched: [String: Candidate] = [:]
@@ -107,8 +109,10 @@ final class TileCaptureFlowTests: XCTestCase {
     }
 
     func testStableFailuresAreFinalAfterOneAttempt() async {
-        let stable: [PreviewFailure] = [.invalidTarget, .permissionDenied,
-                                        .captureFailed(transient: false)]
+        let stable: [PreviewFailure] = [
+            .invalidTarget, .permissionDenied,
+            .captureFailed(transient: false),
+        ]
         for failure in stable {
             let harness = Harness(ids: ["a"])
             harness.captureResults["a"] = [.failed(failure)]

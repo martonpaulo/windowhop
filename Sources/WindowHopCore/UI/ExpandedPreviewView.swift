@@ -28,8 +28,9 @@ final class ExpandedPreviewView: NSView {
         badgeView.imageScaling = .scaleProportionallyUpOrDown
         addSubview(badgeView)
 
-        titleLabel.font = .systemFont(ofSize: DesignTokens.titleFontSize,
-                                      weight: DesignTokens.titleFontWeight)
+        titleLabel.font = .systemFont(
+            ofSize: DesignTokens.titleFontSize,
+            weight: DesignTokens.titleFontWeight)
         titleLabel.textColor = .labelColor
         titleLabel.alignment = .center
         titleLabel.lineBreakMode = .byTruncatingTail
@@ -70,28 +71,34 @@ final class ExpandedPreviewView: NSView {
     override func layout() {
         super.layout()
         let titleHeight = DesignTokens.expandedPreviewTitleHeight
-        let canvas = NSRect(x: DesignTokens.previewSelectionPadding,
-                            y: titleHeight + DesignTokens.previewSelectionPadding,
-                            width: bounds.width - DesignTokens.previewSelectionPadding * 2,
-                            height: bounds.height - titleHeight
-                                - DesignTokens.previewSelectionPadding * 2)
+        let canvas = NSRect(
+            x: DesignTokens.previewSelectionPadding,
+            y: titleHeight + DesignTokens.previewSelectionPadding,
+            width: bounds.width - DesignTokens.previewSelectionPadding * 2,
+            height: bounds.height - titleHeight
+                - DesignTokens.previewSelectionPadding * 2)
         selectionPlate.frame = canvas.insetBy(
             dx: -DesignTokens.previewSelectionPadding,
             dy: -DesignTokens.previewSelectionPadding)
-        selectionPlate.layer?.cornerRadius = DesignTokens.expandedPreviewCornerRadius
+        selectionPlate.layer?.cornerRadius =
+            DesignTokens.expandedPreviewCornerRadius
             + DesignTokens.previewSelectionPadding
         surfaceView.frame = canvas
         surfaceView.layer?.cornerRadius = DesignTokens.expandedPreviewCornerRadius
 
         if let imageSize = imageView.image?.size,
-           imageSize.width > 0, imageSize.height > 0 {
-            let scale = min(canvas.width / imageSize.width,
-                            canvas.height / imageSize.height)
-            let fitted = NSSize(width: imageSize.width * scale,
-                                height: imageSize.height * scale)
-            imageView.frame = NSRect(x: canvas.midX - fitted.width / 2,
-                                     y: canvas.midY - fitted.height / 2,
-                                     width: fitted.width, height: fitted.height)
+            imageSize.width > 0, imageSize.height > 0
+        {
+            let scale = min(
+                canvas.width / imageSize.width,
+                canvas.height / imageSize.height)
+            let fitted = NSSize(
+                width: imageSize.width * scale,
+                height: imageSize.height * scale)
+            imageView.frame = NSRect(
+                x: canvas.midX - fitted.width / 2,
+                y: canvas.midY - fitted.height / 2,
+                width: fitted.width, height: fitted.height)
         } else {
             imageView.frame = canvas
         }
@@ -102,9 +109,10 @@ final class ExpandedPreviewView: NSView {
             x: canvas.maxX - badge + DesignTokens.expandedPreviewBadgeInset,
             y: canvas.minY - DesignTokens.expandedPreviewBadgeInset,
             width: badge, height: badge)
-        titleLabel.frame = NSRect(x: 0, y: 0,
-                                  width: bounds.width,
-                                  height: titleHeight)
+        titleLabel.frame = NSRect(
+            x: 0, y: 0,
+            width: bounds.width,
+            height: titleHeight)
     }
 
     override func viewDidChangeEffectiveAppearance() {

@@ -1,15 +1,19 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class PanelPlacementTests: XCTestCase {
-    private func display(_ id: String,
-                         width: CGFloat = 1920,
-                         height: CGFloat = 1080,
-                         scale: CGFloat = 2) -> DisplayDescriptor {
-        DisplayDescriptor(id: id,
-                          name: "Display \(id)",
-                          visibleFrame: CGRect(x: 0, y: 0, width: width, height: height),
-                          backingScale: scale)
+    private func display(
+        _ id: String,
+        width: CGFloat = 1920,
+        height: CGFloat = 1080,
+        scale: CGFloat = 2
+    ) -> DisplayDescriptor {
+        DisplayDescriptor(
+            id: id,
+            name: "Display \(id)",
+            visibleFrame: CGRect(x: 0, y: 0, width: width, height: height),
+            backingScale: scale)
     }
 
     private lazy var laptop = display("laptop")
@@ -55,8 +59,9 @@ final class PanelPlacementTests: XCTestCase {
             available: [laptop, external],
             pointerDisplayID: external.id)
 
-        XCTAssertEqual(targets, [external],
-                       "An unplugged monitor must not leave the switcher without a display")
+        XCTAssertEqual(
+            targets, [external],
+            "An unplugged monitor must not leave the switcher without a display")
     }
 
     func testReconnectingTheChosenDisplayRestoresItWithoutReconfiguration() {
@@ -88,11 +93,13 @@ final class PanelPlacementTests: XCTestCase {
 
     func testNoConnectedDisplayResolvesToNoPanels() {
         for placement in SwitcherDisplayPlacement.allCases {
-            XCTAssertTrue(PanelDisplayResolver.targets(
-                placement: placement,
-                chosenDisplayID: "anything",
-                available: [],
-                pointerDisplayID: "anything").isEmpty)
+            XCTAssertTrue(
+                PanelDisplayResolver.targets(
+                    placement: placement,
+                    chosenDisplayID: "anything",
+                    available: [],
+                    pointerDisplayID: "anything"
+                ).isEmpty)
         }
     }
 
@@ -103,8 +110,9 @@ final class PanelPlacementTests: XCTestCase {
                 chosenDisplayID: nil,
                 available: [laptop],
                 pointerDisplayID: nil)
-            XCTAssertFalse(targets.isEmpty,
-                           "\(placement.rawValue) left the switcher with no display")
+            XCTAssertFalse(
+                targets.isEmpty,
+                "\(placement.rawValue) left the switcher with no display")
         }
     }
 
@@ -165,8 +173,9 @@ final class PanelPlacementTests: XCTestCase {
             padding: 16, maxWidthFraction: 0.9, tileCount: 20)
 
         XCTAssertEqual(shared, onSmallest)
-        XCTAssertLessThan(shared, onLargest,
-                          "the shared grid is expected to cost the larger display columns")
+        XCTAssertLessThan(
+            shared, onLargest,
+            "the shared grid is expected to cost the larger display columns")
     }
 
     func testRowsNeverDropBelowOne() {

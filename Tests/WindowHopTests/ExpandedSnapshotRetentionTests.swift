@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 
 /// A dwell snapshot is several times a tile's raster. It must never become the

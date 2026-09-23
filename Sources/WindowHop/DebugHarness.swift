@@ -33,8 +33,9 @@ enum DebugHarness {
     private static func makeSettingsDependencies(_ preferences: Preferences) -> SettingsDependencies {
         SettingsDependencies(
             preferences: preferences,
-            restorer: SettingsDefaultsRestorer(preferences: preferences,
-                                               applyAutomaticUpdateChecks: { _ in }),
+            restorer: SettingsDefaultsRestorer(
+                preferences: preferences,
+                applyAutomaticUpdateChecks: { _ in }),
             updateManager: UpdateManager(preferences: preferences),
             setShortcutRecordingActive: { _ in },
             evictPreviews: {})
@@ -47,7 +48,8 @@ enum DebugHarness {
         }
         if let flagIndex = arguments.firstIndex(of: "--demo-settings") {
             let pane = arguments.count > flagIndex + 1 ? arguments[flagIndex + 1] : nil
-            let appearance: NSAppearance.Name? = arguments.contains("--light")
+            let appearance: NSAppearance.Name? =
+                arguments.contains("--light")
                 ? .aqua : arguments.contains("--dark") ? .darkAqua : nil
             runSettingsDemo(pane: pane?.hasPrefix("--") == true ? nil : pane, appearance: appearance)
             return true
@@ -92,13 +94,14 @@ enum DebugHarness {
         func write(_ view: NSView, _ name: String) {
             let size = view.bounds.size
             guard size.width > 0, size.height > 0,
-                  let rep = NSBitmapImageRep(
+                let rep = NSBitmapImageRep(
                     bitmapDataPlanes: nil,
                     pixelsWide: Int((size.width * renderScale).rounded()),
                     pixelsHigh: Int((size.height * renderScale).rounded()),
                     bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
                     colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
-                  let context = NSGraphicsContext(bitmapImageRep: rep) else { return }
+                let context = NSGraphicsContext(bitmapImageRep: rep)
+            else { return }
             rep.size = size
             NSGraphicsContext.saveGraphicsState()
             NSGraphicsContext.current = context
@@ -107,8 +110,9 @@ enum DebugHarness {
             NSGraphicsContext.restoreGraphicsState()
             if let png = rep.representation(using: .png, properties: [:]) {
                 try? png.write(to: outputURL.appendingPathComponent("\(name).png"))
-                writeLine("wrote \(name).png (\(rep.pixelsWide)x\(rep.pixelsHigh) px, "
-                    + "\(Int(size.width))x\(Int(size.height)) pt)")
+                writeLine(
+                    "wrote \(name).png (\(rep.pixelsWide)x\(rep.pixelsHigh) px, "
+                        + "\(Int(size.width))x\(Int(size.height)) pt)")
             }
         }
 
@@ -131,8 +135,9 @@ enum DebugHarness {
         // overflow check: 120 synthetic windows in a wrapping, vertically scrolling grid
         // synthetic images only: nothing is captured, so the caches stay empty
         let previews = PreviewProvider(preferences: preferences)
-        let overflowPanel = SwitcherPanel(preferences: preferences, previews: previews,
-                                          rasterizableBackground: true)
+        let overflowPanel = SwitcherPanel(
+            preferences: preferences, previews: previews,
+            rasterizableBackground: true)
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
@@ -141,9 +146,10 @@ enum DebugHarness {
             selectedIndex: 60,
             presentationMode: .persistent)
         pending += 1
-        writeLine("overflow panel: 120 tiles in "
-            + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
-            + "frame \(overflowPanel.frame)")
+        writeLine(
+            "overflow panel: 120 tiles in "
+                + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
+                + "frame \(overflowPanel.frame)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
             overflowPanel.prepareCloseForRendering(at: nil)
             if let contentView = overflowPanel.contentView {
@@ -156,9 +162,10 @@ enum DebugHarness {
         // preview appearance, populated with synthetic window images (real
         // captures need Screen Recording; the layout under test is identical)
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let previewPanel = SwitcherPanel(preferences: previewPreferences,
-                                             previews: PreviewProvider(preferences: previewPreferences),
-                                             rasterizableBackground: true)
+            let previewPanel = SwitcherPanel(
+                preferences: previewPreferences,
+                previews: PreviewProvider(preferences: previewPreferences),
+                rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
             // Wrapping otherwise follows whatever display the developer has, so
             // the published preview image would be one long strip on an
@@ -187,8 +194,9 @@ enum DebugHarness {
                 }
                 let expandedImage = syntheticWindowImage(
                     size: NSSize(width: 760, height: 480), seed: 1)
-                previewPanel.showExpandedPreview(id: previewItems[1].id,
-                                                 image: expandedImage)
+                previewPanel.showExpandedPreview(
+                    id: previewItems[1].id,
+                    image: expandedImage)
                 if let contentView = previewPanel.contentView {
                     write(contentView, "switcher-expanded-\(suffix)")
                 }
@@ -204,8 +212,9 @@ enum DebugHarness {
         // Standard switcher renders always exercise the permission-free default,
         // independent of the developer's persisted local preference.
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let panel = SwitcherPanel(preferences: preferences, previews: previews,
-                                      rasterizableBackground: true)
+            let panel = SwitcherPanel(
+                preferences: preferences, previews: previews,
+                rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
             // one row, regardless of the developer's display width
             panel.sharedColumnLimit = demoItems().count
@@ -281,16 +290,21 @@ enum DebugHarness {
         NSRect(x: 0, y: size.height - 24, width: size.width, height: 24).fill()
         for (offset, color) in [NSColor.systemRed, .systemYellow, .systemGreen].enumerated() {
             color.setFill()
-            NSBezierPath(ovalIn: NSRect(x: 8 + CGFloat(offset) * 14, y: size.height - 17,
-                                        width: 9, height: 9)).fill()
+            NSBezierPath(
+                ovalIn: NSRect(
+                    x: 8 + CGFloat(offset) * 14, y: size.height - 17,
+                    width: 9, height: 9)
+            ).fill()
         }
         NSColor.tertiaryLabelColor.withAlphaComponent(0.25).setFill()
         var y = size.height - 48
         var lineSeed = seed
         while y > 12 {
             let width = size.width * (0.35 + CGFloat((lineSeed * 37) % 50) / 100)
-            NSBezierPath(roundedRect: NSRect(x: 14, y: y, width: min(width, size.width - 28), height: 9),
-                         xRadius: 4, yRadius: 4).fill()
+            NSBezierPath(
+                roundedRect: NSRect(x: 14, y: y, width: min(width, size.width - 28), height: 9),
+                xRadius: 4, yRadius: 4
+            ).fill()
             y -= 18
             lineSeed += 1
         }
@@ -320,30 +334,36 @@ enum DebugHarness {
             ("Terminal", "Terminal", "com.apple.Terminal", 2, nil, false),
             ("WindowHop Settings", "WindowHop", "WindowHop", nil, nil, true),
         ]
-        let labels = CollisionLabel.labels(for: rows.map {
-            CollisionLabel.Entry(appId: $0.2, title: $0.0, documentPath: $0.4)
-        })
+        let labels = CollisionLabel.labels(
+            for: rows.map {
+                CollisionLabel.Entry(appId: $0.2, title: $0.0, documentPath: $0.4)
+            })
         return rows.enumerated().map { index, row in
-            let tileIcon = row.5
+            let tileIcon =
+                row.5
                 ? (NSImage(contentsOfFile: "Support/AppIcon.icns")
                     ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.2))
                 : icon(row.2)
-            return SwitcherItem(id: index, window: nil, title: row.0, displayTitle: labels[index],
-                                appName: row.1, icon: tileIcon, tabCount: row.3)
+            return SwitcherItem(
+                id: index, window: nil, title: row.0, displayTitle: labels[index],
+                appName: row.1, icon: tileIcon, tabCount: row.3)
         }
     }
 
     /// Synthetic 120-window list for overflow and responsiveness checks.
     private static func manyDemoItems() -> [SwitcherItem] {
-        let apps = [("Safari", "com.apple.Safari"), ("Finder", "com.apple.finder"),
-                    ("Terminal", "com.apple.Terminal"), ("Notes", "com.apple.Notes"),
-                    ("TextEdit", "com.apple.TextEdit"), ("Mail", "com.apple.mail")]
+        let apps = [
+            ("Safari", "com.apple.Safari"), ("Finder", "com.apple.finder"),
+            ("Terminal", "com.apple.Terminal"), ("Notes", "com.apple.Notes"),
+            ("TextEdit", "com.apple.TextEdit"), ("Mail", "com.apple.mail"),
+        ]
         return (0..<120).map { index in
             let app = apps[index % apps.count]
-            return SwitcherItem(id: index, window: nil,
-                                title: "Window \(index + 1) — \(app.0)",
-                                appName: app.0, icon: icon(app.1),
-                                tabCount: index % 7 == 0 ? (index % 9) + 2 : nil)
+            return SwitcherItem(
+                id: index, window: nil,
+                title: "Window \(index + 1) — \(app.0)",
+                appName: app.0, icon: icon(app.1),
+                tabCount: index % 7 == 0 ? (index % 9) + 2 : nil)
         }
     }
 
@@ -360,11 +380,13 @@ enum DebugHarness {
         let expanded = arguments.contains("--expanded")
         let preferences = makePreferences()
         preferences.appearanceMode = previews ? .windowPreviews : .appIcons
-        let panel = SwitcherPanel(preferences: preferences,
-                                  previews: PreviewProvider(preferences: preferences))
+        let panel = SwitcherPanel(
+            preferences: preferences,
+            previews: PreviewProvider(preferences: preferences))
         panel.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         if let index = arguments.firstIndex(of: "--columns"), arguments.count > index + 1,
-           let columns = Int(arguments[index + 1]) {
+            let columns = Int(arguments[index + 1])
+        {
             panel.sharedColumnLimit = columns
         }
         DispatchQueue.main.async {
@@ -379,10 +401,13 @@ enum DebugHarness {
             if previews {
                 for (index, item) in items.enumerated() where index != 4 && index != 5 {
                     let wide = index % 3 != 2
-                    let size = wide ? NSSize(width: 456, height: 286)
-                                    : NSSize(width: 240, height: 380)
-                    panel.updatePreview(id: item.id,
-                                        image: syntheticWindowImage(size: size, seed: index))
+                    let size =
+                        wide
+                        ? NSSize(width: 456, height: 286)
+                        : NSSize(width: 240, height: 380)
+                    panel.updatePreview(
+                        id: item.id,
+                        image: syntheticWindowImage(size: size, seed: index))
                 }
                 panel.updatePreviewUnavailable(id: items[4].id)
                 if expanded {
@@ -426,17 +451,19 @@ enum DebugHarness {
         BackgroundWork.start()
         let started = Date()
         let preferences = makePreferences()
-        let store = WindowStore(preferences: preferences,
-                                previews: PreviewProvider(preferences: preferences))
+        let store = WindowStore(
+            preferences: preferences,
+            previews: PreviewProvider(preferences: preferences))
         store.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let snapshotStart = Date()
             let items = store.snapshot()
             let snapshotMs = Date().timeIntervalSince(snapshotStart) * 1000
             let totalMs = Date().timeIntervalSince(started) * 1000
-            writeLine("discovered \(store.windows.count) windows "
-                + "(\(items.count) eligible) within \(String(format: "%.0f", totalMs))ms of engine start; "
-                + "snapshot took \(String(format: "%.3f", snapshotMs))ms")
+            writeLine(
+                "discovered \(store.windows.count) windows "
+                    + "(\(items.count) eligible) within \(String(format: "%.0f", totalMs))ms of engine start; "
+                    + "snapshot took \(String(format: "%.3f", snapshotMs))ms")
             for (index, item) in items.enumerated() {
                 let tabs = item.tabCount.map { " [\($0) tabs]" } ?? ""
                 writeLine("\(index): \(item.appName) — \(item.title)\(tabs)")
@@ -455,7 +482,8 @@ enum DebugHarness {
         let controller = SettingsWindowController.makeContentViewController(
             makeSettingsDependencies(makePreferences()))
         if let pane, let tabs = controller as? NSTabViewController,
-           let index = tabs.tabViewItems.firstIndex(where: { $0.identifier as? String == pane }) {
+            let index = tabs.tabViewItems.firstIndex(where: { $0.identifier as? String == pane })
+        {
             tabs.selectedTabViewItemIndex = index
         }
         let window = NSWindow(contentViewController: controller)

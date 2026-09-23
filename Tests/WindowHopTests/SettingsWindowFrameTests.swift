@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 
 /// The Settings window's position survives relaunch through AppKit's frame
@@ -34,9 +35,11 @@ final class SettingsWindowFrameTests: XCTestCase {
 
     /// A new controller stands in for a new process: nothing retained.
     private func launch() -> NSWindow {
-        let window = SettingsWindowController(dependencies: isolated.settingsDependencies,
-                                              registerOwnWindow: { _ in },
-                                              frameAutosaveName: autosaveName).preparedWindow()
+        let window = SettingsWindowController(
+            dependencies: isolated.settingsDependencies,
+            registerOwnWindow: { _ in },
+            frameAutosaveName: autosaveName
+        ).preparedWindow()
         windows.append(window)
         return window
     }
@@ -64,8 +67,9 @@ final class SettingsWindowFrameTests: XCTestCase {
         let first = launch()
         let origin = CGPoint(x: screen.minX + 40, y: screen.minY + 30)
         first.setFrameOrigin(origin)
-        XCTAssertNotNil(UserDefaults.standard.string(forKey: defaultsKey),
-                        "AppKit saves the moved frame under the autosave name")
+        XCTAssertNotNil(
+            UserDefaults.standard.string(forKey: defaultsKey),
+            "AppKit saves the moved frame under the autosave name")
         quit(first)
 
         let second = launch()
@@ -79,16 +83,18 @@ final class SettingsWindowFrameTests: XCTestCase {
         windows.forEach(quit)
 
         // a frame saved by a build whose canvas had another size
-        let old = NSWindow(contentRect: .zero, styleMask: [.titled, .resizable],
-                           backing: .buffered, defer: true)
+        let old = NSWindow(
+            contentRect: .zero, styleMask: [.titled, .resizable],
+            backing: .buffered, defer: true)
         old.isReleasedWhenClosed = false
         windows.append(old)
         // anchored to the top with room below, so restoring the taller canvas never makes
         // AppKit push the window back on screen (CI runners have small displays)
         try XCTSkipIf(screen.height < canvasSize.height + 80, "display too small to restore the canvas")
         let savedHeight = canvasSize.height - 80
-        let savedFrame = CGRect(x: screen.minX + 60, y: screen.maxY - 20 - savedHeight,
-                                width: canvasSize.width + 120, height: savedHeight)
+        let savedFrame = CGRect(
+            x: screen.minX + 60, y: screen.maxY - 20 - savedHeight,
+            width: canvasSize.width + 120, height: savedHeight)
         old.setFrame(savedFrame, display: false)
         old.saveFrame(usingName: autosaveName)
 
@@ -104,8 +110,9 @@ final class SettingsWindowFrameTests: XCTestCase {
         quit(first)
         // far beyond every connected display
         let offScreen = CGRect(x: 100_000, y: 100_000, width: first.frame.width, height: first.frame.height)
-        let old = NSWindow(contentRect: .zero, styleMask: [.titled],
-                           backing: .buffered, defer: true)
+        let old = NSWindow(
+            contentRect: .zero, styleMask: [.titled],
+            backing: .buffered, defer: true)
         old.isReleasedWhenClosed = false
         windows.append(old)
         old.setFrame(offScreen, display: false)

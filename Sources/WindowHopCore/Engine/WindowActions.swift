@@ -17,8 +17,10 @@ public enum WindowActions {
         }
     }
 
-    public static func activate(_ window: TrackedWindow,
-                                completion: (@MainActor @Sendable () -> Void)? = nil) {
+    public static func activate(
+        _ window: TrackedWindow,
+        completion: (@MainActor @Sendable () -> Void)? = nil
+    ) {
         // own Settings window: cooperative NSApp.activate() is sometimes DENIED
         // (macOS 14+ never saw "real" user input reach WindowHop — the tap
         // consumed it), leaving the window ordered but behind. The AX frontmost

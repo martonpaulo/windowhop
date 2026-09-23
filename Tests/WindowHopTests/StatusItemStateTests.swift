@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -11,10 +12,12 @@ final class StatusItemStateTests: XCTestCase {
         XCTAssertEqual(StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: true), .active)
         XCTAssertEqual(StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: true), .paused)
         // enabling cannot help until access is granted, so missing permission wins
-        XCTAssertEqual(StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: false),
-                       .accessibilityRequired)
-        XCTAssertEqual(StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: false),
-                       .accessibilityRequired)
+        XCTAssertEqual(
+            StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: false),
+            .accessibilityRequired)
+        XCTAssertEqual(
+            StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: false),
+            .accessibilityRequired)
     }
 
     func testStatesHaveDistinctShapesAndLabels() {
@@ -28,8 +31,9 @@ final class StatusItemStateTests: XCTestCase {
             XCTAssertTrue(state.accessibilityLabel.hasPrefix("WindowHop"))
         }
         XCTAssertTrue(StatusItemState.paused.accessibilityLabel.localizedCaseInsensitiveContains("paused"))
-        XCTAssertTrue(StatusItemState.accessibilityRequired.accessibilityLabel
-            .localizedCaseInsensitiveContains("Accessibility"))
+        XCTAssertTrue(
+            StatusItemState.accessibilityRequired.accessibilityLabel
+                .localizedCaseInsensitiveContains("Accessibility"))
     }
 
     func testOnlyNonActiveStatesExplainThemselves() {
@@ -43,8 +47,9 @@ final class StatusItemStateTests: XCTestCase {
     /// would leave the menu bar item blank.
     func testEverySymbolResolves() {
         for state in StatusItemState.allCases {
-            XCTAssertNotNil(NSImage(systemSymbolName: state.symbolName, accessibilityDescription: nil),
-                            state.symbolName)
+            XCTAssertNotNil(
+                NSImage(systemSymbolName: state.symbolName, accessibilityDescription: nil),
+                state.symbolName)
         }
     }
 }

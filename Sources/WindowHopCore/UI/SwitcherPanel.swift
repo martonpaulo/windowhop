@@ -45,8 +45,10 @@ private final class SwitcherPanelHostView: NSView {
             setPointerInside(false)
             return
         }
-        setPointerInside(bounds.contains(convert(
-            window.mouseLocationOutsideOfEventStream, from: nil)))
+        setPointerInside(
+            bounds.contains(
+                convert(
+                    window.mouseLocationOutsideOfEventStream, from: nil)))
     }
 
     func setPointerInside(_ value: Bool) {
@@ -128,29 +130,34 @@ public final class SwitcherPanel: NSPanel {
         let metrics = SwitcherTileView.Metrics.metrics(
             for: .windowPreviews,
             showTabCounts: showTabCounts)
-        return NSSize(width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
-                      height: metrics.contentHeight)
+        return NSSize(
+            width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
+            height: metrics.contentHeight)
     }
 
     public static var expandedPreviewContentSize: NSSize {
-        NSSize(width: DesignTokens.expandedPreviewMinimumWidth
-                        - DesignTokens.expandedPreviewPanelInset * 2,
-               height: DesignTokens.expandedPreviewMinimumHeight
-                        - DesignTokens.expandedPreviewPanelInset * 2
-                        - DesignTokens.expandedPreviewTitleHeight)
+        NSSize(
+            width: DesignTokens.expandedPreviewMinimumWidth
+                - DesignTokens.expandedPreviewPanelInset * 2,
+            height: DesignTokens.expandedPreviewMinimumHeight
+                - DesignTokens.expandedPreviewPanelInset * 2
+                - DesignTokens.expandedPreviewTitleHeight)
     }
 
     /// `rasterizableBackground` is for the offscreen render harness only: the
     /// glass background cannot be rasterized with cacheDisplay (it
     /// draws empty), so layout renders use the visual-effect fallback instead.
-    public init(preferences: Preferences, previews: PreviewProvider,
-                rasterizableBackground: Bool = false) {
+    public init(
+        preferences: Preferences, previews: PreviewProvider,
+        rasterizableBackground: Bool = false
+    ) {
         self.preferences = preferences
         self.previews = previews
-        super.init(contentRect: .zero,
-                   styleMask: [.nonactivatingPanel, .borderless],
-                   backing: .buffered,
-                   defer: false)
+        super.init(
+            contentRect: .zero,
+            styleMask: [.nonactivatingPanel, .borderless],
+            backing: .buffered,
+            defer: false)
         isFloatingPanel = true
         level = .popUpMenu
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
@@ -168,8 +175,9 @@ public final class SwitcherPanel: NSPanel {
         // fall back to the closest visual-effect material. Both respect
         // Reduce Transparency and Increase Contrast automatically.
         chromeView.autoresizingMask = [.width, .height]
-        panelBackgroundView = Self.makeBackgroundView(wrapping: chromeView,
-                                                      rasterizable: rasterizableBackground)
+        panelBackgroundView = Self.makeBackgroundView(
+            wrapping: chromeView,
+            rasterizable: rasterizableBackground)
         hostView.addSubview(panelBackgroundView)
         contentView = hostView
 
@@ -188,12 +196,19 @@ public final class SwitcherPanel: NSPanel {
 
         // Global panel action: contextual during held cycling, persistent for
         // Open WindowHop sessions, and never measured as part of the grid.
-        settingsButton.image = NSImage(systemSymbolName: "gearshape.circle.fill",
-                                       accessibilityDescription: String(localized: "WindowHop Settings"))?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: DesignTokens.chromeButtonSymbolSize,
-                                                                  weight: .semibold)
-                .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
-                                                DesignTokens.overlayCircleColor])))
+        settingsButton.image = NSImage(
+            systemSymbolName: "gearshape.circle.fill",
+            accessibilityDescription: String(localized: "WindowHop Settings"))?
+            .withSymbolConfiguration(
+                NSImage.SymbolConfiguration(
+                    pointSize: DesignTokens.chromeButtonSymbolSize,
+                    weight: .semibold
+                )
+                .applying(
+                    .init(paletteColors: [
+                        DesignTokens.overlayGlyphColor,
+                        DesignTokens.overlayCircleColor,
+                    ])))
         settingsButton.isBordered = false
         settingsButton.imagePosition = .imageOnly
         settingsButton.target = self
@@ -211,11 +226,16 @@ public final class SwitcherPanel: NSPanel {
         permissionButton.image = NSImage(
             systemSymbolName: "lock.shield.fill",
             accessibilityDescription: String(localized: "Screen Recording permission required"))?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(
-                pointSize: DesignTokens.permissionGlyphSymbolSize,
-                weight: .semibold)
-                .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
-                                                DesignTokens.overlayCircleColor])))
+            .withSymbolConfiguration(
+                NSImage.SymbolConfiguration(
+                    pointSize: DesignTokens.permissionGlyphSymbolSize,
+                    weight: .semibold
+                )
+                .applying(
+                    .init(paletteColors: [
+                        DesignTokens.overlayGlyphColor,
+                        DesignTokens.overlayCircleColor,
+                    ])))
         permissionButton.isBordered = false
         permissionButton.imagePosition = .imageOnly
         permissionButton.target = self
@@ -233,15 +253,16 @@ public final class SwitcherPanel: NSPanel {
         accessibilityDisplayObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
             object: nil,
-            queue: .main) { [weak self] _ in
-                MainActor.assumeIsolated {
-                    guard let self else { return }
-                    for tile in self.tilePool.prefix(self.visibleTileCount) {
-                        tile.refreshMotionPreference()
-                    }
-                    self.updateSettingsButtonVisibility(animated: false)
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                for tile in self.tilePool.prefix(self.visibleTileCount) {
+                    tile.refreshMotionPreference()
                 }
+                self.updateSettingsButtonVisibility(animated: false)
             }
+        }
 
         // pre-warm the tile pool off the first-trigger latency path; tiles beyond
         // this grow the pool once and are then reused forever
@@ -261,8 +282,10 @@ public final class SwitcherPanel: NSPanel {
 
     /// The panel background: system glass, or a visual-effect stand-in when
     /// the offscreen render harness needs something it can rasterize.
-    private static func makeBackgroundView(wrapping content: NSView,
-                                           rasterizable: Bool) -> NSView {
+    private static func makeBackgroundView(
+        wrapping content: NSView,
+        rasterizable: Bool
+    ) -> NSView {
         if !rasterizable {
             let glass = NSGlassEffectView()
             glass.cornerRadius = DesignTokens.panelCornerRadius
@@ -282,9 +305,11 @@ public final class SwitcherPanel: NSPanel {
         return effectView
     }
 
-    public func show(items: [SwitcherItem],
-                     selectedIndex: Int,
-                     presentationMode: SwitcherPresentationMode) {
+    public func show(
+        items: [SwitcherItem],
+        selectedIndex: Int,
+        presentationMode: SwitcherPresentationMode
+    ) {
         self.presentationMode = presentationMode
         hostView.setPointerInside(false)
         availability.beginSession()
@@ -295,7 +320,8 @@ public final class SwitcherPanel: NSPanel {
         orderFrontRegardless()
         hostView.refreshPointerLocation()
         updateSettingsButtonVisibility(animated: false)
-        Log.panel.debug("""
+        Log.panel.debug(
+            """
             panel shown: \(items.count, privacy: .public) tiles \
             (\(self.mode.rawValue, privacy: .public)), \
             frame \(String(describing: self.frame), privacy: .public)
@@ -383,7 +409,8 @@ public final class SwitcherPanel: NSPanel {
     /// application/window action.
     public func showExpandedPreview(id: AnyHashable, image: NSImage) {
         guard mode.supportsExpandedPreview,
-              let item = items.first(where: { $0.id == id }) else { return }
+            let item = items.first(where: { $0.id == id })
+        else { return }
         let wasShowing = expandedPreviewID == id
         expandedPreviewID = id
         expandedPreviewView.configure(item: item, image: image)
@@ -466,12 +493,13 @@ public final class SwitcherPanel: NSPanel {
             let item = items[index]
             if assignment.needsConfigure {
                 let cached = previews.cachedPreview(for: item.id)
-                tile.configure(item: item,
-                               mode: mode,
-                               showTabCounts: showTabCounts,
-                               preview: cached,
-                               presentation: availability.presentation(
-                                   for: item.id, hasImage: cached != nil))
+                tile.configure(
+                    item: item,
+                    mode: mode,
+                    showTabCounts: showTabCounts,
+                    preview: cached,
+                    presentation: availability.presentation(
+                        for: item.id, hasImage: cached != nil))
             }
             // a tile that moved or changed windows is no longer under the pointer
             if assignment.needsConfigure || assignment.slot != index {
@@ -506,7 +534,8 @@ public final class SwitcherPanel: NSPanel {
         let rowSpacing = DesignTokens.tileRowSpacing
         let tileSize = SwitcherTileView.Metrics.metrics(
             for: mode,
-            showTabCounts: preferences.showTabCounts).tileSize
+            showTabCounts: preferences.showTabCounts
+        ).tileSize
         let visibleFrame = screen.visibleFrame
 
         // tiles wrap into rows instead of scrolling horizontally (the AltTab
@@ -526,28 +555,33 @@ public final class SwitcherPanel: NSPanel {
         columnsPerRow = columns
 
         let visibleColumns = min(tileCount, columns)
-        let contentGridWidth = CGFloat(visibleColumns) * tileSize.width
+        let contentGridWidth =
+            CGFloat(visibleColumns) * tileSize.width
             + CGFloat(max(0, visibleColumns - 1)) * spacing
-        let contentGridHeight = CGFloat(rows) * tileSize.height
+        let contentGridHeight =
+            CGFloat(rows) * tileSize.height
             + CGFloat(max(0, rows - 1)) * rowSpacing
         let leadingOverflow = DesignTokens.closeButtonLeadingOverflow
         let topOverflow = DesignTokens.closeButtonTopOverflow
         let documentWidth = contentGridWidth + leadingOverflow
         let documentHeight = contentGridHeight + topOverflow
-        tilesContainer.frame = NSRect(x: 0, y: 0,
-                                      width: documentWidth, height: documentHeight)
+        tilesContainer.frame = NSRect(
+            x: 0, y: 0,
+            width: documentWidth, height: documentHeight)
         for (index, tile) in tilePool.prefix(tileCount).enumerated() {
             let column = index % columns
             let row = index / columns
             // a partial row is centered, like the native switcher — never left-ragged
             let tilesInRow = min(columns, tileCount - row * columns)
-            let rowWidth = CGFloat(tilesInRow) * tileSize.width
+            let rowWidth =
+                CGFloat(tilesInRow) * tileSize.width
                 + CGFloat(max(0, tilesInRow - 1)) * spacing
             let rowOffset = (contentGridWidth - rowWidth) / 2
-            tile.frame = NSRect(x: leadingOverflow + rowOffset
-                                    + CGFloat(column) * (tileSize.width + spacing),
-                                y: CGFloat(rows - 1 - row) * (tileSize.height + rowSpacing),
-                                width: tileSize.width, height: tileSize.height)
+            tile.frame = NSRect(
+                x: leadingOverflow + rowOffset
+                    + CGFloat(column) * (tileSize.width + spacing),
+                y: CGFloat(rows - 1 - row) * (tileSize.height + rowSpacing),
+                width: tileSize.width, height: tileSize.height)
         }
 
         let rowCapacity = SwitcherGridCapacity.maxVisibleRows(
@@ -558,18 +592,22 @@ public final class SwitcherPanel: NSPanel {
             maxHeightFraction: DesignTokens.panelMaxHeightFraction)
         let maxVisibleRows = max(1, min(rowCapacity, sharedRowLimit ?? rowCapacity))
         let visibleRows = min(rows, maxVisibleRows)
-        let visibleGridHeight = CGFloat(visibleRows) * tileSize.height
+        let visibleGridHeight =
+            CGFloat(visibleRows) * tileSize.height
             + CGFloat(max(0, visibleRows - 1)) * rowSpacing
-        scrollView.frame = NSRect(x: padding - leadingOverflow, y: padding,
-                                  width: documentWidth,
-                                  height: visibleGridHeight + topOverflow)
+        scrollView.frame = NSRect(
+            x: padding - leadingOverflow, y: padding,
+            width: documentWidth,
+            height: visibleGridHeight + topOverflow)
         // start reading from the first row (top of the grid)
-        tilesContainer.scroll(NSPoint(
-            x: 0,
-            y: max(0, contentGridHeight - visibleGridHeight)))
+        tilesContainer.scroll(
+            NSPoint(
+                x: 0,
+                y: max(0, contentGridHeight - visibleGridHeight)))
 
-        let panelSize = NSSize(width: contentGridWidth + padding * 2,
-                               height: visibleGridHeight + padding * 2)
+        let panelSize = NSSize(
+            width: contentGridWidth + padding * 2,
+            height: visibleGridHeight + padding * 2)
         panelBackgroundView.frame = NSRect(origin: .zero, size: panelSize)
 
         // Keep most of the complete hit target inside the panel with only the
@@ -577,17 +615,20 @@ public final class SwitcherPanel: NSPanel {
         // the panel background and preview layout retain their exact size.
         let controlSize = DesignTokens.chromeButtonHitSize
         let overflow = DesignTokens.chromeButtonOutsideOverlap
-        settingsButton.frame = NSRect(x: panelSize.width - controlSize + overflow,
-                                      y: panelSize.height - controlSize + overflow,
-                                      width: controlSize, height: controlSize)
+        settingsButton.frame = NSRect(
+            x: panelSize.width - controlSize + overflow,
+            y: panelSize.height - controlSize + overflow,
+            width: controlSize, height: controlSize)
         permissionButton.frame = NSRect(
             x: panelSize.width - controlSize * 2,
             y: panelSize.height - controlSize,
             width: controlSize, height: controlSize)
-        let hostSize = NSSize(width: panelSize.width + overflow,
-                              height: panelSize.height + overflow)
-        let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
-                             y: visibleFrame.midY - panelSize.height / 2)
+        let hostSize = NSSize(
+            width: panelSize.width + overflow,
+            height: panelSize.height + overflow)
+        let origin = NSPoint(
+            x: visibleFrame.midX - panelSize.width / 2,
+            y: visibleFrame.midY - panelSize.height / 2)
         setFrame(NSRect(origin: origin, size: hostSize), display: true)
     }
 
@@ -604,14 +645,17 @@ public final class SwitcherPanel: NSPanel {
             dy: DesignTokens.expandedPreviewPanelInset)
         let controlSize = DesignTokens.chromeButtonHitSize
         let overflow = DesignTokens.chromeButtonOutsideOverlap
-        settingsButton.frame = NSRect(x: panelSize.width - controlSize + overflow,
-                                      y: panelSize.height - controlSize + overflow,
-                                      width: controlSize, height: controlSize)
+        settingsButton.frame = NSRect(
+            x: panelSize.width - controlSize + overflow,
+            y: panelSize.height - controlSize + overflow,
+            width: controlSize, height: controlSize)
         permissionButton.isHidden = true
-        let hostSize = NSSize(width: panelSize.width + overflow,
-                              height: panelSize.height + overflow)
-        let origin = NSPoint(x: visibleFrame.midX - panelSize.width / 2,
-                             y: visibleFrame.midY - panelSize.height / 2)
+        let hostSize = NSSize(
+            width: panelSize.width + overflow,
+            height: panelSize.height + overflow)
+        let origin = NSPoint(
+            x: visibleFrame.midX - panelSize.width / 2,
+            y: visibleFrame.midY - panelSize.height / 2)
         setFrame(NSRect(origin: origin, size: hostSize), display: true)
     }
 
@@ -674,7 +718,8 @@ public final class SwitcherPanel: NSPanel {
         settingsButton.setAccessibilityHidden(!visible)
         let target: CGFloat = visible ? 1 : 0
         guard settingsButton.alphaValue != target else { return }
-        let shouldAnimate = animated
+        let shouldAnimate =
+            animated
             && !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         guard shouldAnimate else {
             settingsButton.alphaValue = target

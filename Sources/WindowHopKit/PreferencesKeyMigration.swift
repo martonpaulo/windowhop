@@ -47,9 +47,9 @@ public enum PreferencesKeyMigration {
     static func isValid(_ value: Any, for key: Preferences.Key) -> Bool {
         switch key {
         case .switcherEnabled, .launchAtLogin, .includeOtherSpaces, .includeOtherDisplays,
-             .includeMinimizedWindows, .includeHiddenApplicationWindows,
-             .includePictureInPictureWindows, .showTabCounts, .showMenuBarItem, .showDockIcon,
-             .automaticUpdateChecks, .firstLaunchCompleted:
+            .includeMinimizedWindows, .includeHiddenApplicationWindows,
+            .includePictureInPictureWindows, .showTabCounts, .showMenuBarItem, .showDockIcon,
+            .automaticUpdateChecks, .firstLaunchCompleted:
             return value is Bool
         case .shortcut:
             return (value as? String).flatMap(ShortcutSpec.init(rawValue:)) != nil

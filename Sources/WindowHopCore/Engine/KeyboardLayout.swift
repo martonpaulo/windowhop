@@ -26,7 +26,8 @@ public struct KeyboardLayout: KeyLabelSource {
     /// input method such as Japanese Kana) the ASCII-capable layout it types with.
     private static func currentLayoutSource() -> TISInputSource? {
         if let source = TISCopyCurrentKeyboardLayoutInputSource()?.takeRetainedValue(),
-           layoutData(of: source) != nil {
+            layoutData(of: source) != nil
+        {
             return source
         }
         return TISCopyCurrentASCIICapableKeyboardLayoutInputSource()?.takeRetainedValue()
@@ -68,8 +69,10 @@ public struct KeyboardLayout: KeyLabelSource {
     /// `com.apple.keylayout.German`), read without selecting or enabling it.
     static func installedLayout(identifier: String) -> TISInputSource? {
         let filter = [kTISPropertyInputSourceID as String: identifier] as CFDictionary
-        guard let list = TISCreateInputSourceList(filter, true)?.takeRetainedValue()
-                as? [TISInputSource] else { return nil }
+        guard
+            let list = TISCreateInputSourceList(filter, true)?.takeRetainedValue()
+                as? [TISInputSource]
+        else { return nil }
         return list.first
     }
 }

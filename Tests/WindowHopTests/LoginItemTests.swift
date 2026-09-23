@@ -1,5 +1,6 @@
 import ServiceManagement
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -52,9 +53,12 @@ final class LoginItemTests: XCTestCase {
         let plainURL = temporaryDirectory.appendingPathComponent("plain")
         try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: plainURL, withIntermediateDirectories: true)
-        try (["CFBundleIdentifier": "test.windowhop.fixture",
-              "CFBundleName": "WindowHopFixture",
-              "CFBundlePackageType": "APPL"] as NSDictionary)
+        try
+            ([
+                "CFBundleIdentifier": "test.windowhop.fixture",
+                "CFBundleName": "WindowHopFixture",
+                "CFBundlePackageType": "APPL",
+            ] as NSDictionary)
             .write(to: contents.appendingPathComponent("Info.plist"))
         bundledApp = try XCTUnwrap(Bundle(url: appURL))
         bareExecutable = try XCTUnwrap(Bundle(url: plainURL))
@@ -173,11 +177,13 @@ final class LoginItemTests: XCTestCase {
     func testAlreadyMatchingStateIsANoOp() {
         let recorder = Recorder()
 
-        XCTAssertEqual(LoginItem.set(false, bundle: bundledApp, service: service(recorder)),
-                       LoginItemChange(status: .disabled, failed: false))
+        XCTAssertEqual(
+            LoginItem.set(false, bundle: bundledApp, service: service(recorder)),
+            LoginItemChange(status: .disabled, failed: false))
         recorder.status = .requiresApproval
-        XCTAssertEqual(LoginItem.set(true, bundle: bundledApp, service: service(recorder)),
-                       LoginItemChange(status: .requiresApproval, failed: false))
+        XCTAssertEqual(
+            LoginItem.set(true, bundle: bundledApp, service: service(recorder)),
+            LoginItemChange(status: .requiresApproval, failed: false))
         XCTAssertEqual(recorder.registers + recorder.unregisters, 0)
     }
 

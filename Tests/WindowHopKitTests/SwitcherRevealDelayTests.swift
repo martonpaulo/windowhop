@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class SwitcherRevealDelayTests: XCTestCase {
@@ -8,8 +9,9 @@ final class SwitcherRevealDelayTests: XCTestCase {
         XCTAssertEqual(SwitcherRevealDelay.milliseconds200.duration, 0.2)
         XCTAssertEqual(SwitcherRevealDelay.milliseconds300.duration, 0.3)
         XCTAssertEqual(SwitcherRevealDelay.milliseconds500.duration, 0.5)
-        XCTAssertEqual(SwitcherRevealDelay.allCases.map(\.displayName),
-                       ["Off", "100 ms", "200 ms", "300 ms", "500 ms"])
+        XCTAssertEqual(
+            SwitcherRevealDelay.allCases.map(\.displayName),
+            ["Off", "100 ms", "200 ms", "300 ms", "500 ms"])
     }
 
     func testHeldSessionsWaitForTheConfiguredDelay() {

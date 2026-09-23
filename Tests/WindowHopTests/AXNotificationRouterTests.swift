@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopCore
 
 /// The AX observer callback is a capture-free C function: it finds its router
@@ -20,8 +21,9 @@ final class AXNotificationRouterTests: XCTestCase {
     func testRouterDoesNotKeepTheStoreAlive() {
         let isolated = IsolatedPreferences()
         defer { isolated.remove() }
-        var store: WindowStore? = WindowStore(preferences: isolated.preferences,
-                                              previews: isolated.previews)
+        var store: WindowStore? = WindowStore(
+            preferences: isolated.preferences,
+            previews: isolated.previews)
         weak let weakStore = store
         let router = store?.router
         store = nil

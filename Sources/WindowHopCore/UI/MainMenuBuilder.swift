@@ -39,8 +39,10 @@ public enum MainMenuBuilder {
         // so every entry point reaches the same About
         appMenu.addItem(item(String(localized: "About WindowHop"), #selector(MainMenuActions.openAboutFromMenu(_:))))
         appMenu.addItem(.separator())
-        appMenu.addItem(item(String(localized: "Settings…"),
-                             #selector(MainMenuActions.openSettingsFromMenu(_:)), ","))
+        appMenu.addItem(
+            item(
+                String(localized: "Settings…"),
+                #selector(MainMenuActions.openSettingsFromMenu(_:)), ","))
         var servicesMenu: NSMenu?
         if isRegular {
             appMenu.addItem(.separator())
@@ -51,8 +53,10 @@ public enum MainMenuBuilder {
             servicesMenu = services
             appMenu.addItem(.separator())
             appMenu.addItem(item(String(localized: "Hide WindowHop"), #selector(NSApplication.hide(_:)), "h"))
-            appMenu.addItem(item(String(localized: "Hide Others"), #selector(NSApplication.hideOtherApplications(_:)),
-                                 "h", [.option, .command]))
+            appMenu.addItem(
+                item(
+                    String(localized: "Hide Others"), #selector(NSApplication.hideOtherApplications(_:)),
+                    "h", [.option, .command]))
             appMenu.addItem(item(String(localized: "Show All"), #selector(NSApplication.unhideAllApplications(_:))))
         }
         appMenu.addItem(.separator())
@@ -89,8 +93,9 @@ public enum MainMenuBuilder {
             helpMenu = help
         }
 
-        return MainMenu(menu: mainMenu, windowsMenu: windowMenu,
-                        servicesMenu: servicesMenu, helpMenu: helpMenu)
+        return MainMenu(
+            menu: mainMenu, windowsMenu: windowMenu,
+            servicesMenu: servicesMenu, helpMenu: helpMenu)
     }
 
     private static func menuBarItem(_ menu: NSMenu) -> NSMenuItem {
@@ -99,8 +104,10 @@ public enum MainMenuBuilder {
         return item
     }
 
-    private static func item(_ title: String, _ action: Selector, _ key: String = "",
-                             _ modifiers: NSEvent.ModifierFlags = .command) -> NSMenuItem {
+    private static func item(
+        _ title: String, _ action: Selector, _ key: String = "",
+        _ modifiers: NSEvent.ModifierFlags = .command
+    ) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: key)
         if !key.isEmpty {
             item.keyEquivalentModifierMask = modifiers

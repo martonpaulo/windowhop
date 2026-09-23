@@ -21,10 +21,12 @@ final class LaunchAtLoginModel {
     @ObservationIgnored private let change: (Bool) -> LoginItemChange
     @ObservationIgnored private let openLoginItemsSettingsAction: () -> Void
 
-    init(preferences: Preferences,
-         readStatus: @escaping () -> LoginItemStatus = { LoginItem.status },
-         change: @escaping (Bool) -> LoginItemChange = { LoginItem.set($0) },
-         openLoginItemsSettings: @escaping () -> Void = LoginItem.openLoginItemsSettings) {
+    init(
+        preferences: Preferences,
+        readStatus: @escaping () -> LoginItemStatus = { LoginItem.status },
+        change: @escaping (Bool) -> LoginItemChange = { LoginItem.set($0) },
+        openLoginItemsSettings: @escaping () -> Void = LoginItem.openLoginItemsSettings
+    ) {
         self.preferences = preferences
         self.readStatus = readStatus
         self.change = change

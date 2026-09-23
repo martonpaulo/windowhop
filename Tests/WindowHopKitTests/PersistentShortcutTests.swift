@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 @MainActor
@@ -18,11 +19,13 @@ final class PersistentShortcutTests: XCTestCase {
     }
 
     func testModifierOnlyOrBareKeyIsRejected() {
-        XCTAssertEqual(PersistentShortcut(keyCode: 0, modifiers: []).validate(against: .commandTab),
-                       .needsModifier)
+        XCTAssertEqual(
+            PersistentShortcut(keyCode: 0, modifiers: []).validate(against: .commandTab),
+            .needsModifier)
         // Shift alone is not enough: shift+letter is normal typing
-        XCTAssertEqual(PersistentShortcut(keyCode: 0, modifiers: [.maskShift]).validate(against: .commandTab),
-                       .needsModifier)
+        XCTAssertEqual(
+            PersistentShortcut(keyCode: 0, modifiers: [.maskShift]).validate(against: .commandTab),
+            .needsModifier)
     }
 
     /// The glyphs in the message come from ShortcutFormatter, never a second
@@ -31,12 +34,14 @@ final class PersistentShortcutTests: XCTestCase {
         let glyphs = [CGEventFlags.maskCommand, .maskAlternate, .maskControl]
             .map(ShortcutFormatter.modifierSymbols)
             .joined(separator: ", ")
-        XCTAssertEqual(PersistentShortcut.ValidationError.needsModifier.explanation,
-                       "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
+        XCTAssertEqual(
+            PersistentShortcut.ValidationError.needsModifier.explanation,
+            "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
         // every modifier the message names is, on its own, enough to pass validation
         for modifier in PersistentShortcut.ValidationError.qualifyingModifiers {
-            XCTAssertNil(PersistentShortcut(keyCode: KeyCode.space, modifiers: modifier)
-                .validate(against: .commandTab))
+            XCTAssertNil(
+                PersistentShortcut(keyCode: KeyCode.space, modifiers: modifier)
+                    .validate(against: .commandTab))
         }
     }
 
@@ -52,8 +57,11 @@ final class PersistentShortcutTests: XCTestCase {
     }
 
     func testValidShortcuts() {
-        XCTAssertNil(PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).validate(against: .commandTab))
-        XCTAssertNil(PersistentShortcut(keyCode: 40 /* K */, modifiers: [.maskCommand, .maskShift]).validate(against: .commandTab))
+        XCTAssertNil(
+            PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).validate(against: .commandTab))
+        XCTAssertNil(
+            PersistentShortcut(keyCode: 40 /* K */, modifiers: [.maskCommand, .maskShift]).validate(
+                against: .commandTab))
     }
 
     func testEncodingRoundTrip() {
@@ -67,8 +75,9 @@ final class PersistentShortcutTests: XCTestCase {
 
     func testDisplayString() {
         XCTAssertEqual(PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).displayString, "⌥Space")
-        XCTAssertEqual(PersistentShortcut(keyCode: 40, modifiers: [.maskControl, .maskShift, .maskCommand]).displayString,
-                       "⌃⇧⌘K")
+        XCTAssertEqual(
+            PersistentShortcut(keyCode: 40, modifiers: [.maskControl, .maskShift, .maskCommand]).displayString,
+            "⌃⇧⌘K")
     }
 
     func testPreferencesDefaultIsOptionTabAndCanBeCleared() {

@@ -1,5 +1,6 @@
 import Carbon.HIToolbox
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -7,9 +8,11 @@ import XCTest
 /// The live reader is only smoke-called; nothing writes a system shortcut.
 final class SystemShortcutsTests: XCTestCase {
     private func entry(_ keyCode: Int, _ modifiers: Int, enabled: Bool = true) -> [String: Any] {
-        [kHISymbolicHotKeyCode as String: NSNumber(value: keyCode),
-         kHISymbolicHotKeyModifiers as String: NSNumber(value: modifiers),
-         kHISymbolicHotKeyEnabled as String: enabled]
+        [
+            kHISymbolicHotKeyCode as String: NSNumber(value: keyCode),
+            kHISymbolicHotKeyModifiers as String: NSNumber(value: modifiers),
+            kHISymbolicHotKeyEnabled as String: enabled,
+        ]
     }
 
     func testCarbonModifiersMapToEventFlags() {
@@ -17,8 +20,9 @@ final class SystemShortcutsTests: XCTestCase {
         XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: optionKey), .maskAlternate)
         XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: controlKey), .maskControl)
         XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: shiftKey), .maskShift)
-        XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: cmdKey | optionKey | shiftKey),
-                       [.maskCommand, .maskAlternate, .maskShift])
+        XCTAssertEqual(
+            SystemShortcuts.modifiers(fromCarbon: cmdKey | optionKey | shiftKey),
+            [.maskCommand, .maskAlternate, .maskShift])
     }
 
     func testEnabledEntriesBecomeChords() {
@@ -30,7 +34,7 @@ final class SystemShortcutsTests: XCTestCase {
         let chords = SystemShortcuts.shortcuts(from: [
             entry(Int(KeyCode.space), cmdKey, enabled: false),
             entry(0xFFFF, 0),
-            [kHISymbolicHotKeyCode as String: NSNumber(value: 1)], // incomplete
+            [kHISymbolicHotKeyCode as String: NSNumber(value: 1)],  // incomplete
         ])
         XCTAssertEqual(chords, [])
     }

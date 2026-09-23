@@ -75,7 +75,8 @@ public struct TileReusePlan: Equatable, Sendable {
             }
             assignments[index] = Assignment(slot: slot, needsConfigure: true)
         }
-        return TileReusePlan(assignments: assignments.compactMap { $0 },
-                             unusedSlots: unused.sorted())
+        return TileReusePlan(
+            assignments: assignments.compactMap { $0 },
+            unusedSlots: unused.sorted())
     }
 }

@@ -1,11 +1,13 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class WindowEligibilityTests: XCTestCase {
     private func standardWindow(size: CGSize = CGSize(width: 800, height: 600)) -> WindowFacts {
-        WindowFacts(role: "AXWindow", subrole: "AXStandardWindow", size: size,
-                    title: "Document", bundleIdentifier: "com.example.app",
-                    localizedAppName: "Example")
+        WindowFacts(
+            role: "AXWindow", subrole: "AXStandardWindow", size: size,
+            title: "Document", bundleIdentifier: "com.example.app",
+            localizedAppName: "Example")
     }
 
     // MARK: - isActualWindow
@@ -72,8 +74,9 @@ final class WindowEligibilityTests: XCTestCase {
     // MARK: - shouldDisplay
 
     private func visibleState() -> WindowDisplayState {
-        WindowDisplayState(isMinimized: false, isAppHidden: false, isOwnWindow: false,
-                           isOnCurrentSpace: true, isOnActiveDisplay: true)
+        WindowDisplayState(
+            isMinimized: false, isAppHidden: false, isOwnWindow: false,
+            isOnCurrentSpace: true, isOnActiveDisplay: true)
     }
 
     func testVisibleWindowIsDisplayed() {
@@ -84,63 +87,73 @@ final class WindowEligibilityTests: XCTestCase {
         var state = visibleState()
         state.isMinimized = true
         XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(WindowEligibility.shouldDisplay(
-            state, policy: .init(includeMinimizedWindows: true)))
+        XCTAssertTrue(
+            WindowEligibility.shouldDisplay(
+                state, policy: .init(includeMinimizedWindows: true)))
     }
 
     func testHiddenAppWindowsFollowThePolicy() {
         var state = visibleState()
         state.isAppHidden = true
         XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(WindowEligibility.shouldDisplay(
-            state, policy: .init(includeHiddenApplicationWindows: true)))
+        XCTAssertTrue(
+            WindowEligibility.shouldDisplay(
+                state, policy: .init(includeHiddenApplicationWindows: true)))
     }
 
     func testOwnWindowsAreNeverDisplayed() {
         var state = visibleState()
         state.isOwnWindow = true
         XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(WindowEligibility.shouldDisplay(
-            state,
-            policy: .init(includeMinimizedWindows: true,
-                          includeHiddenApplicationWindows: true,
-                          includePictureInPictureWindows: true)))
+        XCTAssertFalse(
+            WindowEligibility.shouldDisplay(
+                state,
+                policy: .init(
+                    includeMinimizedWindows: true,
+                    includeHiddenApplicationWindows: true,
+                    includePictureInPictureWindows: true)))
     }
 
     func testPictureInPictureWindowsFollowThePolicy() {
         var state = visibleState()
         state.isPictureInPicture = true
         XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(WindowEligibility.shouldDisplay(
-            state, policy: .init(includePictureInPictureWindows: true)))
+        XCTAssertTrue(
+            WindowEligibility.shouldDisplay(
+                state, policy: .init(includePictureInPictureWindows: true)))
     }
 
     func testOtherSpaceWindowsFollowTheSetting() {
         var state = visibleState()
         state.isOnCurrentSpace = false
         XCTAssertTrue(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(WindowEligibility.shouldDisplay(
-            state, policy: .init(includeOtherSpaces: false)))
+        XCTAssertFalse(
+            WindowEligibility.shouldDisplay(
+                state, policy: .init(includeOtherSpaces: false)))
     }
 
     func testOtherDisplayWindowsFollowTheSetting() {
         var state = visibleState()
         state.isOnActiveDisplay = false
         XCTAssertTrue(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(WindowEligibility.shouldDisplay(
-            state, policy: .init(includeOtherDisplays: false)))
+        XCTAssertFalse(
+            WindowEligibility.shouldDisplay(
+                state, policy: .init(includeOtherDisplays: false)))
     }
 
     /// The #38 snapshot trace counts exclusions by the first rule that applies.
     func testExclusionReasonNamesTheFirstRuleThatApplies() {
         let strict = WindowInclusionPolicy(includeOtherSpaces: false, includeOtherDisplays: false)
-        let offSpaceAndDisplay = WindowDisplayState(isMinimized: false, isAppHidden: false, isOwnWindow: false,
-                                                    isOnCurrentSpace: false, isOnActiveDisplay: false)
+        let offSpaceAndDisplay = WindowDisplayState(
+            isMinimized: false, isAppHidden: false, isOwnWindow: false,
+            isOnCurrentSpace: false, isOnActiveDisplay: false)
         XCTAssertEqual(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: strict), .otherSpace)
-        XCTAssertNil(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: .init()),
-                     "the default policy shows other Spaces and displays")
-        let minimizedTab = WindowDisplayState(isMinimized: true, isAppHidden: false, isOwnWindow: false,
-                                              isTabbed: true, isOnCurrentSpace: true, isOnActiveDisplay: true)
+        XCTAssertNil(
+            WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: .init()),
+            "the default policy shows other Spaces and displays")
+        let minimizedTab = WindowDisplayState(
+            isMinimized: true, isAppHidden: false, isOwnWindow: false,
+            isTabbed: true, isOnCurrentSpace: true, isOnActiveDisplay: true)
         XCTAssertEqual(WindowEligibility.exclusionReason(minimizedTab, policy: .init()), .minimized)
     }
 
@@ -161,7 +174,8 @@ final class WindowEligibilityTests: XCTestCase {
                     includePictureInPictureWindows: policyBits & 4 != 0,
                     includeOtherSpaces: policyBits & 8 != 0,
                     includeOtherDisplays: policyBits & 16 != 0)
-                let expected = (!state.isMinimized || policy.includeMinimizedWindows)
+                let expected =
+                    (!state.isMinimized || policy.includeMinimizedWindows)
                     && (!state.isAppHidden || policy.includeHiddenApplicationWindows)
                     && (!state.isPictureInPicture
                         || policy.includePictureInPictureWindows)

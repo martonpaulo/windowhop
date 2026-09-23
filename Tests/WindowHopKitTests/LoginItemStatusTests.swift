@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class LoginItemStatusTests: XCTestCase {
@@ -12,8 +13,9 @@ final class LoginItemStatusTests: XCTestCase {
     func testOnlyAnUnavailableItemLocksTheToggle() {
         let locked = LoginItemStatus.allCases.filter { !$0.allowsChange }
         XCTAssertEqual(locked, [.unavailable])
-        XCTAssertFalse(LoginItemStatus.unavailable.isOn,
-                       "a locked toggle must never hide a registration it cannot remove")
+        XCTAssertFalse(
+            LoginItemStatus.unavailable.isOn,
+            "a locked toggle must never hide a registration it cannot remove")
     }
 
     func testOnlyPendingApprovalOffersLoginItemsSettings() {

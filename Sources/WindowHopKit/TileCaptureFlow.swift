@@ -65,9 +65,11 @@ public enum TileCaptureFlow {
         deliver: @escaping @MainActor (ID, Image) -> Void,
         unavailable: ([ID]) -> Void
     ) async {
-        guard let failures = await attempt(ids, budget: budget, generation: generation,
-                                           lookup: lookup, capture: capture,
-                                           isCurrent: isCurrent, deliver: deliver)
+        guard
+            let failures = await attempt(
+                ids, budget: budget, generation: generation,
+                lookup: lookup, capture: capture,
+                isCurrent: isCurrent, deliver: deliver)
         else { return }
         let final = failures.filter { !PreviewRetryPolicy.isRetryable($0.failure) }.map(\.id)
         let retryable = failures.filter { PreviewRetryPolicy.isRetryable($0.failure) }.map(\.id)
@@ -81,10 +83,11 @@ public enum TileCaptureFlow {
         let refused = retryable.filter { !claimedSet.contains($0) }
         if !refused.isEmpty { unavailable(refused) }
         guard !claimed.isEmpty,
-              let retryFailures = await attempt(claimed, budget: budget, generation: generation,
-                                                lookup: lookup, capture: capture,
-                                                isCurrent: isCurrent, deliver: deliver),
-              !retryFailures.isEmpty
+            let retryFailures = await attempt(
+                claimed, budget: budget, generation: generation,
+                lookup: lookup, capture: capture,
+                isCurrent: isCurrent, deliver: deliver),
+            !retryFailures.isEmpty
         else { return }
         unavailable(retryFailures.map(\.id))
     }
@@ -103,7 +106,8 @@ public enum TileCaptureFlow {
         guard let matched = await lookup(ids) else {
             return ids.map { ($0, .lookupFailed) }
         }
-        var failures: [(id: ID, failure: PreviewFailure)] = ids
+        var failures: [(id: ID, failure: PreviewFailure)] =
+            ids
             .filter { matched[$0] == nil }
             .map { ($0, .noMatch) }
         // parallel, in list order, within the provider-wide budget. The tasks
@@ -122,16 +126,20 @@ public enum TileCaptureFlow {
                 stopped = true
                 break
             }
-            captures.append((id, Task {
-                defer { budget.release() }
-                switch await capture(candidate) {
-                case .captured(let image):
-                    deliver(id, image)
-                    return nil
-                case .failed(let failure):
-                    return failure
-                }
-            }))
+            captures.append(
+                (
+                    id,
+                    Task {
+                        defer { budget.release() }
+                        switch await capture(candidate) {
+                        case .captured(let image):
+                            deliver(id, image)
+                            return nil
+                        case .failed(let failure):
+                            return failure
+                        }
+                    }
+                ))
         }
         for (id, task) in captures {
             if let failure = await task.value { failures.append((id, failure)) }

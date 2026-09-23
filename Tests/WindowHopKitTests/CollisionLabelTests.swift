@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// Same-app windows sharing a displayed title get their document's parent folder,
@@ -11,45 +12,51 @@ final class CollisionLabelTests: XCTestCase {
     }
 
     func testDistinctTitlesAreUnchanged() {
-        XCTAssertEqual(labels([
-            Entry(appId: "TextEdit", title: "A.txt", documentPath: "file:///Users/me/Work/A.txt"),
-            Entry(appId: "TextEdit", title: "B.txt", documentPath: "file:///Users/me/Home/B.txt"),
-        ]), ["A.txt", "B.txt"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "TextEdit", title: "A.txt", documentPath: "file:///Users/me/Work/A.txt"),
+                Entry(appId: "TextEdit", title: "B.txt", documentPath: "file:///Users/me/Home/B.txt"),
+            ]), ["A.txt", "B.txt"])
     }
 
     func testCollisionSeparatedByFolderGetsTheFolderName() {
-        XCTAssertEqual(labels([
-            Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Work/Notes.txt"),
-            Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Personal/Notes.txt"),
-        ]), ["Notes.txt — Work", "Notes.txt — Personal"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Work/Notes.txt"),
+                Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Personal/Notes.txt"),
+            ]), ["Notes.txt — Work", "Notes.txt — Personal"])
     }
 
     func testSameFolderAddsNothing() {
-        XCTAssertEqual(labels([
-            Entry(appId: "Preview", title: "Scan", documentPath: "file:///Users/me/Docs/Scan.pdf"),
-            Entry(appId: "Preview", title: "Scan", documentPath: "file:///Users/me/Docs/Scan.png"),
-        ]), ["Scan", "Scan"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "Preview", title: "Scan", documentPath: "file:///Users/me/Docs/Scan.pdf"),
+                Entry(appId: "Preview", title: "Scan", documentPath: "file:///Users/me/Docs/Scan.png"),
+            ]), ["Scan", "Scan"])
     }
 
     func testMissingDocumentsInventNothing() {
-        XCTAssertEqual(labels([
-            Entry(appId: "TextEdit", title: "Untitled", documentPath: nil),
-            Entry(appId: "TextEdit", title: "Untitled", documentPath: nil),
-        ]), ["Untitled", "Untitled"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "TextEdit", title: "Untitled", documentPath: nil),
+                Entry(appId: "TextEdit", title: "Untitled", documentPath: nil),
+            ]), ["Untitled", "Untitled"])
     }
 
     func testOnlyTheEntryWithADocumentIsQualified() {
-        XCTAssertEqual(labels([
-            Entry(appId: "Editor", title: "Draft", documentPath: "file:///Users/me/Blog/Draft"),
-            Entry(appId: "Editor", title: "Draft", documentPath: nil),
-        ]), ["Draft — Blog", "Draft"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "Editor", title: "Draft", documentPath: "file:///Users/me/Blog/Draft"),
+                Entry(appId: "Editor", title: "Draft", documentPath: nil),
+            ]), ["Draft — Blog", "Draft"])
     }
 
     func testSameTitleInDifferentAppsIsNotACollision() {
-        XCTAssertEqual(labels([
-            Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Work/Notes.txt"),
-            Entry(appId: "BBEdit", title: "Notes.txt", documentPath: "file:///Users/me/Home/Notes.txt"),
-        ]), ["Notes.txt", "Notes.txt"])
+        XCTAssertEqual(
+            labels([
+                Entry(appId: "TextEdit", title: "Notes.txt", documentPath: "file:///Users/me/Work/Notes.txt"),
+                Entry(appId: "BBEdit", title: "Notes.txt", documentPath: "file:///Users/me/Home/Notes.txt"),
+            ]), ["Notes.txt", "Notes.txt"])
     }
 
     func testLabelsDependOnMetadataNotPosition() {

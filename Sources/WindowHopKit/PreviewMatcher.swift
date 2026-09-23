@@ -92,20 +92,24 @@ public enum PreviewMatcher {
         var assigned: [AnyHashable: Int] = [:]
         var openRequests = Set(requests.indices)
         // helper windows too small to capture are not real candidates
-        var openCandidates = Set(candidates.indices.filter {
-            candidates[$0].frame.width > 1 && candidates[$0].frame.height > 1
-        })
+        var openCandidates = Set(
+            candidates.indices.filter {
+                candidates[$0].frame.width > 1 && candidates[$0].frame.height > 1
+            })
         // Resolving the certain pairs frees candidates, which can turn a
         // previously ambiguous request into a certain one; repeat until settled.
         while !openRequests.isEmpty, !openCandidates.isEmpty {
             var round: [(request: Int, candidate: Int)] = []
             for requestIndex in openRequests.sorted() {
-                guard let candidateIndex = clearWinner(
+                guard
+                    let candidateIndex = clearWinner(
                         among: openCandidates,
                         scoredBy: { score(requests[requestIndex], candidates[$0]) }),
-                      clearWinner(among: openRequests,
-                                  scoredBy: { score(requests[$0], candidates[candidateIndex]) })
-                        == requestIndex else { continue }
+                    clearWinner(
+                        among: openRequests,
+                        scoredBy: { score(requests[$0], candidates[candidateIndex]) })
+                        == requestIndex
+                else { continue }
                 round.append((requestIndex, candidateIndex))
             }
             if round.isEmpty { break }
@@ -120,8 +124,10 @@ public enum PreviewMatcher {
 
     /// The single best element, or nil when nothing scores or the best two are
     /// indistinguishable.
-    private static func clearWinner(among indices: Set<Int>,
-                                    scoredBy score: (Int) -> Score?) -> Int? {
+    private static func clearWinner(
+        among indices: Set<Int>,
+        scoredBy score: (Int) -> Score?
+    ) -> Int? {
         // sorted by index first, so equal scores always resolve the same way
         let scored = indices.sorted().compactMap { index in score(index).map { (index, $0) } }
         guard let best = scored.min(by: { $0.1 < $1.1 }) else { return nil }
@@ -201,7 +207,8 @@ public enum PreviewMatcher {
         let head = elided[elided.startIndex..<ellipsis.lowerBound]
         let tail = elided[ellipsis.upperBound...]
         guard head.count + tail.count >= minimumElidedEvidence,
-              full.hasPrefix(head) else { return false }
+            full.hasPrefix(head)
+        else { return false }
         return tail.isEmpty || full.dropFirst(head.count).contains(tail)
     }
 }

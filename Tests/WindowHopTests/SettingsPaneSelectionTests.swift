@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 
 /// The app menu's About item opens Settings › About, WindowHop's one About
@@ -36,13 +37,16 @@ final class SettingsPaneSelectionTests: XCTestCase {
     }
 
     private func makeController() -> SettingsWindowController {
-        SettingsWindowController(dependencies: isolated.settingsDependencies,
-                                 registerOwnWindow: { _ in },
-                                 frameAutosaveName: autosaveName)
+        SettingsWindowController(
+            dependencies: isolated.settingsDependencies,
+            registerOwnWindow: { _ in },
+            frameAutosaveName: autosaveName)
     }
 
-    private func prepare(_ controller: SettingsWindowController,
-                         selecting pane: SettingsPane?) throws -> SettingsTabViewController {
+    private func prepare(
+        _ controller: SettingsWindowController,
+        selecting pane: SettingsPane?
+    ) throws -> SettingsTabViewController {
         let window = controller.preparedWindow(selecting: pane)
         windows.append(window)
         return try XCTUnwrap(window.contentViewController as? SettingsTabViewController)

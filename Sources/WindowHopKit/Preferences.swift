@@ -236,22 +236,25 @@ public final class Preferences {
 
     public var expandedPreviewDelay: ExpandedPreviewDelay {
         didSet {
-            defaults.set(expandedPreviewDelay.rawValue,
-                         forKey: Key.expandedPreviewDelay.rawValue)
+            defaults.set(
+                expandedPreviewDelay.rawValue,
+                forKey: Key.expandedPreviewDelay.rawValue)
         }
     }
 
     public var switcherRevealDelay: SwitcherRevealDelay {
         didSet {
-            defaults.set(switcherRevealDelay.rawValue,
-                         forKey: Key.switcherRevealDelay.rawValue)
+            defaults.set(
+                switcherRevealDelay.rawValue,
+                forKey: Key.switcherRevealDelay.rawValue)
         }
     }
 
     public var switcherDisplayPlacement: SwitcherDisplayPlacement {
         didSet {
-            defaults.set(switcherDisplayPlacement.rawValue,
-                         forKey: Key.switcherDisplayPlacement.rawValue)
+            defaults.set(
+                switcherDisplayPlacement.rawValue,
+                forKey: Key.switcherDisplayPlacement.rawValue)
         }
     }
 
@@ -280,24 +283,27 @@ public final class Preferences {
 
     public var includeMinimizedWindows: Bool {
         didSet {
-            defaults.set(includeMinimizedWindows,
-                         forKey: Key.includeMinimizedWindows.rawValue)
+            defaults.set(
+                includeMinimizedWindows,
+                forKey: Key.includeMinimizedWindows.rawValue)
             notifyWindowFiltersChanged()
         }
     }
 
     public var includeHiddenApplicationWindows: Bool {
         didSet {
-            defaults.set(includeHiddenApplicationWindows,
-                         forKey: Key.includeHiddenApplicationWindows.rawValue)
+            defaults.set(
+                includeHiddenApplicationWindows,
+                forKey: Key.includeHiddenApplicationWindows.rawValue)
             notifyWindowFiltersChanged()
         }
     }
 
     public var includePictureInPictureWindows: Bool {
         didSet {
-            defaults.set(includePictureInPictureWindows,
-                         forKey: Key.includePictureInPictureWindows.rawValue)
+            defaults.set(
+                includePictureInPictureWindows,
+                forKey: Key.includePictureInPictureWindows.rawValue)
             notifyWindowFiltersChanged()
         }
     }
@@ -316,8 +322,9 @@ public final class Preferences {
 
     public var automaticUpdateChecks: Bool {
         didSet {
-            defaults.set(automaticUpdateChecks,
-                         forKey: Key.automaticUpdateChecks.rawValue)
+            defaults.set(
+                automaticUpdateChecks,
+                forKey: Key.automaticUpdateChecks.rawValue)
         }
     }
 
@@ -340,7 +347,8 @@ public final class Preferences {
             defaults, .switcherEnabled, fallback: Defaults.switcherEnabled)
         launchAtLogin = Self.bool(
             defaults, .launchAtLogin, fallback: Defaults.launchAtLogin)
-        let loadedShortcut = ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "")
+        let loadedShortcut =
+            ShortcutSpec(rawValue: Self.string(defaults, .shortcut) ?? "")
             ?? Defaults.shortcut
         shortcut = loadedShortcut
         let resolvedPersistentShortcut = Self.persistentShortcut(
@@ -356,26 +364,31 @@ public final class Preferences {
             // later launches, as the picker does; observers do not run in init.
             defaults.set("", forKey: Key.persistentShortcut.rawValue)
         }
-        appearanceMode = AppearanceMode(
-            rawValue: Self.string(defaults, .appearanceMode) ?? "")
+        appearanceMode =
+            AppearanceMode(
+                rawValue: Self.string(defaults, .appearanceMode) ?? "")
             ?? Defaults.appearanceMode
         let restoredExpandedPreviewDelay = Self.expandedPreviewDelay(from: defaults)
         expandedPreviewDelay = restoredExpandedPreviewDelay
-        defaults.set(restoredExpandedPreviewDelay.rawValue,
-                     forKey: Key.expandedPreviewDelay.rawValue)
-        switcherRevealDelay = SwitcherRevealDelay(
-            rawValue: Self.string(defaults, .switcherRevealDelay) ?? "")
+        defaults.set(
+            restoredExpandedPreviewDelay.rawValue,
+            forKey: Key.expandedPreviewDelay.rawValue)
+        switcherRevealDelay =
+            SwitcherRevealDelay(
+                rawValue: Self.string(defaults, .switcherRevealDelay) ?? "")
             ?? Defaults.switcherRevealDelay
-        switcherDisplayPlacement = SwitcherDisplayPlacement(
-            rawValue: Self.string(defaults, .switcherDisplayPlacement) ?? "")
+        switcherDisplayPlacement =
+            SwitcherDisplayPlacement(
+                rawValue: Self.string(defaults, .switcherDisplayPlacement) ?? "")
             ?? Defaults.switcherDisplayPlacement
         switcherDisplayID = Self.optionalString(defaults, .switcherDisplayID)
         includeOtherSpaces = Self.bool(
             defaults, .includeOtherSpaces, fallback: Defaults.includeOtherSpaces)
         includeOtherDisplays = Self.bool(
             defaults, .includeOtherDisplays, fallback: Defaults.includeOtherDisplays)
-        includeMinimizedWindows = Self.bool(defaults, .includeMinimizedWindows,
-                                            fallback: Defaults.includeMinimizedWindows)
+        includeMinimizedWindows = Self.bool(
+            defaults, .includeMinimizedWindows,
+            fallback: Defaults.includeMinimizedWindows)
         includeHiddenApplicationWindows = Self.bool(
             defaults, .includeHiddenApplicationWindows,
             fallback: Defaults.includeHiddenApplicationWindows)
@@ -420,7 +433,7 @@ public final class Preferences {
     /// choice is never changed.
     private static func migrateLaunchAtLoginDefault(in defaults: UserDefaults) {
         guard defaults.object(forKey: Key.launchAtLogin.rawValue) == nil,
-              defaults.object(forKey: Key.firstLaunchCompleted.rawValue) as? Bool == true
+            defaults.object(forKey: Key.firstLaunchCompleted.rawValue) as? Bool == true
         else { return }
         defaults.set(true, forKey: Key.launchAtLogin.rawValue)
     }
@@ -449,7 +462,8 @@ public final class Preferences {
             }
         }
         if let raw = string(defaults, .expandedPreviewDelay),
-           let delay = ExpandedPreviewDelay(rawValue: raw) {
+            let delay = ExpandedPreviewDelay(rawValue: raw)
+        {
             return delay
         }
         return Defaults.expandedPreviewDelay

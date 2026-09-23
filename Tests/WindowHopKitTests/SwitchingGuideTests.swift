@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import WindowHopKit
 
 /// The switching guide is the first thing a new user reads after granting
@@ -8,9 +9,11 @@ import XCTest
 final class SwitchingGuideTests: XCTestCase {
     private static let keyK: Int64 = 40
 
-    private func guide(_ spec: ShortcutSpec = .commandTab,
-                       persistent: PersistentShortcut? = .optionTab,
-                       enabled: Bool = true) -> SwitchingGuide {
+    private func guide(
+        _ spec: ShortcutSpec = .commandTab,
+        persistent: PersistentShortcut? = .optionTab,
+        enabled: Bool = true
+    ) -> SwitchingGuide {
         SwitchingGuide(switcherShortcut: spec, persistentShortcut: persistent, enabled: enabled)
     }
 
@@ -41,8 +44,9 @@ final class SwitchingGuideTests: XCTestCase {
         let custom = PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate])
         let persistent = guide(persistent: custom).firstSteps[1]
         XCTAssertTrue(persistent.display.hasPrefix("Press ⌃⌥K to open WindowHop"), persistent.display)
-        XCTAssertTrue(persistent.spoken.hasPrefix("Press Control Option K to open WindowHop"),
-                      persistent.spoken)
+        XCTAssertTrue(
+            persistent.spoken.hasPrefix("Press Control Option K to open WindowHop"),
+            persistent.spoken)
     }
 
     func testUnassignedPersistentShortcutPointsToShortcuts() {
@@ -55,8 +59,9 @@ final class SwitchingGuideTests: XCTestCase {
         // whatever WindowHop's own shortcut is, the native switcher is ⌘⇥
         let steps = guide(.optionTab, enabled: false).firstSteps
         XCTAssertEqual(steps.map(\.display), ["WindowHop is off. ⌘⇥ opens the native app switcher."])
-        XCTAssertEqual(steps.map(\.spoken),
-                       ["WindowHop is off. Command Tab opens the native app switcher."])
+        XCTAssertEqual(
+            steps.map(\.spoken),
+            ["WindowHop is off. Command Tab opens the native app switcher."])
     }
 
     func testKeyReferenceDescribesTheShortcutsEvenWhenDisabled() {
@@ -74,8 +79,10 @@ final class SwitchingGuideTests: XCTestCase {
         let formatterGlyphs = Set(
             ([.maskControl, .maskAlternate, .maskShift, .maskCommand] as [CGEventFlags])
                 .map(ShortcutFormatter.modifierSymbols)
-            + [KeyCode.tab, KeyCode.returnKey, KeyCode.escape, KeyCode.delete, KeyCode.forwardDelete,
-               KeyCode.leftArrow, KeyCode.rightArrow, KeyCode.upArrow, KeyCode.downArrow]
+                + [
+                    KeyCode.tab, KeyCode.returnKey, KeyCode.escape, KeyCode.delete, KeyCode.forwardDelete,
+                    KeyCode.leftArrow, KeyCode.rightArrow, KeyCode.upArrow, KeyCode.downArrow,
+                ]
                 .map(ShortcutFormatter.keySymbol))
         func glyphs(in text: String) -> Set<String> {
             Set(text.map(String.init)).intersection(formatterGlyphs)
@@ -84,14 +91,19 @@ final class SwitchingGuideTests: XCTestCase {
         for spec in ShortcutSpec.allCases {
             for persistent in [PersistentShortcut.optionTab, custom, nil] {
                 let reference = guide(spec, persistent: persistent).keyReference
-                let expected = [ShortcutFormatter.modifierSymbols(spec.holdModifier),
-                                ShortcutFormatter.keySymbol(for: KeyCode.tab),
-                                ShortcutFormatter.modifierSymbols(.maskShift),
-                                ShortcutFormatter.keySymbol(for: KeyCode.delete)]
-                    + (persistent == nil ? [] : [
-                        ShortcutFormatter.keySymbol(for: KeyCode.returnKey),
-                        ShortcutFormatter.keySymbol(for: KeyCode.escape),
-                    ] + persistent!.displayString.map(String.init))
+                let expected =
+                    [
+                        ShortcutFormatter.modifierSymbols(spec.holdModifier),
+                        ShortcutFormatter.keySymbol(for: KeyCode.tab),
+                        ShortcutFormatter.modifierSymbols(.maskShift),
+                        ShortcutFormatter.keySymbol(for: KeyCode.delete),
+                    ]
+                    + (persistent == nil
+                        ? []
+                        : [
+                            ShortcutFormatter.keySymbol(for: KeyCode.returnKey),
+                            ShortcutFormatter.keySymbol(for: KeyCode.escape),
+                        ] + persistent!.displayString.map(String.init))
                 let text = reference.map(\.display).joined(separator: " ")
                 XCTAssertEqual(glyphs(in: text), glyphs(in: expected.joined()), text)
                 // the spoken form names keys in words only

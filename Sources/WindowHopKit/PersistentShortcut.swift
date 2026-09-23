@@ -53,16 +53,20 @@ public struct PersistentShortcut: Equatable, Sendable {
                 let glyphs = ValidationError.qualifyingModifiers
                     .map(ShortcutFormatter.modifierSymbols)
                     .joined(separator: ", ")
-                return String(localized: "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
+                return String(
+                    localized: "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
             case .conflictsWithSwitcherShortcut:
                 return String(localized: "This is already the switcher shortcut. Choose a different combination.")
-            case let .reservedByMacOS(chord):
+            case .reservedByMacOS(let chord):
                 return String(localized: "\(chord) is reserved by macOS. Choose a different combination.")
-            case let .standardApplicationCommand(chord, command):
-                return String(localized: """
-                    \(chord) is the \(command) command in apps. \
-                    Choose a combination that isn't a standard app command.
-                    """, comment: "The first placeholder is a shortcut such as ⌘Q; the second is a command name such as Quit.")
+            case .standardApplicationCommand(let chord, let command):
+                return String(
+                    localized: """
+                        \(chord) is the \(command) command in apps. \
+                        Choose a combination that isn't a standard app command.
+                        """,
+                    comment:
+                        "The first placeholder is a shortcut such as ⌘Q; the second is a command name such as Quit.")
             }
         }
     }
@@ -74,7 +78,8 @@ public struct PersistentShortcut: Equatable, Sendable {
             return .needsModifier
         }
         if keyCode == KeyCode.tab,
-           nonShiftModifiers == switcherShortcut.holdModifier {
+            nonShiftModifiers == switcherShortcut.holdModifier
+        {
             return .conflictsWithSwitcherShortcut
         }
         return nil

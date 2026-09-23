@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -20,10 +21,11 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
         @ObservedObject var model: Model
 
         var body: some View {
-            ShortcutRecorderField(shortcut: $model.shortcut,
-                                  validationMessage: $model.validationMessage,
-                                  switcherShortcut: .commandTab,
-                                  systemShortcuts: { [] })
+            ShortcutRecorderField(
+                shortcut: $model.shortcut,
+                validationMessage: $model.validationMessage,
+                switcherShortcut: .commandTab,
+                systemShortcuts: { [] })
         }
     }
 
@@ -39,8 +41,9 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
         model = Model()
         hosting = NSHostingView(rootView: Host(model: model))
         hosting.frame = NSRect(x: 0, y: 0, width: 320, height: 40)
-        window = NSWindow(contentRect: hosting.frame, styleMask: [.titled, .closable],
-                          backing: .buffered, defer: false)
+        window = NSWindow(
+            contentRect: hosting.frame, styleMask: [.titled, .closable],
+            backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = hosting
         flushUpdates()
@@ -68,12 +71,14 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
     }
 
     private func sendKey(_ keyCode: Int64, _ modifiers: NSEvent.ModifierFlags = []) throws {
-        NSApplication.shared.sendEvent(try XCTUnwrap(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: modifiers,
-            timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber, context: nil,
-            characters: "", charactersIgnoringModifiers: "",
-            isARepeat: false, keyCode: UInt16(keyCode))))
+        NSApplication.shared.sendEvent(
+            try XCTUnwrap(
+                NSEvent.keyEvent(
+                    with: .keyDown, location: .zero, modifierFlags: modifiers,
+                    timestamp: ProcessInfo.processInfo.systemUptime,
+                    windowNumber: window.windowNumber, context: nil,
+                    characters: "", charactersIgnoringModifiers: "",
+                    isARepeat: false, keyCode: UInt16(keyCode))))
         flushUpdates()
     }
 

@@ -65,7 +65,6 @@ public final class PreviewProvider {
         let frame: CGRect?
     }
 
-
     /// Owned by `AppDelegate`; tests and the debug harness build their own.
     public init(preferences: Preferences) {
         self.preferences = preferences
@@ -114,8 +113,10 @@ public final class PreviewProvider {
     /// Previews mode is active and Screen Recording is granted. The caller
     /// passes the status it read when the session opened; the provider keeps
     /// it for the whole session.
-    public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat,
-                             permissionStatus: ScreenRecordingPermission.Status) {
+    public func beginSession(
+        items: [SwitcherItem], targetSize: CGSize, scale: CGFloat,
+        permissionStatus: ScreenRecordingPermission.Status
+    ) {
         guard preferences.appearanceMode == .windowPreviews else { return }
         guard permissionStatus.isAuthorized else {
             activeSessionGeneration = nil
@@ -131,8 +132,9 @@ public final class PreviewProvider {
         guard !requests.isEmpty else { return }
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
-            await self?.capture(requests, generation: sessionGeneration,
-                                pixelTarget: pixelTarget)
+            await self?.capture(
+                requests, generation: sessionGeneration,
+                pixelTarget: pixelTarget)
         }
     }
 
@@ -142,15 +144,17 @@ public final class PreviewProvider {
     /// outside an active Window Previews session.
     public func extendSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
         guard preferences.appearanceMode == .windowPreviews,
-              sessionPermission?.isAuthorized == true,
-              let sessionGeneration = activeSessionGeneration else { return }
+            sessionPermission?.isAuthorized == true,
+            let sessionGeneration = activeSessionGeneration
+        else { return }
         let requests = items.compactMap(makeCaptureRequest)
         guard !requests.isEmpty else { return }
         ledger.extendSession(ids: requests.map { $0.id })
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
-            await self?.capture(requests, generation: sessionGeneration,
-                                pixelTarget: pixelTarget)
+            await self?.capture(
+                requests, generation: sessionGeneration,
+                pixelTarget: pixelTarget)
         }
     }
 
@@ -169,17 +173,21 @@ public final class PreviewProvider {
     /// Requests a larger snapshot for the dwell presentation. It remains fully
     /// session-scoped and only delivers when both the session and target
     /// generation are still current.
-    public func requestExpandedPreview(item: SwitcherItem,
-                                       targetSize: CGSize,
-                                       scale: CGFloat) {
+    public func requestExpandedPreview(
+        item: SwitcherItem,
+        targetSize: CGSize,
+        scale: CGFloat
+    ) {
         guard preferences.appearanceMode.supportsExpandedPreview,
-              sessionPermission?.isAuthorized == true,
-              let sessionGeneration = activeSessionGeneration,
-              let request = makeCaptureRequest(item) else { return }
+            sessionPermission?.isAuthorized == true,
+            let sessionGeneration = activeSessionGeneration,
+            let request = makeCaptureRequest(item)
+        else { return }
         expandedGeneration += 1
         let requestGeneration = expandedGeneration
-        let pixelTarget = CGSize(width: targetSize.width * scale,
-                                 height: targetSize.height * scale)
+        let pixelTarget = CGSize(
+            width: targetSize.width * scale,
+            height: targetSize.height * scale)
         Task { [weak self] in
             await self?.captureExpanded(
                 request,
@@ -209,17 +217,23 @@ public final class PreviewProvider {
     /// and one delayed retry per window per session for failures that can
     /// pass on their own (#91). Once the session ends, captures already
     /// running finish into the cache, but no further capture work starts.
-    private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
-                         pixelTarget: CGSize) async {
-        let requestsByID = Dictionary(requests.map { ($0.id, $0) },
-                                      uniquingKeysWith: { first, _ in first })
+    private func capture(
+        _ requests: [CaptureRequest], generation sessionGeneration: Int,
+        pixelTarget: CGSize
+    ) async {
+        let requestsByID = Dictionary(
+            requests.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first })
         await TileCaptureFlow.run(
             ids: requests.map(\.id),
             budget: captureBudget,
             generation: sessionGeneration,
             lookup: { ids -> [AnyHashable: SCWindow]? in
-                guard let content = try? await SCShareableContent
-                    .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return nil }
+                guard
+                    let content =
+                        try? await SCShareableContent
+                        .excludingDesktopWindows(false, onScreenWindowsOnly: false)
+                else { return nil }
                 let assignments = PreviewMatcher.assign(
                     requests: ids.compactMap { requestsByID[$0] }.map(Self.matchRequest),
                     candidates: Self.matchCandidates(in: content.windows))
@@ -241,8 +255,10 @@ public final class PreviewProvider {
             })
     }
 
-    private func storeTileSnapshot(_ image: NSImage, for id: AnyHashable,
-                                   generation sessionGeneration: Int) {
+    private func storeTileSnapshot(
+        _ image: NSImage, for id: AnyHashable,
+        generation sessionGeneration: Int
+    ) {
         // the ledger is the single authority on what a late result may do:
         // nothing for vanished windows, cache-only for ended sessions
         guard ledger.shouldStore(id) else { return }
@@ -265,7 +281,8 @@ public final class PreviewProvider {
     /// for the whole batch first: a revoked grant blocks the panel instead of
     /// spending a retry.
     func claimRetries(_ ids: [AnyHashable], generation sessionGeneration: Int)
-        -> [AnyHashable] {
+        -> [AnyHashable]
+    {
         let status = readPermissionStatus()
         guard status.isAuthorized else {
             sessionPermission = status
@@ -279,15 +296,19 @@ public final class PreviewProvider {
         return claimed
     }
 
-    private func captureExpanded(_ request: CaptureRequest,
-                                 sessionGeneration: Int,
-                                 requestGeneration: Int,
-                                 pixelTarget: CGSize) async {
+    private func captureExpanded(
+        _ request: CaptureRequest,
+        sessionGeneration: Int,
+        requestGeneration: Int,
+        pixelTarget: CGSize
+    ) async {
         let id = request.id
         await ExpandedCaptureFlow.run(
             lookup: { () -> SCWindow? in
-                guard let content = try? await SCShareableContent
-                    .excludingDesktopWindows(false, onScreenWindowsOnly: false),
+                guard
+                    let content =
+                        try? await SCShareableContent
+                        .excludingDesktopWindows(false, onScreenWindowsOnly: false),
                     let candidateIndex = PreviewMatcher.assign(
                         requests: [Self.matchRequest(request)],
                         candidates: Self.matchCandidates(in: content.windows))[request.id]
@@ -295,21 +316,27 @@ public final class PreviewProvider {
                 return content.windows[candidateIndex]
             },
             isCurrent: {
-                self.isExpandedRequestCurrent(id,
-                                              sessionGeneration: sessionGeneration,
-                                              requestGeneration: requestGeneration)
+                self.isExpandedRequestCurrent(
+                    id,
+                    sessionGeneration: sessionGeneration,
+                    requestGeneration: requestGeneration)
             },
             capture: { scWindow in
                 // waiting for a slot can outlast the request, so check again
                 // before spending the capture
-                guard await self.captureBudget.acquire(generation: sessionGeneration,
-                                                       jumpingQueue: true) else {
+                guard
+                    await self.captureBudget.acquire(
+                        generation: sessionGeneration,
+                        jumpingQueue: true)
+                else {
                     return nil
                 }
                 defer { self.captureBudget.release() }
-                guard self.isExpandedRequestCurrent(id,
-                                                    sessionGeneration: sessionGeneration,
-                                                    requestGeneration: requestGeneration),
+                guard
+                    self.isExpandedRequestCurrent(
+                        id,
+                        sessionGeneration: sessionGeneration,
+                        requestGeneration: requestGeneration),
                     case .captured(let image) = await self.captureImage(
                         scWindow, pixelTarget: pixelTarget)
                 else { return nil }
@@ -322,21 +349,26 @@ public final class PreviewProvider {
 
     /// True while this expanded request may still spend capture work and
     /// deliver: same session, same request, and a target the ledger still owns.
-    private func isExpandedRequestCurrent(_ id: AnyHashable,
-                                          sessionGeneration: Int,
-                                          requestGeneration: Int) -> Bool {
+    private func isExpandedRequestCurrent(
+        _ id: AnyHashable,
+        sessionGeneration: Int,
+        requestGeneration: Int
+    ) -> Bool {
         activeSessionGeneration == sessionGeneration
             && expandedGeneration == requestGeneration
             && ledger.shouldDeliver(id, capturedIn: sessionGeneration)
     }
 
-    private func captureImage(_ scWindow: SCWindow,
-                              pixelTarget: CGSize) async -> TileCaptureResult<NSImage> {
+    private func captureImage(
+        _ scWindow: SCWindow,
+        pixelTarget: CGSize
+    ) async -> TileCaptureResult<NSImage> {
         let windowSize = scWindow.frame.size
         guard windowSize.width > 1, windowSize.height > 1 else { return .failed(.invalidTarget) }
         let configuration = SCStreamConfiguration()
-        let fit = min(pixelTarget.width / windowSize.width,
-                      pixelTarget.height / windowSize.height, 2)
+        let fit = min(
+            pixelTarget.width / windowSize.width,
+            pixelTarget.height / windowSize.height, 2)
         configuration.width = max(1, Int(windowSize.width * fit))
         configuration.height = max(1, Int(windowSize.height * fit))
         configuration.showsCursor = false
@@ -353,9 +385,12 @@ public final class PreviewProvider {
                 "tile capture failed: \(String(describing: failure), privacy: .public) (\(code, privacy: .public))")
             return .failed(failure)
         }
-        return .captured(NSImage(cgImage: cgImage,
-                                 size: NSSize(width: CGFloat(cgImage.width) / 2,
-                                              height: CGFloat(cgImage.height) / 2)))
+        return .captured(
+            NSImage(
+                cgImage: cgImage,
+                size: NSSize(
+                    width: CGFloat(cgImage.width) / 2,
+                    height: CGFloat(cgImage.height) / 2)))
     }
 
     /// Keeps the capture error's meaning instead of discarding it. Only errors
@@ -370,7 +405,7 @@ public final class PreviewProvider {
         case .userDeclined:
             return .permissionDenied
         case .internalError, .failedApplicationConnectionInterrupted,
-             .failedApplicationConnectionInvalid, .noWindowList, .systemStoppedStream:
+            .failedApplicationConnectionInvalid, .noWindowList, .systemStoppedStream:
             return .captureFailed(transient: true)
         default:
             return .captureFailed(transient: false)
@@ -381,17 +416,20 @@ public final class PreviewProvider {
         guard let window = item.window else { return nil }
         if let native = window.nativeWindow, let primary = NSScreen.screens.first {
             let frame = native.frame
-            return CaptureRequest(id: item.id,
-                                  pid: ProcessInfo.processInfo.processIdentifier,
-                                  title: item.title,
-                                  frame: CGRect(x: frame.origin.x,
-                                                y: primary.frame.maxY - frame.maxY,
-                                                width: frame.width,
-                                                height: frame.height))
+            return CaptureRequest(
+                id: item.id,
+                pid: ProcessInfo.processInfo.processIdentifier,
+                title: item.title,
+                frame: CGRect(
+                    x: frame.origin.x,
+                    y: primary.frame.maxY - frame.maxY,
+                    width: frame.width,
+                    height: frame.height))
         }
         guard let app = window.app else { return nil }
-        return CaptureRequest(id: item.id, pid: app.pid,
-                              title: item.title, frame: window.frame)
+        return CaptureRequest(
+            id: item.id, pid: app.pid,
+            title: item.title, frame: window.frame)
     }
 
     /// Reports one batch of failed ids. A failure is the only event that can
@@ -400,15 +438,18 @@ public final class PreviewProvider {
     /// of marking cards unavailable one by one.
     func markUnavailable(_ ids: [AnyHashable], generation sessionGeneration: Int) {
         guard activeSessionGeneration == sessionGeneration,
-              sessionPermission?.isAuthorized == true else { return }
+            sessionPermission?.isAuthorized == true
+        else { return }
         let status = readPermissionStatus()
         guard status.isAuthorized else {
             sessionPermission = status
             onPermissionRequired?(status)
             return
         }
-        for id in ids where cache[id] == nil
-            && ledger.shouldDeliver(id, capturedIn: sessionGeneration) {
+        for id in ids
+        where cache[id] == nil
+            && ledger.shouldDeliver(id, capturedIn: sessionGeneration)
+        {
             onPreviewUnavailable?(id)
         }
     }
@@ -428,18 +469,24 @@ public final class PreviewProvider {
     /// Reports the pairing the next session would use, for the `--dump-previews`
     /// harness flag: no capture is requested, so no image is produced, cached, or
     /// written anywhere. Window titles are printed for the person running it.
-    public func dumpMatching(items: [SwitcherItem],
-                             completion: @escaping ([String]) -> Void) {
+    public func dumpMatching(
+        items: [SwitcherItem],
+        completion: @escaping ([String]) -> Void
+    ) {
         let requests = items.compactMap(makeCaptureRequest)
         Task {
-            guard let content = try? await SCShareableContent
-                .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
+            guard
+                let content =
+                    try? await SCShareableContent
+                    .excludingDesktopWindows(false, onScreenWindowsOnly: false)
+            else {
                 completion(["dump-previews: no shareable content"])
                 return
             }
             let candidates = Self.matchCandidates(in: content.windows)
-            let assignments = PreviewMatcher.assign(requests: requests.map(Self.matchRequest),
-                                                    candidates: candidates)
+            let assignments = PreviewMatcher.assign(
+                requests: requests.map(Self.matchRequest),
+                candidates: candidates)
             let lines = requests.map { request -> String in
                 guard let index = assignments[request.id] else {
                     return "· \(request.title) [pid \(request.pid)] → no unambiguous window (placeholder)"
@@ -457,15 +504,17 @@ public final class PreviewProvider {
     /// unit-tested): a unique, unambiguous assignment, never a guess.
     private static func matchCandidates(in windows: [SCWindow]) -> [PreviewMatcher.Candidate] {
         windows.enumerated().map { index, window in
-            PreviewMatcher.Candidate(index: index,
-                                     pid: window.owningApplication?.processID ?? -1,
-                                     title: window.title ?? "",
-                                     frame: window.frame)
+            PreviewMatcher.Candidate(
+                index: index,
+                pid: window.owningApplication?.processID ?? -1,
+                title: window.title ?? "",
+                frame: window.frame)
         }
     }
 
     private static func matchRequest(_ request: CaptureRequest) -> PreviewMatcher.Request {
-        PreviewMatcher.Request(id: request.id, pid: request.pid,
-                               title: request.title, frame: request.frame)
+        PreviewMatcher.Request(
+            id: request.id, pid: request.pid,
+            title: request.title, frame: request.frame)
     }
 }

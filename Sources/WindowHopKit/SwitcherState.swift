@@ -82,7 +82,8 @@ public struct SwitcherState: Sendable {
 
     public mutating func step(backward: Bool) -> Command {
         guard phase == .held || phase == .sticky, itemCount > 0 else { return .none }
-        selectedIndex = backward
+        selectedIndex =
+            backward
             ? (selectedIndex - 1 + itemCount) % itemCount
             : (selectedIndex + 1) % itemCount
         return .select(index: selectedIndex)
@@ -130,7 +131,8 @@ public struct SwitcherState: Sendable {
 
     private mutating func moveSelection(to index: Int) -> Command {
         guard phase == .held || phase == .sticky,
-              index >= 0, index < itemCount else { return .none }
+            index >= 0, index < itemCount
+        else { return .none }
         selectedIndex = index
         return .select(index: index)
     }
@@ -144,7 +146,8 @@ public struct SwitcherState: Sendable {
     /// a cancelled confirmation restores exactly the previous state.
     public mutating func closeRequested(index: Int) -> Command {
         guard phase == .held || phase == .sticky,
-              index >= 0, index < itemCount else { return .none }
+            index >= 0, index < itemCount
+        else { return .none }
         phase = .confirming
         return .requestClose(index: index)
     }

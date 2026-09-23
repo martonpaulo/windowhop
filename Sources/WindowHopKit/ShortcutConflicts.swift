@@ -50,10 +50,12 @@ public enum ShortcutConflicts {
     /// `MacOsShortcuts` (317a485b:src/ui/generic-components/CustomRecorderControlTestable.swift).
     public static let reservedByMacOS: [PersistentShortcut] = [
         PersistentShortcut(keyCode: KeyCode.escape, modifiers: [.maskCommand, .maskAlternate]),
-        PersistentShortcut(keyCode: KeyCode.escape,
-                           modifiers: [.maskCommand, .maskAlternate, .maskShift]),
-        PersistentShortcut(keyCode: KeyCode.escape,
-                           modifiers: [.maskCommand, .maskAlternate, .maskShift, .maskControl]),
+        PersistentShortcut(
+            keyCode: KeyCode.escape,
+            modifiers: [.maskCommand, .maskAlternate, .maskShift]),
+        PersistentShortcut(
+            keyCode: KeyCode.escape,
+            modifiers: [.maskCommand, .maskAlternate, .maskShift, .maskControl]),
     ]
 
     /// The standard command a chord would take over, if any. The key is named
@@ -62,7 +64,8 @@ public enum ShortcutConflicts {
     public static func standardCommand(
         for shortcut: PersistentShortcut, labels: KeyLabelSource = ShortcutFormatter.keyLabels
     ) -> StandardCommand? {
-        guard let character = ShortcutFormatter.printableCharacter(for: shortcut.keyCode, using: labels)
+        guard
+            let character = ShortcutFormatter.printableCharacter(for: shortcut.keyCode, using: labels)
                 ?? KeyCodeNames.printableName(for: shortcut.keyCode)
         else { return nil }
         let lowered = character.lowercased()
@@ -117,11 +120,15 @@ extension PersistentShortcut {
 
     /// Copy for the confirmation shown before taking over a macOS shortcut.
     public var systemShortcutConfirmation: (title: String, message: String) {
-        (String(localized: "\(displayString) is also a macOS shortcut",
+        (
+            String(
+                localized: "\(displayString) is also a macOS shortcut",
                 comment: "The placeholder is a shortcut such as ⌘Space."),
-         String(localized: """
-            While WindowHop is running, it takes over \(displayString) and macOS won't respond to it. \
-            You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.
-            """, comment: "The placeholder is a shortcut such as ⌘Space."))
+            String(
+                localized: """
+                    While WindowHop is running, it takes over \(displayString) and macOS won't respond to it. \
+                    You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.
+                    """, comment: "The placeholder is a shortcut such as ⌘Space.")
+        )
     }
 }

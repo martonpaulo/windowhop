@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -18,9 +19,10 @@ final class PreviewEvictionTests: XCTestCase {
         try await super.setUp()
         isolated = IsolatedPreferences()
         store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-                          styleMask: [.titled, .closable, .miniaturizable],
-                          backing: .buffered, defer: true)
+        window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered, defer: true)
         window.isReleasedWhenClosed = false
     }
 
@@ -37,8 +39,9 @@ final class PreviewEvictionTests: XCTestCase {
     private func seedPreviews() -> [AnyHashable] {
         let ids = store.windows.map { $0.stableId as AnyHashable }
         for id in ids {
-            previews.storeForTesting(NSImage(size: NSSize(width: 8, height: 8)),
-                                                   for: id)
+            previews.storeForTesting(
+                NSImage(size: NSSize(width: 8, height: 8)),
+                for: id)
         }
         seeded.append(contentsOf: ids)
         return ids
@@ -64,9 +67,10 @@ final class PreviewEvictionTests: XCTestCase {
         var allIds: [AnyHashable] = []
         for _ in 0..<5 {
             // Settings is recreated on each open, exactly like the real controller
-            let settings = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
-                                    styleMask: [.titled, .closable], backing: .buffered,
-                                    defer: true)
+            let settings = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
+                styleMask: [.titled, .closable], backing: .buffered,
+                defer: true)
             settings.isReleasedWhenClosed = false
             store.registerOwnWindow(settings)
             allIds.append(contentsOf: seedPreviews())
@@ -137,8 +141,9 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     private func item(_ id: String) -> SwitcherItem {
-        SwitcherItem(id: id, window: nil, title: "Window \(id)",
-                     appName: "TestApp", icon: nil, tabCount: nil)
+        SwitcherItem(
+            id: id, window: nil, title: "Window \(id)",
+            appName: "TestApp", icon: nil, tabCount: nil)
     }
 
     /// Hands a fresh image to `deliver` and returns only a weak reference.
@@ -170,8 +175,9 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testReleasedHiddenTilesDoNotPulse() throws {
-        try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
-                      "Reduce Motion is on, so no skeleton ever pulses")
+        try XCTSkipIf(
+            NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
+            "Reduce Motion is on, so no skeleton ever pulses")
         let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let hidden = try XCTUnwrap(panel.tileForTesting(at: 1))
@@ -211,8 +217,9 @@ final class PreviewViewReleaseTests: XCTestCase {
         let delivered = weakImage { panel.updatePreview(id: "a", image: $0) }
         let expanded = weakImage { panel.showExpandedPreview(id: "b", image: $0) }
         seeded.append("b")
-        previews.storeForTesting(NSImage(size: NSSize(width: 40, height: 30)),
-                                               for: "b")
+        previews.storeForTesting(
+            NSImage(size: NSSize(width: 40, height: 30)),
+            for: "b")
 
         drained {
             panel.hideExpandedPreview()

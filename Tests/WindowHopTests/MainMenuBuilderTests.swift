@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 
 /// The main menu for both activation policies: accessory mode keeps exactly
@@ -16,8 +17,9 @@ final class MainMenuBuilderTests: XCTestCase {
 
     private func entries(_ menu: NSMenu) -> [Entry] {
         menu.items.filter { !$0.isSeparatorItem }.map {
-            Entry(title: $0.title, action: $0.action.map(NSStringFromSelector), key: $0.keyEquivalent,
-                  modifiers: $0.keyEquivalent.isEmpty ? 0 : $0.keyEquivalentModifierMask.rawValue)
+            Entry(
+                title: $0.title, action: $0.action.map(NSStringFromSelector), key: $0.keyEquivalent,
+                modifiers: $0.keyEquivalent.isEmpty ? 0 : $0.keyEquivalentModifierMask.rawValue)
         }
     }
 
@@ -34,23 +36,29 @@ final class MainMenuBuilderTests: XCTestCase {
     func testAccessoryModeKeepsTheSettingsWindowCommands() throws {
         let built = MainMenuBuilder.make(isRegular: false)
         XCTAssertEqual(built.menu.items.compactMap { $0.submenu?.title }, ["WindowHop", "Edit", "Window"])
-        XCTAssertEqual(entries(try XCTUnwrap(submenu(built, "WindowHop"))), [
-            Entry(title: "About WindowHop", action: "openAboutFromMenu:", key: "", modifiers: 0),
-            Entry(title: "Settings…", action: "openSettingsFromMenu:", key: ",", modifiers: command),
-            Entry(title: "Quit WindowHop", action: "terminate:", key: "q", modifiers: command),
-        ])
-        XCTAssertEqual(entries(try XCTUnwrap(submenu(built, "Edit"))), [
-            Entry(title: "Undo", action: "undo:", key: "z", modifiers: command),
-            Entry(title: "Redo", action: "redo:", key: "Z", modifiers: command),
-            Entry(title: "Cut", action: "cut:", key: "x", modifiers: command),
-            Entry(title: "Copy", action: "copy:", key: "c", modifiers: command),
-            Entry(title: "Paste", action: "paste:", key: "v", modifiers: command),
-            Entry(title: "Select All", action: "selectAll:", key: "a", modifiers: command),
-        ])
-        XCTAssertEqual(entries(try XCTUnwrap(submenu(built, "Window"))), [
-            Entry(title: "Close", action: "performClose:", key: "w", modifiers: command),
-            Entry(title: "Minimize", action: "performMiniaturize:", key: "m", modifiers: command),
-        ])
+        XCTAssertEqual(
+            entries(try XCTUnwrap(submenu(built, "WindowHop"))),
+            [
+                Entry(title: "About WindowHop", action: "openAboutFromMenu:", key: "", modifiers: 0),
+                Entry(title: "Settings…", action: "openSettingsFromMenu:", key: ",", modifiers: command),
+                Entry(title: "Quit WindowHop", action: "terminate:", key: "q", modifiers: command),
+            ])
+        XCTAssertEqual(
+            entries(try XCTUnwrap(submenu(built, "Edit"))),
+            [
+                Entry(title: "Undo", action: "undo:", key: "z", modifiers: command),
+                Entry(title: "Redo", action: "redo:", key: "Z", modifiers: command),
+                Entry(title: "Cut", action: "cut:", key: "x", modifiers: command),
+                Entry(title: "Copy", action: "copy:", key: "c", modifiers: command),
+                Entry(title: "Paste", action: "paste:", key: "v", modifiers: command),
+                Entry(title: "Select All", action: "selectAll:", key: "a", modifiers: command),
+            ])
+        XCTAssertEqual(
+            entries(try XCTUnwrap(submenu(built, "Window"))),
+            [
+                Entry(title: "Close", action: "performClose:", key: "w", modifiers: command),
+                Entry(title: "Minimize", action: "performMiniaturize:", key: "m", modifiers: command),
+            ])
         XCTAssertNil(built.servicesMenu)
         XCTAssertNil(built.helpMenu)
         XCTAssertTrue(built.windowsMenu === submenu(built, "Window"))
@@ -58,24 +66,31 @@ final class MainMenuBuilderTests: XCTestCase {
 
     func testRegularModeAddsStandardAppCommands() throws {
         let built = MainMenuBuilder.make(isRegular: true)
-        XCTAssertEqual(built.menu.items.compactMap { $0.submenu?.title },
-                       ["WindowHop", "Edit", "Window", "Help"])
+        XCTAssertEqual(
+            built.menu.items.compactMap { $0.submenu?.title },
+            ["WindowHop", "Edit", "Window", "Help"])
 
         let appMenu = try XCTUnwrap(submenu(built, "WindowHop"))
-        XCTAssertEqual(entries(appMenu).map(\.title), [
-            "About WindowHop", "Settings…", "Services",
-            "Hide WindowHop", "Hide Others", "Show All", "Quit WindowHop",
-        ])
+        XCTAssertEqual(
+            entries(appMenu).map(\.title),
+            [
+                "About WindowHop", "Settings…", "Services",
+                "Hide WindowHop", "Hide Others", "Show All", "Quit WindowHop",
+            ])
         let services = try XCTUnwrap(appMenu.items.first { $0.title == "Services" })
         XCTAssertNotNil(services.submenu)
         XCTAssertTrue(services.submenu === built.servicesMenu)
-        XCTAssertTrue(entries(appMenu).contains(
-            Entry(title: "Hide WindowHop", action: "hide:", key: "h", modifiers: command)))
-        XCTAssertTrue(entries(appMenu).contains(
-            Entry(title: "Hide Others", action: "hideOtherApplications:", key: "h",
-                  modifiers: NSEvent.ModifierFlags([.option, .command]).rawValue)))
-        XCTAssertTrue(entries(appMenu).contains(
-            Entry(title: "Show All", action: "unhideAllApplications:", key: "", modifiers: 0)))
+        XCTAssertTrue(
+            entries(appMenu).contains(
+                Entry(title: "Hide WindowHop", action: "hide:", key: "h", modifiers: command)))
+        XCTAssertTrue(
+            entries(appMenu).contains(
+                Entry(
+                    title: "Hide Others", action: "hideOtherApplications:", key: "h",
+                    modifiers: NSEvent.ModifierFlags([.option, .command]).rawValue)))
+        XCTAssertTrue(
+            entries(appMenu).contains(
+                Entry(title: "Show All", action: "unhideAllApplications:", key: "", modifiers: 0)))
         XCTAssertEqual(entries(appMenu).last?.title, "Quit WindowHop")
 
         let windowMenu = try XCTUnwrap(submenu(built, "Window"))
@@ -83,9 +98,11 @@ final class MainMenuBuilderTests: XCTestCase {
 
         let help = try XCTUnwrap(built.helpMenu)
         XCTAssertTrue(help === submenu(built, "Help"))
-        XCTAssertEqual(entries(help), [
-            Entry(title: "Report an Issue…", action: "reportIssue:", key: "", modifiers: 0),
-        ])
+        XCTAssertEqual(
+            entries(help),
+            [
+                Entry(title: "Report an Issue…", action: "reportIssue:", key: "", modifiers: 0)
+            ])
     }
 
     func testEveryItemUsesTheResponderChain() {

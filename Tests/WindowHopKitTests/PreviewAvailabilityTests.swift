@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// Acquisition state is per window for the session, so list refreshes and

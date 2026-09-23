@@ -12,7 +12,7 @@ public enum SystemShortcuts {
     public static func enabled() -> [PersistentShortcut] {
         var hotKeys: Unmanaged<CFArray>?
         guard CopySymbolicHotKeys(&hotKeys) == noErr,
-              let entries = hotKeys?.takeRetainedValue() as? [[String: Any]]
+            let entries = hotKeys?.takeRetainedValue() as? [[String: Any]]
         else { return [] }
         return shortcuts(from: entries)
     }
@@ -23,9 +23,9 @@ public enum SystemShortcuts {
     static func shortcuts(from entries: [[String: Any]]) -> [PersistentShortcut] {
         entries.compactMap { entry in
             guard (entry[kHISymbolicHotKeyEnabled as String] as? Bool) == true,
-                  let keyCode = (entry[kHISymbolicHotKeyCode as String] as? NSNumber)?.int64Value,
-                  keyCode != 0xFFFF,
-                  let carbon = (entry[kHISymbolicHotKeyModifiers as String] as? NSNumber)?.intValue
+                let keyCode = (entry[kHISymbolicHotKeyCode as String] as? NSNumber)?.int64Value,
+                keyCode != 0xFFFF,
+                let carbon = (entry[kHISymbolicHotKeyModifiers as String] as? NSNumber)?.intValue
             else { return nil }
             return PersistentShortcut(keyCode: keyCode, modifiers: modifiers(fromCarbon: carbon))
         }

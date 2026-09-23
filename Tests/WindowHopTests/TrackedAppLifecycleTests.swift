@@ -1,6 +1,7 @@
 import AppKit
 import Synchronization
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -37,8 +38,11 @@ final class TrackedAppLifecycleTests: XCTestCase {
     func testStopInvalidatesPendingObserverWorkUnderStress() throws {
         // the xctest runner is not a registered app (NSRunningApplication.current has
         // pid -1), so observe Finder: subscribing only listens, it changes nothing
-        guard let process = NSRunningApplication.runningApplications(
-            withBundleIdentifier: "com.apple.finder").first else {
+        guard
+            let process = NSRunningApplication.runningApplications(
+                withBundleIdentifier: "com.apple.finder"
+            ).first
+        else {
             throw XCTSkip("needs a logged-in session with Finder running")
         }
         // a store that never starts: the discovery each first subscription requests

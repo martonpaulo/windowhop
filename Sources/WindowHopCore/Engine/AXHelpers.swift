@@ -77,8 +77,10 @@ extension AXUIElement {
     /// Returns false when the notification can never be delivered, true on success,
     /// and throws when the app was unresponsive and a retry may succeed.
     @discardableResult
-    func subscribe(_ observer: AXObserver, _ notification: String,
-                   refcon: UnsafeMutableRawPointer) throws -> Bool {
+    func subscribe(
+        _ observer: AXObserver, _ notification: String,
+        refcon: UnsafeMutableRawPointer
+    ) throws -> Bool {
         let result = AXObserverAddNotification(observer, self, notification as CFString, refcon)
         if result == .success || result == .notificationAlreadyRegistered {
             return true
@@ -176,8 +178,10 @@ extension AXUIElement {
     /// Maps a `kAXWindows` read to its enumeration outcome. `.noValue` and
     /// `.attributeUnsupported` are answers (no windows); `.invalidUIElement` means the
     /// app element is dead; every other error is a failed read.
-    static func windowEnumeration(result: ApplicationServices.AXError,
-                                  value: CFTypeRef?) -> WindowEnumeration<AXUIElement> {
+    static func windowEnumeration(
+        result: ApplicationServices.AXError,
+        value: CFTypeRef?
+    ) -> WindowEnumeration<AXUIElement> {
         switch result {
         case .success:
             guard let windows = value as? [AXUIElement] else { return .unavailable }

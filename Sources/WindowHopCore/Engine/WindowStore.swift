@@ -17,9 +17,11 @@ public struct SwitcherItem {
     public let icon: NSImage?
     public let tabCount: Int?
 
-    public init(id: AnyHashable, window: TrackedWindow?, title: String,
-                displayTitle: String? = nil,
-                appName: String, icon: NSImage?, tabCount: Int?) {
+    public init(
+        id: AnyHashable, window: TrackedWindow?, title: String,
+        displayTitle: String? = nil,
+        appName: String, icon: NSImage?, tabCount: Int?
+    ) {
         self.id = id
         self.window = window
         self.title = title
@@ -66,7 +68,8 @@ public final class WindowStore {
         guard !started else { return }
         started = true
         AXUIElement.setGlobalTimeout()
-        runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) { [weak self] _, change in
+        runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) {
+            [weak self] _, change in
             DispatchQueue.main.async { [weak self] in
                 (change.newValue ?? []).forEach { self?.addApp($0) }
                 (change.oldValue ?? []).forEach { self?.removeApp($0.processIdentifier) }
@@ -107,7 +110,8 @@ public final class WindowStore {
     private func addApp(_ runningApplication: NSRunningApplication) {
         let pid = runningApplication.processIdentifier
         guard started, pid != ProcessInfo.processInfo.processIdentifier, pid > 0,
-              apps[pid] == nil, !runningApplication.isTerminated else { return }
+            apps[pid] == nil, !runningApplication.isTerminated
+        else { return }
         apps[pid] = TrackedApp(runningApplication, router: router)
     }
 
@@ -153,17 +157,21 @@ public final class WindowStore {
             }
             // seed MRU: the frontmost app's focused window belongs at the front
             if app.runningApplication.isActive,
-               let focused = (try? element.attributes([kAXFocusedWindowAttribute]))?.focusedWindow {
+                let focused = (try? element.attributes([kAXFocusedWindowAttribute]))?.focusedWindow
+            {
                 router.routeWindowEvent(kAXFocusedWindowChangedNotification, focused, pid)
             }
         }
     }
 
-    func windowEvent(_ notification: String, element: AXUIElement, pid: pid_t,
-                     attributes: AXAttributes, tabs: TabObservation) {
+    func windowEvent(
+        _ notification: String, element: AXUIElement, pid: pid_t,
+        attributes: AXAttributes, tabs: TabObservation
+    ) {
         guard started, let app = apps[pid] else { return }
         let existing = windows.first { $0.ax == element }
-        let isFocusEvent = notification == kAXFocusedWindowChangedNotification
+        let isFocusEvent =
+            notification == kAXFocusedWindowChangedNotification
             || notification == kAXMainWindowChangedNotification
         let window: TrackedWindow
         if let existing {
@@ -184,8 +192,10 @@ public final class WindowStore {
         if existing == nil {
             // an active tab discovered earlier may be waiting for this window
             let sameApp = windows.filter { $0.app === app && $0 !== window }
-            applyTabStates(TabGroupResolver.resolveArrival(newWindow: tabDescriptor(window),
-                                                           sameAppWindows: sameApp.map(tabDescriptor)))
+            applyTabStates(
+                TabGroupResolver.resolveArrival(
+                    newWindow: tabDescriptor(window),
+                    sameAppWindows: sameApp.map(tabDescriptor)))
         }
         traceTabEvent(notification, window: window, tabs: tabs, before: tabsBefore)
         switch notification {
@@ -222,7 +232,8 @@ public final class WindowStore {
     func windowDestroyed(_ element: AXUIElement) {
         guard SpaceMembership.acceptsDestroyNotification(session: session) else {
             if let window = windows.first(where: { $0.ax == element }) {
-                Log.windows.debug("remove: destroyed \(Self.traceId(window), privacy: .public) ignored, session unavailable")
+                Log.windows.debug(
+                    "remove: destroyed \(Self.traceId(window), privacy: .public) ignored, session unavailable")
             }
             return
         }
@@ -235,15 +246,17 @@ public final class WindowStore {
         forget(removed)
         discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
-            Log.windows.debug("""
+            Log.windows.debug(
+                """
                 tabs: removed \(Self.traceId(removed), privacy: .public) \
                 group \(groupIds.count, privacy: .public)
                 """)
             let remaining = windows.filter { $0.app === removed.app }
-            applyTabStates(TabGroupResolver.resolveRemoval(
-                removedId: removed.stableId,
-                groupIds: groupIds,
-                remainingWindows: remaining.map(tabDescriptor)))
+            applyTabStates(
+                TabGroupResolver.resolveRemoval(
+                    removedId: removed.stableId,
+                    groupIds: groupIds,
+                    remainingWindows: remaining.map(tabDescriptor)))
         }
         onChange?()
     }
@@ -265,22 +278,28 @@ public final class WindowStore {
         // an unknown item focused enters at the front: Settings opens focused
         order.focused(entry.stableId)
         let center = NotificationCenter.default
-        center.addObserver(self, selector: #selector(ownWindowClosed(_:)),
-                           name: NSWindow.willCloseNotification, object: window)
-        center.addObserver(self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
-                           name: NSWindow.didMiniaturizeNotification, object: window)
-        center.addObserver(self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
-                           name: NSWindow.didDeminiaturizeNotification, object: window)
-        center.addObserver(self, selector: #selector(ownWindowFocused(_:)),
-                           name: NSWindow.didBecomeKeyNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowClosed(_:)),
+            name: NSWindow.willCloseNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
+            name: NSWindow.didMiniaturizeNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowMiniaturizedChanged(_:)),
+            name: NSWindow.didDeminiaturizeNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowFocused(_:)),
+            name: NSWindow.didBecomeKeyNotification, object: window)
         // Dragging Settings to another display can change whether it belongs in
         // an open session's list. The frame itself is read live on snapshot;
         // these only say "look again". Scoped to this one window, removed with
         // the rest on close, and they never poll.
-        center.addObserver(self, selector: #selector(ownWindowGeometryChanged(_:)),
-                           name: NSWindow.didMoveNotification, object: window)
-        center.addObserver(self, selector: #selector(ownWindowGeometryChanged(_:)),
-                           name: NSWindow.didResizeNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowGeometryChanged(_:)),
+            name: NSWindow.didMoveNotification, object: window)
+        center.addObserver(
+            self, selector: #selector(ownWindowGeometryChanged(_:)),
+            name: NSWindow.didResizeNotification, object: window)
         onChange?()
     }
 
@@ -298,7 +317,8 @@ public final class WindowStore {
 
     @objc private func ownWindowClosed(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              let entry = ownEntry(for: window) else { return }
+            let entry = ownEntry(for: window)
+        else { return }
         NotificationCenter.default.removeObserver(self, name: nil, object: window)
         forget(entry)
         discardPreviews(of: [entry])
@@ -307,20 +327,23 @@ public final class WindowStore {
 
     @objc private func ownWindowMiniaturizedChanged(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              let entry = ownEntry(for: window) else { return }
+            let entry = ownEntry(for: window)
+        else { return }
         entry.isMinimized = notification.name == NSWindow.didMiniaturizeNotification
         onChange?()
     }
 
     @objc private func ownWindowGeometryChanged(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              ownEntry(for: window) != nil else { return }
+            ownEntry(for: window) != nil
+        else { return }
         onChange?()
     }
 
     @objc private func ownWindowFocused(_ notification: Notification) {
         guard let window = notification.object as? NSWindow,
-              let entry = ownEntry(for: window) else { return }
+            let entry = ownEntry(for: window)
+        else { return }
         windowFocused(entry)
         onChange?()
     }
@@ -328,13 +351,15 @@ public final class WindowStore {
     // MARK: - Tab groups (tabs are never independent entries)
 
     private func tabDescriptor(_ window: TrackedWindow)
-        -> TabGroupResolver.WindowDescriptor<UUID> {
-        TabGroupResolver.WindowDescriptor(id: window.stableId,
-                                          title: window.title,
-                                          isTabbed: window.isTabbed,
-                                          groupIds: window.tabGroupIds,
-                                          frame: window.frame,
-                                          reportedTabTitles: window.reportedTabTitles)
+        -> TabGroupResolver.WindowDescriptor<UUID>
+    {
+        TabGroupResolver.WindowDescriptor(
+            id: window.stableId,
+            title: window.title,
+            isTabbed: window.isTabbed,
+            groupIds: window.tabGroupIds,
+            frame: window.frame,
+            reportedTabTitles: window.reportedTabTitles)
     }
 
     private func updateTabGroup(for window: TrackedWindow, tabs: TabObservation, isFocusEvent: Bool) {
@@ -346,17 +371,20 @@ public final class WindowStore {
         case .group: break
         }
         let sameApp = windows.filter { $0.app === window.app && $0 !== window }
-        applyTabStates(TabGroupResolver.resolve(active: tabDescriptor(window),
-                                                observation: tabs,
-                                                sameAppWindows: sameApp.map(tabDescriptor),
-                                                isFocusEvent: isFocusEvent))
+        applyTabStates(
+            TabGroupResolver.resolve(
+                active: tabDescriptor(window),
+                observation: tabs,
+                sameAppWindows: sameApp.map(tabDescriptor),
+                isFocusEvent: isFocusEvent))
     }
 
     private func applyTabStates(_ changes: [UUID: TabGroupResolver.WindowTabState<UUID>]) {
         guard !changes.isEmpty else { return }
         for window in windows {
             if let change = changes[window.stableId] {
-                Log.windows.debug("""
+                Log.windows.debug(
+                    """
                     tabs: change \(Self.traceId(window), privacy: .public) \
                     tabbed \(window.isTabbed, privacy: .public)->\(change.isTabbed, privacy: .public) \
                     group \(window.tabGroupIds?.count ?? 0, privacy: .public)->\
@@ -371,8 +399,10 @@ public final class WindowStore {
     /// Title-free debug tab trace (#82): only windows with a tab bar or
     /// a recorded group are logged. `frameEqualsGroup` compares the window's frame with
     /// its group's active member, rounded like TabGroupResolver does.
-    private func traceTabEvent(_ notification: String, window: TrackedWindow, tabs: TabObservation,
-                               before: (isTabbed: Bool, groupCount: Int?)) {
+    private func traceTabEvent(
+        _ notification: String, window: TrackedWindow, tabs: TabObservation,
+        before: (isTabbed: Bool, groupCount: Int?)
+    ) {
         guard Log.isWindowsDebugEnabled else { return }
         let observation: String
         switch tabs {
@@ -385,12 +415,14 @@ public final class WindowStore {
         let activeMember = windows.first {
             window.tabGroupIds?.contains($0.stableId) == true && !$0.isTabbed && $0 !== window
         }
-        let frameEqualsGroup = activeMember.map { member -> String in
-            guard let a = member.frame?.integral, let b = window.frame?.integral else { return "?" }
-            return a == b ? "yes" : "no"
-        } ?? "-"
+        let frameEqualsGroup =
+            activeMember.map { member -> String in
+                guard let a = member.frame?.integral, let b = window.frame?.integral else { return "?" }
+                return a == b ? "yes" : "no"
+            } ?? "-"
         let hiddenTabs = windows.filter { $0.app === window.app && $0.isTabbed }.count
-        Log.windows.debug("""
+        Log.windows.debug(
+            """
             tabs: \(notification, privacy: .public) \(Self.traceId(window), privacy: .public) \
             \(observation, privacy: .public) \
             tabbed \(before.isTabbed, privacy: .public)->\(window.isTabbed, privacy: .public) \
@@ -413,7 +445,8 @@ public final class WindowStore {
     }
 
     private func sessionEvent(_ event: SessionAvailability.Event, needsRecovery: Bool) {
-        Log.windows.debug("""
+        Log.windows.debug(
+            """
             lifecycle: \(event.rawValue, privacy: .public), \
             session \(self.session.isUsable ? "usable" : "unavailable", privacy: .public)
             """)
@@ -436,7 +469,8 @@ public final class WindowStore {
         let readEpoch = session.epoch
         let appsSnapshot = Array(apps.values)
         let router = router
-        Log.windows.debug("""
+        Log.windows.debug(
+            """
             inventory: \(reason, privacy: .public), \(appsSnapshot.count, privacy: .public) app(s), \
             \(self.windows.count, privacy: .public) tracked window(s)
             """)
@@ -453,8 +487,10 @@ public final class WindowStore {
         }
     }
 
-    private func applyEnumeration(_ enumeration: WindowEnumeration<AXUIElement>, of app: TrackedApp,
-                                  readEpoch: UInt64) {
+    private func applyEnumeration(
+        _ enumeration: WindowEnumeration<AXUIElement>, of app: TrackedApp,
+        readEpoch: UInt64
+    ) {
         let appWindows = windows.filter { $0.app === app }
         // a failed read, or one taken while the session could not report windows, keeps
         // each window's last known Space flag; see SpaceMembership for why an empty
@@ -469,7 +505,8 @@ public final class WindowStore {
             window.isOnCurrentSpace = isCurrent
         }
         if !appWindows.isEmpty {
-            Log.windows.debug("""
+            Log.windows.debug(
+                """
                 inventory: app \(app.pid, privacy: .public) \(Self.traceKind(enumeration), privacy: .public) \
                 trusted \(self.session.trusts(readStartedAt: readEpoch), privacy: .public) \
                 tracked \(appWindows.count, privacy: .public) \
@@ -507,7 +544,8 @@ public final class WindowStore {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 let confirmed = SpaceMembership.confirmedDead(dead, session: self.session, readEpoch: readEpoch)
-                Log.windows.debug("""
+                Log.windows.debug(
+                    """
                     prune: \(elements.count, privacy: .public) suspect(s), \(dead.count, privacy: .public) dead, \
                     \(confirmed.count, privacy: .public) removed
                     """)
@@ -523,8 +561,9 @@ public final class WindowStore {
     /// on the AX reads queue, and applies them in one main-thread pass.
     public func rereadTabGroups(of items: [SwitcherItem]) {
         let windows = items.compactMap(\.window)
-        let targetIds = Set(TabGroupResolver.sessionRereadTargets(
-            windows.map { (id: $0.stableId, appId: $0.app.map(ObjectIdentifier.init)) }))
+        let targetIds = Set(
+            TabGroupResolver.sessionRereadTargets(
+                windows.map { (id: $0.stableId, appId: $0.app.map(ObjectIdentifier.init)) }))
         let targets = windows.compactMap { window -> (UUID, AXUIElement)? in
             guard targetIds.contains(window.stableId), let ax = window.ax else { return nil }
             return (window.stableId, ax)
@@ -538,7 +577,8 @@ public final class WindowStore {
                 return (id, element, attributes, AXUIElement.tabObservation(fromWindow: attributes))
             }
             let rereadMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
-            Log.windows.debug("""
+            Log.windows.debug(
+                """
                 tab re-read: \(reads.count, privacy: .public)/\(targets.count, privacy: .public) \
                 window(s) in \(rereadMs, format: .fixed(precision: 2), privacy: .public)ms
                 """)
@@ -584,31 +624,37 @@ public final class WindowStore {
         }
         traceSnapshot(tracked: tracked.count, eligible: visible.count, excluded: excluded)
         // collisions are judged among the entries actually shown
-        let labels = CollisionLabel.labels(for: visible.map { window in
-            CollisionLabel.Entry(appId: window.app.map(ObjectIdentifier.init),
-                                 title: window.title,
-                                 documentPath: window.documentPath)
-        })
+        let labels = CollisionLabel.labels(
+            for: visible.map { window in
+                CollisionLabel.Entry(
+                    appId: window.app.map(ObjectIdentifier.init),
+                    title: window.title,
+                    documentPath: window.documentPath)
+            })
         return zip(visible, labels).map { window, label in
-            SwitcherItem(id: window.stableId,
-                         window: window,
-                         title: window.title,
-                         displayTitle: label,
-                         appName: window.appName,
-                         icon: window.appIcon,
-                         tabCount: showTabCounts ? window.tabCount : nil)
+            SwitcherItem(
+                id: window.stableId,
+                window: window,
+                title: window.title,
+                displayTitle: label,
+                appName: window.appName,
+                icon: window.appIcon,
+                tabCount: showTabCounts ? window.tabCount : nil)
         }
     }
 
     /// Title-free snapshot trace (#38): how many windows are tracked, shown, and kept
     /// out by each eligibility rule.
-    private func traceSnapshot(tracked: Int, eligible: Int,
-                               excluded: [WindowEligibility.ExclusionReason: Int]) {
+    private func traceSnapshot(
+        tracked: Int, eligible: Int,
+        excluded: [WindowEligibility.ExclusionReason: Int]
+    ) {
         guard Log.isWindowsDebugEnabled else { return }
         let reasons = WindowEligibility.ExclusionReason.allCases
             .compactMap { reason in excluded[reason].map { "\(reason.rawValue) \($0)" } }
             .joined(separator: ", ")
-        Log.windows.debug("""
+        Log.windows.debug(
+            """
             snapshot: tracked \(tracked, privacy: .public), eligible \(eligible, privacy: .public), \
             excluded [\(reasons, privacy: .public)]
             """)
@@ -658,16 +704,21 @@ public final class WindowStore {
     }
 
     private static func onScreenWindowFacts() -> [PictureInPictureDetector.OnScreenWindow] {
-        guard let info = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements],
-                                                    kCGNullWindowID) as? [[String: Any]] else { return [] }
+        guard
+            let info = CGWindowListCopyWindowInfo(
+                [.optionOnScreenOnly, .excludeDesktopElements],
+                kCGNullWindowID) as? [[String: Any]]
+        else { return [] }
         return info.compactMap { entry in
             guard let pid = entry[kCGWindowOwnerPID as String] as? Int,
-                  let layer = entry[kCGWindowLayer as String] as? Int,
-                  let bounds = entry[kCGWindowBounds as String] as? [String: CGFloat] else { return nil }
+                let layer = entry[kCGWindowLayer as String] as? Int,
+                let bounds = entry[kCGWindowBounds as String] as? [String: CGFloat]
+            else { return nil }
             return PictureInPictureDetector.OnScreenWindow(
                 pid: pid_t(pid),
-                frame: CGRect(x: bounds["X"] ?? 0, y: bounds["Y"] ?? 0,
-                              width: bounds["Width"] ?? 0, height: bounds["Height"] ?? 0),
+                frame: CGRect(
+                    x: bounds["X"] ?? 0, y: bounds["Y"] ?? 0,
+                    width: bounds["Width"] ?? 0, height: bounds["Height"] ?? 0),
                 layer: layer)
         }
     }

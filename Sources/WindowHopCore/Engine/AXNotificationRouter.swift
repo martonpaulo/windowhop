@@ -79,7 +79,8 @@ final class AXNotificationRouter: Sendable {
         // cost a few extra reads per window creation, never any per move or resize.
         let isCreation = notification == kAXWindowCreatedNotification
         let buttonKeys = [kAXCloseButtonAttribute, kAXMinimizeButtonAttribute, kAXZoomButtonAttribute]
-        let keys = Self.windowAttributeKeys + (isOwnProcess ? [] : [kAXChildrenAttribute])
+        let keys =
+            Self.windowAttributeKeys + (isOwnProcess ? [] : [kAXChildrenAttribute])
             + (isCreation ? buttonKeys : [])
         guard var read = try? element.attributes(keys) else { return }
         if isCreation {
@@ -91,8 +92,9 @@ final class AXNotificationRouter: Sendable {
         let attributes = read
         let tabs = AXUIElement.tabObservation(fromWindow: attributes)
         DispatchQueue.main.async {
-            self.store?.windowEvent(notification, element: element, pid: pid,
-                                    attributes: attributes, tabs: tabs)
+            self.store?.windowEvent(
+                notification, element: element, pid: pid,
+                attributes: attributes, tabs: tabs)
         }
     }
 

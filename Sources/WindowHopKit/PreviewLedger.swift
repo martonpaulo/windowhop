@@ -65,7 +65,8 @@ public struct PreviewLedger<ID: Hashable> {
     /// no longer be delivered live (window gone, session ended or replaced).
     public mutating func claimRetry(_ id: ID, capturedIn captureGeneration: Int) -> Bool {
         guard shouldDeliver(id, capturedIn: captureGeneration),
-              !retriedIds.contains(id) else { return false }
+            !retriedIds.contains(id)
+        else { return false }
         retriedIds.insert(id)
         return true
     }

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// Preview captures from every path share one ceiling. These drive the real
@@ -16,8 +17,10 @@ final class CaptureBudgetTests: XCTestCase {
 
     /// Polls until `condition` holds; waiters park asynchronously, so the
     /// test waits for the budget to reach the state it is about to assert.
-    private func eventually(_ condition: @escaping () async -> Bool,
-                            file: StaticString = #filePath, line: UInt = #line) async {
+    private func eventually(
+        _ condition: @escaping () async -> Bool,
+        file: StaticString = #filePath, line: UInt = #line
+    ) async {
         for _ in 0..<2000 {
             if await condition() { return }
             try? await Task.sleep(nanoseconds: 1_000_000)
@@ -26,8 +29,10 @@ final class CaptureBudgetTests: XCTestCase {
     }
 
     /// Starts one worker per id; each keeps its slot until the test releases it.
-    private func startWorkers(_ ids: Range<Int>, budget: CaptureBudget, generation: Int,
-                              log: Log) -> [Task<Void, Never>] {
+    private func startWorkers(
+        _ ids: Range<Int>, budget: CaptureBudget, generation: Int,
+        log: Log
+    ) -> [Task<Void, Never>] {
         ids.map { id in
             Task {
                 if await budget.acquire(generation: generation) {

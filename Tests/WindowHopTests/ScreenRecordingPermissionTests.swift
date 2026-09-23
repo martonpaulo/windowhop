@@ -1,16 +1,21 @@
 import XCTest
+
 @testable import WindowHopCore
 
 final class ScreenRecordingPermissionTests: XCTestCase {
     func testAuthorizedDeniedRestrictedAndNotDeterminedStates() {
-        XCTAssertEqual(ScreenRecordingPermission.classify(
-            preflightGranted: true, hasRequested: false, isRestricted: false), .authorized)
-        XCTAssertEqual(ScreenRecordingPermission.classify(
-            preflightGranted: false, hasRequested: true, isRestricted: false), .denied)
-        XCTAssertEqual(ScreenRecordingPermission.classify(
-            preflightGranted: false, hasRequested: false, isRestricted: true), .restricted)
-        XCTAssertEqual(ScreenRecordingPermission.classify(
-            preflightGranted: false, hasRequested: false, isRestricted: false), .notDetermined)
+        XCTAssertEqual(
+            ScreenRecordingPermission.classify(
+                preflightGranted: true, hasRequested: false, isRestricted: false), .authorized)
+        XCTAssertEqual(
+            ScreenRecordingPermission.classify(
+                preflightGranted: false, hasRequested: true, isRestricted: false), .denied)
+        XCTAssertEqual(
+            ScreenRecordingPermission.classify(
+                preflightGranted: false, hasRequested: false, isRestricted: true), .restricted)
+        XCTAssertEqual(
+            ScreenRecordingPermission.classify(
+                preflightGranted: false, hasRequested: false, isRestricted: false), .notDetermined)
     }
 
     func testPermissionRevocationChangesAuthorizedToBlocked() {

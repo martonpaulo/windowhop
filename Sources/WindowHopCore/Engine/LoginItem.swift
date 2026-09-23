@@ -23,11 +23,13 @@ public enum LoginItem {
         var unregister: () throws -> Void
         var openLoginItemsSettings: () -> Void
 
-        static var system: Service { Service(
-            status: { SMAppService.mainApp.status },
-            register: { try SMAppService.mainApp.register() },
-            unregister: { try SMAppService.mainApp.unregister() },
-            openLoginItemsSettings: { SMAppService.openSystemSettingsLoginItems() }) }
+        static var system: Service {
+            Service(
+                status: { SMAppService.mainApp.status },
+                register: { try SMAppService.mainApp.register() },
+                unregister: { try SMAppService.mainApp.unregister() },
+                openLoginItemsSettings: { SMAppService.openSystemSettingsLoginItems() })
+        }
     }
 
     /// Reads the registration; never registers or unregisters anything.

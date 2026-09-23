@@ -186,10 +186,13 @@ enum DesignTokens {
     /// `imageSize` nil (nothing captured yet) falls back to the shared
     /// `previewCanvasAspect`, so the panel never jumps between shapes for the
     /// same window once its image arrives.
-    static func expandedPreviewPanelSize(imageSize: CGSize?,
-                                         visibleFrame: CGSize) -> CGSize {
-        let chrome = CGSize(width: expandedPreviewPanelInset * 2,
-                            height: expandedPreviewPanelInset * 2 + expandedPreviewTitleHeight)
+    static func expandedPreviewPanelSize(
+        imageSize: CGSize?,
+        visibleFrame: CGSize
+    ) -> CGSize {
+        let chrome = CGSize(
+            width: expandedPreviewPanelInset * 2,
+            height: expandedPreviewPanelInset * 2 + expandedPreviewTitleHeight)
         let aspect: CGFloat
         if let imageSize, imageSize.width > 0, imageSize.height > 0 {
             aspect = imageSize.width / imageSize.height
@@ -201,8 +204,9 @@ enum DesignTokens {
         let maxCanvas = CGSize(
             width: max(1, visibleFrame.width * panelMaxWidthFraction - chrome.width),
             height: max(1, visibleFrame.height * panelMaxHeightFraction - chrome.height))
-        let minCanvas = CGSize(width: expandedPreviewMinimumWidth - chrome.width,
-                               height: expandedPreviewMinimumHeight - chrome.height)
+        let minCanvas = CGSize(
+            width: expandedPreviewMinimumWidth - chrome.width,
+            height: expandedPreviewMinimumHeight - chrome.height)
         var canvasWidth = min(imageSize?.width ?? maxCanvas.width, maxCanvas.width)
         canvasWidth = max(canvasWidth, min(minCanvas.width, maxCanvas.width))
         canvasWidth = min(canvasWidth, maxCanvas.height * aspect)
@@ -211,8 +215,9 @@ enum DesignTokens {
             canvasHeight = min(minCanvas.height, maxCanvas.height)
             canvasWidth = min(canvasHeight * aspect, maxCanvas.width)
         }
-        return CGSize(width: canvasWidth + chrome.width,
-                      height: canvasHeight + chrome.height)
+        return CGSize(
+            width: canvasWidth + chrome.width,
+            height: canvasHeight + chrome.height)
     }
     /// Panel material for the offscreen render harness only (`--render-ui`):
     /// the live panel uses the system glass effect (see SwitcherPanel), which

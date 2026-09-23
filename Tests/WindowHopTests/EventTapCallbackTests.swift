@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import WindowHopCore
 
 /// The CGEvent tap calls its C callback on the event-tap thread, never on main.
@@ -16,7 +17,8 @@ final class EventTapCallbackTests: XCTestCase {
         let passed = expectation(description: "callback returned on a background thread")
         Thread.detachNewThread {
             guard let event = CGEvent(keyboardEventSource: nil, virtualKey: 48, keyDown: true),
-                  let proxy = OpaquePointer(bitPattern: 1) else { return }
+                let proxy = OpaquePointer(bitPattern: 1)
+            else { return }
             // the tap is not started, so the event passes through untouched
             let result = eventTapCallback(proxy, .keyDown, event, UnsafeMutableRawPointer(bitPattern: tapAddress))
             XCTAssertFalse(Thread.isMainThread)

@@ -77,13 +77,16 @@ public enum PictureInPictureDetector {
     /// button marks an ordinary floating window unless minimize is disabled
     /// while zoom stays enabled (Firefox PiP); a disabled or missing close
     /// button, or an unread one, leaves the layer rule alone in charge.
-    public static func isPictureInPicture(pid: pid_t, frame: CGRect?,
-                                          buttons: TitleBarButtons = TitleBarButtons(),
-                                          onScreenWindows: [OnScreenWindow],
-                                          screenFrames: [CGRect]) -> Bool {
+    public static func isPictureInPicture(
+        pid: pid_t, frame: CGRect?,
+        buttons: TitleBarButtons = TitleBarButtons(),
+        onScreenWindows: [OnScreenWindow],
+        screenFrames: [CGRect]
+    ) -> Bool {
         guard !buttons.provesOrdinaryWindow, let frame,
-              let match = onScreenWindows.first(where: { $0.pid == pid && frameClose($0.frame, frame) }),
-              match.layer != 0, match.layer != modalPanelLayer else { return false }
+            let match = onScreenWindows.first(where: { $0.pid == pid && frameClose($0.frame, frame) }),
+            match.layer != 0, match.layer != modalPanelLayer
+        else { return false }
         let coversAScreen = screenFrames.contains { screen in
             let overlap = frame.intersection(screen)
             return screen.width > 0 && screen.height > 0

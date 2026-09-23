@@ -1,5 +1,6 @@
 import Observation
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -93,12 +94,15 @@ final class PreferencesTests: XCTestCase {
         let openShortcut = PersistentShortcut(
             keyCode: KeyCode.space, modifiers: [.maskAlternate])
         defaults.set(false, forKey: Preferences.Key.switcherEnabled.rawValue)
-        defaults.set(ShortcutSpec.optionTab.rawValue,
-                     forKey: Preferences.Key.shortcut.rawValue)
-        defaults.set(openShortcut.encoded,
-                     forKey: Preferences.Key.persistentShortcut.rawValue)
-        defaults.set(AppearanceMode.windowPreviews.rawValue,
-                     forKey: Preferences.Key.appearanceMode.rawValue)
+        defaults.set(
+            ShortcutSpec.optionTab.rawValue,
+            forKey: Preferences.Key.shortcut.rawValue)
+        defaults.set(
+            openShortcut.encoded,
+            forKey: Preferences.Key.persistentShortcut.rawValue)
+        defaults.set(
+            AppearanceMode.windowPreviews.rawValue,
+            forKey: Preferences.Key.appearanceMode.rawValue)
         defaults.set(false, forKey: Preferences.Key.showTabCounts.rawValue)
         defaults.set(true, forKey: Preferences.Key.showMenuBarItem.rawValue)
 
@@ -108,8 +112,9 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(migrated.shortcut, .optionTab)
         XCTAssertEqual(migrated.persistentShortcut, openShortcut)
         XCTAssertEqual(migrated.appearanceMode, .windowPreviews)
-        XCTAssertEqual(migrated.expandedPreviewDelay, .threeSeconds,
-                       "existing users inherit the documented three-second default")
+        XCTAssertEqual(
+            migrated.expandedPreviewDelay, .threeSeconds,
+            "existing users inherit the documented three-second default")
         XCTAssertFalse(migrated.includeMinimizedWindows)
         XCTAssertFalse(migrated.includeHiddenApplicationWindows)
         XCTAssertFalse(migrated.includePictureInPictureWindows)
@@ -127,8 +132,9 @@ final class PreferencesTests: XCTestCase {
         defaults.set("obsolete-delay", forKey: Preferences.Key.expandedPreviewDelay.rawValue)
         defaults.set("obsolete-delay", forKey: Preferences.Key.switcherRevealDelay.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.includeOtherSpaces.rawValue)
-        defaults.set("not-a-boolean",
-                     forKey: Preferences.Key.includeMinimizedWindows.rawValue)
+        defaults.set(
+            "not-a-boolean",
+            forKey: Preferences.Key.includeMinimizedWindows.rawValue)
         defaults.set("not-a-boolean", forKey: Preferences.Key.showMenuBarItem.rawValue)
 
         let restored = Preferences(defaults: defaults)
@@ -152,8 +158,9 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(ExpandedPreviewDelay.twoSeconds.duration, 2)
         XCTAssertEqual(ExpandedPreviewDelay.threeSeconds.duration, 3)
         XCTAssertEqual(ExpandedPreviewDelay.fiveSeconds.duration, 5)
-        XCTAssertEqual(ExpandedPreviewDelay.allCases.map(\.displayName),
-                       ["Off", "1 second", "2 seconds", "3 seconds", "5 seconds"])
+        XCTAssertEqual(
+            ExpandedPreviewDelay.allCases.map(\.displayName),
+            ["Off", "1 second", "2 seconds", "3 seconds", "5 seconds"])
     }
 
     func testOnlyWindowPreviewsSupportsTheExpandedPreview() {
@@ -228,8 +235,9 @@ final class PreferencesTests: XCTestCase {
     }
 
     func testWindowFilterChangesPublishRuntimeRefresh() {
-        let expectation = expectation(forNotification: Preferences.windowFiltersDidChange,
-                                      object: preferences)
+        let expectation = expectation(
+            forNotification: Preferences.windowFiltersDidChange,
+            object: preferences)
         preferences.includePictureInPictureWindows = true
         wait(for: [expectation], timeout: 1)
     }
@@ -282,8 +290,9 @@ final class PreferencesTests: XCTestCase {
         let again = Preferences(defaults: UserDefaults(suiteName: suite)!)
 
         XCTAssertTrue(again.launchAtLogin)
-        XCTAssertEqual(UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?,
-                       migrated)
+        XCTAssertEqual(
+            UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?,
+            migrated)
     }
 
     // MARK: - Open WindowHop shortcut pair loaded against the switcher shortcut
@@ -294,9 +303,10 @@ final class PreferencesTests: XCTestCase {
     }
 
     private func tapState(for loaded: Preferences) -> EventTapInterceptionState {
-        EventTapInterceptionState(mode: .watching,
-                                  holdModifier: loaded.shortcut.holdModifier,
-                                  persistentShortcut: loaded.persistentShortcut)
+        EventTapInterceptionState(
+            mode: .watching,
+            holdModifier: loaded.shortcut.holdModifier,
+            persistentShortcut: loaded.persistentShortcut)
     }
 
     /// A new suite in the state of a fresh app launch. The registration domain
@@ -343,8 +353,9 @@ final class PreferencesTests: XCTestCase {
         let loaded = Preferences(defaults: legacy)
 
         XCTAssertEqual(loaded.persistentShortcut, .optionTab)
-        XCTAssertNil(stored(.persistentShortcut, in: suite),
-                     "a compatible installation keeps following the registered default")
+        XCTAssertNil(
+            stored(.persistentShortcut, in: suite),
+            "a compatible installation keeps following the registered default")
         var state = tapState(for: loaded)
         XCTAssertEqual(
             state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskAlternate),
@@ -406,8 +417,9 @@ final class PreferencesTests: XCTestCase {
     func testDefaultPairIsValid() {
         // Restore Defaults assigns both keys in Set order, so the pair itself
         // must be valid for any intermediate state to settle correctly
-        XCTAssertNil(Preferences.Defaults.persistentShortcut?.validate(
-            against: Preferences.Defaults.shortcut))
+        XCTAssertNil(
+            Preferences.Defaults.persistentShortcut?.validate(
+                against: Preferences.Defaults.shortcut))
     }
 
     func testRestoreDefaultsResetsEveryConfigurablePreferenceAndPreservesInternalState() {
@@ -432,10 +444,12 @@ final class PreferencesTests: XCTestCase {
         preferences.restoreDefaults()
 
         XCTAssertTrue(preferences.switcherEnabled)
-        XCTAssertEqual(preferences.launchAtLogin, !Preferences.Defaults.launchAtLogin,
-                       "launch at login mirrors a system registration; reset leaves it")
-        XCTAssertEqual(stored(.launchAtLogin, in: suiteName) as? Bool,
-                       !Preferences.Defaults.launchAtLogin)
+        XCTAssertEqual(
+            preferences.launchAtLogin, !Preferences.Defaults.launchAtLogin,
+            "launch at login mirrors a system registration; reset leaves it")
+        XCTAssertEqual(
+            stored(.launchAtLogin, in: suiteName) as? Bool,
+            !Preferences.Defaults.launchAtLogin)
         XCTAssertEqual(preferences.shortcut, .commandTab)
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)
@@ -452,13 +466,15 @@ final class PreferencesTests: XCTestCase {
         XCTAssertFalse(preferences.showMenuBarItem)
         XCTAssertFalse(preferences.showDockIcon)
         XCTAssertTrue(preferences.automaticUpdateChecks)
-        XCTAssertTrue(preferences.firstLaunchCompleted,
-                      "Restore Defaults must not repeat first-run state")
+        XCTAssertTrue(
+            preferences.firstLaunchCompleted,
+            "Restore Defaults must not repeat first-run state")
     }
 
     func testInvalidStoredPlacementFallsBackToTheDocumentedDefault() {
-        defaults.set("mirrored-onto-the-ceiling",
-                     forKey: Preferences.Key.switcherDisplayPlacement.rawValue)
+        defaults.set(
+            "mirrored-onto-the-ceiling",
+            forKey: Preferences.Key.switcherDisplayPlacement.rawValue)
 
         let restored = Preferences(defaults: defaults)
 
@@ -471,8 +487,9 @@ final class PreferencesTests: XCTestCase {
         let suite = "windowhop-tests-\(UUID().uuidString)"
         let clean = UserDefaults(suiteName: suite)!
         defer { clean.removePersistentDomain(forName: suite) }
-        XCTAssertNil(clean.persistentDomain(forName: suite)?[
-            Preferences.Key.switcherDisplayPlacement.rawValue])
+        XCTAssertNil(
+            clean.persistentDomain(forName: suite)?[
+                Preferences.Key.switcherDisplayPlacement.rawValue])
 
         let restored = Preferences(defaults: clean)
 
@@ -524,7 +541,8 @@ final class PreferencesTests: XCTestCase {
         let observer = NotificationCenter.default.addObserver(
             forName: Preferences.windowFiltersDidChange,
             object: preferences,
-            queue: nil) { _ in refreshCount += 1 }
+            queue: nil
+        ) { _ in refreshCount += 1 }
         defer { NotificationCenter.default.removeObserver(observer) }
 
         preferences.restoreDefaults()

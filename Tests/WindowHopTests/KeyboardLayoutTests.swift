@@ -1,13 +1,15 @@
 import Carbon.HIToolbox
 import XCTest
+
 @testable import WindowHopCore
 
 /// The live translator. Installed Apple layouts are read by identifier without
 /// selecting or enabling them, and nothing asserts the machine's own layout.
 final class KeyboardLayoutTests: XCTestCase {
     private func layout(_ identifier: String) throws -> TISInputSource {
-        try XCTUnwrap(KeyboardLayout.installedLayout(identifier: identifier),
-                      "\(identifier) is not installed", file: #filePath, line: #line)
+        try XCTUnwrap(
+            KeyboardLayout.installedLayout(identifier: identifier),
+            "\(identifier) is not installed", file: #filePath, line: #line)
     }
 
     private func characters(_ keyCodes: [UInt16], in identifier: String) throws -> [String?] {

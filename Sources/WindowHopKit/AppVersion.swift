@@ -74,7 +74,8 @@ public struct AppVersion: Equatable, Sendable {
     /// value must also survive a round trip unchanged.
     private static func parseReleaseDate(_ text: String) -> Date? {
         guard let date = try? isoDateStyle.parse(text),
-              isoDateStyle.format(date) == text else { return nil }
+            isoDateStyle.format(date) == text
+        else { return nil }
         return date
     }
 

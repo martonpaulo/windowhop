@@ -53,9 +53,10 @@ public final class TrackedWindow {
         nativeWindow = nil
         isOwnSettingsEntry = false
         documentPath = attributes.document
-        title = TitleResolver.resolve(axTitle: attributes.title,
-                                      documentPath: attributes.document,
-                                      appName: app.name)
+        title = TitleResolver.resolve(
+            axTitle: attributes.title,
+            documentPath: attributes.document,
+            appName: app.name)
         if case .group(let titles) = tabs {
             reportedTabTitles = titles
         }
@@ -84,13 +85,14 @@ public final class TrackedWindow {
     func update(from attributes: AXAttributes, tabs: TabObservation) {
         guard let app else { return }
         documentPath = attributes.document
-        title = TitleResolver.resolve(axTitle: attributes.title,
-                                      documentPath: attributes.document,
-                                      appName: app.name)
+        title = TitleResolver.resolve(
+            axTitle: attributes.title,
+            documentPath: attributes.document,
+            appName: app.name)
         switch tabs {
         case .group(let titles): reportedTabTitles = titles
         case .standalone: reportedTabTitles = nil
-        case .unknown: break // an incomplete read keeps the last complete tab bar
+        case .unknown: break  // an incomplete read keeps the last complete tab bar
         }
         isMinimized = attributes.isMinimized ?? false
         isFullscreen = attributes.isFullscreen ?? false

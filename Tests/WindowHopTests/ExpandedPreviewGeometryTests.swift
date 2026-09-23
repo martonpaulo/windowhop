@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 
 /// The expanded presentation wraps its snapshot instead of inheriting the grid
@@ -10,9 +11,10 @@ final class ExpandedPreviewGeometryTests: XCTestCase {
     private let tall = CGSize(width: 1080, height: 1920)
 
     private func chrome() -> CGSize {
-        CGSize(width: DesignTokens.expandedPreviewPanelInset * 2,
-               height: DesignTokens.expandedPreviewPanelInset * 2
-                   + DesignTokens.expandedPreviewTitleHeight)
+        CGSize(
+            width: DesignTokens.expandedPreviewPanelInset * 2,
+            height: DesignTokens.expandedPreviewPanelInset * 2
+                + DesignTokens.expandedPreviewTitleHeight)
     }
 
     private func canvasAspect(_ panel: CGSize) -> CGFloat {
@@ -25,13 +27,17 @@ final class ExpandedPreviewGeometryTests: XCTestCase {
     }
 
     func testCanvasTakesTheSnapshotShape() {
-        for image in [CGSize(width: 1440, height: 900), CGSize(width: 900, height: 1440),
-                      CGSize(width: 800, height: 800)] {
-            let panel = DesignTokens.expandedPreviewPanelSize(imageSize: image,
-                                                              visibleFrame: ultrawide)
+        for image in [
+            CGSize(width: 1440, height: 900), CGSize(width: 900, height: 1440),
+            CGSize(width: 800, height: 800),
+        ] {
+            let panel = DesignTokens.expandedPreviewPanelSize(
+                imageSize: image,
+                visibleFrame: ultrawide)
 
-            XCTAssertEqual(canvasAspect(panel), image.width / image.height, accuracy: 0.01,
-                           "\(image) must keep its own shape")
+            XCTAssertEqual(
+                canvasAspect(panel), image.width / image.height, accuracy: 0.01,
+                "\(image) must keep its own shape")
         }
     }
 
@@ -65,8 +71,9 @@ final class ExpandedPreviewGeometryTests: XCTestCase {
     }
 
     func testNoSnapshotYetUsesTheSharedPreviewCanvasShape() {
-        let panel = DesignTokens.expandedPreviewPanelSize(imageSize: nil,
-                                                          visibleFrame: laptop)
+        let panel = DesignTokens.expandedPreviewPanelSize(
+            imageSize: nil,
+            visibleFrame: laptop)
 
         XCTAssertEqual(canvasAspect(panel), DesignTokens.previewCanvasAspect, accuracy: 0.01)
         XCTAssertTrue(fits(panel, in: laptop))

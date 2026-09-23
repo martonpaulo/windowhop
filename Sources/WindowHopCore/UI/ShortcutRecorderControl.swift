@@ -43,8 +43,10 @@ final class ShortcutRecorderControl: NSButton {
             if let validationMessage {
                 NSAccessibility.post(
                     element: self, notification: .announcementRequested,
-                    userInfo: [.announcement: validationMessage,
-                               .priority: NSAccessibilityPriorityLevel.high.rawValue])
+                    userInfo: [
+                        .announcement: validationMessage,
+                        .priority: NSAccessibilityPriorityLevel.high.rawValue,
+                    ])
             }
         }
     }
@@ -132,13 +134,16 @@ final class ShortcutRecorderControl: NSButton {
         if isRecording {
             let escapeSymbol = ShortcutFormatter.keySymbol(for: escape)
             let deleteSymbol = ShortcutFormatter.keySymbol(for: delete)
-            title = String(localized: "Type shortcut… (\(escapeSymbol) cancels, \(deleteSymbol) clears)",
-                           comment: "Placeholders are the Escape and Delete key symbols.")
+            title = String(
+                localized: "Type shortcut… (\(escapeSymbol) cancels, \(deleteSymbol) clears)",
+                comment: "Placeholders are the Escape and Delete key symbols.")
             setAccessibilityValue(String(localized: "Recording"))
             let escapeName = ShortcutFormatter.spokenKeyName(for: escape)
             let deleteName = ShortcutFormatter.spokenKeyName(for: delete)
-            setAccessibilityHelp(String(localized: "Press a shortcut. \(escapeName) cancels, \(deleteName) clears.",
-                                        comment: "Placeholders are the spoken Escape and Delete key names."))
+            setAccessibilityHelp(
+                String(
+                    localized: "Press a shortcut. \(escapeName) cancels, \(deleteName) clears.",
+                    comment: "Placeholders are the spoken Escape and Delete key names."))
         } else {
             title = shortcut?.displayString ?? String(localized: "Record Shortcut…")
             setAccessibilityValue(shortcut?.spokenString ?? String(localized: "None"))
@@ -160,8 +165,10 @@ final class ShortcutRecorderControl: NSButton {
     override func viewWillMove(toWindow newWindow: NSWindow?) {
         super.viewWillMove(toWindow: newWindow)
         let center = NotificationCenter.default
-        let names: [Notification.Name] = [NSWindow.willCloseNotification,
-                                          NSWindow.didResignKeyNotification]
+        let names: [Notification.Name] = [
+            NSWindow.willCloseNotification,
+            NSWindow.didResignKeyNotification,
+        ]
         if let oldWindow = window {
             for name in names { center.removeObserver(self, name: name, object: oldWindow) }
             inputSourceNotificationCenter.removeObserver(
@@ -169,8 +176,9 @@ final class ShortcutRecorderControl: NSButton {
         }
         if let newWindow {
             for name in names {
-                center.addObserver(self, selector: #selector(recordingWindowDidEndContext(_:)),
-                                   name: name, object: newWindow)
+                center.addObserver(
+                    self, selector: #selector(recordingWindowDidEndContext(_:)),
+                    name: name, object: newWindow)
             }
             // Observed only while on screen in a window: no idle observer.
             inputSourceNotificationCenter.addObserver(
@@ -218,8 +226,10 @@ struct ShortcutRecorderField: NSViewRepresentable {
 
     /// A warning sheet on the Settings window; Cancel is the default button and
     /// also answers Escape, so the safe choice is the easy one.
-    static func presentSystemShortcutAlert(for captured: PersistentShortcut, in window: NSWindow?,
-                                           completion: @escaping (Bool) -> Void) {
+    static func presentSystemShortcutAlert(
+        for captured: PersistentShortcut, in window: NSWindow?,
+        completion: @escaping (Bool) -> Void
+    ) {
         let copy = captured.systemShortcutConfirmation
         let alert = NSAlert()
         alert.alertStyle = .warning
@@ -252,13 +262,14 @@ struct ShortcutRecorderField: NSViewRepresentable {
 
     private func applyConfiguration(to control: ShortcutRecorderControl) {
         control.onCapture = { [weak control] captured in
-            let assessment = captured.assessCapture(against: switcherShortcut, current: shortcut,
-                                                    systemShortcuts: systemShortcuts())
+            let assessment = captured.assessCapture(
+                against: switcherShortcut, current: shortcut,
+                systemShortcuts: systemShortcuts())
             switch assessment {
             case .accept:
                 validationMessage = nil
                 shortcut = captured
-            case let .reject(error):
+            case .reject(let error):
                 validationMessage = error.explanation
             case .confirmSystemShortcut:
                 // Cancel keeps the previous chord and persists nothing.

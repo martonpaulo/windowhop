@@ -19,8 +19,9 @@ enum UpdaterE2EHarness {
         app.setActivationPolicy(.prohibited)
         let driver = AutoAcceptDriver()
         let delegate = FeedDelegate(feed: feedURL)
-        let updater = SPUUpdater(hostBundle: .main, applicationBundle: .main,
-                                 userDriver: driver, delegate: delegate)
+        let updater = SPUUpdater(
+            hostBundle: .main, applicationBundle: .main,
+            userDriver: driver, delegate: delegate)
         self.driver = driver
         self.delegate = delegate
         self.updater = updater
@@ -31,9 +32,10 @@ enum UpdaterE2EHarness {
                 writeLine("E2E: updater failed to start: \(error)")
                 exit(4)
             }
-            writeLine("E2E: checking \(feedURL) from version "
-                + "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") ?? "?") "
-                + "(build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "?"))")
+            writeLine(
+                "E2E: checking \(feedURL) from version "
+                    + "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") ?? "?") "
+                    + "(build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "?"))")
             updater.checkForUpdates()
         }
         // safety net: a hung updater must not leave a zombie process around
@@ -58,8 +60,10 @@ private final class FeedDelegate: NSObject, SPUUpdaterDelegate {
 }
 
 private final class AutoAcceptDriver: NSObject, SPUUserDriver {
-    func show(_ request: SPUUpdatePermissionRequest,
-              reply: @escaping (SUUpdatePermissionResponse) -> Void) {
+    func show(
+        _ request: SPUUpdatePermissionRequest,
+        reply: @escaping (SUUpdatePermissionResponse) -> Void
+    ) {
         reply(SUUpdatePermissionResponse(automaticUpdateChecks: false, sendSystemProfile: false))
     }
 
@@ -67,10 +71,13 @@ private final class AutoAcceptDriver: NSObject, SPUUserDriver {
         writeLine("E2E: user-initiated check started")
     }
 
-    func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState,
-                         reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        writeLine("E2E: update found: version \(appcastItem.displayVersionString) "
-            + "(build \(appcastItem.versionString)), installing")
+    func showUpdateFound(
+        with appcastItem: SUAppcastItem, state: SPUUserUpdateState,
+        reply: @escaping (SPUUserUpdateChoice) -> Void
+    ) {
+        writeLine(
+            "E2E: update found: version \(appcastItem.displayVersionString) "
+                + "(build \(appcastItem.versionString)), installing")
         reply(.install)
     }
 
@@ -112,8 +119,10 @@ private final class AutoAcceptDriver: NSObject, SPUUserDriver {
         reply(.install)
     }
 
-    func showInstallingUpdate(withApplicationTerminated applicationTerminated: Bool,
-                              retryTerminatingApplication: @escaping () -> Void) {
+    func showInstallingUpdate(
+        withApplicationTerminated applicationTerminated: Bool,
+        retryTerminatingApplication: @escaping () -> Void
+    ) {
         writeLine("E2E: installing (terminated=\(applicationTerminated))")
     }
 

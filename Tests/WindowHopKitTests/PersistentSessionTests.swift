@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class PersistentSessionTests: XCTestCase {
@@ -28,7 +29,7 @@ final class PersistentSessionTests: XCTestCase {
 
     func testNavigationWorksWithoutHeldModifier() {
         var state = SwitcherState()
-        _ = state.openPersistent(itemCount: 3) // selection 1
+        _ = state.openPersistent(itemCount: 3)  // selection 1
         XCTAssertEqual(state.step(backward: false), .select(index: 2))
         XCTAssertEqual(state.step(backward: true), .select(index: 1))
         XCTAssertEqual(state.arrow(.right), .select(index: 2))
@@ -68,7 +69,7 @@ final class PersistentSessionTests: XCTestCase {
     func testSecondInvocationKeepsCurrentSession() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        _ = state.step(backward: false) // selection 2
+        _ = state.step(backward: false)  // selection 2
         XCTAssertEqual(state.openPersistent(itemCount: 3), .none)
         XCTAssertEqual(state.phase, .sticky)
         XCTAssertEqual(state.selectedIndex, 2)

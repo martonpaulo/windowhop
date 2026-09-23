@@ -36,20 +36,24 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         let openSettings: () -> Void
         let checkForUpdates: () -> Void
 
-        public init(openAccessibilitySetup: @escaping () -> Void,
-                    openSettings: @escaping () -> Void,
-                    checkForUpdates: @escaping () -> Void) {
+        public init(
+            openAccessibilitySetup: @escaping () -> Void,
+            openSettings: @escaping () -> Void,
+            checkForUpdates: @escaping () -> Void
+        ) {
             self.openAccessibilitySetup = openAccessibilitySetup
             self.openSettings = openSettings
             self.checkForUpdates = checkForUpdates
         }
     }
 
-    public init(preferences: Preferences,
-                accessibilityGranted: @escaping () -> Bool,
-                updaterAvailable: @escaping () -> Bool,
-                canCheckForUpdates: @escaping () -> Bool,
-                actions: Actions) {
+    public init(
+        preferences: Preferences,
+        accessibilityGranted: @escaping () -> Bool,
+        updaterAvailable: @escaping () -> Bool,
+        canCheckForUpdates: @escaping () -> Bool,
+        actions: Actions
+    ) {
         self.preferences = preferences
         self.accessibilityGranted = accessibilityGranted
         self.updaterAvailable = updaterAvailable
@@ -72,8 +76,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
     }
 
     var state: StatusItemState {
-        StatusItemState.resolve(switcherEnabled: preferences.switcherEnabled,
-                                accessibilityGranted: accessibilityGranted())
+        StatusItemState.resolve(
+            switcherEnabled: preferences.switcherEnabled,
+            accessibilityGranted: accessibilityGranted())
     }
 
     private func refreshStatusItem() {
@@ -89,8 +94,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
     /// state, so it reads without color and without opening the menu.
     func refreshButton(_ button: NSButton) {
         let state = state
-        button.image = NSImage(systemSymbolName: state.symbolName,
-                               accessibilityDescription: state.accessibilityLabel)
+        button.image = NSImage(
+            systemSymbolName: state.symbolName,
+            accessibilityDescription: state.accessibilityLabel)
     }
 
     /// Builds the item's menu once, with every item it can ever show.
@@ -102,8 +108,9 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         statusRow.tag = ItemTag.status.rawValue
         statusRow.isHidden = true
         menu.addItem(statusRow)
-        let setupItem = NSMenuItem(title: String(localized: "Open Accessibility Setup…"),
-                                   action: #selector(openAccessibilitySetup), keyEquivalent: "")
+        let setupItem = NSMenuItem(
+            title: String(localized: "Open Accessibility Setup…"),
+            action: #selector(openAccessibilitySetup), keyEquivalent: "")
         setupItem.target = self
         setupItem.tag = ItemTag.accessibilitySetup.rawValue
         setupItem.isHidden = true
@@ -112,24 +119,28 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         statusSeparator.tag = ItemTag.statusSeparator.rawValue
         statusSeparator.isHidden = true
         menu.addItem(statusSeparator)
-        let toggleItem = NSMenuItem(title: String(localized: "Disable"),
-                                    action: #selector(toggleEnabled), keyEquivalent: "")
+        let toggleItem = NSMenuItem(
+            title: String(localized: "Disable"),
+            action: #selector(toggleEnabled), keyEquivalent: "")
         toggleItem.target = self
         toggleItem.tag = ItemTag.toggle.rawValue
         menu.addItem(toggleItem)
-        let settingsItem = NSMenuItem(title: String(localized: "Settings…"),
-                                      action: #selector(openSettings), keyEquivalent: "")
+        let settingsItem = NSMenuItem(
+            title: String(localized: "Settings…"),
+            action: #selector(openSettings), keyEquivalent: "")
         settingsItem.target = self
         menu.addItem(settingsItem)
-        let updatesItem = NSMenuItem(title: String(localized: "Check for Updates…"),
-                                     action: #selector(checkForUpdates), keyEquivalent: "")
+        let updatesItem = NSMenuItem(
+            title: String(localized: "Check for Updates…"),
+            action: #selector(checkForUpdates), keyEquivalent: "")
         updatesItem.target = self
         updatesItem.tag = ItemTag.checkForUpdates.rawValue
         updatesItem.isHidden = true
         menu.addItem(updatesItem)
         menu.addItem(.separator())
-        let quitItem = NSMenuItem(title: String(localized: "Quit WindowHop"),
-                                  action: #selector(quit), keyEquivalent: "")
+        let quitItem = NSMenuItem(
+            title: String(localized: "Quit WindowHop"),
+            action: #selector(quit), keyEquivalent: "")
         quitItem.target = self
         menu.addItem(quitItem)
         return menu

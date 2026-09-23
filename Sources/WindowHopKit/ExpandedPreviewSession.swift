@@ -35,8 +35,9 @@ public struct ExpandedPreviewSession<ID: Hashable> {
 
     public mutating func settle(_ request: Request, availableWindowIDs: Set<ID>) -> ID? {
         guard request.generation == generation,
-              targetedWindowID == request.windowID,
-              availableWindowIDs.contains(request.windowID) else { return nil }
+            targetedWindowID == request.windowID,
+            availableWindowIDs.contains(request.windowID)
+        else { return nil }
         expandedWindowID = request.windowID
         return request.windowID
     }

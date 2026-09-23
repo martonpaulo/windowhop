@@ -1,5 +1,6 @@
 import CoreGraphics
 import XCTest
+
 @testable import WindowHopKit
 
 /// A restored Settings frame stays where the person put it while its title bar

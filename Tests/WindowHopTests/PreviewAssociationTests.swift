@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -26,21 +27,24 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     private func item(_ id: String) -> SwitcherItem {
-        SwitcherItem(id: id, window: nil, title: "Window \(id)",
-                     appName: "TestApp", icon: nil, tabCount: nil)
+        SwitcherItem(
+            id: id, window: nil, title: "Window \(id)",
+            appName: "TestApp", icon: nil, tabCount: nil)
     }
 
     private var image: NSImage { NSImage(size: NSSize(width: 40, height: 30)) }
 
     func testReusedTileResetsStaleImageState() {
         let tile = SwitcherTileView()
-        tile.configure(item: item("a"), mode: .windowPreviews,
-                       showTabCounts: false, preview: image)
+        tile.configure(
+            item: item("a"), mode: .windowPreviews,
+            showTabCounts: false, preview: image)
         XCTAssertTrue(tile.showsPreviewImage)
         // the pooled tile now represents a window with no snapshot: nothing of
         // the previous occupant may remain visible
-        tile.configure(item: item("b"), mode: .windowPreviews,
-                       showTabCounts: false, preview: nil)
+        tile.configure(
+            item: item("b"), mode: .windowPreviews,
+            showTabCounts: false, preview: nil)
         XCTAssertFalse(tile.showsPreviewImage)
     }
 
@@ -80,8 +84,9 @@ final class PreviewAssociationTests: XCTestCase {
     }
 
     private func renamed(_ id: String) -> SwitcherItem {
-        SwitcherItem(id: id, window: nil, title: "Renamed \(id)",
-                     appName: "TestApp", icon: nil, tabCount: nil)
+        SwitcherItem(
+            id: id, window: nil, title: "Renamed \(id)",
+            appName: "TestApp", icon: nil, tabCount: nil)
     }
 
     func testUnavailableTileStaysUnavailableAfterAMetadataRefresh() throws {

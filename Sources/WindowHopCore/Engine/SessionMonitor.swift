@@ -22,9 +22,11 @@ final class SessionMonitor {
     /// `onEvent` runs on main after the rule has applied the event; `needsRecovery` is the
     /// rule's request for one recovery re-enumeration. Tests pass private centers so they
     /// never post a system-wide notification.
-    init(distributedCenter: NotificationCenter = DistributedNotificationCenter.default(),
-         workspaceCenter: NotificationCenter = NSWorkspace.shared.notificationCenter,
-         onEvent: @escaping @MainActor (SessionAvailability.Event, _ needsRecovery: Bool) -> Void) {
+    init(
+        distributedCenter: NotificationCenter = DistributedNotificationCenter.default(),
+        workspaceCenter: NotificationCenter = NSWorkspace.shared.notificationCenter,
+        onEvent: @escaping @MainActor (SessionAvailability.Event, _ needsRecovery: Bool) -> Void
+    ) {
         let events: [(NotificationCenter, Notification.Name, SessionAvailability.Event)] = [
             (distributedCenter, Self.screenLockedNotification, .screenLocked),
             (distributedCenter, Self.screenUnlockedNotification, .screenUnlocked),

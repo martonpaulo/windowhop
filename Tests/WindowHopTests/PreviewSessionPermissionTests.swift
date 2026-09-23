@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -48,19 +49,22 @@ final class PreviewSessionPermissionTests: XCTestCase {
     /// screenshot or shareable-content lookup is ever started.
     private func items(_ ids: [String]) -> [SwitcherItem] {
         ids.map {
-            SwitcherItem(id: $0, window: nil, title: "Window \($0)",
-                         appName: "TestApp", icon: nil, tabCount: nil)
+            SwitcherItem(
+                id: $0, window: nil, title: "Window \($0)",
+                appName: "TestApp", icon: nil, tabCount: nil)
         }
     }
 
     private func begin(_ status: ScreenRecordingPermission.Status) {
-        provider.beginSession(items: items(["a"]), targetSize: CGSize(width: 100, height: 60),
-                              scale: 2, permissionStatus: status)
+        provider.beginSession(
+            items: items(["a"]), targetSize: CGSize(width: 100, height: 60),
+            scale: 2, permissionStatus: status)
     }
 
     private func join(_ ids: [String]) {
-        provider.extendSession(items: items(ids), targetSize: CGSize(width: 100, height: 60),
-                               scale: 2)
+        provider.extendSession(
+            items: items(ids), targetSize: CGSize(width: 100, height: 60),
+            scale: 2)
     }
 
     func testJoiningWindowsReuseTheSessionStatus() {

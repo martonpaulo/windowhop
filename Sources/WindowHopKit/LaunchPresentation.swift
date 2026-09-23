@@ -18,11 +18,13 @@ public enum LaunchPresentation: Equatable, Sendable {
         case reopen
     }
 
-    public static func decide(trigger: Trigger,
-                              permissionGranted: Bool,
-                              isFirstRun: Bool,
-                              menuBarItemVisible: Bool,
-                              dockIconVisible: Bool) -> LaunchPresentation {
+    public static func decide(
+        trigger: Trigger,
+        permissionGranted: Bool,
+        isFirstRun: Bool,
+        menuBarItemVisible: Bool,
+        dockIconVisible: Bool
+    ) -> LaunchPresentation {
         guard permissionGranted else { return .onboarding }
         switch trigger {
         case .reopen:

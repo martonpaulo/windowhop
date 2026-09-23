@@ -53,13 +53,14 @@ public final class TrackedApp {
     }
 
     nonisolated func windowFacts(from attributes: AXAttributes) -> WindowFacts {
-        WindowFacts(role: attributes.role,
-                    subrole: attributes.subrole,
-                    size: attributes.size,
-                    title: attributes.title,
-                    bundleIdentifier: bundleIdentifier,
-                    localizedAppName: name,
-                    executablePath: executablePath)
+        WindowFacts(
+            role: attributes.role,
+            subrole: attributes.subrole,
+            size: attributes.size,
+            title: attributes.title,
+            bundleIdentifier: bundleIdentifier,
+            localizedAppName: name,
+            executablePath: executablePath)
     }
 
     /// Reads eligibility on main, then hands a `start` to the AX reads queue, which
@@ -114,8 +115,9 @@ actor AppObserver {
     /// `refcon`, so it must outlive `axObserver`.
     private nonisolated let router: AXNotificationRouter
     private var axObserver: AXObserver?
-    private(set) var lifecycle = ObserverLifecycle(maxAttempts: AppObserver.subscriptionRetries,
-                                                   retryDelay: AppObserver.subscriptionRetryDelay)
+    private(set) var lifecycle = ObserverLifecycle(
+        maxAttempts: AppObserver.subscriptionRetries,
+        retryDelay: AppObserver.subscriptionRetryDelay)
 
     nonisolated var unownedExecutor: UnownedSerialExecutor {
         BackgroundWork.axReadsQueue.asUnownedSerialExecutor()
@@ -137,7 +139,8 @@ actor AppObserver {
     /// Feeds one event to the lifecycle and runs its commands.
     private func handle(_ event: ObserverLifecycle.Event) {
         let commands = lifecycle.handle(event)
-        Log.windows.debug("""
+        Log.windows.debug(
+            """
             observer pid=\(self.pid, privacy: .public) \(String(describing: event), privacy: .public) \
             -> \(String(describing: self.lifecycle.phase), privacy: .public) \
             \(String(describing: commands), privacy: .public)
@@ -149,16 +152,17 @@ actor AppObserver {
 
     private func run(_ command: ObserverLifecycle.Command) {
         switch command {
-        case let .subscribe(generation):
+        case .subscribe(let generation):
             handle(subscribeFirstNotification(generation: generation))
-        case let .scheduleRetry(generation, delay):
+        case .scheduleRetry(let generation, let delay):
             BackgroundWork.axReadsQueue.asyncAfter(deadline: .now() + delay) { [weak self] in
                 self?.assumeIsolated { $0.handle(.retryDue(generation: generation)) }
             }
-        case let .subscribeRemainingNotifications(generation):
+        case .subscribeRemainingNotifications(let generation):
             for notification in AppObserver.appNotifications.dropFirst() {
-                subscribe(axElement, to: notification, generation: generation,
-                          attemptsLeft: AppObserver.subscriptionRetries)
+                subscribe(
+                    axElement, to: notification, generation: generation,
+                    attemptsLeft: AppObserver.subscriptionRetries)
             }
         case .discoverWindows:
             // the store drops the request when this app is no longer the tracked one
@@ -168,8 +172,9 @@ actor AppObserver {
             }
         case .removeObserver:
             if let axObserver {
-                CFRunLoopRemoveSource(BackgroundWork.axEventsThread.runLoop,
-                                      AXObserverGetRunLoopSource(axObserver), .commonModes)
+                CFRunLoopRemoveSource(
+                    BackgroundWork.axEventsThread.runLoop,
+                    AXObserverGetRunLoopSource(axObserver), .commonModes)
             }
             axObserver = nil
         }
@@ -189,15 +194,18 @@ actor AppObserver {
                 return .subscriptionFailed(generation: generation, retryable: false)
             }
             // a CFRunLoop source may be added to another thread's run loop
-            CFRunLoopAddSource(BackgroundWork.axEventsThread.runLoop,
-                               AXObserverGetRunLoopSource(created), .commonModes)
+            CFRunLoopAddSource(
+                BackgroundWork.axEventsThread.runLoop,
+                AXObserverGetRunLoopSource(created), .commonModes)
             axObserver = created
             observer = created
         }
         do {
-            let accepted = try axElement.subscribe(observer, AppObserver.appNotifications.first!,
-                                                   refcon: router.refcon)
-            return accepted ? .subscriptionSucceeded(generation: generation)
+            let accepted = try axElement.subscribe(
+                observer, AppObserver.appNotifications.first!,
+                refcon: router.refcon)
+            return accepted
+                ? .subscriptionSucceeded(generation: generation)
                 : .subscriptionFailed(generation: generation, retryable: false)
         } catch {
             return .subscriptionFailed(generation: generation, retryable: true)
@@ -214,28 +222,33 @@ actor AppObserver {
     /// Adds window-level notifications for a newly discovered window element.
     /// Does nothing once the app stopped being observed.
     private func subscribeToWindowNotifications(_ windowElement: AXUIElement) {
-        guard case let .ready(generation) = lifecycle.phase else { return }
+        guard case .ready(let generation) = lifecycle.phase else { return }
         for notification in AppObserver.windowNotifications {
-            subscribe(windowElement, to: notification, generation: generation,
-                      attemptsLeft: AppObserver.subscriptionRetries)
+            subscribe(
+                windowElement, to: notification, generation: generation,
+                attemptsLeft: AppObserver.subscriptionRetries)
         }
     }
 
     /// Subscribes, retrying after a delay while the app is unresponsive (still
     /// launching). Each attempt first checks the generation, so work scheduled for a
     /// stopped owner never reaches AX.
-    private func subscribe(_ element: AXUIElement, to notification: String,
-                           generation: UInt64, attemptsLeft: Int) {
+    private func subscribe(
+        _ element: AXUIElement, to notification: String,
+        generation: UInt64, attemptsLeft: Int
+    ) {
         guard lifecycle.isCurrent(generation), let axObserver else { return }
         do {
             try element.subscribe(axObserver, notification, refcon: router.refcon)
         } catch {
             guard attemptsLeft > 1 else { return }
             BackgroundWork.axReadsQueue.asyncAfter(
-                deadline: .now() + AppObserver.subscriptionRetryDelay) { [weak self] in
+                deadline: .now() + AppObserver.subscriptionRetryDelay
+            ) { [weak self] in
                 self?.assumeIsolated {
-                    $0.subscribe(element, to: notification, generation: generation,
-                                 attemptsLeft: attemptsLeft - 1)
+                    $0.subscribe(
+                        element, to: notification, generation: generation,
+                        attemptsLeft: attemptsLeft - 1)
                 }
             }
         }

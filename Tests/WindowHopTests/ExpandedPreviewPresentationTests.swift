@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -29,16 +30,20 @@ final class ExpandedPreviewPresentationTests: XCTestCase {
     private func targets(_ count: Int) -> [(descriptor: DisplayDescriptor, screen: NSScreen)] {
         guard let screen = NSScreen.screens.first else { return [] }
         return (0..<count).map { index in
-            (DisplayDescriptor(id: "display-\(index)", name: "Display \(index)",
-                               visibleFrame: screen.visibleFrame, backingScale: 2), screen)
+            (
+                DisplayDescriptor(
+                    id: "display-\(index)", name: "Display \(index)",
+                    visibleFrame: screen.visibleFrame, backingScale: 2), screen
+            )
         }
     }
 
     private func items(_ count: Int, titleSuffix: String = "") -> [SwitcherItem] {
         (0..<count).map {
-            SwitcherItem(id: "item-\($0)" as AnyHashable, window: nil,
-                         title: "Window \($0)\(titleSuffix)", appName: "App",
-                         icon: nil, tabCount: nil)
+            SwitcherItem(
+                id: "item-\($0)" as AnyHashable, window: nil,
+                title: "Window \($0)\(titleSuffix)", appName: "App",
+                icon: nil, tabCount: nil)
         }
     }
 
@@ -48,8 +53,9 @@ final class ExpandedPreviewPresentationTests: XCTestCase {
 
     private func openedGroup(panelCount: Int = 1, items list: [SwitcherItem]) throws {
         try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
-        group.prepare(for: targets(panelCount), tileCount: list.count,
-                      tileSize: NSSize(width: 200, height: 160))
+        group.prepare(
+            for: targets(panelCount), tileCount: list.count,
+            tileSize: NSSize(width: 200, height: 160))
         group.update(items: list, selectedIndex: 0)
     }
 

@@ -1,5 +1,6 @@
 import ApplicationServices
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -15,8 +16,9 @@ final class SpaceMembershipTests: XCTestCase {
     }
 
     func testInvalidApplicationPreservesFlagsAndSuspectsEveryWindow() {
-        let result = SpaceMembership.reconcile(tracked: tracked,
-                                               enumeration: WindowEnumeration<String>.applicationInvalid)
+        let result = SpaceMembership.reconcile(
+            tracked: tracked,
+            enumeration: WindowEnumeration<String>.applicationInvalid)
         XCTAssertTrue(result.currentSpace.isEmpty)
         XCTAssertEqual(result.suspects, tracked)
     }
@@ -29,8 +31,9 @@ final class SpaceMembershipTests: XCTestCase {
 
     func testNormalSuccessSetsFlagsAndSuspectsTheAbsent() {
         let result = SpaceMembership.reconcile(tracked: tracked, enumeration: .listed(["a", "c", "new"]))
-        XCTAssertEqual(result.currentSpace, ["a": true, "b": false, "c": true],
-                       "untracked listed windows are discovered elsewhere, not flagged here")
+        XCTAssertEqual(
+            result.currentSpace, ["a": true, "b": false, "c": true],
+            "untracked listed windows are discovered elsewhere, not flagged here")
         XCTAssertEqual(result.suspects, ["b"])
     }
 
@@ -49,14 +52,18 @@ final class SpaceMembershipTests: XCTestCase {
         let window = AXUIElementCreateApplication(getpid())
         let windows = [window, window] as CFArray
 
-        XCTAssertEqual(AXUIElement.windowEnumeration(result: .success, value: windows).listedWindows, [window],
-                       "a normal success lists the windows, deduplicated")
-        XCTAssertEqual(AXUIElement.windowEnumeration(result: .noValue, value: nil), .listed([]),
-                       "an app with no windows is an empty success")
-        XCTAssertEqual(AXUIElement.windowEnumeration(result: .cannotComplete, value: nil), .unavailable,
-                       "a timeout is not an empty inventory")
+        XCTAssertEqual(
+            AXUIElement.windowEnumeration(result: .success, value: windows).listedWindows, [window],
+            "a normal success lists the windows, deduplicated")
+        XCTAssertEqual(
+            AXUIElement.windowEnumeration(result: .noValue, value: nil), .listed([]),
+            "an app with no windows is an empty success")
+        XCTAssertEqual(
+            AXUIElement.windowEnumeration(result: .cannotComplete, value: nil), .unavailable,
+            "a timeout is not an empty inventory")
         XCTAssertEqual(AXUIElement.windowEnumeration(result: .failure, value: nil), .unavailable)
-        XCTAssertEqual(AXUIElement.windowEnumeration(result: .invalidUIElement, value: nil), .applicationInvalid,
-                       "a dead app element is reported as such")
+        XCTAssertEqual(
+            AXUIElement.windowEnumeration(result: .invalidUIElement, value: nil), .applicationInvalid,
+            "a dead app element is reported as such")
     }
 }

@@ -19,9 +19,10 @@ public enum ScreenRecordingPermission {
     private static let requestedKey = "screenRecordingPermissionWasRequested"
 
     public static var status: Status {
-        classify(preflightGranted: CGPreflightScreenCaptureAccess(),
-                 hasRequested: UserDefaults.standard.bool(forKey: requestedKey),
-                 isRestricted: false)
+        classify(
+            preflightGranted: CGPreflightScreenCaptureAccess(),
+            hasRequested: UserDefaults.standard.bool(forKey: requestedKey),
+            isRestricted: false)
     }
 
     public static var isGranted: Bool {
@@ -44,9 +45,11 @@ public enum ScreenRecordingPermission {
     /// Pure classification seam for permission-state regression coverage.
     /// Public macOS preflight currently collapses restricted into a failed
     /// grant; callers with a stronger public signal can preserve it here.
-    static func classify(preflightGranted: Bool,
-                         hasRequested: Bool,
-                         isRestricted: Bool) -> Status {
+    static func classify(
+        preflightGranted: Bool,
+        hasRequested: Bool,
+        isRestricted: Bool
+    ) -> Status {
         if preflightGranted { return .authorized }
         if isRestricted { return .restricted }
         return hasRequested ? .denied : .notDetermined

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// The preview↔window assignment must be UNIQUE: two windows of the same app can
@@ -79,7 +80,7 @@ final class PreviewMatchingTests: XCTestCase {
         // Chromium keeps 1×1 and off-screen helper windows in the window list
         let requests = [Request(id: "a", pid: 7, title: "Docs", frame: nil)]
         let candidates = [
-            Candidate(index: 0, pid: 7, title: "Docs", frame: CGRect(x: 0, y: 0, width: 1, height: 1)),
+            Candidate(index: 0, pid: 7, title: "Docs", frame: CGRect(x: 0, y: 0, width: 1, height: 1))
         ]
         XCTAssertTrue(PreviewMatcher.assign(requests: requests, candidates: candidates).isEmpty)
     }
@@ -109,23 +110,27 @@ final class PreviewMatchingTests: XCTestCase {
     /// same-frame windows would all look "different" and lose their previews.
     func testElidedWindowServerTitlesStillMatchTheirWindow() {
         let requests = [
-            Request(id: "repo", pid: 7,
-                    title: "martonpaulo/windowhop: Switch between windows, not just apps. "
-                        + "Fast, native macOS window switcher with large app icons or live "
-                        + "previews — free, GPL, no telemetry. - Brave - Personal",
-                    frame: Self.windowFrame),
-            Request(id: "docs", pid: 7,
-                    title: "Accessibility API reference for macOS applications, windows, and "
-                        + "attributes | Apple Developer Documentation - Brave - Personal",
-                    frame: Self.windowFrame),
+            Request(
+                id: "repo", pid: 7,
+                title: "martonpaulo/windowhop: Switch between windows, not just apps. "
+                    + "Fast, native macOS window switcher with large app icons or live "
+                    + "previews — free, GPL, no telemetry. - Brave - Personal",
+                frame: Self.windowFrame),
+            Request(
+                id: "docs", pid: 7,
+                title: "Accessibility API reference for macOS applications, windows, and "
+                    + "attributes | Apple Developer Documentation - Brave - Personal",
+                frame: Self.windowFrame),
         ]
         let candidates = [
-            Candidate(index: 0, pid: 7,
-                      title: "Accessibility API reference …le Developer Documentation",
-                      frame: Self.windowFrame),
-            Candidate(index: 1, pid: 7,
-                      title: "martonpaulo/windowhop: Switch …ws — free, GPL, no telemetry.",
-                      frame: Self.windowFrame),
+            Candidate(
+                index: 0, pid: 7,
+                title: "Accessibility API reference …le Developer Documentation",
+                frame: Self.windowFrame),
+            Candidate(
+                index: 1, pid: 7,
+                title: "martonpaulo/windowhop: Switch …ws — free, GPL, no telemetry.",
+                frame: Self.windowFrame),
         ]
         let result = PreviewMatcher.assign(requests: requests, candidates: candidates)
         XCTAssertEqual(result["repo"], 1)
@@ -138,13 +143,18 @@ final class PreviewMatchingTests: XCTestCase {
         XCTAssertEqual(PreviewMatcher.titleRelation("Report.md — Edited", "Report.md"), .compatible)
         XCTAssertEqual(PreviewMatcher.titleRelation("Inbox", ""), .unknown)
         XCTAssertEqual(PreviewMatcher.titleRelation("Inbox", "Drafts"), .different)
-        XCTAssertEqual(PreviewMatcher.titleRelation("Inbox Rules", "Inbox"), .different,
-                       "a shared word is not a decoration")
-        XCTAssertEqual(PreviewMatcher.titleRelation("Quarterly planning notes for the team",
-                                                    "Quarterly pl…for the team"), .compatible)
-        XCTAssertEqual(PreviewMatcher.titleRelation("Quarterly planning notes for the team",
-                                                    "Q…m"), .different,
-                       "too little of the title survived to mean anything")
+        XCTAssertEqual(
+            PreviewMatcher.titleRelation("Inbox Rules", "Inbox"), .different,
+            "a shared word is not a decoration")
+        XCTAssertEqual(
+            PreviewMatcher.titleRelation(
+                "Quarterly planning notes for the team",
+                "Quarterly pl…for the team"), .compatible)
+        XCTAssertEqual(
+            PreviewMatcher.titleRelation(
+                "Quarterly planning notes for the team",
+                "Q…m"), .different,
+            "too little of the title survived to mean anything")
     }
 }
 
@@ -152,7 +162,7 @@ final class PreviewMatchingTests: XCTestCase {
 final class GridNavigationTests: XCTestCase {
     func testVerticalArrowsMoveByRow() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 8) // selection 1
+        _ = state.trigger(backward: false, itemCount: 8)  // selection 1
         state.updateColumns(3)
         XCTAssertEqual(state.arrow(.down), .select(index: 4))
         XCTAssertEqual(state.arrow(.down), .select(index: 7))
@@ -162,17 +172,17 @@ final class GridNavigationTests: XCTestCase {
 
     func testVerticalArrowsClampAtGridEdges() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 8) // selection 1
+        _ = state.trigger(backward: false, itemCount: 8)  // selection 1
         state.updateColumns(3)
         XCTAssertEqual(state.arrow(.up), .none, "no wrap above the first row")
-        _ = state.arrow(.down) // 4
-        _ = state.arrow(.down) // 7
+        _ = state.arrow(.down)  // 4
+        _ = state.arrow(.down)  // 7
         XCTAssertEqual(state.arrow(.down), .none, "no wrap below the last row")
     }
 
     func testSingleRowKeepsWrappingBehavior() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 3) // selection 1
+        _ = state.trigger(backward: false, itemCount: 3)  // selection 1
         state.updateColumns(1)
         XCTAssertEqual(state.arrow(.down), .select(index: 2))
         XCTAssertEqual(state.arrow(.down), .select(index: 0), "single row wraps like before")

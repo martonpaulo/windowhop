@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class ObserverLifecycleTests: XCTestCase {
@@ -24,8 +25,9 @@ final class ObserverLifecycleTests: XCTestCase {
     func testRetryAfterStopIsDropped() {
         var lifecycle = makeLifecycle()
         _ = lifecycle.handle(.start)
-        XCTAssertEqual(lifecycle.handle(.subscriptionFailed(generation: 1, retryable: true)),
-                       [.scheduleRetry(generation: 1, delay: 0.5)])
+        XCTAssertEqual(
+            lifecycle.handle(.subscriptionFailed(generation: 1, retryable: true)),
+            [.scheduleRetry(generation: 1, delay: 0.5)])
         _ = lifecycle.handle(.stop)
         XCTAssertEqual(lifecycle.handle(.retryDue(generation: 1)), [])
         XCTAssertEqual(lifecycle.phase, .stopped)
@@ -51,16 +53,18 @@ final class ObserverLifecycleTests: XCTestCase {
         XCTAssertEqual(lifecycle.handle(.subscriptionSucceeded(generation: 1)), [])
         XCTAssertEqual(lifecycle.handle(.retryDue(generation: 1)), [])
         XCTAssertFalse(lifecycle.isCurrent(1))
-        XCTAssertEqual(lifecycle.handle(.subscriptionSucceeded(generation: 2)),
-                       [.subscribeRemainingNotifications(generation: 2), .discoverWindows(generation: 2)])
+        XCTAssertEqual(
+            lifecycle.handle(.subscriptionSucceeded(generation: 2)),
+            [.subscribeRemainingNotifications(generation: 2), .discoverWindows(generation: 2)])
     }
 
     func testRetriesStopWhenAttemptsAreExhausted() {
         var lifecycle = makeLifecycle(attempts: 3)
         _ = lifecycle.handle(.start)
         for _ in 1...2 {
-            XCTAssertEqual(lifecycle.handle(.subscriptionFailed(generation: 1, retryable: true)),
-                           [.scheduleRetry(generation: 1, delay: 0.5)])
+            XCTAssertEqual(
+                lifecycle.handle(.subscriptionFailed(generation: 1, retryable: true)),
+                [.scheduleRetry(generation: 1, delay: 0.5)])
             XCTAssertEqual(lifecycle.handle(.retryDue(generation: 1)), [.subscribe(generation: 1)])
         }
         // third attempt fails: no fourth
@@ -72,8 +76,9 @@ final class ObserverLifecycleTests: XCTestCase {
     func testDiscoveryIsRequestedOnceForTheFirstSuccess() {
         var lifecycle = makeLifecycle()
         _ = lifecycle.handle(.start)
-        XCTAssertEqual(lifecycle.handle(.subscriptionSucceeded(generation: 1)),
-                       [.subscribeRemainingNotifications(generation: 1), .discoverWindows(generation: 1)])
+        XCTAssertEqual(
+            lifecycle.handle(.subscriptionSucceeded(generation: 1)),
+            [.subscribeRemainingNotifications(generation: 1), .discoverWindows(generation: 1)])
         XCTAssertEqual(lifecycle.handle(.subscriptionSucceeded(generation: 1)), [])
         XCTAssertEqual(lifecycle.phase, .ready(generation: 1))
     }

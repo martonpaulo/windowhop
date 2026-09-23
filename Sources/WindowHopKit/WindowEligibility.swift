@@ -11,9 +11,11 @@ public struct WindowFacts: Sendable {
     public var localizedAppName: String?
     public var executablePath: String?
 
-    public init(role: String? = nil, subrole: String? = nil, size: CGSize? = nil,
-                title: String? = nil, bundleIdentifier: String? = nil,
-                localizedAppName: String? = nil, executablePath: String? = nil) {
+    public init(
+        role: String? = nil, subrole: String? = nil, size: CGSize? = nil,
+        title: String? = nil, bundleIdentifier: String? = nil,
+        localizedAppName: String? = nil, executablePath: String? = nil
+    ) {
         self.role = role
         self.subrole = subrole
         self.size = size
@@ -38,11 +40,13 @@ public struct WindowDisplayState: Sendable {
     public var isOnCurrentSpace: Bool
     public var isOnActiveDisplay: Bool
 
-    public init(isMinimized: Bool, isAppHidden: Bool, isOwnWindow: Bool,
-                isOwnSettingsWindow: Bool = false,
-                isTabbed: Bool = false,
-                isPictureInPicture: Bool = false,
-                isOnCurrentSpace: Bool, isOnActiveDisplay: Bool) {
+    public init(
+        isMinimized: Bool, isAppHidden: Bool, isOwnWindow: Bool,
+        isOwnSettingsWindow: Bool = false,
+        isTabbed: Bool = false,
+        isPictureInPicture: Bool = false,
+        isOnCurrentSpace: Bool, isOnActiveDisplay: Bool
+    ) {
         self.isMinimized = isMinimized
         self.isAppHidden = isAppHidden
         self.isOwnWindow = isOwnWindow
@@ -64,11 +68,13 @@ public struct WindowInclusionPolicy: Equatable, Sendable {
     public var includeOtherSpaces: Bool
     public var includeOtherDisplays: Bool
 
-    public init(includeMinimizedWindows: Bool = false,
-                includeHiddenApplicationWindows: Bool = false,
-                includePictureInPictureWindows: Bool = false,
-                includeOtherSpaces: Bool = true,
-                includeOtherDisplays: Bool = true) {
+    public init(
+        includeMinimizedWindows: Bool = false,
+        includeHiddenApplicationWindows: Bool = false,
+        includePictureInPictureWindows: Bool = false,
+        includeOtherSpaces: Bool = true,
+        includeOtherDisplays: Bool = true
+    ) {
         self.includeMinimizedWindows = includeMinimizedWindows
         self.includeHiddenApplicationWindows = includeHiddenApplicationWindows
         self.includePictureInPictureWindows = includePictureInPictureWindows
@@ -89,16 +95,20 @@ public enum WindowEligibility {
         // or "AXSystemDialog" (IntelliJ tooltips). Minimized windows and windows of hidden apps
         // report subrole "AXDialog"; they stay "actual" and are filtered by shouldDisplay instead.
         guard let size = facts.size, size.width > 100, size.height > 50 else { return false }
-        let specialApp = books(facts) || keynote(facts) || preview(facts) || iina(facts)
+        let specialApp =
+            books(facts) || keynote(facts) || preview(facts) || iina(facts)
             || openFlStudio(facts) || crossoverWindow(facts)
         let standardSubrole = facts.subrole.map { standardSubroles.contains($0) } ?? false
-        let appSpecificSubrole = openBoard(facts) || adobeFloatingWindow(facts) || steam(facts)
+        let appSpecificSubrole =
+            openBoard(facts) || adobeFloatingWindow(facts) || steam(facts)
             || worldOfWarcraft(facts) || battleNetBootstrapper(facts) || firefox(facts)
             || vlcFullscreenVideo(facts) || androidEmulator(facts) || autocad(facts)
         guard specialApp || standardSubrole || appSpecificSubrole else { return false }
         if !specialApp {
-            guard mustHaveIfJetbrainsApp(facts) && mustHaveIfSteam(facts)
-                && mustHaveIfFusion360(facts) && mustHaveIfColorSlurp(facts) else { return false }
+            guard
+                mustHaveIfJetbrainsApp(facts) && mustHaveIfSteam(facts)
+                    && mustHaveIfFusion360(facts) && mustHaveIfColorSlurp(facts)
+            else { return false }
         }
         return true
     }
@@ -109,14 +119,18 @@ public enum WindowEligibility {
         case ownWindow, minimized, appHidden, tabbed, pictureInPicture, otherSpace, otherDisplay
     }
 
-    public static func shouldDisplay(_ state: WindowDisplayState,
-                                     policy: WindowInclusionPolicy) -> Bool {
+    public static func shouldDisplay(
+        _ state: WindowDisplayState,
+        policy: WindowInclusionPolicy
+    ) -> Bool {
         exclusionReason(state, policy: policy) == nil
     }
 
     /// Why `shouldDisplay` rejects the window, or nil when it is shown.
-    public static func exclusionReason(_ state: WindowDisplayState,
-                                       policy: WindowInclusionPolicy) -> ExclusionReason? {
+    public static func exclusionReason(
+        _ state: WindowDisplayState,
+        policy: WindowInclusionPolicy
+    ) -> ExclusionReason? {
         if state.isOwnWindow && !state.isOwnSettingsWindow { return .ownWindow }
         if state.isMinimized && !policy.includeMinimizedWindows { return .minimized }
         if state.isAppHidden && !policy.includeHiddenApplicationWindows { return .appHidden }
@@ -139,8 +153,10 @@ public enum WindowEligibility {
     private static func mustHaveIfJetbrainsApp(_ facts: WindowFacts) -> Bool {
         // JetBrains apps generate non-windows that pass the standard checks; they have no title
         guard let bundleIdentifier = facts.bundleIdentifier,
-              bundleIdentifier.range(of: "^com\\.(jetbrains\\.|google\\.android\\.studio).*?$",
-                                     options: .regularExpression) != nil else { return true }
+            bundleIdentifier.range(
+                of: "^com\\.(jetbrains\\.|google\\.android\\.studio).*?$",
+                options: .regularExpression) != nil
+        else { return true }
         return (facts.subrole == "AXStandardWindow" || hasTitle(facts))
             && (facts.size.map { $0.width > 100 && $0.height > 100 } ?? false)
     }

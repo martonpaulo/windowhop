@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -29,15 +30,16 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         @ObservedObject var model: Model
 
         var body: some View {
-            ShortcutRecorderField(shortcut: $model.shortcut,
-                                  validationMessage: $model.validationMessage,
-                                  switcherShortcut: model.switcherShortcut,
-                                  onRecordingChanged: { model.forwardedRecording.append($0) },
-                                  systemShortcuts: { model.systemShortcuts },
-                                  confirmSystemShortcut: { captured, _, completion in
-                                      model.confirmationRequests.append(captured)
-                                      completion(model.confirmationAnswer)
-                                  })
+            ShortcutRecorderField(
+                shortcut: $model.shortcut,
+                validationMessage: $model.validationMessage,
+                switcherShortcut: model.switcherShortcut,
+                onRecordingChanged: { model.forwardedRecording.append($0) },
+                systemShortcuts: { model.systemShortcuts },
+                confirmSystemShortcut: { captured, _, completion in
+                    model.confirmationRequests.append(captured)
+                    completion(model.confirmationAnswer)
+                })
         }
     }
 
@@ -74,8 +76,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
     }
 
     private func makeRetainedWindow(frame: NSRect) -> NSWindow {
-        let window = NSWindow(contentRect: frame, styleMask: [.titled, .closable],
-                              backing: .buffered, defer: false)
+        let window = NSWindow(
+            contentRect: frame, styleMask: [.titled, .closable],
+            backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         return window
     }
@@ -102,20 +105,25 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         PersistentShortcut(keyCode: KeyCode.tab, modifiers: modifiers)
     }
 
-    private func keyEvent(_ keyCode: Int64, _ modifiers: NSEvent.ModifierFlags = [],
-                          for target: NSWindow? = nil) throws -> NSEvent {
-        try XCTUnwrap(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: modifiers,
-            timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: (target ?? window).windowNumber, context: nil,
-            characters: "", charactersIgnoringModifiers: "",
-            isARepeat: false, keyCode: UInt16(keyCode)))
+    private func keyEvent(
+        _ keyCode: Int64, _ modifiers: NSEvent.ModifierFlags = [],
+        for target: NSWindow? = nil
+    ) throws -> NSEvent {
+        try XCTUnwrap(
+            NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: modifiers,
+                timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: (target ?? window).windowNumber, context: nil,
+                characters: "", charactersIgnoringModifiers: "",
+                isARepeat: false, keyCode: UInt16(keyCode)))
     }
 
     /// Delivers a real key-down through `NSApplication.sendEvent(_:)`, the
     /// dispatch path the recorder's local monitor observes.
-    private func sendKey(_ keyCode: Int64, _ modifiers: NSEvent.ModifierFlags = [],
-                         to target: NSWindow? = nil) throws {
+    private func sendKey(
+        _ keyCode: Int64, _ modifiers: NSEvent.ModifierFlags = [],
+        to target: NSWindow? = nil
+    ) throws {
         NSApplication.shared.sendEvent(try keyEvent(keyCode, modifiers, for: target))
     }
 
@@ -130,9 +138,11 @@ final class ShortcutRecorderFieldTests: XCTestCase {
 
     /// Once recording ended, no monitor is left and a key for the recorder's
     /// window reaches neither callback.
-    private func assertNoLongerCapturing(_ control: ShortcutRecorderControl,
-                                         file: StaticString = #filePath,
-                                         line: UInt = #line) throws {
+    private func assertNoLongerCapturing(
+        _ control: ShortcutRecorderControl,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
         var callbacks = 0
         control.onCapture = { _ in callbacks += 1 }
         control.onClear = { callbacks += 1 }
@@ -142,8 +152,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
 
         XCTAssertFalse(control.isInterceptingKeys, "no key monitor survives", file: file, line: line)
         XCTAssertEqual(callbacks, 0, "no capture callback survives", file: file, line: line)
-        XCTAssertEqual(control.title, "Record Shortcut…", "the idle title is back",
-                       file: file, line: line)
+        XCTAssertEqual(
+            control.title, "Record Shortcut…", "the idle title is back",
+            file: file, line: line)
     }
 
     /// Positive control: a key sent through AppKit's dispatch reaches the
@@ -154,8 +165,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
 
         try sendKey(Self.keyK, [.control, .option])
 
-        XCTAssertEqual(model.shortcut,
-                       PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate]))
+        XCTAssertEqual(
+            model.shortcut,
+            PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate]))
         XCTAssertNil(model.validationMessage)
         XCTAssertEqual(transitions.values, [true, false])
         XCTAssertFalse(control.isInterceptingKeys)
@@ -209,8 +221,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         try sendKey(KeyCode.escape, to: other)
         let foreign = try keyEvent(Self.keyK, [.control, .option], for: other)
 
-        XCTAssertIdentical(control.handleRecordingKeyDown(foreign), foreign,
-                           "another window's key event is passed on unchanged")
+        XCTAssertIdentical(
+            control.handleRecordingKeyDown(foreign), foreign,
+            "another window's key event is passed on unchanged")
         XCTAssertEqual(callbacks, 0)
         XCTAssertEqual(transitions.values, [true], "recording continues in its own window")
         XCTAssertNil(model.shortcut)
@@ -249,8 +262,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         control.onCapture?(chord(.maskAlternate))
 
         XCTAssertNil(model.shortcut, "a conflicting chord must not be persisted")
-        XCTAssertEqual(model.validationMessage,
-                       PersistentShortcut.ValidationError.conflictsWithSwitcherShortcut.explanation)
+        XCTAssertEqual(
+            model.validationMessage,
+            PersistentShortcut.ValidationError.conflictsWithSwitcherShortcut.explanation)
     }
 
     func testChordConflictingOnlyWithTheFormerPrimaryIsAccepted() throws {
@@ -298,8 +312,14 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         var callbacks = 0
         let bindingCapture = control.onCapture
         let bindingClear = control.onClear
-        control.onCapture = { callbacks += 1; bindingCapture?($0) }
-        control.onClear = { callbacks += 1; bindingClear?() }
+        control.onCapture = {
+            callbacks += 1
+            bindingCapture?($0)
+        }
+        control.onClear = {
+            callbacks += 1
+            bindingClear?()
+        }
 
         try sendKey(KeyCode.escape)
 
@@ -313,8 +333,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         try sendKey(Self.keyJ, [.control, .option])
         let later = try keyEvent(Self.keyJ, [.control, .option])
 
-        XCTAssertIdentical(control.handleRecordingKeyDown(later), later,
-                           "a later chord is passed on, not swallowed")
+        XCTAssertIdentical(
+            control.handleRecordingKeyDown(later), later,
+            "a later chord is passed on, not swallowed")
         XCTAssertEqual(callbacks, 0, "a later chord is not captured")
         XCTAssertEqual(model.shortcut, installed)
         XCTAssertNil(model.validationMessage)
@@ -334,8 +355,9 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         control.onCapture?(PersistentShortcut(keyCode: 12 /* Q */, modifiers: [.maskCommand]))
 
         XCTAssertEqual(model.shortcut, Self.controlOptionK, "nothing is persisted")
-        XCTAssertEqual(model.validationMessage,
-                       "⌘Q is the Quit command in apps. Choose a combination that isn't a standard app command.")
+        XCTAssertEqual(
+            model.validationMessage,
+            "⌘Q is the Quit command in apps. Choose a combination that isn't a standard app command.")
         XCTAssertEqual(model.confirmationRequests, [])
     }
 

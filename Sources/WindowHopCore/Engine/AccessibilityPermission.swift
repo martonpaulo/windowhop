@@ -51,7 +51,8 @@ public enum AccessibilityPermission {
     public static func observeChanges(_ handler: @escaping @MainActor @Sendable (Bool) -> Void) {
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.accessibility.api"),
-            object: nil, queue: .main) { _ in
+            object: nil, queue: .main
+        ) { _ in
             // the trust table updates just after the notification fires
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 handler(isGranted)

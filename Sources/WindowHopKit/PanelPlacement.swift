@@ -54,10 +54,12 @@ public struct DisplayDescriptor: Equatable, Identifiable, Sendable {
 /// result is never empty. A switcher that opens on no display at all is worse
 /// than one that opens on the wrong display.
 public enum PanelDisplayResolver {
-    public static func targets(placement: SwitcherDisplayPlacement,
-                               chosenDisplayID: String?,
-                               available: [DisplayDescriptor],
-                               pointerDisplayID: String?) -> [DisplayDescriptor] {
+    public static func targets(
+        placement: SwitcherDisplayPlacement,
+        chosenDisplayID: String?,
+        available: [DisplayDescriptor],
+        pointerDisplayID: String?
+    ) -> [DisplayDescriptor] {
         guard !available.isEmpty else { return [] }
         switch placement {
         case .allDisplays:
@@ -69,7 +71,8 @@ public enum PanelDisplayResolver {
             // pointer display. The stored id is deliberately not cleared, so the
             // choice returns by itself when the display is plugged back in.
             if let chosenDisplayID,
-               let chosen = available.first(where: { $0.id == chosenDisplayID }) {
+                let chosen = available.first(where: { $0.id == chosenDisplayID })
+            {
                 return [chosen]
             }
             return [pointerTarget(available: available, pointerDisplayID: pointerDisplayID)]
@@ -77,10 +80,13 @@ public enum PanelDisplayResolver {
     }
 
     /// `available` must not be empty; callers guarantee it.
-    private static func pointerTarget(available: [DisplayDescriptor],
-                                      pointerDisplayID: String?) -> DisplayDescriptor {
+    private static func pointerTarget(
+        available: [DisplayDescriptor],
+        pointerDisplayID: String?
+    ) -> DisplayDescriptor {
         if let pointerDisplayID,
-           let pointer = available.first(where: { $0.id == pointerDisplayID }) {
+            let pointer = available.first(where: { $0.id == pointerDisplayID })
+        {
             return pointer
         }
         return available[0]
@@ -96,22 +102,26 @@ public enum PanelDisplayResolver {
 /// different things depending on which display the user happens to look at.
 public enum SwitcherGridCapacity {
     /// Columns that fit across one display, capped at the number of tiles.
-    public static func columns(visibleWidth: CGFloat,
-                               tileWidth: CGFloat,
-                               spacing: CGFloat,
-                               padding: CGFloat,
-                               maxWidthFraction: CGFloat,
-                               tileCount: Int) -> Int {
+    public static func columns(
+        visibleWidth: CGFloat,
+        tileWidth: CGFloat,
+        spacing: CGFloat,
+        padding: CGFloat,
+        maxWidthFraction: CGFloat,
+        tileCount: Int
+    ) -> Int {
         let maxGridWidth = visibleWidth * maxWidthFraction - padding * 2
         return max(1, min(tileCount, Int((maxGridWidth + spacing) / (tileWidth + spacing))))
     }
 
     /// Rows that fit down one display before the grid has to scroll.
-    public static func maxVisibleRows(visibleHeight: CGFloat,
-                                      tileHeight: CGFloat,
-                                      rowSpacing: CGFloat,
-                                      padding: CGFloat,
-                                      maxHeightFraction: CGFloat) -> Int {
+    public static func maxVisibleRows(
+        visibleHeight: CGFloat,
+        tileHeight: CGFloat,
+        rowSpacing: CGFloat,
+        padding: CGFloat,
+        maxHeightFraction: CGFloat
+    ) -> Int {
         let availableHeight = visibleHeight * maxHeightFraction - padding * 2
         return max(1, Int((availableHeight + rowSpacing) / (tileHeight + rowSpacing)))
     }
@@ -122,13 +132,17 @@ public enum SwitcherGridCapacity {
     /// the identical grid guaranteed to fit everywhere. The cost is real and
     /// accepted: a 5K display beside a 1080p one uses the 1080p capacity.
     public static func mostConstrainedExtent(
-        _ displays: [DisplayDescriptor]) -> (width: CGFloat, height: CGFloat)? {
+        _ displays: [DisplayDescriptor]
+    ) -> (width: CGFloat, height: CGFloat)? {
         guard let first = displays.first else { return nil }
         return displays.dropFirst().reduce(
-            (width: first.visibleFrame.width, height: first.visibleFrame.height)) { limit, display in
-                (width: min(limit.width, display.visibleFrame.width),
-                 height: min(limit.height, display.visibleFrame.height))
-            }
+            (width: first.visibleFrame.width, height: first.visibleFrame.height)
+        ) { limit, display in
+            (
+                width: min(limit.width, display.visibleFrame.width),
+                height: min(limit.height, display.visibleFrame.height)
+            )
+        }
     }
 
     /// The sharpest scale among the targets.
@@ -136,8 +150,10 @@ public enum SwitcherGridCapacity {
     /// One capture feeds every mirrored panel, so it must satisfy the most
     /// demanding display: scaling a Retina-resolution image down for a
     /// non-Retina panel is free, while the reverse is visibly soft.
-    public static func captureScale(_ displays: [DisplayDescriptor],
-                                    fallback: CGFloat) -> CGFloat {
+    public static func captureScale(
+        _ displays: [DisplayDescriptor],
+        fallback: CGFloat
+    ) -> CGFloat {
         displays.map(\.backingScale).max() ?? fallback
     }
 }

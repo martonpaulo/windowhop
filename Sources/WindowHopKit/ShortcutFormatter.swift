@@ -63,9 +63,9 @@ public enum ShortcutFormatter {
         for keyCode: Int64, using labels: KeyLabelSource = ShortcutFormatter.keyLabels
     ) -> String? {
         guard !KeyCodeNames.isSpecial(keyCode),
-              let code = UInt16(exactly: keyCode),
-              let character = labels.character(forKeyCode: code),
-              isSingleVisibleCharacter(character)
+            let code = UInt16(exactly: keyCode),
+            let character = labels.character(forKeyCode: code),
+            isSingleVisibleCharacter(character)
         else { return nil }
         return character
     }

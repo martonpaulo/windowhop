@@ -38,8 +38,9 @@ public final class SwitcherPanelGroup {
     public private(set) var captureScale: CGFloat = 2
 
     public convenience init(preferences: Preferences, previews: PreviewProvider) {
-        self.init(preferences: preferences, previews: previews,
-                  announcer: SelectionAnnouncer(preferences: preferences))
+        self.init(
+            preferences: preferences, previews: previews,
+            announcer: SelectionAnnouncer(preferences: preferences))
     }
 
     init(preferences: Preferences, previews: PreviewProvider, announcer: SelectionAnnouncer) {
@@ -53,9 +54,11 @@ public final class SwitcherPanelGroup {
     /// Called at session start, before `show`. Panels are recreated only when the
     /// target set changes, so a repeated session on the same displays reuses its
     /// panels and their warm tile pools.
-    public func prepare(for targets: [(descriptor: DisplayDescriptor, screen: NSScreen)],
-                        tileCount: Int,
-                        tileSize: NSSize) {
+    public func prepare(
+        for targets: [(descriptor: DisplayDescriptor, screen: NSScreen)],
+        tileCount: Int,
+        tileSize: NSSize
+    ) {
         let descriptors = targets.map(\.descriptor)
         captureScale = SwitcherGridCapacity.captureScale(descriptors, fallback: 2)
 
@@ -70,11 +73,14 @@ public final class SwitcherPanelGroup {
 
     /// The grid every mirrored panel must use, taken from the narrowest and
     /// shortest target so the identical layout fits on all of them.
-    private func sharedLimits(for descriptors: [DisplayDescriptor],
-                              tileCount: Int,
-                              tileSize: NSSize) -> (columns: Int?, rows: Int?) {
+    private func sharedLimits(
+        for descriptors: [DisplayDescriptor],
+        tileCount: Int,
+        tileSize: NSSize
+    ) -> (columns: Int?, rows: Int?) {
         guard descriptors.count > 1,
-              let extent = SwitcherGridCapacity.mostConstrainedExtent(descriptors) else {
+            let extent = SwitcherGridCapacity.mostConstrainedExtent(descriptors)
+        else {
             // a single panel has nothing to agree with and keeps its own capacity
             return (nil, nil)
         }
@@ -117,9 +123,11 @@ public final class SwitcherPanelGroup {
 
     // MARK: - Fanned-out commands
 
-    public func show(items: [SwitcherItem],
-                     selectedIndex: Int,
-                     presentationMode: SwitcherPresentationMode) {
+    public func show(
+        items: [SwitcherItem],
+        selectedIndex: Int,
+        presentationMode: SwitcherPresentationMode
+    ) {
         self.items = items
         panels.forEach {
             $0.show(items: items, selectedIndex: selectedIndex, presentationMode: presentationMode)

@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 /// The one-time move to versioned setting names (#111): every stored choice
@@ -36,8 +37,10 @@ final class PreferencesKeyMigrationTests: XCTestCase {
         ("appearanceMode", .appearanceMode, AppearanceMode.windowPreviews.rawValue, "tiles"),
         ("expandedPreviewDelay", .expandedPreviewDelay, ExpandedPreviewDelay.fiveSeconds.rawValue, "long"),
         ("switcherRevealDelay", .switcherRevealDelay, SwitcherRevealDelay.off.rawValue, "fast"),
-        ("switcherDisplayPlacement", .switcherDisplayPlacement,
-         SwitcherDisplayPlacement.specificDisplay.rawValue, "everywhere"),
+        (
+            "switcherDisplayPlacement", .switcherDisplayPlacement,
+            SwitcherDisplayPlacement.specificDisplay.rawValue, "everywhere"
+        ),
         ("switcherDisplayID", .switcherDisplayID, "37D8832A-2D66-02CA-B9F7-8F30A301B230", 7),
         ("includeOtherSpaces", .includeOtherSpaces, false, "no"),
         ("includeOtherDisplays", .includeOtherDisplays, false, "no"),
@@ -57,8 +60,9 @@ final class PreferencesKeyMigrationTests: XCTestCase {
             XCTAssertEqual(key.rawValue, "\(old).v1")
         }
         // the two names that keep their spelling, and why, are in the migration's doc
-        XCTAssertEqual(Set(Preferences.Key.allCases).subtracting(migrated),
-                       [.automaticUpdateChecks, .navigationPreviewDelay])
+        XCTAssertEqual(
+            Set(Preferences.Key.allCases).subtracting(migrated),
+            [.automaticUpdateChecks, .navigationPreviewDelay])
         XCTAssertEqual(Preferences.Key.automaticUpdateChecks.rawValue, "SUEnableAutomaticChecks")
     }
 
@@ -69,11 +73,13 @@ final class PreferencesKeyMigrationTests: XCTestCase {
 
         for sample in samples {
             XCTAssertNil(defaults.object(forKey: sample.old), "\(sample.old) was not removed")
-            XCTAssertEqual(stored(sample.key.rawValue) as? NSObject,
-                           sample.valid as? NSObject, "\(sample.old) was not copied")
+            XCTAssertEqual(
+                stored(sample.key.rawValue) as? NSObject,
+                sample.valid as? NSObject, "\(sample.old) was not copied")
         }
-        XCTAssertEqual(defaults.integer(forKey: PreferencesKeyMigration.schemaKey),
-                       PreferencesKeyMigration.currentSchema)
+        XCTAssertEqual(
+            defaults.integer(forKey: PreferencesKeyMigration.schemaKey),
+            PreferencesKeyMigration.currentSchema)
     }
 
     func testMigratedChoicesLoadIntoPreferences() {

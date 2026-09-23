@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 @MainActor
@@ -31,7 +32,7 @@ final class SwitcherStateTests: XCTestCase {
 
     func testForwardCyclingWraps() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 3) // selection 1
+        _ = state.trigger(backward: false, itemCount: 3)  // selection 1
         XCTAssertEqual(state.step(backward: false), .select(index: 2))
         XCTAssertEqual(state.step(backward: false), .select(index: 0))
         XCTAssertEqual(state.step(backward: false), .select(index: 1))
@@ -39,22 +40,22 @@ final class SwitcherStateTests: XCTestCase {
 
     func testBackwardCyclingWraps() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 3) // selection 1
+        _ = state.trigger(backward: false, itemCount: 3)  // selection 1
         XCTAssertEqual(state.step(backward: true), .select(index: 0))
         XCTAssertEqual(state.step(backward: true), .select(index: 2))
     }
 
     func testShiftMayBePressedAndReleasedMidSession() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 4) // 1
-        _ = state.step(backward: false) // 2
-        _ = state.step(backward: true) // 1
+        _ = state.trigger(backward: false, itemCount: 4)  // 1
+        _ = state.step(backward: false)  // 2
+        _ = state.step(backward: true)  // 1
         XCTAssertEqual(state.step(backward: false), .select(index: 2))
     }
 
     func testArrowDirections() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 4) // 1
+        _ = state.trigger(backward: false, itemCount: 4)  // 1
         XCTAssertEqual(state.arrow(.down), .select(index: 2))
         XCTAssertEqual(state.arrow(.up), .select(index: 1))
         XCTAssertEqual(state.arrow(.right), .select(index: 2))
@@ -154,7 +155,7 @@ final class SwitcherStateTests: XCTestCase {
     func testWindowClosingKeepsNearbySelection() {
         var state = SwitcherState()
         _ = state.trigger(backward: false, itemCount: 4)
-        _ = state.step(backward: false) // selection 2
+        _ = state.step(backward: false)  // selection 2
         XCTAssertEqual(state.listChanged(itemCount: 3, preferredIndex: 2), .select(index: 2))
         XCTAssertEqual(state.listChanged(itemCount: 2, preferredIndex: 2), .select(index: 1))
     }
@@ -180,7 +181,7 @@ extension SwitcherStateTests {
 
     func testHoverCloseRequestTargetsExplicitIndexWithoutMovingSelection() {
         var state = SwitcherState()
-        _ = state.trigger(backward: false, itemCount: 4) // selection 1
+        _ = state.trigger(backward: false, itemCount: 4)  // selection 1
         XCTAssertEqual(state.closeRequested(index: 3), .requestClose(index: 3))
         XCTAssertEqual(state.phase, .confirming)
         // cancelling restores the exact previous selection
@@ -254,7 +255,7 @@ extension SwitcherStateTests {
         var state = SwitcherState()
         _ = state.trigger(backward: false, itemCount: 3)
         let first = state.sessionID
-        _ = state.trigger(backward: false, itemCount: 3) // step, same session
+        _ = state.trigger(backward: false, itemCount: 3)  // step, same session
         _ = state.arrow(.right)
         _ = state.deleteKey()
         _ = state.confirmationFinished()

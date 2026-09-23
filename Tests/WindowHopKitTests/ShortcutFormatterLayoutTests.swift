@@ -1,5 +1,6 @@
 import Synchronization
 import XCTest
+
 @testable import WindowHopKit
 
 /// Printable shortcut keys are labelled by the current keyboard layout; special
@@ -81,17 +82,21 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
 
         for layout: KeyLabelSource in [Self.us, Self.german, Self.french, recording] {
             XCTAssertEqual(labels(Self.specialKeys, under: layout), canonical)
-            XCTAssertEqual(Self.specialKeys.map(ShortcutFormatter.spokenKeyName(for:)),
-                           ["Tab", "Space", "Return", "Escape", "Delete", "Forward Delete",
-                            "Left Arrow", "Right Arrow", "Up Arrow", "Down Arrow", "F5"])
+            XCTAssertEqual(
+                Self.specialKeys.map(ShortcutFormatter.spokenKeyName(for:)),
+                [
+                    "Tab", "Space", "Return", "Escape", "Delete", "Forward Delete",
+                    "Left Arrow", "Right Arrow", "Up Arrow", "Down Arrow", "F5",
+                ])
         }
         XCTAssertEqual(queried.recorded, [], "special keys never reach the layout")
     }
 
     func testUntranslatableKeysFallBackToTheANSITable() {
         let empty = FixtureLayout([0: "", 1: "\u{10}", 2: " ", 3: "ab", 4: "\t"])
-        XCTAssertEqual(labels([0, 1, 2, 3, 4, 5], under: empty), ["A", "S", "D", "F", "H", "G"],
-                       "empty, control, whitespace, multi-character and missing results fall back")
+        XCTAssertEqual(
+            labels([0, 1, 2, 3, 4, 5], under: empty), ["A", "S", "D", "F", "H", "G"],
+            "empty, control, whitespace, multi-character and missing results fall back")
     }
 
     func testOutOfRangeKeyCodesNeverReachTheLayout() {
@@ -103,8 +108,8 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
     }
 
     func testMultiScalarCharactersStayWhole() {
-        let combining = "e\u{301}"        // one grapheme, two scalars
-        let nonBMP = "\u{1D4B6}"          // one scalar, two UTF-16 units
+        let combining = "e\u{301}"  // one grapheme, two scalars
+        let nonBMP = "\u{1D4B6}"  // one scalar, two UTF-16 units
         let layout = FixtureLayout([0: combining, 1: nonBMP])
 
         XCTAssertEqual(labels([0, 1], under: layout), [combining.uppercased(), nonBMP])
@@ -119,8 +124,9 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
         let shortcut = PersistentShortcut(keyCode: 6, modifiers: [.maskAlternate])
 
         XCTAssertEqual(shortcut.spokenString, "Option Y")
-        XCTAssertEqual(ShortcutFormatter.spokenChord(modifiers: .maskCommand, keyCode: KeyCode.tab),
-                       "Command Tab")
+        XCTAssertEqual(
+            ShortcutFormatter.spokenChord(modifiers: .maskCommand, keyCode: KeyCode.tab),
+            "Command Tab")
     }
 
     func testPrintableCharacterIsTheLayoutsOwnForm() {

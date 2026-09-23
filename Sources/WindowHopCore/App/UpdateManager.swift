@@ -38,11 +38,13 @@ public final class UpdateManager: NSObject, SPUUpdaterDelegate {
     /// so only a bundled, properly configured WindowHop.app starts the updater.
     public func startIfBundled() {
         guard controller == nil,
-              AppBundle.isApplication(.main),
-              Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else { return }
-        controller = SPUStandardUpdaterController(startingUpdater: true,
-                                                  updaterDelegate: self,
-                                                  userDriverDelegate: nil)
+            AppBundle.isApplication(.main),
+            Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil
+        else { return }
+        controller = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: self,
+            userDriverDelegate: nil)
         controller?.updater.automaticallyChecksForUpdates =
             preferences.automaticUpdateChecks
     }

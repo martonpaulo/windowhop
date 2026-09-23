@@ -1,4 +1,5 @@
 import XCTest
+
 @testable import WindowHopKit
 
 final class ShortcutSpecTests: XCTestCase {
@@ -34,10 +35,12 @@ final class ShortcutSpecTests: XCTestCase {
     }
 
     func testSpokenChordForAccessibility() {
-        XCTAssertEqual(ShortcutFormatter.spokenChord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab),
-                       "Shift Command Tab")
-        XCTAssertEqual(ShortcutFormatter.spokenChord(modifiers: [.maskAlternate], keyCode: KeyCode.space),
-                       "Option Space")
+        XCTAssertEqual(
+            ShortcutFormatter.spokenChord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab),
+            "Shift Command Tab")
+        XCTAssertEqual(
+            ShortcutFormatter.spokenChord(modifiers: [.maskAlternate], keyCode: KeyCode.space),
+            "Option Space")
     }
 
     func testRawValuesAreStable() {

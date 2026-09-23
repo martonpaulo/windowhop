@@ -26,8 +26,10 @@ public enum ProjectLinks {
     /// Only public build metadata and the macOS version are sent: no window
     /// titles, paths, hardware, account or machine identifiers. Opening the URL
     /// shows the form in the browser; the person reviews and submits it.
-    public static func issueReport(for version: AppVersion,
-                                   macOS: OperatingSystemVersion) -> URL {
+    public static func issueReport(
+        for version: AppVersion,
+        macOS: OperatingSystemVersion
+    ) -> URL {
         var components = URLComponents(string: "https://github.com/martonpaulo/windowhop/issues/new")!
         components.queryItems = [
             URLQueryItem(name: "template", value: bugReportTemplate),

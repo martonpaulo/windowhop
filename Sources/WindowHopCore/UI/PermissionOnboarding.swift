@@ -70,19 +70,23 @@ struct PermissionOnboardingView: View {
             if AccessibilityPermission.isTranslocated {
                 // quarantined apps run from a randomized path; no grant can stick
                 Label {
-                    Text("WindowHop is running from a temporary macOS location, so this permission can't be saved. Move WindowHop.app into Applications with Finder, then open it again.")
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        "WindowHop is running from a temporary macOS location, so this permission can't be saved. Move WindowHop.app into Applications with Finder, then open it again."
+                    )
+                    .fixedSize(horizontal: false, vertical: true)
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                 }
                 .font(.callout)
             }
-            Text("macOS requires this permission to list your windows and to switch between them with the keyboard. It is the only permission WindowHop always needs: the default App Icons appearance works without Screen Recording. If you turn on Window Previews, WindowHop asks for Screen Recording and takes snapshots only while the switcher is open, keeping them in memory — they are never saved or sent anywhere. The only time WindowHop uses the network is to check for and download its own updates.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "macOS requires this permission to list your windows and to switch between them with the keyboard. It is the only permission WindowHop always needs: the default App Icons appearance works without Screen Recording. If you turn on Window Previews, WindowHop asks for Screen Recording and takes snapshots only while the switcher is open, keeping them in memory — they are never saved or sent anywhere. The only time WindowHop uses the network is to check for and download its own updates."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
             Button("Open System Settings") {
                 AccessibilityPermission.openSystemSettings()
             }
@@ -91,10 +95,12 @@ struct PermissionOnboardingView: View {
                 .font(.footnote)
                 .foregroundStyle(.tertiary)
             Divider()
-            Text("Enabled it but the toggle doesn't stick? An update can leave a stale entry behind — reset it and grant again:")
-                .font(.footnote)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+            Text(
+                "Enabled it but the toggle doesn't stick? An update can leave a stale entry behind — reset it and grant again:"
+            )
+            .font(.footnote)
+            .foregroundStyle(.tertiary)
+            .multilineTextAlignment(.center)
             Button(didResetGrant ? "Permission reset — enable WindowHop in the list" : "Reset Stuck Permission…") {
                 // clears our own stale TCC entry so the next grant binds cleanly
                 AccessibilityPermission.resetStaleGrant()

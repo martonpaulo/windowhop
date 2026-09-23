@@ -32,8 +32,10 @@ public enum SpaceMembership {
     /// successful list is either on another Space or silently dead, so it becomes a
     /// suspect. An invalid app element changes no flags but makes every window a
     /// suspect, so the liveness check removes the ones that are really gone.
-    public static func reconcile<ID: Hashable>(tracked: [ID],
-                                               enumeration: WindowEnumeration<ID>) -> Reconciliation<ID> {
+    public static func reconcile<ID: Hashable>(
+        tracked: [ID],
+        enumeration: WindowEnumeration<ID>
+    ) -> Reconciliation<ID> {
         switch enumeration {
         case .listed(let current):
             var flags = [ID: Bool]()
@@ -55,19 +57,23 @@ public enum SpaceMembership {
     /// while the session could not report windows (locked, switched away, asleep), or
     /// across such a period, is treated as `.unavailable`: it keeps every flag and
     /// suspects nothing (#38). The recovery re-enumeration supplies the truth.
-    public static func reconcile<ID: Hashable>(tracked: [ID],
-                                               enumeration: WindowEnumeration<ID>,
-                                               session: SessionAvailability,
-                                               readEpoch: UInt64) -> Reconciliation<ID> {
+    public static func reconcile<ID: Hashable>(
+        tracked: [ID],
+        enumeration: WindowEnumeration<ID>,
+        session: SessionAvailability,
+        readEpoch: UInt64
+    ) -> Reconciliation<ID> {
         let trusted = session.trusts(readStartedAt: readEpoch) ? enumeration : .unavailable
         return reconcile(tracked: tracked, enumeration: trusted)
     }
 
     /// The elements a liveness probe found dead that may really be removed. A probe
     /// taken while the session could not report windows proves nothing, so none are.
-    public static func confirmedDead<ID>(_ dead: [ID],
-                                         session: SessionAvailability,
-                                         readEpoch: UInt64) -> [ID] {
+    public static func confirmedDead<ID>(
+        _ dead: [ID],
+        session: SessionAvailability,
+        readEpoch: UInt64
+    ) -> [ID] {
         session.trusts(readStartedAt: readEpoch) ? dead : []
     }
 

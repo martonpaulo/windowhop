@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -26,8 +27,9 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     private func item(_ id: String, title: String? = nil) -> SwitcherItem {
-        SwitcherItem(id: id, window: nil, title: title ?? "Window \(id)",
-                     appName: "TestApp", icon: nil, tabCount: nil)
+        SwitcherItem(
+            id: id, window: nil, title: title ?? "Window \(id)",
+            appName: "TestApp", icon: nil, tabCount: nil)
     }
 
     private var image: NSImage { NSImage(size: NSSize(width: 40, height: 30)) }
@@ -45,8 +47,9 @@ final class SwitcherTileReuseTests: XCTestCase {
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
 
         XCTAssertTrue(try tile(panel, 0) === first)
-        XCTAssertTrue(panel.tileShowsPreviewForTesting(at: 0),
-                      "an unchanged tile was reconfigured")
+        XCTAssertTrue(
+            panel.tileShowsPreviewForTesting(at: 0),
+            "an unchanged tile was reconfigured")
     }
 
     func testChangedTitleReconfiguresOnlyThatTile() throws {
@@ -124,8 +127,9 @@ final class SwitcherTileReuseTests: XCTestCase {
         let tiles = try (0..<3).map { try tile(panel, $0) }
         let container = try XCTUnwrap(tiles[0].superview)
         let visibleOrder = container.subviews.filter { !$0.isHidden }
-        XCTAssertTrue(visibleOrder.elementsEqual(tiles, by: ===),
-                      "accessibility order must match the item order")
+        XCTAssertTrue(
+            visibleOrder.elementsEqual(tiles, by: ===),
+            "accessibility order must match the item order")
         XCTAssertEqual(try tile(panel, 2).accessibilityLabel(), "Window new, TestApp")
     }
 
@@ -138,7 +142,8 @@ final class SwitcherTileReuseTests: XCTestCase {
 
         XCTAssertTrue(try tile(panel, 0).needsLayout)
         XCTAssertTrue(try tile(panel, 1).needsLayout)
-        XCTAssertFalse(try tile(panel, 2).needsLayout,
-                       "an unaffected tile was restyled")
+        XCTAssertFalse(
+            try tile(panel, 2).needsLayout,
+            "an unaffected tile was restyled")
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 import XCTest
+
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -29,9 +30,10 @@ final class StatusItemMenuTests: XCTestCase {
             accessibilityGranted: { [unowned self] in self.accessibilityGranted },
             updaterAvailable: { [unowned self] in self.updaterAvailable },
             canCheckForUpdates: { [unowned self] in self.canCheck },
-            actions: StatusItemController.Actions(openAccessibilitySetup: {},
-                                                  openSettings: {},
-                                                  checkForUpdates: {}))
+            actions: StatusItemController.Actions(
+                openAccessibilitySetup: {},
+                openSettings: {},
+                checkForUpdates: {}))
     }
 
     override func tearDown() async throws {
@@ -122,8 +124,9 @@ final class StatusItemMenuTests: XCTestCase {
         accessibilityGranted = false
         let menu = controller.makeMenu()
         controller.refresh(menu)
-        XCTAssertEqual(Array(visibleTitles(menu).prefix(2)),
-                       ["Accessibility access needed", "Open Accessibility Setup…"])
+        XCTAssertEqual(
+            Array(visibleTitles(menu).prefix(2)),
+            ["Accessibility access needed", "Open Accessibility Setup…"])
 
         // granting access removes the status rows on the next refresh
         accessibilityGranted = true
@@ -142,8 +145,9 @@ final class StatusItemMenuTests: XCTestCase {
 
         accessibilityGranted = false
         controller.refreshButton(button)
-        XCTAssertEqual(button.image?.accessibilityDescription,
-                       StatusItemState.accessibilityRequired.accessibilityLabel)
+        XCTAssertEqual(
+            button.image?.accessibilityDescription,
+            StatusItemState.accessibilityRequired.accessibilityLabel)
     }
 
     func testSettingsAndQuitAlwaysPresent() {
