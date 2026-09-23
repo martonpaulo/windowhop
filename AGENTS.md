@@ -128,6 +128,10 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 
 - **Public Apple APIs only.** No private frameworks, no `_`-prefixed SPI, no
   `@_silgen_name`. AX attribute *strings* not in headers (e.g. `AXFullScreen`) are fine.
+  For the same reason, so are the undeclared `com.apple.screenIsLocked` /
+  `com.apple.screenIsUnlocked` names observed through the public
+  `DistributedNotificationCenter` (`Engine/SessionMonitor.swift`); if they stop firing,
+  behavior falls back to not knowing the lock state (Decided on #38).
 - **Screen Recording is opt-in only**: ScreenCaptureKit may be used exclusively in
   `Engine/PreviewProvider.swift` (validate.sh enforces this), only during an open
   session in Window Previews mode, never idle-capturing, never persisting images.

@@ -110,6 +110,7 @@ restate it.
 | --- | --- | --- | --- |
 | What opens at launch and reopen | Settings opens at a normal launch only on first run or when both icons are hidden; missing Accessibility opens onboarding on any launch, login included | [architecture.md](architecture.md), "Launch and reopen" | [#80](https://github.com/martonpaulo/windowhop/issues/80) |
 | How settings are named in `UserDefaults` | Versioned `<name>.v1` names with a one-time tested migration; Sparkle's key keeps its name | [feature-defaults.md](feature-defaults.md), "Key names" | [#111](https://github.com/martonpaulo/windowhop/issues/111) |
+| How WindowHop knows the screen is locked | The `com.apple.screenIsLocked` / `com.apple.screenIsUnlocked` distributed notifications, an exception recorded beside the AX-attribute-string rule | [AGENTS.md](../AGENTS.md), "Public Apple APIs only" | [#38](https://github.com/martonpaulo/windowhop/issues/38) |
 | Where UI text lives | One English-only String Catalog, `Support/Localizable.xcstrings`, compiled into a committed `Support/en.lproj`; no translations | [AGENTS.md](../AGENTS.md), "Product copy" | [#39](https://github.com/martonpaulo/windowhop/issues/39) |
 
 ## Accepted evidence gaps

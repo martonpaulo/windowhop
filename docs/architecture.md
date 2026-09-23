@@ -89,6 +89,18 @@ their object without a global:
    current-Space flag. `SpaceMembership` applies only a successful read: a failed
    enumeration (timeout, `.cannotComplete`) keeps each window's last known Space flag,
    while an empty successful list still marks the app's windows off-Space.
+5. A locked screen makes every app publish zero windows over AX, so nothing learned in
+   a dark period may change the inventory (#38). `SessionMonitor` feeds the screen-lock
+   distributed notifications and the `NSWorkspace` session-switch, system-sleep and
+   display-sleep notifications to the pure `SessionAvailability`. While the screen is
+   locked, the session is switched away or the system sleeps, `WindowStore` skips
+   re-enumeration and pruning, ignores `kAXUIElementDestroyed`, and treats a read that
+   started before or during that period as `.unavailable` (`SpaceMembership`). Display
+   sleep alone does not block, because a Screen Sharing session can run while the physical
+   displays sleep. The first event that ends a dark period and leaves the session usable
+   (unlock, session active, system or display wake) runs one `refreshInventory` pass, the
+   same pass a Space change runs; its liveness probe then removes windows that really
+   closed in the dark. Recovery is event-driven: nothing polls.
 
 ### Tabs are never entries
 
@@ -462,7 +474,9 @@ a phantom "other-Space window" (visible symptom: a duplicate entry). Dead elemen
 answer `.invalidUIElement` to any attribute read, so the store validates suspects
 off the main thread — on Space changes (elements missing from `kAXWindows`) and on
 every switcher open (the visible entries) — and removes the dead ones. Ported in
-spirit from AltTab's missing-window checks on trigger (upstream `39070383`).
+spirit from AltTab's missing-window checks on trigger (upstream `39070383`). A probe
+taken while the session is locked, switched away or asleep removes nothing (Window
+model step 5).
 
 ## Close, Quit, Force Quit
 
@@ -552,7 +566,9 @@ no menu bar item to carry the pending state instead.
   alive and consuming; disabled/quit/crash/permission-revoked ⇒ native behavior.
 - Missing permission stops the tap entirely — the shortcut is never partially intercepted.
 - `tapDisabledByTimeout/UserInput` events re-enable the tap in the callback; sleep/wake and
-  session-switch notifications re-arm it from the app delegate.
+  session-switch notifications re-arm it from the app delegate. The same wake, unlock and
+  session events also run one inventory re-enumeration from `WindowStore` (#38), so a
+  window list read while the screen was dark never outlives the dark period.
 - A key-up is consumed only when the latest key-down of that key was consumed: every
   key-down reassigns the key's ownership. A key-up missed while the tap was disabled
   therefore heals at the next press of that key, and a re-enable neither resets the ledger
