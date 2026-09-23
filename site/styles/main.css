@@ -39,7 +39,7 @@
    6. Sections     hero, hero stats, download, open source, inner pages
    7. Live demo    the interactive switcher in the home page hero
    8. Motion       scroll-in reveal, hero entrance
-   9. Responsive   one block per breakpoint: 820px, 640px, 520px
+   9. Responsive   one block per breakpoint: 1024px, 820px, 640px, 520px
 
    Every length comes from a token. The spacing scale is a 0.25rem (4px)
    grid: 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8 rem. Breakpoints cannot be
@@ -224,11 +224,19 @@ h3 {
   text-wrap: balance;
 }
 
-/* Running text never ends on one or two words alone on the last line. */
+/* Running text avoids a short last line (scripts/main.js also joins the last
+   three words of each block). Short text in narrow boxes — table cells, list
+   items, FAQ questions — balances its lines instead, like a heading. */
 p,
-li,
 figcaption {
   text-wrap: pretty;
+}
+
+li,
+td,
+th,
+summary {
+  text-wrap: balance;
 }
 
 :where(a, button, summary, input, select, [tabindex]):focus-visible {
@@ -958,10 +966,26 @@ a.pill:hover {
   font-size: var(--text-xs);
 }
 
+/* A mock shrinks with its card: labels end in an ellipsis instead of
+   pushing the card wider. */
+.mock {
+  max-width: 100%;
+  min-width: 0;
+}
+
 .mock b {
+  overflow: hidden;
   color: var(--text);
   font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.mock-app,
+.mock-file,
+.mock-button,
+.mock-toggle {
+  flex: none;
 }
 
 .mock-app {
@@ -977,12 +1001,15 @@ a.pill:hover {
 
 .mock-lines {
   display: grid;
+  flex: 1;
   gap: var(--space-3xs);
+  min-width: 0;
 }
 
 .mock-lines i {
   display: block;
-  width: 7rem;
+  width: 100%;
+  max-width: 7rem;
   height: 0.375rem;
   border-radius: var(--radius-pill);
   background: var(--line);
@@ -1007,7 +1034,7 @@ a.pill:hover {
 .mock-finder {
   display: grid;
   grid-template-columns: auto auto;
-  gap: var(--space-2xs) var(--space-l);
+  gap: var(--space-2xs) var(--space-m);
   padding-top: var(--space-2xs);
 }
 
@@ -1213,6 +1240,26 @@ a.pill:hover {
 
 .no::before {
   content: "– ";
+}
+
+/* The pills above the comparison table: where WindowHop stands out. */
+.section > .highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin-top: var(--space-m);
+  padding: 0;
+  list-style: none;
+}
+
+.highlights .pill {
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+.highlights .pill::before {
+  content: "✓";
+  color: var(--accent);
 }
 
 /* Small print under a full-width table follows the table's width. */
@@ -1856,9 +1903,16 @@ a.pill:hover {
 }
 
 /* --- 9. Responsive ------------------------------------------------------------------
+   1024px: a half-width window or small laptop; three-column grids take two.
    820px: tablet and below, one column, the header nav on its own row.
    640px: the demo screen becomes nearly square.
    520px: phone, full-width buttons and tighter cards. */
+
+@media (max-width: 1024px) {
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 @media (max-width: 820px) {
   :root {
@@ -1926,9 +1980,6 @@ a.pill:hover {
     justify-self: center;
   }
 
-  .keys-table td:first-child {
-    white-space: normal;
-  }
 }
 
 @media (max-width: 640px) {

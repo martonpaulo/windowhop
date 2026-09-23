@@ -51,7 +51,7 @@
     <section class="page-hero" aria-labelledby="compare-title">
       <p class="eyebrow">Compare</p>
       <h1 id="compare-title">WindowHop, AltTab or the Mac’s own ⌘Tab?</h1>
-      <p class="hero-summary">All three are good at different things. The Mac’s App Switcher is built in and switches apps. <a href="https://github.com/lwouis/alt-tab-macos" rel="noopener">AltTab</a>, which WindowHop comes from, switches windows with many options. WindowHop switches windows with almost no setup. If one of them already works for you, keep it.</p>
+      <p class="hero-summary">The Mac’s ⌘Tab stops at the app. AltTab reaches every window, with search and some styles in a paid Pro version. WindowHop reaches every window with everything free, no Screen Recording for its default style, and no telemetry.</p>
     </section>
 
     <!-- Every claim here is checked against a source listed under the table: Apple's
@@ -60,6 +60,12 @@
     <section class="section" id="alttab-alternative" aria-labelledby="comparison-title">
       <p class="eyebrow">Side by side</p>
       <h2 id="comparison-title">What each switcher does.</h2>
+      <ul class="highlights" aria-label="Where WindowHop stands out">
+        <li class="pill">Everything free, no Pro version</li>
+        <li class="pill">No Screen Recording for the default style</li>
+        <li class="pill">No telemetry, no crash reports</li>
+        <li class="pill">⌘Tab falls back to Apple’s if WindowHop stops</li>
+      </ul>
       <div class="table-scroll" role="region" aria-labelledby="comparison-title" tabindex="0">
         <table class="compare-table">
           <caption class="visually-hidden">The Mac’s App Switcher, WindowHop and AltTab compared, one row per feature</caption>
@@ -73,22 +79,22 @@
           </thead>
           <tbody>
             <tr>
-              <th scope="row">What ⌘Tab switches</th>
-              <td>Apps</td>
-              <td class="is-ours">Windows</td>
-              <td>Windows (on <kbd>⌥</kbd><kbd>Tab</kbd> by default)</td>
+              <th scope="row">What ⌘Tab shows</th>
+              <td><span class="no">Apps only</span></td>
+              <td class="is-ours"><span class="yes">Every window</span></td>
+              <td>Every window, on <kbd>⌥</kbd><kbd>Tab</kbd> by default</td>
             </tr>
             <tr>
-              <th scope="row">Several windows of one app</th>
-              <td>One tile for the app; <kbd>⌘</kbd><kbd>`</kbd> cycles its windows after you switch</td>
-              <td class="is-ours">One tile per window</td>
-              <td>One tile per window</td>
+              <th scope="row">Three windows of one app</th>
+              <td>One icon; then <kbd>⌘</kbd><kbd>`</kbd> to step through them</td>
+              <td class="is-ours"><span class="yes">Three tiles, one press away</span></td>
+              <td>Three tiles</td>
             </tr>
             <tr>
               <th scope="row">Windows on other Spaces</th>
-              <td>Switches to the app’s Space</td>
-              <td class="is-ours">Yes, after you visit that Space once</td>
-              <td>Yes, on every Space</td>
+              <td>Moves you to the app’s Space</td>
+              <td class="is-ours">Yes, once you have visited that Space</td>
+              <td><span class="yes">Yes, on every Space</span></td>
             </tr>
             <tr>
               <th scope="row">Windows on other displays</th>
@@ -99,62 +105,62 @@
             <tr>
               <th scope="row">Styles</th>
               <td>App icons</td>
-              <td class="is-ours">App Icons or Window Previews</td>
-              <td>Thumbnails; App Icons and Titles in Pro</td>
+              <td class="is-ours"><span class="yes">App Icons and Window Previews, both free</span></td>
+              <td>Thumbnails for free; App Icons and Titles only in Pro</td>
             </tr>
             <tr>
               <th scope="row">Search by typing</th>
               <td><span class="no">No</span></td>
-              <td class="is-ours"><span class="no">No</span></td>
-              <td>Yes, in Pro</td>
+              <td class="is-ours"><span class="no">No: one gesture, nothing to type</span></td>
+              <td>Yes, but only in Pro</td>
             </tr>
             <tr>
               <th scope="row">Screen Recording permission</th>
-              <td>Not needed</td>
-              <td class="is-ours">Only for Window Previews</td>
-              <td>For Thumbnails, the free style</td>
+              <td><span class="yes">Not needed</span></td>
+              <td class="is-ours"><span class="yes">Not needed (only for the optional Window Previews)</span></td>
+              <td>Needed for Thumbnails, the free style</td>
             </tr>
             <tr>
               <th scope="row">Accessibility permission</th>
-              <td>Not needed</td>
+              <td><span class="yes">Not needed</span></td>
               <td class="is-ours">Needed</td>
               <td>Needed</td>
             </tr>
             <tr>
               <th scope="row">Settings</th>
               <td>None</td>
-              <td class="is-ours">Four short panes</td>
-              <td>Many options, up to 9 shortcuts in Pro</td>
+              <td class="is-ours"><span class="yes">Four short panes, good defaults</span></td>
+              <td>Many options; up to 9 shortcuts in Pro</td>
             </tr>
             <tr>
               <th scope="row">Price</th>
-              <td>Built into macOS</td>
-              <td class="is-ours">Free</td>
-              <td>Free; Pro costs $9.99 (or $24.99 for lifetime updates)</td>
-            </tr>
-            <tr>
-              <th scope="row">Open source</th>
-              <td>No</td>
-              <td class="is-ours">Yes, GPL-3.0</td>
-              <td>Yes, GPL-3.0</td>
+              <td>Included with macOS</td>
+              <td class="is-ours"><span class="yes">Free, everything included</span></td>
+              <td>Free; Pro costs $9.99, or $24.99 with lifetime updates</td>
             </tr>
             <tr>
               <th scope="row">Data it sends</th>
               <td>Part of macOS</td>
-              <td class="is-ours">Only the update check. No telemetry</td>
-              <td>Update checks, and crash reports after it asks you</td>
+              <td class="is-ours"><span class="yes">Only the update check: no telemetry, no crash reports</span></td>
+              <td>Update checks, and crash reports if you allow them</td>
             </tr>
             <tr>
-              <th scope="row">Apple interfaces it uses</th>
+              <th scope="row">macOS interfaces</th>
               <td>Built in</td>
-              <td class="is-ours">Public Apple APIs only</td>
+              <td class="is-ours"><span class="yes">Public Apple APIs only</span></td>
               <td>Public and private macOS APIs</td>
             </tr>
             <tr>
+              <th scope="row">Open source</th>
+              <td><span class="no">No</span></td>
+              <td class="is-ours"><span class="yes">Yes, GPL-3.0</span></td>
+              <td><span class="yes">Yes, GPL-3.0</span></td>
+            </tr>
+            <tr>
               <th scope="row">Macs</th>
-              <td>Every Mac</td>
+              <td><span class="yes">Every Mac</span></td>
               <td class="is-ours">Apple silicon, macOS 26 or later</td>
-              <td>Intel and Apple silicon, macOS 12 or later</td>
+              <td><span class="yes">Intel and Apple silicon, macOS 12 or later</span></td>
             </tr>
           </tbody>
         </table>
@@ -177,15 +183,16 @@
           <h3>Choose WindowHop if</h3>
           <ul>
             <li>You keep several windows of the same app open.</li>
-            <li>You want ⌘Tab to reach windows, with nearly no settings.</li>
-            <li>You want no Screen Recording permission, no telemetry and no paid tier.</li>
+            <li>You want ⌘Tab itself to reach them, with nothing to set up.</li>
+            <li>You want every feature free, without Screen Recording or telemetry.</li>
+            <li>You want Apple’s ⌘Tab back at once if WindowHop ever stops.</li>
             <li>You have an Apple silicon Mac with macOS 26 or later.</li>
           </ul>
         </article>
         <article class="card reveal">
           <h3>Choose AltTab if</h3>
           <ul>
-            <li>You want to search windows by typing (Pro).</li>
+            <li>You want to search windows by typing, and a Pro licence is fine.</li>
             <li>You want more styles, sizes and shortcuts.</li>
             <li>You have an Intel Mac or a macOS version older than macOS 26.</li>
           </ul>
@@ -198,7 +205,7 @@
       <img src="/assets/app-icon.png" alt="" width="96" height="96" loading="lazy">
       <p class="eyebrow">Try it</p>
       <h2 id="try-title">See if WindowHop is enough for you.</h2>
-      <p>It takes two minutes to install and one drag to remove.</p>
+      <p>Two minutes to install, one drag to remove, and nothing to pay.</p>
       <div class="actions">
         <a class="button primary" href="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-2.2.0.dmg" rel="noopener">Download WindowHop <span data-site-version>2.2.0</span></a>
         <a class="button secondary" href="/help/">Read the help</a>
