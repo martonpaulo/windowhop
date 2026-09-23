@@ -7,15 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-23
+
 ### Added
 
 - **Install with Homebrew**: `brew install --cask martonpaulo/tap/windowhop`.
-
-### Fixed
-
-- **Switching no longer brings a window forward on your other display**: when an app has
-  windows on two displays, choosing one of them now fronts only that window. Before, the
-  app's window on the other display jumped in front too.
 
 ### Changed
 
@@ -24,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   strip at its edges is trimmed instead of leaving empty bands.
 - **Readable update notes**: the update window now shows the release notes on their own,
   in WindowHop's look, instead of the whole GitHub release page.
+
+### Fixed
+
+- **Switching no longer brings a window forward on your other display**: when an app has
+  windows on two displays, choosing one of them now fronts only that window. Before, the
+  app's window on the other display jumped in front too.
 
 ## [2.2.0] - 2026-09-23
 
@@ -650,7 +652,8 @@ apps exposing native tab groups; English-only interface.
   app's only network activity. No telemetry, no accounts.
 - Derived from AltTab v10.12.0 (GPL-3.0), rebuilt on public Apple APIs only.
 
-[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.3.0
 [2.2.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.2.0
 [2.1.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.1.0
 [2.0.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.0.0
