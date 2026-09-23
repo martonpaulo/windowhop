@@ -469,7 +469,7 @@ to publish an issue or change code. Do not ask again for a decision already reco
   generated artifacts that actually exist.
 - The app has no runtime environment variables, so there is no `.env.example`. Diagnostics
   go to the unified log (`App/Log.swift`), and the release-script variables are shell inputs;
-  the README's secrets and variables table lists them. Add an
+  the secrets and variables table in `CONTRIBUTING.md` lists them. Add an
   `.env.example` only if real configuration variables appear, with every supported name and a
   safe placeholder.
 - Keep secrets in the GitHub secret store or the login Keychain, never in versioned files.

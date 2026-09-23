@@ -6,322 +6,144 @@
 
 Switch between windows, not just apps. Fast, native macOS window switcher with large app icons or live previews — free, GPL, no telemetry.
 
-[![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Deploy](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
-
-[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138)](https://swift.org/) [![Xcode 26](https://img.shields.io/badge/Xcode-26-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/)
+**[Download WindowHop](https://github.com/martonpaulo/windowhop/releases/latest)** · [Website](https://windowhop.martonpaulo.com/) · [Help](https://windowhop.martonpaulo.com/help/)
 
 </div>
 
-macOS Command-Tab switches between **apps**. WindowHop gives **every top-level window its own tile**,
-then lands on the exact window you select — including windows on another Space or display. Tabs are
-never separate entries, and the native shortcut keeps working if WindowHop is not running: that is
-the fail-safe, not a fallback.
+## Why WindowHop
 
-It is **native, free, open source, and contains no telemetry**. Sparkle update checks are its only
-network activity; there are no accounts, no analytics, and no advertising. App Icons is the default
-and needs no Screen Recording permission — **Window Previews** is an explicit opt-in whose captures
-stay in memory and are never written to disk or transmitted.
+On a Mac, <kbd>⌘</kbd> <kbd>Tab</kbd> switches between **apps**. When you have three browser
+windows or four terminals open, you still have to find the right window after that.
 
----
+WindowHop gives **every window its own tile**. Hold <kbd>⌘</kbd>, press <kbd>Tab</kbd> until
+the window you want is selected, and release. You land on that exact window, also when it is
+on another Space or another display.
 
-<br />
+- **One tile per window.** A window with ten tabs is one tile, not ten.
+- **Two looks.** Large app icons (the default), or live previews of each window.
+- **Safe.** If WindowHop is not running, <kbd>⌘</kbd> <kbd>Tab</kbd> works as it always did.
+- **Private.** No account, no tracking. Previews stay in memory and are never saved or sent.
+- **Free and open source** under GPL-3.0.
 
-## 🌱 Quick Start
-Requires **macOS 26+** and the **Xcode 26+** command line tools; no paid Apple account is needed.
+## Requirements
 
-```sh
-git clone https://github.com/martonpaulo/windowhop
-cd windowhop
-swift build
-scripts/package-app.sh
-open build/WindowHop.app
-```
-
-Grant **System Settings → Privacy & Security → Accessibility** after the first launch, or the native ⌘Tab keeps answering instead.
-
-Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approved Developer ID identity.
-
-<br />
-
-## 🛠 Commands
-| Command | What it does |
-| --- | --- |
-| `swift test` | Run the unit suite, which must pass with zero warnings |
-| `make check` | Build, lint, test and validate: the gate before a commit, and what CI runs |
-| `make lint` | SwiftLint and swift-format lint with the shared `.swiftlint.yml` and `.swift-format`; any finding fails |
-| `make format` | Rewrite `Sources/` and `Tests/` with swift-format |
-| `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
-| `make strings` | Regenerate the English String Catalog (`Support/Localizable.xcstrings`) and its compiled `Support/en.lproj` after a copy change; `make strings-check` fails when they are out of date |
-| `make help` | List every target (the default goal) |
-| `make build` | Build the debug binary; `CONFIGURATION=release` for the release build |
-| `make app [FORCE=1]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip, through `scripts/package-app.sh` (`--help` lists every option, such as `--version X.Y.Z --build-number N`) |
-| `make dmg [FORCE=1]` | `make app`, then the branded DMG from `build/WindowHop.app` through `scripts/make-dmg.sh` |
-| `make icon` | Regenerate the committed art: app icon, favicons, installer icon and DMG background |
-| `make screenshots` | Capture the published screenshots, which needs a Retina display and Screen Recording permission |
-| `make keys` | One-time: make sure the login Keychain holds the Sparkle key and `SUPublicEDKey` matches it |
-| `make appcast VERSION=… BUILD_NUMBER=… ARCHIVE=… SIGNATURE=…` | Add one release entry to `appcast.xml` for Sparkle (a rehearsal or a recovery; the release workflow does it) |
-| `make clean` | Remove `.build`, `build` and `artifacts` |
-| `scripts/sign-update.sh --archive <zip>` | Sign an update archive with the resolved Sparkle `sign_update` and print its appcast attributes |
-| `scripts/validate-site.sh` | Check the site's host, canonical URL, `robots.txt` and sitemap (skill-deck's canonical copy; `make validate` adds WindowHop's own site checks) |
-| `scripts/social-card.sh` | Render `design/social-card/social-card.html` to `site/social-card.jpg` (needs Node and ImageMagick) |
-| `scripts/verify-release-identity.sh [--app <App.app>]` | Check the signed app against the recorded release identity |
-| `scripts/verify-dmg-branding.sh --dmg <path.dmg>` | Check the DMG branding release gate |
-| `scripts/verify-update-continuity.sh` | Check the Sparkle update-continuity release gate |
-| `scripts/publish-release.sh --tag … --notes-file … --artifact …` | Run the publication step the tag workflow performs |
-
-The debug binary's runtime check flags are documented in [`docs/testing.md`](docs/testing.md).
-
-<br />
-
-## 🔐 Secrets and variables
-The app itself reads none of these: every secret below belongs to the release pipeline (`.github/workflows/release.yml`), which runs only on a `vX.Y.Z` tag, pushed or dispatched by hand by someone with write access, and so is never exposed to pull requests or fork workflows.
-
-| Name | Where | What for |
-| --- | --- | --- |
-| `DEVELOPER_ID_CERT_P12` | Actions secret, `release.yml` | Required for a release. Base64 of the Apple-issued Developer ID Application certificate |
-| `DEVELOPER_ID_CERT_PASSWORD` | Actions secret, `release.yml` | Required for a release. The import password for that P12 |
-| `NOTARY_API_KEY` | Actions secret, `release.yml` | Required for a release. The team App Store Connect API key (`.p8`, Developer role) used by `scripts/notarize.sh` |
-| `NOTARY_API_KEY_ID` | Actions secret, `release.yml` | Required for a release. That key's Key ID |
-| `NOTARY_API_ISSUER_ID` | Actions secret, `release.yml` | Required for a release. The App Store Connect Issuer ID |
-| `NOTARY_PROFILE` | Local shell, `scripts/notarize.sh` | Optional. The Keychain profile for a local rehearsal; defaults to `skd-notary` |
-| `SPARKLE_PRIVATE_KEY` | Actions secret, `release.yml`, mirroring the login Keychain | Required for a release. The EdDSA key that signs the update archive |
-| `DEVELOPER_ID_IDENTITY` | Local shell, `scripts/package-app.sh` | Optional. Names the approved Developer ID identity; without it, packaging is ad-hoc signed |
-
----
-
-<br />
+- A Mac with Apple silicon (M1 or later)
+- macOS 26 or later
 
 ## Install
 
-Download the latest signed `WindowHop-<version>.dmg` from [GitHub Releases](https://github.com/martonpaulo/windowhop/releases/latest), drag WindowHop to Applications, open it, and grant **Accessibility** when it asks.
+1. Download `WindowHop-<version>.dmg` from the
+   [latest release](https://github.com/martonpaulo/windowhop/releases/latest).
+2. Open the file and drag **WindowHop** to the **Applications** folder.
+3. Open WindowHop from Applications. It is signed and notarized by Apple.
+4. WindowHop asks for **Accessibility** permission. Choose **Open System Settings** and turn
+   on WindowHop. It needs this permission to see your windows and switch to them.
 
-<br />
+That is all. WindowHop updates itself: it checks for new versions and asks before it installs
+one.
 
-## Using WindowHop
+## Use it
 
-| Keys | Action |
-|---|---|
-| **⌘⇥** | Open and select the previous window |
-| **⌘⇥⇥…** while holding ⌘ | Cycle forward |
-| **⇧⌘⇥** | Cycle backward |
-| **Release ⌘** | Confirm and activate the selected window |
-| **← → ↑ ↓** | Navigate |
-| **↩** or **Space** | Confirm the selected window |
-| **⎋** | Cancel without changing the desktop |
-| **⌫** | Close the selected window after confirmation |
-| **⌘,** | Open Settings without confirming or cancelling |
-| **Click** | Confirm a tile; click outside to cancel |
+Hold <kbd>⌘</kbd> and press <kbd>Tab</kbd>. The switcher shows your windows, with the
+previous window selected. Press <kbd>Tab</kbd> again to move, then release <kbd>⌘</kbd> to
+switch.
 
-Hovering reveals a Close control centered on the preview canvas's top-left point. It
-always targets that tile and uses a 44 pt hit area without moving the card. During normal
-cycling, the global Settings control appears only while the pointer is anywhere over the
-panel. It remains visible for the complete persistent **Open WindowHop** session. In both
-cases it overlaps the top-right corner without taking layout space or moving previews.
-Close always asks first; Quit is graceful, and Force Quit has its own second warning.
-
-### Expanded preview after pausing
-
-Pause on the selected tile for the configured delay (3 seconds by default) and
-WindowHop enlarges the latest snapshot **inside the switcher**. It never activates,
-raises, focuses, reorders, or moves the real window. Navigation remains available;
-moving to another tile closes the expanded view and starts a new delay. Confirming
-activates the current target immediately. Cancelling leaves the originally focused
-window and desktop stacking unchanged.
-
-### One entry per window
-
-Tabs are never separate switcher entries. Finder, Safari, and Terminal tab groups collapse
-to their visible top-level window. Optional tab-count metadata is hidden by default and
-can be enabled in Settings → Switcher without changing preview width.
-
-### Open WindowHop shortcut
-
-Use **⌥Tab** (configurable in Settings → Shortcuts) when you do not want to hold a modifier.
-It opens a sticky session: Tab, Shift-Tab, and arrows navigate; Return or Space confirms;
-Escape cancels.
-
-<br />
-
-## Preview behavior and permissions
-
-**App Icons** is the default and needs no Screen Recording permission. **Window
-Previews** uses ScreenCaptureKit only while the switcher is open. Captures remain in
-memory and are never written to disk or transmitted. A cached preview may appear first;
-a fresh capture replaces it in place.
-
-Every preview keeps one fixed 16:10 canvas, the same on every monitor. Wide, tall, and narrow windows are
-scaled proportionally and centered over an adaptive semantic surface — never stretched,
-cropped, or left as a transparent hole. The app badge remains attached to the canvas's
-bottom-right corner in every state.
-
-| State | What WindowHop shows |
-|---|---|
-| Capturing | A gently pulsing macOS-window skeleton |
-| Screen Recording is missing | A static subdued skeleton; one panel-level Settings action |
-| Capture failed while permission exists | A static unavailable skeleton |
-| Capture succeeded | The current snapshot |
-
-Missing permission is checked before capture starts, so it cannot masquerade as loading
-or enter a retry loop. Returning from Privacy & Security refreshes the state; once
-permission exists, capture starts without moving the cards.
-
-<br />
-
-## Settings and defaults
-
-Settings has six native panes: General, Shortcuts, Windows, Appearance, Updates, and
-About. Every pane shares one window size, so selecting a pane never resizes or re-centers
-the window, and no pane runs off the bottom of a laptop display. The window reopens where
-you left it, even after relaunch, and comes back to the main display if its display is gone.
-Changes persist and apply immediately when safe; invalid stored values restore documented
-defaults.
-
-### General
-
-- Enable WindowHop — **on**
-- Launch at login — **off**
-- Show menu bar item — **off**
-- Show Dock icon — **off**
-- Restore Defaults… — confirmed action that restores every configurable preference except launch at login
-- Quit WindowHop… — confirmed graceful termination
-
-### Shortcuts
-
-- Switcher shortcut — **⌘Tab**
-- Open WindowHop shortcut — **⌥Tab**
-
-A recorded Open WindowHop chord that conflicts with the switcher shortcut is rejected with
-an explanation instead of being stored. So are chords macOS reserves (Force Quit, ⌥⌘⎋) and
-the standard app commands such as ⌘Q, ⌘W, ⌘, and ⌘C, because WindowHop would take them over
-in every app. A chord that is also an enabled macOS shortcut, such as ⌘Space, asks first:
-Cancel keeps your previous shortcut, Use Anyway lets WindowHop take it over while it runs.
-A shortcut you already have is never rejected or changed.
-
-### Windows
-
-- Include windows from other Spaces — **on**
-- Include windows from other displays — **on**
-- Include minimized windows — **off**
-- Include windows from hidden applications — **off**
-- Include Picture-in-Picture windows — **off**
-- Show the switcher on — **All displays**, the display with the pointer, or a specific display
-
-The switcher appears on every display by default; on a single-display Mac nothing changes.
-"The display with the pointer" is the one you are looking at, which is not always the one
-holding keyboard focus. A specific display is remembered by a stable identifier, so
-unplugging it falls back to the display with the pointer and reconnecting restores your
-choice without reconfiguring anything. This setting controls *where the switcher appears*;
-"Include windows from other displays" above controls *which windows it lists*.
-
-The default is intentionally a curated set of normal windows. Inclusion toggles are
-explicit opt-ins, rebuild the available list, and do not weaken the invariants that
-exclude menus, tooltips, tab siblings, system overlays, or WindowHop's own helper UI.
-
-### Appearance
-
-- Switcher shows — **App Icons** or Window Previews; default **App Icons**
-- Show tab counts — **off**
-- Show an expanded preview after pausing — **Off, 1, 2, 3, or 5 seconds**; default
-  **3 seconds** (Window Previews only)
-- Screen Recording status and the single permission action for Window Previews
-
-### Updates and About
-
-Automatic checks are enabled by default. Sparkle verifies the EdDSA signature and Apple
-code signature before replacing the app in place; the Settings pane also offers a manual
-check. About identifies **Developed by Marton Paulo** and links to the project's source,
-issue tracker, GPL-3.0 license, and AltTab acknowledgement.
-
-<br />
-
-## Updates, signing, and privacy
-
-WindowHop uses [Sparkle](https://sparkle-project.org) and GitHub Releases. Update checks
-are its only network activity. There are no accounts, analytics, advertising, or
-telemetry. Official release automation refuses to publish if the Developer ID identity,
-nested signatures, hardened runtime, designated requirement, notarization, stapling,
-Gatekeeper assessment, DMG branding, or Sparkle signature is missing or inconsistent.
-
-Never tag a release to test credentials; use the local packaging commands and Apple tooling
-directly.
-
-The bundle identifier, Team ID, leaf Developer ID certificate, entitlements, and exact
-designated requirement are validated against the previous official release. This keeps
-macOS TCC permissions associated with the same code identity across Sparkle updates and
-manual in-place replacement.
-
-### One-time recovery for an already-corrupted grant
-
-Only users whose Accessibility entry was created by an old ad-hoc, development-signed,
-translocated, or otherwise differently identified build may need one repair: remove the
-stale WindowHop entry from Privacy & Security → Accessibility, install the current
-official build in Applications, and grant it once. Normal signed updates must not require
-this again.
-
-<br />
-
-## Troubleshooting
-
-- **⌘Tab shows Apple's switcher** — WindowHop is not running, is disabled, or lacks
-  Accessibility. This is the fail-safe; WindowHop never disables the native shortcut.
-- **Window Previews remain static** — use the one panel or Settings action to open Screen
-  Recording, enable WindowHop, then return to the app. App Icons remains fully usable
-  without it.
-- **A window is missing** — minimized, hidden-app, and PiP windows are excluded by
-  default and can be enabled under Settings → Switcher. Public Accessibility APIs
-  reveal an unvisited Space only after you visit it once.
-- **A previous build's Accessibility toggle does not stick** — ensure WindowHop is in
-  Applications and use the one-time recovery above. Running directly from Downloads or
-  the DMG can trigger App Translocation.
-- **Secure input is active** — password fields make WindowHop pass ⌘Tab through to the
-  native switcher until secure input ends.
-- **Diagnosing switching or shortcut behavior** — run `log stream --level debug --process WindowHop` in
-  Terminal while you reproduce the problem. WindowHop logs input, session, panel, and window
-  events there; it logs no window titles.
-
-<br />
-
-## Uninstall
-
-Quit WindowHop, delete `/Applications/WindowHop.app`, and optionally run
-`defaults delete com.martonpaulo.windowhop`. You can also remove WindowHop from Accessibility
-and Screen Recording in System Settings.
-
-<br />
-
-## Documentation
-
-| Document | What it covers |
+| Keys | What they do |
 | --- | --- |
-| [`docs/architecture.md`](docs/architecture.md) | Layering, threading rules, and where each responsibility lives |
-| [`docs/testing.md`](docs/testing.md) | The suite, the runtime checks, and the Sparkle end-to-end harness |
-| [`docs/feature-defaults.md`](docs/feature-defaults.md) | The contract every user-facing default must satisfy |
-| [`docs/website.md`](docs/website.md) | How the site is built and deployed |
-| [`AGENTS.md`](AGENTS.md) | The complete product and repository working agreements |
-| [`CONTRIBUTING.md`](CONTRIBUTING.md) | How to report a bug or propose a change |
-| [`UPSTREAM.md`](UPSTREAM.md) | Upstream attribution and the base tag this work derives from |
-| [`CHANGELOG.md`](CHANGELOG.md) | Every released version |
+| <kbd>⌘</kbd> <kbd>Tab</kbd> | Open the switcher and select the previous window |
+| <kbd>Tab</kbd> or <kbd>→</kbd> | Next window |
+| <kbd>⇧</kbd> <kbd>Tab</kbd> or <kbd>←</kbd> | Previous window |
+| Release <kbd>⌘</kbd>, or <kbd>Return</kbd> | Switch to the selected window |
+| <kbd>Esc</kbd> | Close the switcher and stay where you are |
+| <kbd>Delete</kbd> | Close the selected window (WindowHop asks first) |
+| <kbd>⌘</kbd> <kbd>,</kbd> | Open Settings |
+| Click a tile | Switch to that window |
 
----
+**Do not want to hold a key?** Press <kbd>⌥</kbd> <kbd>Tab</kbd>. The switcher stays open
+until you choose a window with <kbd>Return</kbd>, <kbd>Space</kbd> or a click, or close it
+with <kbd>Esc</kbd>. You can change both shortcuts in Settings → Shortcuts.
 
-<br />
+### Settings
+
+To open Settings, press <kbd>⌘</kbd> <kbd>,</kbd> while the switcher is open, or open
+WindowHop again from Applications. Settings has four panes:
+
+- **General**: turn WindowHop on or off, open it at login, show it in the menu bar or the
+  Dock, and see whether Accessibility is allowed.
+- **Shortcuts**: the switcher shortcut (<kbd>⌘</kbd> <kbd>Tab</kbd>), the Open WindowHop
+  shortcut (<kbd>⌥</kbd> <kbd>Tab</kbd>), a short delay before the switcher appears, and the
+  keys you can use in it.
+- **Switcher**: App Icons or Window Previews, tab counts, which windows to list (other
+  Spaces, other displays, minimized windows, hidden apps, Picture in Picture), and the
+  display the switcher opens on.
+- **About**: the version, updates, and links to the website and to this repository.
+
+**Restore Defaults…** in General puts every setting back to its default.
+
+## Window Previews
+
+App Icons, the default, needs no other permission. To see a small picture of each window
+instead, choose **Window Previews** in Settings → Switcher. macOS then asks for **Screen
+Recording** permission.
+
+WindowHop takes the pictures only while the switcher is open. It keeps them in memory, and
+never saves them to disk or sends them anywhere. If you stay on one window for a moment
+(3 seconds by default), WindowHop shows a larger picture of it. The real window does not
+move until you choose it.
+
+## Check that it works
+
+Hold <kbd>⌘</kbd> and press <kbd>Tab</kbd>. If you see WindowHop's switcher with one tile
+per window, it works. If you see Apple's app switcher instead, read the next section.
+
+## When something does not work
+
+- **<kbd>⌘</kbd> <kbd>Tab</kbd> shows Apple's switcher.** WindowHop is not open, is turned
+  off in Settings → General, or does not have Accessibility permission. When WindowHop cannot
+  answer, the Mac's own switcher does. A password field also sends <kbd>⌘</kbd>
+  <kbd>Tab</kbd> to Apple's switcher until you leave that field.
+- **A window is missing.** Minimized windows, windows of hidden apps and Picture in Picture
+  windows are not listed by default. Turn them on in Settings → Switcher. A window on another
+  Space appears after you visit that Space once while WindowHop is running.
+- **Previews stay grey.** Screen Recording is not allowed. Use the button in the switcher
+  or in Settings → Switcher, turn on WindowHop in System Settings, then come back.
+- **The Accessibility switch does not stay on.** Remove WindowHop from System Settings →
+  Privacy & Security → Accessibility, make sure WindowHop is in Applications, open it from
+  there, and allow it again.
+
+Still stuck? [Report an issue](https://github.com/martonpaulo/windowhop/issues/new/choose),
+or use **Report an Issue…** in Settings → About, which fills in your versions for you.
+
+## Privacy
+
+WindowHop has no account, no analytics and no advertising. The only thing it sends over the
+internet is the update check. You can read every line of the code in this repository.
 
 ## Limitations
 
-- Other-Space windows become discoverable only after that Space has been visited while
-  WindowHop runs; WindowHop deliberately uses no private APIs.
-- Tab counts exist only for apps exposing native tab groups and are never guessed.
-- Screen Recording's public preflight API distinguishes authorized from unavailable but
-  does not expose whether an unavailable grant is specifically denied or restricted;
-  both correctly use the static permission-blocked fallback and single recovery action.
-- English-only interface in this release.
+- Windows on a Space you have not visited since WindowHop started are not listed yet. This
+  is because WindowHop uses only public Apple interfaces.
+- Tab counts appear only for apps that use the standard macOS tabs.
+- WindowHop does not search window titles, arrange windows, or open apps.
+- English only.
 
-<br />
+## Uninstall
 
-## License and attribution
+1. Quit WindowHop: choose **Quit WindowHop…** in Settings → General.
+2. Move WindowHop from Applications to the Trash.
+3. Optional: remove WindowHop from System Settings → Privacy & Security → Accessibility and
+   Screen Recording.
+
+## For developers
+
+Build instructions, commands, the release process and the project rules are in
+[CONTRIBUTING.md](CONTRIBUTING.md). The documentation for each part of the code is in
+[`docs/`](docs/), and [CHANGELOG.md](CHANGELOG.md) lists every version.
+
+## License and credits
 
 [GPL-3.0](LICENSE) © 2026 Marton Paulo.
 
-Derived from [AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise (lwouis) and contributors — base tag `v10.12.0` (`317a485b`), with upstream history preserved.
-
-Upstream attribution in [UPSTREAM.md](UPSTREAM.md).
+WindowHop is derived from [AltTab](https://github.com/lwouis/alt-tab-macos) by Louis Pontoise
+(lwouis) and contributors, base tag `v10.12.0` (`317a485b`), with its history kept.
+[UPSTREAM.md](UPSTREAM.md) has the details.
