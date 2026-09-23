@@ -9,9 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Grant Accessibility again after this update**: WindowHop has a new bundle identifier,
+  `com.martonpaulo.windowhop`, and macOS treats it as a new app. After the update,
+  WindowHop opens its setup window: grant Accessibility again, and Screen Recording again
+  if you use Window Previews. You can then remove the old WindowHop entries from System
+  Settings › Privacy & Security › Accessibility and Screen Recording. Your settings are
+  copied on the first launch and keep their values. If Launch at login was on, WindowHop
+  registers itself again; macOS can ask you to approve it in Login Items.
 - **Settings are stored under versioned names**: the first launch of this version moves
   every setting you chose to its new name and keeps its value. An older WindowHop version
-  started afterwards shows its default settings.
+  started afterwards keeps the settings it had before this update, and changes made in
+  this version do not reach it.
 
 ### Fixed
 

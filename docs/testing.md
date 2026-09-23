@@ -56,7 +56,7 @@ scripts/verify-dmg-branding.sh --dmg artifacts/WindowHop-1.3.1.dmg
 
 `verify-release-identity.sh` fails unless the app has:
 
-- bundle id `com.perso.windowhop` and Team ID `TBN79KU9ML`;
+- bundle id `com.martonpaulo.windowhop` and Team ID `TBN79KU9ML`;
 - the reviewed stable Developer ID Application leaf certificate
   (`Support/ReleaseCertificate.cer`);
 - the exact expected designated requirement;
@@ -65,6 +65,24 @@ scripts/verify-dmg-branding.sh --dmg artifacts/WindowHop-1.3.1.dmg
 
 `verify-update-continuity.sh` applies the same contract to both releases and compares
 their effective designated requirements, identifiers, teams, and entitlements.
+`tests/scripts/verify-update-continuity-tests.sh` (run by `make validate`) covers it with a
+fake `codesign`.
+
+The first release after the identifier move (#43) is the one exception. Its previous
+release is signed with the old identifier, so the plain comparison fails by design. For
+that release only, run:
+
+```sh
+scripts/verify-update-continuity.sh --identifier-transition <old> com.martonpaulo.windowhop \
+    <previous.app> <candidate.app>
+```
+
+`<old>` is `LegacyDomainMigration.legacyDomainName`. The previous app must pass the full
+release-identity contract under `<old>`, the candidate under the new identifier, and the
+two designated requirements may differ only in the `identifier "…"` clause. The mode does
+not keep the TCC grant: users grant Accessibility (and Screen Recording, in Window
+Previews mode) again after that update. Before that release, also prove with the Sparkle
+end-to-end fixture below that an old-identifier build installs the new-identifier update.
 `verify-dmg-branding.sh` validates the image, Finder resource icon, mounted volume icon,
 background, `.DS_Store`, app, and Applications alias. The official workflow then waits
 for notarization, staples and validates app and DMG tickets, and runs Gatekeeper before
@@ -339,6 +357,25 @@ Screen Recording permission.
 - [ ] No updater helper or temporary app bundle requests application permissions.
 - [ ] The notarized app/DMG validate and staple successfully; Gatekeeper accepts both; the
       updater detects 1.3.1 and rejects a tampered signature.
+
+### Bundle identifier move (the first release after #43 only)
+
+These replace the "grants remain" items above for that one release.
+
+- [ ] `verify-update-continuity.sh --identifier-transition` passes for the last
+      old-identifier release and the candidate; the plain mode fails for the same pair.
+- [ ] A local Sparkle appcast updates the signed old-identifier release to the candidate.
+      If Sparkle refuses the new identifier, stop: do not tag.
+- [ ] After that update, onboarding asks for Accessibility; granting it makes ⌘Tab work.
+      Window Previews asks for Screen Recording again. The old WindowHop entries in
+      Privacy & Security can be removed.
+- [ ] Every setting chosen in the old release (shortcuts, appearance, window filters,
+      icons, update checks, Settings position and pane) is unchanged, and a second launch
+      keeps later changes.
+- [ ] With Launch at login on in the old release, the candidate is registered in System
+      Settings › General › Login Items after one launch, with no stale second entry.
+- [ ] `spctl -a -vvv` and `codesign -dvvv` on the notarized app show
+      `com.martonpaulo.windowhop`.
 
 ## Historical integration evidence
 

@@ -492,7 +492,7 @@ offers Cancel/Close only.
 ## Updates
 
 `UpdateManager` wraps Sparkle 2's `SPUStandardUpdaterController` and only starts from a
-real bundle (`com.perso.windowhop` with `SUFeedURL` present). As the updater
+real bundle (`com.martonpaulo.windowhop` with `SUFeedURL` present). As the updater
 delegate it mirrors the latest found update version (`availableVersion`,
 observable) so the Settings Updates pane can show "X.Y.Z is available" with an
 install button; the standard Sparkle dialog still owns install / remind-later /

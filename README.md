@@ -284,7 +284,7 @@ this again.
 ## Uninstall
 
 Quit WindowHop, delete `/Applications/WindowHop.app`, and optionally run
-`defaults delete com.perso.windowhop`. You can also remove WindowHop from Accessibility
+`defaults delete com.martonpaulo.windowhop`. You can also remove WindowHop from Accessibility
 and Screen Recording in System Settings.
 
 <br />

@@ -9,7 +9,8 @@
 - Benefit-first description: Switch between windows, not just apps. Fast, native macOS
   window switcher with large app icons or live previews — free, GPL, no telemetry.
 - Repository: `martonpaulo/windowhop` (public)
-- Public identifiers: bundle identifier `com.perso.windowhop`; SwiftPM package, executable
+- Public identifiers: bundle identifier `com.martonpaulo.windowhop` (Decided on #43; the
+  previous identifier survives only in `LegacyDomainMigration`); SwiftPM package, executable
   target, and app name `WindowHop`; library targets `WindowHopKit` (pure rules) and
   `WindowHopCore` (Engine, Input, UI, App)
 - Landing page: <https://windowhop.martonpaulo.com/> (custom domain in `site/CNAME`),
@@ -65,8 +66,8 @@
   - Signing identity: `Developer ID Application: Marton Paulo (TBN79KU9ML)`, one stable
     identity, checked against `Support/ReleaseCertificate.cer`.
   - Team ID: `TBN79KU9ML`.
-  - Bundle identifier: `com.perso.windowhop`; the embedded Sparkle bundles are verified to be
-    signed by the same team.
+  - Bundle identifier: `com.martonpaulo.windowhop`; the embedded Sparkle bundles are verified
+    to be signed by the same team.
   - Build and package command: `scripts/package-app.sh` (the `.app` and the update ZIP), then
     `scripts/make-dmg.sh`; `scripts/verify-release-identity.sh` checks the result.
   - Entitlements and hardened runtime: no entitlements file (the stable empty set); hardened
@@ -150,7 +151,9 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   The own-process exclusion has exactly one exception: the registered Settings window.
 - **Sparkle is the only runtime dependency**, and update checks are the only permitted
   network activity. No telemetry, no analytics, no accounts, no Pro/license code.
-- The bundle identifier is `com.perso.windowhop` — everywhere, always.
+- The bundle identifier is `com.martonpaulo.windowhop` — everywhere, always. The previous
+  identifier appears only in `WindowHopKit/LegacyDomainMigration.swift` (validate.sh enforces
+  this), which copies its settings domain once (#43).
 - Closing a window always goes through the confirmation dialog (Cancel is default);
   Quit is graceful termination only; Force Quit requires its own second confirmation.
 - **Appearance is fixed**: icon size is Large, the only appearance options are App Icons

@@ -21,10 +21,18 @@ if grep -rn "com\.martonpss\|com\.lwouis\|lwouis\.alt-tab" $TRACKED 2>/dev/null 
 else
     pass "no obsolete bundle identifiers"
 fi
-if [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plist)" = "com.perso.windowhop" ]; then
-    pass "bundle identifier is com.perso.windowhop"
+# The identifier before #43 survives only where the one-time settings copy reads
+# its domain; CHANGELOG.md keeps the history as it was released.
+if grep -n "com\.perso\." $TRACKED 2>/dev/null \
+    | grep -v "^CHANGELOG.md:\|^Sources/WindowHopKit/LegacyDomainMigration.swift:"; then
+    fail "the pre-#43 bundle identifier appears outside LegacyDomainMigration.swift"
 else
-    fail "Support/Info.plist bundle identifier is not com.perso.windowhop"
+    pass "the pre-#43 bundle identifier appears only in the settings migration"
+fi
+if [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plist)" = "com.martonpaulo.windowhop" ]; then
+    pass "bundle identifier is com.martonpaulo.windowhop"
+else
+    fail "Support/Info.plist bundle identifier is not com.martonpaulo.windowhop"
 fi
 # Code reads the identifier at runtime (Bundle.main.bundleIdentifier, #98); only
 # Support/ and the identity checks in scripts/ carry the value.
