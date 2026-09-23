@@ -3,7 +3,7 @@
 ## Automated suite
 
 ```sh
-swift build && swift test   # 164+ unit and integration tests, zero warnings
+swift build && swift test   # 626+ unit and integration tests, zero warnings
 make validate               # repository and documentation invariants
 make strings-check          # the String Catalog matches the sources (CI build job)
 make lint                   # SwiftLint and swift-format lint, warnings as errors (CI build job)
@@ -14,6 +14,29 @@ window lifecycle; title fallback; MRU; keyboard shortcuts; persistence and migra
 the shared inclusion policy for minimized, hidden-app, PiP, other-Space, and
 other-display windows; centralized defaults/reset coverage; and complete event-tap
 sequence ownership.
+
+Every test uses [Swift Testing](https://developer.apple.com/documentation/testing)
+(`import Testing`, `@Test`, `#expect`, `#require`); there is no XCTest. Run one suite
+or one test by its identifier:
+
+```sh
+swift test list                                 # every test identifier
+swift test --filter SwitcherStateTests          # one suite
+swift test --filter PreferencesTests/defaultValues   # one test
+```
+
+Swift Testing runs suites in parallel, where XCTest ran one test at a time:
+
+- A suite that drives AppKit or other process-wide state (windows and key status,
+  `UserDefaults.standard`, the default notification center, the main run loop) is nested
+  in `SharedAppState` (`Tests/WindowHopTests/SharedAppState.swift`), which is
+  `.serialized`: its suites run one test at a time, setup to teardown.
+- `ShortcutFormatter.keyLabels` is process-wide. A test that installs a layout runs on
+  the main actor and restores the ANSI table before it returns, and every suite that
+  reads printable-key labels runs on the main actor, so no test sees another's layout.
+- Setup is the suite's `init`; teardown is the `deinit` of a `final class` suite.
+- A test that needs a display uses the `.needsDisplay` trait; Reduce Motion skips are
+  `.disabled(if:)` traits; a condition known only inside the test calls `Test.cancel`.
 
 AX observer lifecycle changes also run under the Thread Sanitizer:
 

@@ -473,6 +473,8 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 - Add or update focused tests for changed behavior, regressions, persistence, migrations,
   validation, and critical accessibility. Business rules in `WindowHopKit` ship with unit tests.
+  Every test uses Swift Testing (`import Testing`), never XCTest; `docs/testing.md` owns the
+  rules for suites that share process-wide state.
 - A behavioral bug fix includes a regression test proven to fail without the fix: run it
   against the unfixed code and see it fail before committing.
 - Test observable contracts at stable seams; avoid tests that only mirror implementation
