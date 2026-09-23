@@ -8,6 +8,9 @@ excluded:
   - build
   - artifacts
   - DerivedData
+  # agent worktrees and disposable prototypes live inside the checkout, gitignored
+  - .claude
+  - .scratch
 
 strict: true
 reporter: xcode
