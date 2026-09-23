@@ -1,0 +1,5 @@
+# Commits that only reformat code. `git blame` skips them with
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs`; GitHub reads this file itself.
+
+# style: format Sources and Tests with swift-format (#97)
+41ee1f3a6f08b038ecb7275830cd6c209758b827
