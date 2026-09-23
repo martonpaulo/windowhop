@@ -21,6 +21,20 @@ values (the Settings frame autosave and the selected pane) are outside this rule
 WindowHop started after the migration no longer finds the old names and shows its
 defaults. Decided on #111.
 
+## Bundle identifier move
+
+`UserDefaults` is keyed to the bundle identifier, so the release that moved it to
+`com.martonpaulo.windowhop` starts from an empty domain. `LegacyDomainMigration` copies the
+previous identifier's domain once, from the app delegate before `Preferences` is created:
+every `Preferences.Key` name, the unversioned name each key had before #111, the
+`preferences.schema` marker, and the Settings window frame and selected pane. A name the new
+domain already stores keeps its value, and anything else (Sparkle's own state, other
+apps' window frames) is left behind. `PreferencesKeyMigration` then runs on the copied
+names as usual. `preferences.legacyDomainMigrated` records that the copy ran; it is not a
+setting, so Restore Defaults leaves it alone. The old domain is only read, so an older
+build still finds its settings. The bare `swift build` binary never copies. It is not
+configurable: keeping the person's settings is the only valid outcome. Decided on #43.
+
 ## WindowHop 1.3.1 decisions
 
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |

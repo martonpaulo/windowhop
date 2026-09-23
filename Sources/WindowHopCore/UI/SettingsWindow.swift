@@ -209,7 +209,7 @@ enum SettingsPane: String, CaseIterable {
 final class SettingsTabViewController: NSTabViewController {
     /// Stores the pane's stable identifier, so adding or reordering panes never
     /// reopens Settings on a different one.
-    private static let selectedPaneKey = "settingsSelectedPaneIdentifier"
+    static let selectedPaneKey = "settingsSelectedPaneIdentifier"
 
     init(_ dependencies: SettingsDependencies) {
         super.init(nibName: nil, bundle: nil)

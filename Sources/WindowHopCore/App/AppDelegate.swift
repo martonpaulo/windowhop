@@ -22,6 +22,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     private var menuIsRegular: Bool?
 
     override public init() {
+        // before Preferences reads (and key-migrates) anything
+        Self.copyLegacyDomainOnce()
         let preferences = Preferences()
         let previews = PreviewProvider(preferences: preferences)
         let store = WindowStore(preferences: preferences, previews: previews)
@@ -59,6 +61,25 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
                 openSettings: { settingsWindow.show() },
                 checkForUpdates: { updateManager.checkForUpdates() }))
         super.init()
+    }
+
+    /// Copies the settings of the old bundle identifier once (#43). Only a real
+    /// bundle has a domain of its own: the bare `swift build` binary skips it, so
+    /// development runs never copy the installed app's settings.
+    private static func copyLegacyDomainOnce() {
+        guard AppBundle.isApplication(.main), let identifier = Bundle.main.bundleIdentifier,
+            identifier != LegacyDomainMigration.legacyDomainName
+        else { return }
+        let defaults = UserDefaults.standard
+        LegacyDomainMigration.migrate(
+            defaults,
+            currentDomain: defaults.persistentDomain(forName: identifier) ?? [:],
+            legacyDomain: defaults.persistentDomain(forName: LegacyDomainMigration.legacyDomainName),
+            // the Settings window state: AppKit's frame autosave and the selected pane
+            extraNames: [
+                "NSWindow Frame \(SettingsWindowController.defaultFrameAutosaveName)",
+                SettingsTabViewController.selectedPaneKey,
+            ])
     }
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
