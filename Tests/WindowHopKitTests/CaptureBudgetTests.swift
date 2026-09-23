@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Preview captures from every path share one ceiling. These drive the real
 /// budget with held slots, so the ceiling, refill order and cancellation are
