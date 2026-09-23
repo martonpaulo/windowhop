@@ -15,7 +15,8 @@ Three indexed pages, each targeting its own searches, plus the 404 (#126):
 | `/alttab-alternative/` | `site/alttab-alternative/index.html` | The AltTab comparison (#94) |
 
 Every page has its own `<title>`, meta description, canonical URL, `og:url`, Open Graph and
-Twitter tags, and a `sitemap.xml` entry; the inner pages add `BreadcrumbList` JSON-LD. They
+Twitter tags, and a `sitemap.xml` entry. There is no visible breadcrumb: the header marks
+the current page (`aria-current`), so the inner pages carry no `BreadcrumbList` either. They
 share one header whose labels are identical on every page (the 404 included), and they load
 styles and scripts from root paths (`/styles/main.css`), so any page works at any depth.
 

@@ -202,8 +202,7 @@ td a {
 
 /* Every text link darkens (or, in Dark Mode, brightens) the same way on hover. */
 :where(p, li, td) a:hover,
-.text-link:hover,
-.breadcrumb a:hover {
+.text-link:hover {
   color: var(--accent-hover);
 }
 
@@ -908,17 +907,22 @@ a.pill:hover {
   counter-increment: step;
 }
 
-.steps > li::before {
+.steps > li {
+  position: relative;
+}
+
+/* The step number, large and faint in the card's corner; the coloured icon
+   tile (a .feature card) carries the meaning. ::after, because a .feature
+   card's ::before is its glow. */
+.steps > li::after {
   content: counter(step);
-  display: grid;
-  place-items: center;
-  width: var(--space-l);
-  height: var(--space-l);
-  margin-bottom: var(--space-m);
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--accent) 9%, transparent);
-  color: var(--accent);
+  position: absolute;
+  top: var(--space-m);
+  right: var(--space-l);
+  color: color-mix(in srgb, var(--feature-color) 35%, transparent);
+  font-size: var(--text-2xl);
   font-weight: var(--weight-display);
+  line-height: 1;
 }
 
 .download {
@@ -953,6 +957,7 @@ a.pill:hover {
 }
 
 .page-hero h1 {
+  max-width: none;
   margin: 0;
   font-size: var(--text-2xl);
   text-align: left;
@@ -961,17 +966,6 @@ a.pill:hover {
 .page-hero .hero-summary {
   max-width: var(--measure-prose);
   margin: var(--space-m) 0 0;
-}
-
-.breadcrumb {
-  margin: 0 0 var(--space-s);
-  color: var(--secondary);
-  font-size: var(--text-sm);
-}
-
-.breadcrumb a {
-  color: var(--accent);
-  text-decoration: none;
 }
 
 .keys-table {
