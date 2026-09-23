@@ -216,12 +216,19 @@ strong {
   font-weight: var(--weight-strong);
 }
 
-/* Balanced wrapping is for headings; body copy reads worse when the browser
-   evens out the last lines of a long paragraph. */
+/* Headings balance their lines; running text only avoids a short last line,
+   because evening out every line of a long paragraph reads worse. */
 h1,
 h2,
 h3 {
   text-wrap: balance;
+}
+
+/* Running text never ends on one or two words alone on the last line. */
+p,
+li,
+figcaption {
+  text-wrap: pretty;
 }
 
 :where(a, button, summary, input, select, [tabindex]):focus-visible {
@@ -246,17 +253,18 @@ h3 {
 /* Every link that leaves the site ends with the same small arrow, drawn here
    once instead of in the markup of every link. A link to another page of this
    site never carries it. */
+/* It is an empty inline box whose padding holds the arrow, not an inline-block:
+   an inline-block is a line-break opportunity, so punctuation after the link
+   (", ") could wrap onto the next line on its own. */
 a[href^="http"]::after {
   content: "";
-  display: inline-block;
   flex: none;
-  width: 0.7em;
-  height: 0.7em;
-  margin-left: 0.35em;
+  padding-left: 1.05em;  /* 0.35em gap + 0.7em arrow */
+  min-height: 1em;       /* gives it a height inside a flex button; inline text ignores it */
   background: currentColor;
   opacity: 0.8;
-  -webkit-mask: var(--external-arrow) center / contain no-repeat;
-  mask: var(--external-arrow) center / contain no-repeat;
+  -webkit-mask: var(--external-arrow) right center / 0.7em no-repeat;
+  mask: var(--external-arrow) right center / 0.7em no-repeat;
 }
 
 :root {
@@ -770,8 +778,9 @@ a.pill:hover {
   margin-bottom: var(--space-m);
 }
 
-/* Features: a bento grid of cards in three widths. Each card sets --hue, which
-   colours its icon tile and the soft glow in its corner. */
+/* Features: a bento grid of cards in two widths. One accent colours every icon
+   tile and the soft glow in each corner: the cards differ by drawing, not by
+   colour. */
 .bento {
   grid-auto-flow: dense;
 }
@@ -781,8 +790,8 @@ a.pill:hover {
 }
 
 .feature {
-  --feature-color: hsl(var(--hue) 85% 58%);
-  --feature-color-end: hsl(calc(var(--hue) + 30) 80% 52%);
+  --feature-color: var(--accent);
+  --feature-color-end: var(--button-primary-bg);
 
   position: relative;
   isolation: isolate;
@@ -911,18 +920,159 @@ a.pill:hover {
   position: relative;
 }
 
-/* The step number, large and faint in the card's corner; the coloured icon
-   tile (a .feature card) carries the meaning. ::after, because a .feature
-   card's ::before is its glow. */
+/* The step number, in the accent, in the card's corner. */
 .steps > li::after {
   content: counter(step);
   position: absolute;
   top: var(--space-m);
-  right: var(--space-l);
-  color: color-mix(in srgb, var(--feature-color) 35%, transparent);
-  font-size: var(--text-2xl);
+  right: var(--space-m);
+  display: grid;
+  place-items: center;
+  width: var(--space-l);
+  height: var(--space-l);
+  border-radius: var(--radius-pill);
+  background: var(--accent-tint);
+  color: var(--accent);
   font-weight: var(--weight-display);
-  line-height: 1;
+}
+
+/* Each step opens on a small drawing of what the screen shows at that moment:
+   neutral surfaces, the real app icon, and the accent only where the eye
+   should go (the progress, the Open button, the switch that is on). */
+.step-visual {
+  display: grid;
+  place-items: center start;
+  height: 5.5rem;
+  margin-bottom: var(--space-m);
+}
+
+.mock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-s);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-s);
+  font-size: var(--text-xs);
+}
+
+.mock b {
+  color: var(--text);
+  font-weight: var(--weight-strong);
+  white-space: nowrap;
+}
+
+.mock-app {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.mock-folder {
+  width: 2.5rem;
+  height: 2.5rem;
+  fill: color-mix(in srgb, var(--accent) 70%, white);
+}
+
+.mock-lines {
+  display: grid;
+  gap: var(--space-3xs);
+}
+
+.mock-lines i {
+  display: block;
+  width: 7rem;
+  height: 0.375rem;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.mock-file {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xs);
+  color: var(--secondary);
+  font-size: 0.625rem;
+  font-weight: var(--weight-display);
+}
+
+.mock-progress.mock-progress {
+  background: linear-gradient(90deg, var(--accent) 70%, var(--line) 70%);
+}
+
+.mock-finder {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: var(--space-2xs) var(--space-l);
+  padding-top: var(--space-2xs);
+}
+
+.mock-bar {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: var(--space-3xs);
+}
+
+.mock-bar i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.mock-row {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3xs);
+}
+
+.mock-caption {
+  color: var(--secondary);
+}
+
+.mock-arrow {
+  color: var(--accent);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-display);
+}
+
+.mock-button {
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-s);
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  font-weight: var(--weight-strong);
+}
+
+.mock-toggle {
+  position: relative;
+  width: 2.25rem;
+  height: 1.25rem;
+  margin-left: var(--space-s);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+}
+
+.mock-toggle::after {
+  content: "";
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.mock-keys {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
 }
 
 .download {
@@ -1065,7 +1215,9 @@ a.pill:hover {
   content: "– ";
 }
 
+/* Small print under a full-width table follows the table's width. */
 .section > p.sources {
+  max-width: none;
   font-size: var(--text-sm);
 }
 
