@@ -7,14 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [2.1.0] - 2026-09-23
 
-- **Settings is shorter and easier to scan**: four panes instead of six. General shows
-  whether WindowHop is on and whether Accessibility is allowed. Shortcuts lists the keys
-  that work in the switcher, one row per action. Switcher holds the style, the windows it
-  lists and where it appears, with one menu for the display. About holds the version,
-  updates and credits. Each pane is as tall as its content, and every setting keeps its
-  value.
+### Changed
 
 - **Grant Accessibility again after this update**: WindowHop has a new bundle identifier,
   `com.martonpaulo.windowhop`, and macOS treats it as a new app. After the update,
@@ -23,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings › Privacy & Security › Accessibility and Screen Recording. Your settings are
   copied on the first launch and keep their values. If Launch at login was on, WindowHop
   registers itself again; macOS can ask you to approve it in Login Items.
+- **Settings is shorter and easier to scan**: four panes instead of six. General shows
+  whether WindowHop is on and whether Accessibility is allowed. Shortcuts lists the keys
+  that work in the switcher, one row per action. Switcher holds the style, the windows it
+  lists and where it appears, with one menu for the display. About holds the version,
+  updates and credits. Each pane is as tall as its content, and every setting keeps its
+  value.
 - **Settings are stored under versioned names**: the first launch of this version moves
   every setting you chose to its new name and keeps its value. An older WindowHop version
   started afterwards keeps the settings it had before this update, and changes made in
@@ -610,7 +611,8 @@ apps exposing native tab groups; English-only interface.
   app's only network activity. No telemetry, no accounts.
 - Derived from AltTab v10.12.0 (GPL-3.0), rebuilt on public Apple APIs only.
 
-[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.1.0
 [2.0.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.0.0
 [1.6.2]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.2
 [1.6.1]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.1
