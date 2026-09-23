@@ -1,8 +1,9 @@
 import AppKit
 import ApplicationServices
+import Synchronization
 
 /// Semantic input events the tap produces for the controller (delivered on main).
-public enum SwitcherInputEvent: Equatable {
+public enum SwitcherInputEvent: Equatable, Sendable {
     case trigger(backward: Bool)
     case openPersistent
     case step(backward: Bool)
@@ -16,8 +17,8 @@ public enum SwitcherInputEvent: Equatable {
 }
 
 /// What the tap callback is allowed to consume right now. Kept in a tiny
-/// lock-protected box because the callback must decide synchronously on its own thread.
-public enum TapMode: Equatable {
+/// mutex-protected box because the callback must decide synchronously on its own thread.
+public enum TapMode: Equatable, Sendable {
     /// switcher disabled or permission missing: consume nothing, native Cmd-Tab works
     case off
     /// idle: consume only the two configured trigger chords
@@ -31,12 +32,12 @@ public enum TapMode: Equatable {
     case passthrough
 }
 
-enum EventTapDisposition: Equatable {
+enum EventTapDisposition: Equatable, Sendable {
     case pass
     case consume
 }
 
-struct EventTapDecision: Equatable {
+struct EventTapDecision: Equatable, Sendable {
     let disposition: EventTapDisposition
     let input: SwitcherInputEvent?
 
@@ -48,7 +49,7 @@ struct EventTapDecision: Equatable {
 /// a keyUp remains suppressed even if the main thread already ended the
 /// session after its keyDown. That prevents orphaned Tab events from reaching
 /// the native switcher during rapid input or cancellation.
-struct EventTapInterceptionState {
+struct EventTapInterceptionState: Sendable {
     var mode: TapMode = .off
     var holdModifier: CGEventFlags = .maskCommand
     var persistentShortcut: PersistentShortcut?
@@ -184,43 +185,61 @@ struct EventTapInterceptionState {
 public final class EventTap {
     public static let shared = EventTap()
 
-    private var eventTap: CFMachPort?
-    private var runLoopSource: CFRunLoopSource?
+    /// Everything the tap thread touches, behind one lock: the interception state
+    /// the callback decides with, and the port it re-enables after a timeout.
+    private struct TapThreadState {
+        var interception = EventTapInterceptionState()
+        var eventTap: TapPort?
+    }
 
-    private let lock = NSLock()
-    private var interception = EventTapInterceptionState()
+    /// The tap's mach port, shared between main (start/stop/re-arm) and the tap
+    /// thread (re-enable after a timeout).
+    ///
+    /// `@unchecked Sendable` invariant: the port is an immutable CF reference whose
+    /// retain/release is atomic, and `CGEvent.tapEnable`/`tapIsEnabled` are safe to
+    /// call from any thread (the tap thread re-enables it by design); the mutable
+    /// slot holding it is guarded by `tapThreadState`'s mutex.
+    private struct TapPort: @unchecked Sendable {
+        let port: CFMachPort
+    }
+
+    private let tapThreadState = Mutex(TapThreadState())
+    /// The run-loop source only main touches (start/stop).
+    private var runLoopSource: CFRunLoopSource?
 
     /// Called on the main queue with each semantic event.
     public var onEvent: ((SwitcherInputEvent) -> Void)?
 
+    private init() {}
+
     public var mode: TapMode {
-        get { lock.lock(); defer { lock.unlock() }; return interception.mode }
-        set { lock.lock(); interception.mode = newValue; lock.unlock() }
+        get { tapThreadState.withLock { $0.interception.mode } }
+        set { tapThreadState.withLock { $0.interception.mode = newValue } }
     }
 
     public var holdModifier: CGEventFlags {
-        get { lock.lock(); defer { lock.unlock() }; return interception.holdModifier }
-        set { lock.lock(); interception.holdModifier = newValue; lock.unlock() }
+        get { tapThreadState.withLock { $0.interception.holdModifier } }
+        set { tapThreadState.withLock { $0.interception.holdModifier = newValue } }
     }
 
     /// The optional "Open WindowHop" chord; nil when unassigned.
     public var persistentShortcut: PersistentShortcut? {
-        get { lock.lock(); defer { lock.unlock() }; return interception.persistentShortcut }
-        set { lock.lock(); interception.persistentShortcut = newValue; lock.unlock() }
+        get { tapThreadState.withLock { $0.interception.persistentShortcut } }
+        set { tapThreadState.withLock { $0.interception.persistentShortcut = newValue } }
     }
 
     /// Set while the Settings shortcut recorder is recording; see
     /// `EventTapInterceptionState.isRecordingShortcut`. `stop()` keeps it.
     public var isRecordingShortcut: Bool {
-        get { lock.lock(); defer { lock.unlock() }; return interception.isRecordingShortcut }
-        set { lock.lock(); interception.isRecordingShortcut = newValue; lock.unlock() }
+        get { tapThreadState.withLock { $0.interception.isRecordingShortcut } }
+        set { tapThreadState.withLock { $0.interception.isRecordingShortcut = newValue } }
     }
 
     /// Creates the tap on the dedicated tap thread. Returns false when tap creation
     /// fails (no Accessibility permission).
     @discardableResult
     public func start() -> Bool {
-        if let eventTap {
+        if let eventTap = tapThreadState.withLock({ $0.eventTap?.port }) {
             if !CGEvent.tapIsEnabled(tap: eventTap) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
@@ -229,14 +248,21 @@ public final class EventTap {
         let mask: CGEventMask = (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.keyUp.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
+        // The C callback captures nothing: it reaches the tap through `userInfo`.
+        // Unretained is safe because `shared` is the only instance and lives for the
+        // whole process.
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,
-            callback: { _, type, event, _ in EventTap.shared.handle(type: type, event: event) },
-            userInfo: nil) else { return false }
-        eventTap = tap
+            callback: { _, type, event, userInfo in
+                guard let userInfo else { return Unmanaged.passUnretained(event) }
+                return Unmanaged<EventTap>.fromOpaque(userInfo).takeUnretainedValue()
+                    .handle(type: type, event: event)
+            },
+            userInfo: Unmanaged.passUnretained(self).toOpaque()) else { return false }
+        tapThreadState.withLock { $0.eventTap = TapPort(port: tap) }
         let source = CFMachPortCreateRunLoopSource(nil, tap, 0)
         runLoopSource = source
         CFRunLoopAddSource(BackgroundWork.eventTapThread.runLoop, source, .commonModes)
@@ -244,23 +270,27 @@ public final class EventTap {
     }
 
     public func stop() {
+        let eventTap = tapThreadState.withLock { state in
+            defer {
+                state.eventTap = nil
+                state.interception.reset()
+            }
+            return state.eventTap
+        }
         if let eventTap {
-            CGEvent.tapEnable(tap: eventTap, enable: false)
+            CGEvent.tapEnable(tap: eventTap.port, enable: false)
             if let runLoopSource {
                 CFRunLoopRemoveSource(BackgroundWork.eventTapThread.runLoop, runLoopSource, .commonModes)
             }
         }
-        eventTap = nil
         runLoopSource = nil
-        lock.lock()
-        interception.reset()
-        lock.unlock()
     }
 
     /// macOS silently disables taps after sleep/wake or long stalls without sending
     /// tapDisabled events; callers re-arm on wake and unlock notifications.
     public func reEnableIfNeeded() {
-        guard let eventTap, !CGEvent.tapIsEnabled(tap: eventTap) else { return }
+        guard let eventTap = tapThreadState.withLock({ $0.eventTap?.port }),
+              !CGEvent.tapIsEnabled(tap: eventTap) else { return }
         CGEvent.tapEnable(tap: eventTap, enable: true)
     }
 
@@ -268,15 +298,16 @@ public final class EventTap {
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByUserInput || type == .tapDisabledByTimeout {
-            if let eventTap {
+            if let eventTap = tapThreadState.withLock({ $0.eventTap?.port }) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
             return Unmanaged.passUnretained(event)
         }
         let keyCode = event.getIntegerValueField(.keyboardEventKeycode)
-        lock.lock()
-        let decision = interception.decide(type: type, keyCode: keyCode, flags: event.flags)
-        lock.unlock()
+        let flags = event.flags
+        let decision = tapThreadState.withLock {
+            $0.interception.decide(type: type, keyCode: keyCode, flags: flags)
+        }
         if let input = decision.input {
             DebugLog.log("tap: consumed \(input)")
             post(input)

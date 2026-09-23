@@ -7,7 +7,7 @@ import Foundation
 /// Identity is physical: `keyCode` is the virtual key code that is stored and
 /// that `EventTap` matches. A keyboard-layout change never rewrites it; only the
 /// label `ShortcutFormatter` shows for the key follows the current layout.
-public struct PersistentShortcut: Equatable {
+public struct PersistentShortcut: Equatable, Sendable {
     /// Only these modifiers participate in matching and display.
     public static let relevantModifiers: CGEventFlags =
         [.maskCommand, .maskAlternate, .maskControl, .maskShift]
@@ -33,7 +33,7 @@ public struct PersistentShortcut: Equatable {
 
     // MARK: - Validation
 
-    public enum ValidationError: Equatable {
+    public enum ValidationError: Equatable, Sendable {
         case needsModifier
         case conflictsWithSwitcherShortcut
         /// A chord macOS keeps for itself, such as Force Quit (⌘⌥⎋).

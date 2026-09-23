@@ -9,15 +9,15 @@ import Foundation
 /// - sticky:     session continues after a close-confirmation dialog; the modifier is
 ///               no longer the anchor, so only Return/Escape/click end the session
 /// - confirming: a close-confirmation dialog is open; keyboard events pass through to it
-public struct SwitcherState {
-    public enum Phase: Equatable {
+public struct SwitcherState: Sendable {
+    public enum Phase: Equatable, Sendable {
         case inactive
         case held
         case sticky
         case confirming
     }
 
-    public enum Command: Equatable {
+    public enum Command: Equatable, Sendable {
         case none
         case show(selectedIndex: Int)
         case select(index: Int)
@@ -104,7 +104,7 @@ public struct SwitcherState {
         return finish(.activate(index: selectedIndex))
     }
 
-    public enum ArrowDirection: Equatable {
+    public enum ArrowDirection: Equatable, Sendable {
         case up, down, left, right
     }
 
