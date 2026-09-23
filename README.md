@@ -55,7 +55,8 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | `scripts/make-appcast.sh --version … --build-number … --archive … --signature …` | Add one release entry to `appcast.xml` for Sparkle |
 | `scripts/make-keys.sh` | One-time: make sure the login Keychain holds the Sparkle key and `SUPublicEDKey` matches it |
 | `scripts/capture-screenshots.sh` | Capture the published screenshots, which needs a Retina display |
-| `scripts/validate-site.sh` | Check the published site's files and links |
+| `scripts/validate-site.sh` | Check the site's host, canonical URL, `robots.txt` and sitemap (skill-deck's canonical copy; `make validate` adds WindowHop's own site checks) |
+| `scripts/social-card.sh` | Render `design/social-card/social-card.html` to `site/social-card.jpg` (needs Node and ImageMagick) |
 | `scripts/verify-release-identity.sh [--app <App.app>]` | Check the signed app against the recorded release identity |
 | `scripts/verify-dmg-branding.sh --dmg <path.dmg>` | Check the DMG branding release gate |
 | `scripts/verify-update-continuity.sh` | Check the Sparkle update-continuity release gate |
