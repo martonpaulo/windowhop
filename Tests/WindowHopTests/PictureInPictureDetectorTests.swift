@@ -83,6 +83,15 @@ final class PictureInPictureDetectorTests: XCTestCase {
             onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
     }
 
+    func testButtonlessModalAlertIsNotPictureInPicture() {
+        // Measured (#115): an app-modal NSAlert or NSOpenPanel floats at layer 8
+        // and has no close button, like Ghostty's update alert in AeroSpace's corpus
+        let alert = CGRect(x: 590, y: 205, width: 260, height: 176)
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: alert, closeButtonEnabled: nil,
+            onScreenWindows: [onScreen(8, frame: alert)], screenFrames: [screen]))
+    }
+
     func testFullscreenFloatingSurfaceStaysEligible() {
         // the fullscreen exception holds whatever the title bar reports
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(

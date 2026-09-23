@@ -350,7 +350,9 @@ and fullscreen overlays stay eligible — or its AX close button is enabled.
 Floating level alone is not PiP: any app can float an ordinary document, palette or
 dialog. Measured for #90 on macOS 26: Chromium PiP (Chrome and Brave, layer 3) keeps its
 close, minimize and zoom buttons but disables all three, while AppKit titled windows at
-`.floating` or `.modalPanel` keep an enabled close button. System PiP (PIPAgent, measured
+`.floating` or `.modalPanel` keep an enabled close button. App-modal alerts and open/save
+panels have no close button at all and float at the modal-panel layer (8, measured for
+#115 with `NSAlert` and `NSOpenPanel`), so that layer is never PiP. System PiP (PIPAgent, measured
 through AVKit) is an `AXSystemFloatingWindow` at layer 19, which `isActualWindow`
 already rejects; borderless floating windows report `AXUnknown` and are rejected there
 too, and `NSPanel` utilities (`AXFloatingWindow`) never reach the rule. The close

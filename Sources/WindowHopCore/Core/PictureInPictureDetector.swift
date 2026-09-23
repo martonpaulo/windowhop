@@ -38,6 +38,13 @@ public enum PictureInPictureDetector {
     /// fullscreen surface rather than a PiP panel.
     static let fullscreenCoverage: CGFloat = 0.85
 
+    /// The layer AppKit gives app-modal alerts and open/save panels. They have
+    /// no close button at all, so the button fact cannot rescue them; no PiP
+    /// panel floats here (layer 3 for Chromium and Firefox PiP, 19 for PIPAgent).
+    /// Found through AeroSpace's AX dump corpus (#115) and measured on macOS 26:
+    /// `NSAlert` and `NSOpenPanel` under `runModal()` both sit at layer 8.
+    static let modalPanelLayer = Int(CGWindowLevelForKey(.modalPanelWindow))
+
     /// `closeButtonEnabled` is the window's AX close button state: `true`
     /// marks an ordinary floating window, `false` or `nil` (no button, or not
     /// read) leaves the layer rule alone in charge.
@@ -47,7 +54,7 @@ public enum PictureInPictureDetector {
                                           screenFrames: [CGRect]) -> Bool {
         guard closeButtonEnabled != true, let frame,
               let match = onScreenWindows.first(where: { $0.pid == pid && frameClose($0.frame, frame) }),
-              match.layer != 0 else { return false }
+              match.layer != 0, match.layer != modalPanelLayer else { return false }
         let coversAScreen = screenFrames.contains { screen in
             let overlap = frame.intersection(screen)
             return screen.width > 0 && screen.height > 0
