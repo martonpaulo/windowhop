@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
@@ -6,19 +7,17 @@ import XCTest
 /// Every test works on an isolated suite and a legacy domain given as a
 /// dictionary: the real old and new domains are never read or written here.
 @MainActor
-final class LegacyDomainMigrationTests: XCTestCase {
-    private var suiteName: String!
-    private var defaults: UserDefaults!
+final class LegacyDomainMigrationTests {
+    private let suiteName: String
+    private let defaults: UserDefaults
 
-    override func setUp() async throws {
-        try await super.setUp()
+    init() throws {
         suiteName = "windowhop-tests-\(UUID().uuidString)"
-        defaults = UserDefaults(suiteName: suiteName)
+        defaults = try #require(UserDefaults(suiteName: suiteName))
     }
 
-    override func tearDown() async throws {
+    isolated deinit {
         defaults.removePersistentDomain(forName: suiteName)
-        try await super.tearDown()
     }
 
     /// What the suite stores itself, without the process-wide registration domain.
@@ -41,24 +40,24 @@ final class LegacyDomainMigrationTests: XCTestCase {
         "firstLaunchCompleted": true,
     ]
 
-    func testAReleasedDomainIsCopiedAndThenMovedToVersionedNames() {
+    @Test func aReleasedDomainIsCopiedAndThenMovedToVersionedNames() {
         migrate(releasedDomain)
         let preferences = Preferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.shortcut, .controlTab)
-        XCTAssertEqual(preferences.appearanceMode, .windowPreviews)
-        XCTAssertTrue(preferences.showDockIcon)
-        XCTAssertTrue(preferences.launchAtLogin)
-        XCTAssertFalse(preferences.automaticUpdateChecks)
-        XCTAssertTrue(preferences.firstLaunchCompleted)
+        #expect(preferences.shortcut == .controlTab)
+        #expect(preferences.appearanceMode == .windowPreviews)
+        #expect(preferences.showDockIcon)
+        #expect(preferences.launchAtLogin)
+        #expect(!preferences.automaticUpdateChecks)
+        #expect(preferences.firstLaunchCompleted)
         // #111's migration ran on the copied names
-        XCTAssertNil(currentDomain["shortcut"])
-        XCTAssertEqual(currentDomain["shortcut.v1"] as? String, ShortcutSpec.controlTab.rawValue)
-        XCTAssertEqual(currentDomain[PreferencesKeyMigration.schemaKey] as? Int, 1)
-        XCTAssertEqual(currentDomain[LegacyDomainMigration.markerKey] as? Bool, true)
+        #expect(currentDomain["shortcut"] == nil)
+        #expect((currentDomain["shortcut.v1"] as? String) == ShortcutSpec.controlTab.rawValue)
+        #expect((currentDomain[PreferencesKeyMigration.schemaKey] as? Int) == 1)
+        #expect((currentDomain[LegacyDomainMigration.markerKey] as? Bool) == true)
     }
 
-    func testAVersionedDomainIsCopiedAsItIs() {
+    @Test func aVersionedDomainIsCopiedAsItIs() {
         migrate([
             "shortcut.v1": ShortcutSpec.controlTab.rawValue,
             "showTabCounts.v1": true,
@@ -66,44 +65,44 @@ final class LegacyDomainMigrationTests: XCTestCase {
         ])
         let preferences = Preferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.shortcut, .controlTab)
-        XCTAssertTrue(preferences.showTabCounts)
+        #expect(preferences.shortcut == .controlTab)
+        #expect(preferences.showTabCounts)
     }
 
-    func testThe112DwellPresetStillMigratesAfterTheCopy() {
+    @Test func the112DwellPresetStillMigratesAfterTheCopy() {
         migrate(["navigationPreviewDelay": "long"])
         let preferences = Preferences(defaults: defaults)
 
-        XCTAssertEqual(preferences.expandedPreviewDelay, .fiveSeconds)
-        XCTAssertNil(currentDomain["navigationPreviewDelay"])
+        #expect(preferences.expandedPreviewDelay == .fiveSeconds)
+        #expect(currentDomain["navigationPreviewDelay"] == nil)
     }
 
-    func testUnknownNamesAreIgnored() {
+    @Test func unknownNamesAreIgnored() {
         migrate([
             "showDockIcon": true, "SULastCheckTime": Date(), "NSWindow Frame Other": "0 0 1 1",
             "unrelated": 1,
         ])
 
-        XCTAssertEqual(
-            Set(currentDomain.keys), ["showDockIcon", LegacyDomainMigration.markerKey])
+        #expect(
+            Set(currentDomain.keys) == ["showDockIcon", LegacyDomainMigration.markerKey])
     }
 
-    func testCallerNamesAreCopied() {
+    @Test func callerNamesAreCopied() {
         let frame = "NSWindow Frame WindowHopSettings"
         migrate([frame: "10 20 600 400 0 0 1512 944 "], extraNames: [frame])
 
-        XCTAssertEqual(currentDomain[frame] as? String, "10 20 600 400 0 0 1512 944 ")
+        #expect((currentDomain[frame] as? String) == "10 20 600 400 0 0 1512 944 ")
     }
 
-    func testValuesAlreadyInTheNewDomainWin() {
+    @Test func valuesAlreadyInTheNewDomainWin() {
         defaults.set(false, forKey: "showDockIcon")
         migrate(releasedDomain)
 
-        XCTAssertEqual(currentDomain["showDockIcon"] as? Bool, false)
-        XCTAssertEqual(currentDomain["launchAtLogin"] as? Bool, true)
+        #expect((currentDomain["showDockIcon"] as? Bool) == false)
+        #expect((currentDomain["launchAtLogin"] as? Bool) == true)
     }
 
-    func testASecondLaunchCopiesNothing() {
+    @Test func aSecondLaunchCopiesNothing() {
         migrate(releasedDomain)
         let preferences = Preferences(defaults: defaults)
         preferences.showDockIcon = false
@@ -111,22 +110,22 @@ final class LegacyDomainMigrationTests: XCTestCase {
         // an older build changes its own domain afterwards
         migrate(["showDockIcon": true, "showTabCounts": true])
 
-        XCTAssertEqual(currentDomain["showDockIcon.v1"] as? Bool, false)
-        XCTAssertNil(currentDomain["showTabCounts"])
-        XCTAssertNil(
+        #expect((currentDomain["showDockIcon.v1"] as? Bool) == false)
+        #expect(currentDomain["showTabCounts"] == nil)
+        #expect(
             LegacyDomainMigration.valuesToCopy(
-                legacyDomain: releasedDomain, currentDomain: currentDomain))
+                legacyDomain: releasedDomain, currentDomain: currentDomain) == nil)
     }
 
-    func testAnAbsentLegacyDomainWritesOnlyTheMarker() {
+    @Test func anAbsentLegacyDomainWritesOnlyTheMarker() {
         migrate(nil)
 
-        XCTAssertEqual(Set(currentDomain.keys), [LegacyDomainMigration.markerKey])
+        #expect(Set(currentDomain.keys) == [LegacyDomainMigration.markerKey])
     }
 
-    func testTheMarkerIsNotASetting() {
-        XCTAssertFalse(
-            Preferences.configurableKeys.map(\.rawValue).contains(LegacyDomainMigration.markerKey))
-        XCTAssertNil(Preferences.Key(rawValue: LegacyDomainMigration.markerKey))
+    @Test func theMarkerIsNotASetting() {
+        #expect(
+            !Preferences.configurableKeys.map(\.rawValue).contains(LegacyDomainMigration.markerKey))
+        #expect(Preferences.Key(rawValue: LegacyDomainMigration.markerKey) == nil)
     }
 }
