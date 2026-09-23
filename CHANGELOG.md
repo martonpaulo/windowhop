@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Full release notes in the update window**: the update window shows the release notes
+  page from the website, fitted to the window's width.
+
+### Fixed
+
+- **Sharp previews on standard-resolution displays**: a preview is now drawn on whole
+  pixels. Before, it was often placed half a pixel off, so every line of it was blended
+  with the next one and the preview looked blurred.
+
 ## [2.3.1] - 2026-09-23
 
 ### Fixed
