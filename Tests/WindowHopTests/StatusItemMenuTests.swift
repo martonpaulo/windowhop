@@ -1,5 +1,6 @@
 import AppKit
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -10,18 +11,16 @@ extension SharedAppState {
     /// after the menu was built, and refreshing it must never duplicate items.
     @MainActor
     final class StatusItemMenuTests {
-        private var suiteName: String!
-        private var defaults: UserDefaults!
+        private let suite: TestDefaults
         private var preferences: Preferences!
         private var accessibilityGranted = true
         private var updaterAvailable = false
         private var canCheck = false
         private var controller: StatusItemController!
 
-        init() {
-            suiteName = "windowhop-tests-\(UUID().uuidString)"
-            defaults = UserDefaults(suiteName: suiteName)
-            preferences = Preferences(defaults: defaults)
+        init() throws {
+            suite = try TestDefaults()
+            preferences = Preferences(defaults: suite.defaults)
             accessibilityGranted = true
             updaterAvailable = false
             canCheck = false
@@ -38,7 +37,7 @@ extension SharedAppState {
 
         isolated deinit {
             controller = nil
-            defaults.removePersistentDomain(forName: suiteName)
+            suite.remove()
         }
 
         private func updateItem(in menu: NSMenu) -> NSMenuItem? {

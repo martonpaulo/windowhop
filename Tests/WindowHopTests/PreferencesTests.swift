@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -8,21 +9,21 @@ import Testing
 extension SharedAppState {
     @MainActor
     final class PreferencesTests {
-        private var suiteName: String!
-        private var defaults: UserDefaults!
+        private let suite: TestDefaults
+        private var suiteName: String { suite.suiteName }
+        private var defaults: UserDefaults { suite.defaults }
         private var preferences: Preferences!
         /// Suites made by `unregisteredDefaults()`, removed with the test.
-        private var unregisteredSuites: [(defaults: UserDefaults, name: String)] = []
+        private var unregisteredSuites: [TestDefaults] = []
 
-        init() {
-            suiteName = "windowhop-tests-\(UUID().uuidString)"
-            defaults = UserDefaults(suiteName: suiteName)
-            preferences = Preferences(defaults: defaults)
+        init() throws {
+            suite = try TestDefaults()
+            preferences = Preferences(defaults: suite.defaults)
         }
 
         isolated deinit {
-            defaults.removePersistentDomain(forName: suiteName)
-            for suite in unregisteredSuites { suite.defaults.removePersistentDomain(forName: suite.name) }
+            suite.remove()
+            for suite in unregisteredSuites { suite.remove() }
         }
 
         @Test func defaultValues() {
@@ -296,7 +297,7 @@ extension SharedAppState {
             _ = Preferences(defaults: upgradedDefaults)
             let migrated = UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?
 
-            let again = Preferences(defaults: try #require(UserDefaults(suiteName: suite)))
+            let again = Preferences(defaults: try #require(unregisteredSuites.last).reopen())
 
             #expect(again.launchAtLogin)
             #expect(
@@ -322,14 +323,14 @@ extension SharedAppState {
         /// test process would answer for keys the suite never stored; the app has
         /// exactly one `Preferences`, whose migrations read before it registers.
         private func unregisteredDefaults() throws -> (UserDefaults, String) {
-            let suite = "windowhop-tests-\(UUID().uuidString)"
-            let clean = try #require(UserDefaults(suiteName: suite))
-            unregisteredSuites.append((clean, suite))
+            let suite = try TestDefaults()
+            unregisteredSuites.append(suite)
+            let clean = suite.defaults
             let registration = UserDefaults.registrationDomain
             var registered = clean.volatileDomain(forName: registration)
             for key in Preferences.defaultValues.keys { registered.removeValue(forKey: key) }
             clean.setVolatileDomain(registered, forName: registration)
-            return (clean, suite)
+            return (clean, suite.suiteName)
         }
 
         private func stored(_ key: Preferences.Key, in suite: String) -> Any? {
@@ -491,11 +492,11 @@ extension SharedAppState {
         @Test func anUpgradeWithoutAStoredPlacementReceivesTheNewDefault() throws {
             // an installation that predates the preference has nothing in its
             // persistent domain and must land on All displays with no migration step
-            let suite = "windowhop-tests-\(UUID().uuidString)"
-            let clean = try #require(UserDefaults(suiteName: suite))
-            defer { clean.removePersistentDomain(forName: suite) }
+            let suite = try TestDefaults()
+            defer { suite.remove() }
+            let clean = suite.defaults
             #expect(
-                clean.persistentDomain(forName: suite)?[
+                suite.persistentDomain?[
                     Preferences.Key.switcherDisplayPlacement.rawValue] == nil)
 
             let restored = Preferences(defaults: clean)

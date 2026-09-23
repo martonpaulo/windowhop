@@ -45,15 +45,21 @@ let package = Package(
                 .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"]),
             ]
         ),
+        // test-only: the one place a test makes a UserDefaults suite (#129)
+        .target(
+            name: "WindowHopTestSupport",
+            path: "Tests/WindowHopTestSupport",
+            swiftSettings: swiftSettings,
+        ),
         .testTarget(
             name: "WindowHopKitTests",
-            dependencies: ["WindowHopKit"],
+            dependencies: ["WindowHopKit", "WindowHopTestSupport"],
             path: "Tests/WindowHopKitTests",
             swiftSettings: swiftSettings,
         ),
         .testTarget(
             name: "WindowHopTests",
-            dependencies: ["WindowHopKit", "WindowHopCore"],
+            dependencies: ["WindowHopKit", "WindowHopCore", "WindowHopTestSupport"],
             path: "Tests/WindowHopTests",
             // AeroSpace's MIT-licensed AX dump corpus, imported verbatim (UPSTREAM.md)
             resources: [.copy("Fixtures/AeroSpaceAXDumps")],

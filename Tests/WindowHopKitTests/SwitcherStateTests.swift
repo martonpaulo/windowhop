@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopKit
 
@@ -288,9 +289,9 @@ extension SwitcherStateTests {
     }
 
     @Test func appearanceModeDefaultsToAppIcons() throws {
-        let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        let defaults = suite.defaults
         let preferences = Preferences(defaults: defaults)
         #expect(preferences.appearanceMode == .appIcons)
         preferences.appearanceMode = .windowPreviews

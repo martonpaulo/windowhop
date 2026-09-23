@@ -11,7 +11,9 @@ cannot name an Engine, Input, UI or App type. `scripts/validate.sh` enforces the
 allowlist recorded in `AGENTS.md` (Foundation, CoreGraphics value types, Observation,
 Synchronization) and rejects AX, `NSWorkspace` and ScreenCaptureKit references in
 the Kit. Tests follow the same split: `WindowHopKitTests` depends only on the Kit, and
-`WindowHopTests` covers the integration layers.
+`WindowHopTests` covers the integration layers. Both also depend on
+`WindowHopTestSupport`, a test-only Foundation target that owns throwaway `UserDefaults`
+suites (docs/testing.md).
 
 ```
 ┌──────────── UI ────────────┐  SwitcherPanel + SwitcherTileView (AppKit),

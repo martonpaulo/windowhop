@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -24,16 +25,15 @@ extension SharedAppState {
             }
         }
 
-        private var suiteName: String!
-        private var defaults: UserDefaults!
+        private let suite: TestDefaults
+        private var defaults: UserDefaults { suite.defaults }
 
-        init() {
-            suiteName = "windowhop-tests-\(UUID().uuidString)"
-            defaults = UserDefaults(suiteName: suiteName)
+        init() throws {
+            suite = try TestDefaults()
         }
 
         isolated deinit {
-            defaults.removePersistentDomain(forName: suiteName)
+            suite.remove()
         }
 
         private func makeModel(_ fake: FakeLoginItem, preferences: Preferences) -> LaunchAtLoginModel {
@@ -115,7 +115,7 @@ extension SharedAppState {
             #expect(model.status == .disabled)
             #expect(!preferences.launchAtLogin)
             #expect(
-                defaults.persistentDomain(forName: suiteName)?[Preferences.Key.launchAtLogin.rawValue] == nil,
+                suite.persistentDomain?[Preferences.Key.launchAtLogin.rawValue] == nil,
                 "a failed request must not store an intent")
         }
 

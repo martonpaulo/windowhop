@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopKit
 
@@ -8,22 +9,21 @@ import Testing
 /// removed, and a second run changes nothing.
 @MainActor
 final class PreferencesKeyMigrationTests {
-    private let suiteName: String
-    private let defaults: UserDefaults
+    private let suite: TestDefaults
+    private var defaults: UserDefaults { suite.defaults }
 
     init() throws {
-        suiteName = "windowhop-tests-\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
+        suite = try TestDefaults()
     }
 
     /// What this suite stores itself. `object(forKey:)` would also answer from
     /// the process-wide registration domain that any `Preferences` fills.
     private func stored(_ name: String) -> Any? {
-        defaults.persistentDomain(forName: suiteName)?[name]
+        suite.persistentDomain?[name]
     }
 
     isolated deinit {
-        defaults.removePersistentDomain(forName: suiteName)
+        suite.remove()
     }
 
     /// One non-default valid value and one invalid value per migrated key,

@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopKit
 
@@ -83,9 +84,9 @@ struct PersistentShortcutTests {
     }
 
     @Test func preferencesDefaultIsOptionTabAndCanBeCleared() throws {
-        let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
+        let suite = try TestDefaults()
+        defer { suite.remove() }
+        let defaults = suite.defaults
         let preferences = Preferences(defaults: defaults)
         #expect(preferences.persistentShortcut == .optionTab)
         let shortcut = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])

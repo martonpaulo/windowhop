@@ -188,7 +188,8 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   no dependencies. All business rules live here (eligibility, MRU, title fallback,
   tab-group resolution, PiP detection, preview-result ledger, session state machine,
   shortcut model, settings defaults). New behavior rules go here **with unit tests** in
-  `Tests/WindowHopKitTests/`, which depends only on the Kit.
+  `Tests/WindowHopKitTests/`, which depends only on the Kit (and the test-only
+  `WindowHopTestSupport`, the one maker of `UserDefaults` suites in tests).
   - **Kit import contract** (`scripts/validate.sh` enforces it): `Foundation`;
     `CoreGraphics` for value types only (`CGEventFlags`, `CGRect`, `CGWindowID`);
     `Observation` (the `@Observable` `Preferences`, #101); and `Synchronization`

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -8,9 +9,9 @@ extension SharedAppState {
     @MainActor
     struct SettingsDefaultsRestorerTests {
         @Test func restoreAppliesPersistedDefaultsAndUpdateChecksButLeavesLaunchAtLogin() throws {
-            let suite = "windowhop-tests-\(UUID().uuidString)"
-            let defaults = try #require(UserDefaults(suiteName: suite))
-            defer { defaults.removePersistentDomain(forName: suite) }
+            let suite = try TestDefaults()
+            defer { suite.remove() }
+            let defaults = suite.defaults
             let preferences = Preferences(defaults: defaults)
             preferences.launchAtLogin = !Preferences.Defaults.launchAtLogin
             preferences.shortcut = .controlTab

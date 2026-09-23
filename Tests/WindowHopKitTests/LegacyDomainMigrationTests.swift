@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopKit
 
@@ -8,21 +9,20 @@ import Testing
 /// dictionary: the real old and new domains are never read or written here.
 @MainActor
 final class LegacyDomainMigrationTests {
-    private let suiteName: String
-    private let defaults: UserDefaults
+    private let suite: TestDefaults
+    private var defaults: UserDefaults { suite.defaults }
 
     init() throws {
-        suiteName = "windowhop-tests-\(UUID().uuidString)"
-        defaults = try #require(UserDefaults(suiteName: suiteName))
+        suite = try TestDefaults()
     }
 
     isolated deinit {
-        defaults.removePersistentDomain(forName: suiteName)
+        suite.remove()
     }
 
     /// What the suite stores itself, without the process-wide registration domain.
     private var currentDomain: [String: Any] {
-        defaults.persistentDomain(forName: suiteName) ?? [:]
+        suite.persistentDomain ?? [:]
     }
 
     private func migrate(_ legacy: [String: Any]?, extraNames: Set<String> = []) {

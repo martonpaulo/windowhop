@@ -1,5 +1,5 @@
 import Foundation
-import Testing
+import WindowHopTestSupport
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -8,15 +8,15 @@ import Testing
 /// reads or changes the developer's real settings. Call `remove()` in the suite's deinit.
 @MainActor
 final class IsolatedPreferences {
-    let suiteName = "windowhop-tests-\(UUID().uuidString)"
-    let defaults: UserDefaults
+    private let suite: TestDefaults
+    var defaults: UserDefaults { suite.defaults }
     let preferences: Preferences
     /// A preview cache of its own, so no test sees another test's images.
     let previews: PreviewProvider
 
     init() throws {
-        defaults = try #require(UserDefaults(suiteName: suiteName))
-        preferences = Preferences(defaults: defaults)
+        suite = try TestDefaults()
+        preferences = Preferences(defaults: suite.defaults)
         previews = PreviewProvider(preferences: preferences)
     }
 
@@ -34,6 +34,6 @@ final class IsolatedPreferences {
     }
 
     func remove() {
-        defaults.removePersistentDomain(forName: suiteName)
+        suite.remove()
     }
 }
