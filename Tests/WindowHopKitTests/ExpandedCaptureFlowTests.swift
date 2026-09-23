@@ -1,11 +1,12 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
 /// Expanded capture must never start after its session, target or request has
 /// been superseded. These drive the real ordering rule with a controlled
 /// lookup, so cancellation can land exactly while the lookup is pending.
-final class ExpandedCaptureFlowTests: XCTestCase {
+struct ExpandedCaptureFlowTests {
     /// Counts what the flow actually spent, per stage.
     private actor Recorder {
         private(set) var captures = 0
@@ -52,7 +53,7 @@ final class ExpandedCaptureFlowTests: XCTestCase {
             deliver: delivered)
     }
 
-    func testCancellationDuringLookupStartsNoCapture() async {
+    @Test func cancellationDuringLookupStartsNoCapture() async {
         let recorder = Recorder()
         let gate = Gate()
         let state = State()
@@ -73,12 +74,12 @@ final class ExpandedCaptureFlowTests: XCTestCase {
         let result = await outcome
         let captures = await recorder.captures
         let deliveries = await state.deliveries
-        XCTAssertEqual(result, .cancelledBeforeCapture)
-        XCTAssertEqual(captures, 0, "no screenshot may start after cancellation")
-        XCTAssertEqual(deliveries, 0)
+        #expect(result == .cancelledBeforeCapture)
+        #expect(captures == 0, "no screenshot may start after cancellation")
+        #expect(deliveries == 0)
     }
 
-    func testCurrentRequestCapturesOnceAndDelivers() async {
+    @Test func currentRequestCapturesOnceAndDelivers() async {
         let recorder = Recorder()
         let state = State()
 
@@ -88,12 +89,12 @@ final class ExpandedCaptureFlowTests: XCTestCase {
 
         let captures = await recorder.captures
         let deliveries = await state.deliveries
-        XCTAssertEqual(result, .delivered)
-        XCTAssertEqual(captures, 1)
-        XCTAssertEqual(deliveries, 1)
+        #expect(result == .delivered)
+        #expect(captures == 1)
+        #expect(deliveries == 1)
     }
 
-    func testCancellationAfterCaptureDiscardsTheResult() async {
+    @Test func cancellationAfterCaptureDiscardsTheResult() async {
         let recorder = Recorder()
         let state = State()
         await MainActor.run { state.isCurrentRemaining = 1 }
@@ -105,22 +106,22 @@ final class ExpandedCaptureFlowTests: XCTestCase {
 
         let captures = await recorder.captures
         let deliveries = await state.deliveries
-        XCTAssertEqual(result, .cancelledAfterCapture)
-        XCTAssertEqual(captures, 1, "work already started is allowed to finish")
-        XCTAssertEqual(deliveries, 0, "an obsolete result must not be delivered")
+        #expect(result == .cancelledAfterCapture)
+        #expect(captures == 1, "work already started is allowed to finish")
+        #expect(deliveries == 0, "an obsolete result must not be delivered")
     }
 
-    func testUnmatchedWindowStartsNoCapture() async {
+    @Test func unmatchedWindowStartsNoCapture() async {
         let recorder = Recorder()
 
         let result = await Self.run(isCurrent: { true }, lookup: { nil }, recorder: recorder)
 
         let captures = await recorder.captures
-        XCTAssertEqual(result, .noCandidate)
-        XCTAssertEqual(captures, 0)
+        #expect(result == .noCandidate)
+        #expect(captures == 0)
     }
 
-    func testFailedCaptureDeliversNothing() async {
+    @Test func failedCaptureDeliversNothing() async {
         let recorder = Recorder()
         let state = State()
 
@@ -129,7 +130,7 @@ final class ExpandedCaptureFlowTests: XCTestCase {
             delivered: { _ in state.deliveries += 1 })
 
         let deliveries = await state.deliveries
-        XCTAssertEqual(result, .captureFailed)
-        XCTAssertEqual(deliveries, 0)
+        #expect(result == .captureFailed)
+        #expect(deliveries == 0)
     }
 }

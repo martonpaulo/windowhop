@@ -1,12 +1,12 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import WindowHopKit
 
 /// About, Updates and support reports show the version, build and release
 /// date through `AppVersion`. A missing or bad release date must never hide
 /// the version, and the date must name the same day on every Mac.
-final class AppVersionTests: XCTestCase {
+struct AppVersionTests {
     private func packaged(
         date: Any? = "2026-09-15",
         version: String = "1.6.2",
@@ -20,68 +20,65 @@ final class AppVersionTests: XCTestCase {
         return AppVersion(infoDictionary: info)
     }
 
-    func testPackagedBuildShowsVersionBuildAndDate() {
+    @Test func packagedBuildShowsVersionBuildAndDate() {
         let metadata = packaged()
-        XCTAssertEqual(metadata.displayVersion, "1.6.2 (10602)")
-        XCTAssertEqual(metadata.versionLabel, "Version 1.6.2 (10602)")
-        XCTAssertEqual(metadata.releaseDateISO, "2026-09-15")
-        XCTAssertEqual(
-            metadata.releaseDateText(locale: Locale(identifier: "en_US")),
-            "September 15, 2026")
+        #expect(metadata.displayVersion == "1.6.2 (10602)")
+        #expect(metadata.versionLabel == "Version 1.6.2 (10602)")
+        #expect(metadata.releaseDateISO == "2026-09-15")
+        #expect(
+            metadata.releaseDateText(locale: Locale(identifier: "en_US")) == "September 15, 2026")
     }
 
-    func testMissingDateKeepsVersionAndBuild() {
+    @Test func missingDateKeepsVersionAndBuild() {
         let metadata = packaged(date: nil)
-        XCTAssertEqual(metadata.displayVersion, "1.6.2 (10602)")
-        XCTAssertNil(metadata.releaseDate)
-        XCTAssertNil(metadata.releaseDateText())
-        XCTAssertNil(metadata.releaseDateISO)
+        #expect(metadata.displayVersion == "1.6.2 (10602)")
+        #expect(metadata.releaseDate == nil)
+        #expect(metadata.releaseDateText() == nil)
+        #expect(metadata.releaseDateISO == nil)
     }
 
-    func testMalformedDatesMeanNoDate() {
+    @Test func malformedDatesMeanNoDate() {
         for bad: Any in [
             "", "junk", "2026-13-45", "2026-02-30", "2026-9-15",
             "2026-09-15T10:00:00Z", "20260915", 20_260_915,
         ] {
             let metadata = packaged(date: bad)
-            XCTAssertNil(metadata.releaseDate, "\(bad)")
-            XCTAssertEqual(metadata.displayVersion, "1.6.2 (10602)", "\(bad)")
+            #expect(metadata.releaseDate == nil, "\(bad)")
+            #expect(metadata.displayVersion == "1.6.2 (10602)", "\(bad)")
         }
     }
 
-    func testDateDoesNotShiftWestOfUTC() throws {
+    @Test func dateDoesNotShiftWestOfUTC() throws {
         let saved = NSTimeZone.default
         defer { NSTimeZone.default = saved }
-        NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
-        XCTAssertEqual(
-            packaged().releaseDateText(locale: Locale(identifier: "en_US")),
-            "September 15, 2026")
-        XCTAssertEqual(packaged().releaseDateISO, "2026-09-15")
+        NSTimeZone.default = try #require(TimeZone(identifier: "America/Los_Angeles"))
+        #expect(
+            packaged().releaseDateText(locale: Locale(identifier: "en_US")) == "September 15, 2026")
+        #expect(packaged().releaseDateISO == "2026-09-15")
     }
 
-    func testDateFollowsTheLocale() {
-        XCTAssertEqual(
-            packaged().releaseDateText(locale: Locale(identifier: "pt_BR")),
-            "15 de setembro de 2026")
+    @Test func dateFollowsTheLocale() {
+        #expect(
+            packaged().releaseDateText(locale: Locale(identifier: "pt_BR")) == "15 de setembro de 2026")
     }
 
-    func testBuildEqualToVersionIsNotRepeated() {
-        XCTAssertEqual(packaged(version: "2.0.0", build: "2.0.0").displayVersion, "2.0.0")
+    @Test func buildEqualToVersionIsNotRepeated() {
+        #expect(packaged(version: "2.0.0", build: "2.0.0").displayVersion == "2.0.0")
     }
 
-    func testCopyrightComesFromTheBundle() {
+    @Test func copyrightComesFromTheBundle() {
         let line = "GPL-3.0. Derived from AltTab, © lwouis and contributors."
-        XCTAssertEqual(AppVersion(infoDictionary: ["NSHumanReadableCopyright": line]).copyright, line)
-        XCTAssertNil(packaged().copyright)
+        #expect(AppVersion(infoDictionary: ["NSHumanReadableCopyright": line]).copyright == line)
+        #expect(packaged().copyright == nil)
     }
 
-    func testEmptyDictionaryIsAnHonestDevelopmentBuild() {
+    @Test func emptyDictionaryIsAnHonestDevelopmentBuild() {
         let metadata = AppVersion(infoDictionary: [:])
-        XCTAssertEqual(metadata.displayVersion, "Development build")
-        XCTAssertEqual(metadata.versionLabel, "Development build")
-        XCTAssertNil(metadata.version)
-        XCTAssertNil(metadata.build)
-        XCTAssertNil(metadata.copyright)
-        XCTAssertNil(metadata.releaseDateText())
+        #expect(metadata.displayVersion == "Development build")
+        #expect(metadata.versionLabel == "Development build")
+        #expect(metadata.version == nil)
+        #expect(metadata.build == nil)
+        #expect(metadata.copyright == nil)
+        #expect(metadata.releaseDateText() == nil)
     }
 }

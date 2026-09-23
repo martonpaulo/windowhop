@@ -1,10 +1,11 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
 /// A list refresh must redraw only the tiles whose data changed (#119): each
 /// window keeps its tile, and only changed or new windows are configured.
-final class TileReusePlanTests: XCTestCase {
+struct TileReusePlanTests {
     private typealias Entry = (id: String, content: String)
 
     private func plan(_ current: [Entry?], _ items: [Entry]) -> TileReusePlan {
@@ -15,94 +16,87 @@ final class TileReusePlanTests: XCTestCase {
         TileReusePlan.Assignment(slot: slot, needsConfigure: configure)
     }
 
-    func testUnchangedListReconfiguresNothing() {
+    @Test func unchangedListReconfiguresNothing() {
         let result = plan([("a", "A"), ("b", "B")], [("a", "A"), ("b", "B")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: false),
                 assignment(1, configure: false),
             ])
-        XCTAssertEqual(result.unusedSlots, [])
+        #expect(result.unusedSlots == [])
     }
 
-    func testOnlyTheChangedWindowIsReconfigured() {
+    @Test func onlyTheChangedWindowIsReconfigured() {
         let result = plan(
             [("a", "A"), ("b", "B"), ("c", "C")],
             [("a", "A"), ("b", "B renamed"), ("c", "C")])
-        XCTAssertEqual(result.assignments.map(\.needsConfigure), [false, true, false])
-        XCTAssertEqual(result.assignments.map(\.slot), [0, 1, 2])
+        #expect(result.assignments.map(\.needsConfigure) == [false, true, false])
+        #expect(result.assignments.map(\.slot) == [0, 1, 2])
     }
 
-    func testReorderedWindowsMoveWithTheirTiles() {
+    @Test func reorderedWindowsMoveWithTheirTiles() {
         let result = plan([("a", "A"), ("b", "B")], [("b", "B"), ("a", "A")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(1, configure: false),
                 assignment(0, configure: false),
             ])
     }
 
-    func testRemovedWindowFreesItsSlotAndTheRestShift() {
+    @Test func removedWindowFreesItsSlotAndTheRestShift() {
         let result = plan([("a", "A"), ("b", "B"), ("c", "C")], [("a", "A"), ("c", "C")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: false),
                 assignment(2, configure: false),
             ])
-        XCTAssertEqual(result.unusedSlots, [1])
+        #expect(result.unusedSlots == [1])
     }
 
-    func testNewWindowTakesTheFirstFreeSlotAndIsConfigured() {
+    @Test func newWindowTakesTheFirstFreeSlotAndIsConfigured() {
         let result = plan([("a", "A"), nil, ("gone", "G")], [("a", "A"), ("new", "N")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: false),
                 assignment(1, configure: true),
             ])
-        XCTAssertEqual(result.unusedSlots, [2])
+        #expect(result.unusedSlots == [2])
     }
 
-    func testPoolGrowsBeyondItsSizeWhenNoSlotIsFree() {
+    @Test func poolGrowsBeyondItsSizeWhenNoSlotIsFree() {
         let result = plan([("a", "A")], [("a", "A"), ("b", "B"), ("c", "C")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: false),
                 assignment(1, configure: true),
                 assignment(2, configure: true),
             ])
-        XCTAssertEqual(result.unusedSlots, [])
+        #expect(result.unusedSlots == [])
     }
 
-    func testUnknownSlotsAreAlwaysConfigured() {
+    @Test func unknownSlotsAreAlwaysConfigured() {
         // a released tile reports nil: a new session reconfigures everything
         let result = plan([nil, nil], [("a", "A"), ("b", "B")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: true),
                 assignment(1, configure: true),
             ])
     }
 
-    func testDuplicateIdReusesTheTileOnlyOnce() {
+    @Test func duplicateIdReusesTheTileOnlyOnce() {
         let result = plan([("a", "A"), nil], [("a", "A"), ("a", "A")])
-        XCTAssertEqual(
-            result.assignments,
-            [
+        #expect(
+            result.assignments == [
                 assignment(0, configure: false),
                 assignment(1, configure: true),
             ])
     }
 
-    func testEverySlotIsEitherAssignedOrUnused() {
+    @Test func everySlotIsEitherAssignedOrUnused() {
         let current: [Entry?] = [("a", "A"), ("b", "B"), nil, ("d", "D"), ("e", "E")]
         let result = plan(current, [("e", "E"), ("x", "X"), ("b", "B2")])
         let slots = result.assignments.map(\.slot) + result.unusedSlots
-        XCTAssertEqual(slots.sorted(), Array(0..<current.count))
+        #expect(slots.sorted() == Array(0..<current.count))
     }
 }

@@ -1,11 +1,11 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import WindowHopKit
 
 /// "Report an Issue…" opens the public bug-report form with public build
 /// metadata and the macOS version filled in, and nothing else.
-final class ProjectLinksTests: XCTestCase {
+struct ProjectLinksTests {
     private let macOS = OperatingSystemVersion(majorVersion: 26, minorVersion: 6, patchVersion: 2)
 
     private func version(date: String? = "2026-09-15") -> AppVersion {
@@ -15,53 +15,52 @@ final class ProjectLinksTests: XCTestCase {
     }
 
     private func queryItems(_ url: URL) throws -> [URLQueryItem] {
-        try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
+        try #require(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems)
     }
 
-    func testPackagedBuildPrefillsTheBugReportForm() throws {
+    @Test func packagedBuildPrefillsTheBugReportForm() throws {
         let url = ProjectLinks.issueReport(for: version(), macOS: macOS)
-        XCTAssertEqual(url.scheme, "https")
-        XCTAssertEqual(url.host, "github.com")
-        XCTAssertEqual(url.path, "/martonpaulo/windowhop/issues/new")
-        XCTAssertEqual(
-            try queryItems(url),
-            [
+        #expect(url.scheme == "https")
+        #expect(url.host == "github.com")
+        #expect(url.path == "/martonpaulo/windowhop/issues/new")
+        #expect(
+            try queryItems(url) == [
                 URLQueryItem(name: "template", value: "bug_report.yml"),
                 URLQueryItem(name: "windowhop-version", value: "1.6.2 (build 10602, released 2026-09-15)"),
                 URLQueryItem(name: "macos-version", value: "macOS 26.6.2"),
             ])
     }
 
-    func testMissingReleaseDateIsLeftOut() throws {
+    @Test func missingReleaseDateIsLeftOut() throws {
         let items = try queryItems(ProjectLinks.issueReport(for: version(date: nil), macOS: macOS))
-        XCTAssertEqual(items.first { $0.name == "windowhop-version" }?.value, "1.6.2 (build 10602)")
+        #expect(items.first { $0.name == "windowhop-version" }?.value == "1.6.2 (build 10602)")
     }
 
-    func testDevelopmentBuildSaysSo() throws {
+    @Test func developmentBuildSaysSo() throws {
         let items = try queryItems(
             ProjectLinks.issueReport(
                 for: AppVersion(infoDictionary: [:]),
                 macOS: macOS))
-        XCTAssertEqual(items.first { $0.name == "windowhop-version" }?.value, "Development build")
+        #expect(items.first { $0.name == "windowhop-version" }?.value == "Development build")
     }
 
-    func testMacOSWithoutPatchNumber() {
-        XCTAssertEqual(
+    @Test func macOSWithoutPatchNumber() {
+        #expect(
             ProjectLinks.reportedMacOS(
-                OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)), "macOS 26.0")
+                OperatingSystemVersion(majorVersion: 26, minorVersion: 0, patchVersion: 0)) == "macOS 26.0")
     }
 
-    func testSpacesAndParenthesesArePercentEncoded() {
+    @Test func spacesAndParenthesesArePercentEncoded() {
         let query = ProjectLinks.issueReport(for: version(), macOS: macOS).query ?? ""
-        XCTAssertFalse(query.contains(" "), query)
-        XCTAssertTrue(query.contains("macOS%2026.6.2"), query)
-        XCTAssertTrue(
+        #expect(!query.contains(" "), "\(query)")
+        #expect(query.contains("macOS%2026.6.2"), "\(query)")
+        #expect(
             query.contains("1.6.2%20(build%2010602,%20released%202026-09-15)")
-                || query.contains("1.6.2%20%28build%2010602%2C%20released%202026-09-15%29"), query)
+                || query.contains("1.6.2%20%28build%2010602%2C%20released%202026-09-15%29"), "\(query)")
     }
 
-    func testNothingBeyondTheThreeFields() throws {
+    @Test func nothingBeyondTheThreeFields() throws {
         let items = try queryItems(ProjectLinks.issueReport(for: version(), macOS: macOS))
-        XCTAssertEqual(items.map(\.name), ["template", "windowhop-version", "macos-version"])
+        #expect(items.map(\.name) == ["template", "windowhop-version", "macos-version"])
     }
 }

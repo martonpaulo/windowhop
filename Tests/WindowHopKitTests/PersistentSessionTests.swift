@@ -1,111 +1,112 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class PersistentSessionTests: XCTestCase {
-    func testOpenSelectsPreviousWindow() {
+struct PersistentSessionTests {
+    @Test func openSelectsPreviousWindow() {
         var state = SwitcherState()
-        XCTAssertEqual(state.openPersistent(itemCount: 4), .show(selectedIndex: 1))
-        XCTAssertEqual(state.phase, .sticky)
+        #expect(state.openPersistent(itemCount: 4) == .show(selectedIndex: 1))
+        #expect(state.phase == .sticky)
     }
 
-    func testOpenWithZeroWindowsDoesNothing() {
+    @Test func openWithZeroWindowsDoesNothing() {
         var state = SwitcherState()
-        XCTAssertEqual(state.openPersistent(itemCount: 0), .none)
-        XCTAssertEqual(state.phase, .inactive)
+        #expect(state.openPersistent(itemCount: 0) == .none)
+        #expect(state.phase == .inactive)
     }
 
-    func testOpenWithOneWindowSelectsIt() {
+    @Test func openWithOneWindowSelectsIt() {
         var state = SwitcherState()
-        XCTAssertEqual(state.openPersistent(itemCount: 1), .show(selectedIndex: 0))
+        #expect(state.openPersistent(itemCount: 1) == .show(selectedIndex: 0))
     }
 
-    func testModifierReleaseDoesNotCloseOrActivate() {
+    @Test func modifierReleaseDoesNotCloseOrActivate() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.modifierReleased(), .none)
-        XCTAssertEqual(state.phase, .sticky)
+        #expect(state.modifierReleased() == .none)
+        #expect(state.phase == .sticky)
     }
 
-    func testNavigationWorksWithoutHeldModifier() {
+    @Test func navigationWorksWithoutHeldModifier() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)  // selection 1
-        XCTAssertEqual(state.step(backward: false), .select(index: 2))
-        XCTAssertEqual(state.step(backward: true), .select(index: 1))
-        XCTAssertEqual(state.arrow(.right), .select(index: 2))
+        #expect(state.step(backward: false) == .select(index: 2))
+        #expect(state.step(backward: true) == .select(index: 1))
+        #expect(state.arrow(.right) == .select(index: 2))
     }
 
-    func testReturnActivates() {
+    @Test func returnActivates() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.returnKey(), .activate(index: 1))
-        XCTAssertEqual(state.phase, .inactive)
+        #expect(state.returnKey() == .activate(index: 1))
+        #expect(state.phase == .inactive)
     }
 
-    func testSpaceActivatesInPersistentSessionOnly() {
+    @Test func spaceActivatesInPersistentSessionOnly() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.spaceKey(), .activate(index: 1))
+        #expect(state.spaceKey() == .activate(index: 1))
         // in a held session Space is not a WindowHop key
         var heldState = SwitcherState()
         _ = heldState.trigger(backward: false, itemCount: 3)
-        XCTAssertEqual(heldState.spaceKey(), .none)
-        XCTAssertEqual(heldState.phase, .held)
+        #expect(heldState.spaceKey() == .none)
+        #expect(heldState.phase == .held)
     }
 
-    func testEscapeCancels() {
+    @Test func escapeCancels() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.escape(), .cancel)
-        XCTAssertEqual(state.phase, .inactive)
+        #expect(state.escape() == .cancel)
+        #expect(state.phase == .inactive)
     }
 
-    func testClickActivates() {
+    @Test func clickActivates() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.itemClicked(index: 2), .activate(index: 2))
+        #expect(state.itemClicked(index: 2) == .activate(index: 2))
     }
 
-    func testSecondInvocationKeepsCurrentSession() {
+    @Test func secondInvocationKeepsCurrentSession() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
         _ = state.step(backward: false)  // selection 2
-        XCTAssertEqual(state.openPersistent(itemCount: 3), .none)
-        XCTAssertEqual(state.phase, .sticky)
-        XCTAssertEqual(state.selectedIndex, 2)
+        #expect(state.openPersistent(itemCount: 3) == .none)
+        #expect(state.phase == .sticky)
+        #expect(state.selectedIndex == 2)
         // also ignored while a held session is running
         var heldState = SwitcherState()
         _ = heldState.trigger(backward: false, itemCount: 3)
-        XCTAssertEqual(heldState.openPersistent(itemCount: 3), .none)
-        XCTAssertEqual(heldState.phase, .held)
+        #expect(heldState.openPersistent(itemCount: 3) == .none)
+        #expect(heldState.phase == .held)
     }
 
-    func testDeleteStillRequiresConfirmation() {
+    @Test func deleteStillRequiresConfirmation() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.deleteKey(), .requestClose(index: 1))
-        XCTAssertEqual(state.phase, .confirming)
+        #expect(state.deleteKey() == .requestClose(index: 1))
+        #expect(state.phase == .confirming)
         _ = state.confirmationFinished()
-        XCTAssertEqual(state.phase, .sticky)
+        #expect(state.phase == .sticky)
     }
 
-    func testTeardownFromStickyCancels() {
+    @Test func teardownFromStickyCancels() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
-        XCTAssertEqual(state.teardown(), .cancel)
-        XCTAssertEqual(state.phase, .inactive)
+        #expect(state.teardown() == .cancel)
+        #expect(state.phase == .inactive)
     }
 
-    func testTeardownFromStickyCloseConfirmationCancels() {
+    @Test func teardownFromStickyCloseConfirmationCancels() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
         _ = state.deleteKey()
-        XCTAssertEqual(state.escape(), .none)
-        XCTAssertEqual(state.teardown(), .cancel)
-        XCTAssertEqual(state.phase, .inactive)
+        #expect(state.escape() == .none)
+        #expect(state.teardown() == .cancel)
+        #expect(state.phase == .inactive)
     }
 
-    func testStaleStickyConfirmationIsNotRevivedByANewSession() {
+    @Test func staleStickyConfirmationIsNotRevivedByANewSession() {
         var state = SwitcherState()
         _ = state.openPersistent(itemCount: 3)
         _ = state.deleteKey()
@@ -113,7 +114,7 @@ final class PersistentSessionTests: XCTestCase {
         _ = state.teardown()
         _ = state.openPersistent(itemCount: 3)
         _ = state.deleteKey()
-        XCTAssertFalse(state.isConfirming(sessionID: stale))
-        XCTAssertTrue(state.isConfirming(sessionID: state.sessionID))
+        #expect(!state.isConfirming(sessionID: stale))
+        #expect(state.isConfirming(sessionID: state.sessionID))
     }
 }

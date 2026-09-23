@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
@@ -7,7 +8,7 @@ import XCTest
 /// These drive the real flow with deterministic fakes: no screen, no
 /// permission, no real delay.
 @MainActor
-final class TileCaptureFlowTests: XCTestCase {
+struct TileCaptureFlowTests {
     private struct Candidate { let id: String }
 
     /// Records every stage the flow spends and what it reports.
@@ -85,30 +86,30 @@ final class TileCaptureFlowTests: XCTestCase {
 
     private static let transient = TileCaptureResult<String>.failed(.captureFailed(transient: true))
 
-    func testATransientFailureThenSuccessDeliversWithTwoAttempts() async {
+    @Test func aTransientFailureThenSuccessDeliversWithTwoAttempts() async {
         let harness = Harness(ids: ["a"])
         harness.captureResults["a"] = [Self.transient, .captured("image")]
 
         await harness.run(["a"])
 
-        XCTAssertEqual(harness.captures["a"], 2)
-        XCTAssertEqual(harness.delivered, ["a"])
-        XCTAssertTrue(harness.unavailable.isEmpty)
-        XCTAssertEqual(harness.sleeps, [PreviewRetryPolicy.delay])
+        #expect(harness.captures["a"] == 2)
+        #expect(harness.delivered == ["a"])
+        #expect(harness.unavailable.isEmpty)
+        #expect(harness.sleeps == [PreviewRetryPolicy.delay])
     }
 
-    func testAnExhaustedRetryMakesTwoAttemptsAndOneUnavailable() async {
+    @Test func anExhaustedRetryMakesTwoAttemptsAndOneUnavailable() async {
         let harness = Harness(ids: ["a"])
         harness.captureResults["a"] = [Self.transient]
 
         await harness.run(["a"])
 
-        XCTAssertEqual(harness.captures["a"], 2, "one retry, never a loop")
-        XCTAssertEqual(harness.unavailable, [["a"]])
-        XCTAssertTrue(harness.delivered.isEmpty)
+        #expect(harness.captures["a"] == 2, "one retry, never a loop")
+        #expect(harness.unavailable == [["a"]])
+        #expect(harness.delivered.isEmpty)
     }
 
-    func testStableFailuresAreFinalAfterOneAttempt() async {
+    @Test func stableFailuresAreFinalAfterOneAttempt() async {
         let stable: [PreviewFailure] = [
             .invalidTarget, .permissionDenied,
             .captureFailed(transient: false),
@@ -119,69 +120,69 @@ final class TileCaptureFlowTests: XCTestCase {
 
             await harness.run(["a"])
 
-            XCTAssertEqual(harness.captures["a"], 1, "\(failure)")
-            XCTAssertEqual(harness.lookups, 1, "\(failure)")
-            XCTAssertEqual(harness.unavailable, [["a"]], "\(failure)")
-            XCTAssertTrue(harness.sleeps.isEmpty, "\(failure)")
+            #expect(harness.captures["a"] == 1, "\(failure)")
+            #expect(harness.lookups == 1, "\(failure)")
+            #expect(harness.unavailable == [["a"]], "\(failure)")
+            #expect(harness.sleeps.isEmpty, "\(failure)")
         }
     }
 
     /// An ambiguous or missing match never retries and never picks a window.
-    func testNoMatchIsFinalAndCapturesNothing() async {
+    @Test func noMatchIsFinalAndCapturesNothing() async {
         let harness = Harness(ids: ["a", "b"])
         harness.lookupResults = [["b"]]
 
         await harness.run(["a", "b"])
 
-        XCTAssertEqual(harness.lookups, 1)
-        XCTAssertNil(harness.captures["a"])
-        XCTAssertEqual(harness.unavailable, [["a"]])
-        XCTAssertEqual(harness.delivered, ["b"])
-        XCTAssertTrue(harness.sleeps.isEmpty)
+        #expect(harness.lookups == 1)
+        #expect(harness.captures["a"] == nil)
+        #expect(harness.unavailable == [["a"]])
+        #expect(harness.delivered == ["b"])
+        #expect(harness.sleeps.isEmpty)
     }
 
     /// A failed shared inventory read is retried once for the whole batch,
     /// not once per tile.
-    func testALookupFailureForManyIDsMakesExactlyTwoLookups() async {
+    @Test func aLookupFailureForManyIDsMakesExactlyTwoLookups() async {
         let ids = ["a", "b", "c", "d", "e"]
         let harness = Harness(ids: ids)
         harness.lookupResults = [nil]
 
         await harness.run(ids)
 
-        XCTAssertEqual(harness.lookups, 2)
-        XCTAssertTrue(harness.captures.isEmpty)
-        XCTAssertEqual(harness.unavailable, [ids])
+        #expect(harness.lookups == 2)
+        #expect(harness.captures.isEmpty)
+        #expect(harness.unavailable == [ids])
     }
 
-    func testALookupFailureThenSuccessCapturesEveryTile() async {
+    @Test func aLookupFailureThenSuccessCapturesEveryTile() async {
         let ids = ["a", "b", "c"]
         let harness = Harness(ids: ids)
         harness.lookupResults = [nil, Set(ids)]
 
         await harness.run(ids)
 
-        XCTAssertEqual(harness.lookups, 2)
-        XCTAssertEqual(Set(harness.delivered), Set(ids))
-        XCTAssertTrue(harness.unavailable.isEmpty)
+        #expect(harness.lookups == 2)
+        #expect(Set(harness.delivered) == Set(ids))
+        #expect(harness.unavailable.isEmpty)
     }
 
     /// The session ended, was replaced, left Window Previews or lost the grant
     /// while the retry waited: no second lookup, capture or delivery.
-    func testASessionThatStopsDuringTheDelaySpendsNothingMore() async {
+    @Test func aSessionThatStopsDuringTheDelaySpendsNothingMore() async {
         let harness = Harness(ids: ["a"])
         harness.captureResults["a"] = [Self.transient, .captured("image")]
         harness.onSleep = { harness.current = false }
 
         await harness.run(["a"])
 
-        XCTAssertEqual(harness.lookups, 1)
-        XCTAssertEqual(harness.captures["a"], 1)
-        XCTAssertTrue(harness.delivered.isEmpty)
-        XCTAssertTrue(harness.unavailable.isEmpty, "a stopped session reports nothing")
+        #expect(harness.lookups == 1)
+        #expect(harness.captures["a"] == 1)
+        #expect(harness.delivered.isEmpty)
+        #expect(harness.unavailable.isEmpty, "a stopped session reports nothing")
     }
 
-    func testAnEvictedWindowGetsNoRetry() async {
+    @Test func anEvictedWindowGetsNoRetry() async {
         let harness = Harness(ids: ["a", "b"])
         harness.captureResults["a"] = [Self.transient, .captured("image")]
         harness.captureResults["b"] = [Self.transient, .captured("image")]
@@ -189,27 +190,27 @@ final class TileCaptureFlowTests: XCTestCase {
 
         await harness.run(["a", "b"])
 
-        XCTAssertEqual(harness.captures["a"], 1)
-        XCTAssertEqual(harness.captures["b"], 2)
-        XCTAssertEqual(harness.delivered, ["b"])
-        XCTAssertEqual(harness.unavailable, [["a"]])
+        #expect(harness.captures["a"] == 1)
+        #expect(harness.captures["b"] == 2)
+        #expect(harness.delivered == ["b"])
+        #expect(harness.unavailable == [["a"]])
     }
 
     /// The allowance is per session: a later batch in the same session (a
     /// window that joined) cannot retry the same window again.
-    func testTheRetryAllowanceIsUsedOnlyOncePerSession() async {
+    @Test func theRetryAllowanceIsUsedOnlyOncePerSession() async {
         let harness = Harness(ids: ["a"])
         harness.captureResults["a"] = [Self.transient]
 
         await harness.run(["a"])
         await harness.run(["a"])
 
-        XCTAssertEqual(harness.captures["a"], 3, "two attempts, then one without a retry")
-        XCTAssertEqual(harness.unavailable, [["a"], ["a"]])
+        #expect(harness.captures["a"] == 3, "two attempts, then one without a retry")
+        #expect(harness.unavailable == [["a"], ["a"]])
     }
 
     /// Stable failures are shown at once; only retryable tiles wait.
-    func testStableFailuresAreReportedBeforeTheRetryDelay() async {
+    @Test func stableFailuresAreReportedBeforeTheRetryDelay() async {
         let harness = Harness(ids: ["a", "b"])
         harness.captureResults["a"] = [.failed(.invalidTarget)]
         harness.captureResults["b"] = [Self.transient, .captured("image")]
@@ -218,44 +219,44 @@ final class TileCaptureFlowTests: XCTestCase {
 
         let unavailableIndex = harness.events.firstIndex(of: "unavailable a")
         let sleepIndex = harness.events.firstIndex(of: "sleep")
-        XCTAssertNotNil(unavailableIndex)
-        XCTAssertNotNil(sleepIndex)
+        #expect(unavailableIndex != nil)
+        #expect(sleepIndex != nil)
         if let unavailableIndex, let sleepIndex {
-            XCTAssertLessThan(unavailableIndex, sleepIndex)
+            #expect(unavailableIndex < sleepIndex)
         }
-        XCTAssertEqual(harness.delivered, ["b"])
+        #expect(harness.delivered == ["b"])
     }
 
-    func testCapturesStayWithinTheSharedBudget() async {
+    @Test func capturesStayWithinTheSharedBudget() async {
         let ids = (0..<9).map { "w\($0)" }
         let harness = Harness(ids: ids, limit: 4)
 
         await harness.run(ids)
 
-        XCTAssertEqual(Set(harness.delivered), Set(ids))
-        XCTAssertLessThanOrEqual(harness.maxInFlight, 4)
-        XCTAssertEqual(harness.budget.inFlight, 0, "every slot is given back")
+        #expect(Set(harness.delivered) == Set(ids))
+        #expect(harness.maxInFlight <= 4)
+        #expect(harness.budget.inFlight == 0, "every slot is given back")
     }
 
     /// A replaced session refuses the budget: captures that have not started
     /// never start, and nothing is reported for them.
-    func testASupersededBudgetGenerationStartsNoCapture() async {
+    @Test func aSupersededBudgetGenerationStartsNoCapture() async {
         let harness = Harness(ids: ["a"])
         harness.budget.advance(to: harness.generation + 1)
 
         await harness.run(["a"])
 
-        XCTAssertTrue(harness.captures.isEmpty)
-        XCTAssertTrue(harness.unavailable.isEmpty)
-        XCTAssertTrue(harness.sleeps.isEmpty)
+        #expect(harness.captures.isEmpty)
+        #expect(harness.unavailable.isEmpty)
+        #expect(harness.sleeps.isEmpty)
     }
 
-    func testRetryPolicyClassification() {
-        XCTAssertTrue(PreviewRetryPolicy.isRetryable(.lookupFailed))
-        XCTAssertTrue(PreviewRetryPolicy.isRetryable(.captureFailed(transient: true)))
-        XCTAssertFalse(PreviewRetryPolicy.isRetryable(.captureFailed(transient: false)))
-        XCTAssertFalse(PreviewRetryPolicy.isRetryable(.noMatch))
-        XCTAssertFalse(PreviewRetryPolicy.isRetryable(.invalidTarget))
-        XCTAssertFalse(PreviewRetryPolicy.isRetryable(.permissionDenied))
+    @Test func retryPolicyClassification() {
+        #expect(PreviewRetryPolicy.isRetryable(.lookupFailed))
+        #expect(PreviewRetryPolicy.isRetryable(.captureFailed(transient: true)))
+        #expect(!PreviewRetryPolicy.isRetryable(.captureFailed(transient: false)))
+        #expect(!PreviewRetryPolicy.isRetryable(.noMatch))
+        #expect(!PreviewRetryPolicy.isRetryable(.invalidTarget))
+        #expect(!PreviewRetryPolicy.isRetryable(.permissionDenied))
     }
 }

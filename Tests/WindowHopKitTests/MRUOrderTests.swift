@@ -1,64 +1,65 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class MRUOrderTests: XCTestCase {
-    func testNewItemsAppendAtEnd() {
+struct MRUOrderTests {
+    @Test func newItemsAppendAtEnd() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.add("b")
-        XCTAssertEqual(mru.ids, ["a", "b"])
+        #expect(mru.ids == ["a", "b"])
     }
 
-    func testAddingKnownItemIsIgnored() {
+    @Test func addingKnownItemIsIgnored() {
         var mru = MRUOrder<String>()
         mru.add("a")
-        XCTAssertFalse(mru.add("a"))
-        XCTAssertEqual(mru.ids, ["a"])
+        #expect(mru.add("a") == false)
+        #expect(mru.ids == ["a"])
     }
 
-    func testFocusMovesToFront() {
+    @Test func focusMovesToFront() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.add("b")
         mru.add("c")
         mru.focused("c")
-        XCTAssertEqual(mru.ids, ["c", "a", "b"])
+        #expect(mru.ids == ["c", "a", "b"])
         mru.focused("a")
-        XCTAssertEqual(mru.ids, ["a", "c", "b"])
+        #expect(mru.ids == ["a", "c", "b"])
     }
 
-    func testFocusUnknownInsertsAtFront() {
+    @Test func focusUnknownInsertsAtFront() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.focused("x")
-        XCTAssertEqual(mru.ids, ["x", "a"])
+        #expect(mru.ids == ["x", "a"])
     }
 
-    func testReaddingAfterRemovalAppendsAtEnd() {
+    @Test func readdingAfterRemovalAppendsAtEnd() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.add("b")
         mru.remove("a")
-        XCTAssertTrue(mru.add("a"))
-        XCTAssertEqual(mru.ids, ["b", "a"])
+        #expect(mru.add("a") == true)
+        #expect(mru.ids == ["b", "a"])
     }
 
-    func testFocusingTheFrontItemIsANoOp() {
+    @Test func focusingTheFrontItemIsANoOp() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.add("b")
         mru.focused("a")
-        XCTAssertEqual(mru.ids, ["a", "b"])
+        #expect(mru.ids == ["a", "b"])
     }
 
-    func testRemove() {
+    @Test func remove() {
         var mru = MRUOrder<String>()
         mru.add("a")
         mru.add("b")
         mru.remove("a")
-        XCTAssertEqual(mru.ids, ["b"])
+        #expect(mru.ids == ["b"])
         mru.remove("missing")
-        XCTAssertEqual(mru.ids, ["b"])
+        #expect(mru.ids == ["b"])
     }
 }

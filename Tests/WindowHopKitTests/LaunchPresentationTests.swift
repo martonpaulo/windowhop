@@ -1,10 +1,11 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
 /// The launch and reopen contract decided on issue #80 (option C), one row per
 /// condition in docs/architecture.md "Launch and reopen".
-final class LaunchPresentationTests: XCTestCase {
+struct LaunchPresentationTests {
     private struct Row {
         let name: String
         let trigger: LaunchPresentation.Trigger
@@ -70,7 +71,7 @@ final class LaunchPresentationTests: XCTestCase {
             firstRun: false, menuBarItem: true, dockIcon: false, expected: .onboarding),
     ]
 
-    func testEveryLaunchAndReopenCondition() {
+    @Test func everyLaunchAndReopenCondition() {
         for row in rows {
             let actual = LaunchPresentation.decide(
                 trigger: row.trigger,
@@ -78,13 +79,13 @@ final class LaunchPresentationTests: XCTestCase {
                 isFirstRun: row.firstRun,
                 menuBarItemVisible: row.menuBarItem,
                 dockIconVisible: row.dockIcon)
-            XCTAssertEqual(actual, row.expected, row.name)
+            #expect(actual == row.expected, "\(row.name)")
         }
     }
 
     /// Hidden icons must never leave the user without a route back: reopening
     /// always shows a window, whatever the rest of the state is.
-    func testReopenAlwaysShowsAWindow() {
+    @Test func reopenAlwaysShowsAWindow() {
         for granted in [true, false] {
             for firstRun in [true, false] {
                 for menuBarItem in [true, false] {
@@ -93,7 +94,7 @@ final class LaunchPresentationTests: XCTestCase {
                             trigger: .reopen, permissionGranted: granted,
                             isFirstRun: firstRun, menuBarItemVisible: menuBarItem,
                             dockIconVisible: dockIcon)
-                        XCTAssertNotEqual(result, .none)
+                        #expect(result != .none)
                     }
                 }
             }

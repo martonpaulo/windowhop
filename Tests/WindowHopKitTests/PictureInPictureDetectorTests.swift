@@ -1,5 +1,6 @@
 import CoreGraphics
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
@@ -8,7 +9,7 @@ import XCTest
 /// screen (Keynote presentations and fullscreen overlays stay listed).
 /// Layer values are real ones: Brave's PiP floats at layer 3, normal
 /// windows at 0.
-final class PictureInPictureDetectorTests: XCTestCase {
+struct PictureInPictureDetectorTests {
     private let screen = CGRect(x: 0, y: 0, width: 1440, height: 900)
     private let pipFrame = CGRect(x: 1153, y: 668, width: 343, height: 193)
 
@@ -19,45 +20,45 @@ final class PictureInPictureDetectorTests: XCTestCase {
         PictureInPictureDetector.OnScreenWindow(pid: pid, frame: frame ?? pipFrame, layer: layer)
     }
 
-    func testFloatingSmallWindowIsPictureInPicture() {
-        XCTAssertTrue(
+    @Test func floatingSmallWindowIsPictureInPicture() {
+        #expect(
             PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: pipFrame,
                 onScreenWindows: [onScreen(3)], screenFrames: [screen]))
     }
 
-    func testNormalLayerWindowIsNot() {
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+    @Test func normalLayerWindowIsNot() {
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: pipFrame,
                 onScreenWindows: [onScreen(0)], screenFrames: [screen]))
     }
 
-    func testFloatingScreenCoveringWindowStaysListed() {
+    @Test func floatingScreenCoveringWindowStaysListed() {
         // Keynote presentation mode: floating, but effectively fullscreen
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: screen,
                 onScreenWindows: [onScreen(20, frame: screen)], screenFrames: [screen]))
     }
 
-    func testUnmatchedWindowResolvesToNotPiP() {
+    @Test func unmatchedWindowResolvesToNotPiP() {
         // frame drifted beyond tolerance, or the window is not on screen
         let elsewhere = CGRect(x: 40, y: 40, width: 343, height: 193)
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: elsewhere,
                 onScreenWindows: [onScreen(3)], screenFrames: [screen]))
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: nil,
                 onScreenWindows: [onScreen(3)], screenFrames: [screen]))
     }
 
-    func testMatchRequiresTheOwningProcess() {
+    @Test func matchRequiresTheOwningProcess() {
         // another app's floating window at the same coordinates is no evidence
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 200, frame: pipFrame,
                 onScreenWindows: [onScreen(3, pid: 100)], screenFrames: [screen]))
     }
@@ -69,20 +70,20 @@ final class PictureInPictureDetectorTests: XCTestCase {
     private let floatingDocument = CGRect(x: 440, y: 128, width: 360, height: 252)
     private let chromiumPiP = CGRect(x: 1114, y: 709, width: 308, height: 173)
 
-    func testFloatingDocumentWithStandardButtonsIsNotPictureInPicture() {
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+    @Test func floatingDocumentWithStandardButtonsIsNotPictureInPicture() {
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: floatingDocument, buttons: .init(close: true, minimize: true, zoom: true),
                 onScreenWindows: [onScreen(3, frame: floatingDocument)], screenFrames: [screen]))
         // a closable-only floating window at modal-panel level is ordinary too
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: floatingDocument, buttons: .init(close: true),
                 onScreenWindows: [onScreen(8, frame: floatingDocument)], screenFrames: [screen]))
     }
 
-    func testChromiumPiPWithDisabledButtonsIsPictureInPicture() {
-        XCTAssertTrue(
+    @Test func chromiumPiPWithDisabledButtonsIsPictureInPicture() {
+        #expect(
             PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: chromiumPiP, buttons: .init(close: false, minimize: false, zoom: false),
                 onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
@@ -93,21 +94,21 @@ final class PictureInPictureDetectorTests: XCTestCase {
     private let firefoxPiPButtons = PictureInPictureDetector.TitleBarButtons(
         close: true, minimize: false, zoom: true)
 
-    func testFirefoxPiPWithOnlyMinimizeDisabledIsPictureInPicture() {
-        XCTAssertTrue(
+    @Test func firefoxPiPWithOnlyMinimizeDisabledIsPictureInPicture() {
+        #expect(
             PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: chromiumPiP, buttons: firefoxPiPButtons,
                 onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
     }
 
-    func testFirefoxButtonPatternAtTheNormalLayerIsNotPictureInPicture() {
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+    @Test func firefoxButtonPatternAtTheNormalLayerIsNotPictureInPicture() {
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: floatingDocument, buttons: firefoxPiPButtons,
                 onScreenWindows: [onScreen(0, frame: floatingDocument)], screenFrames: [screen]))
     }
 
-    func testOtherClosableFloatingWindowsAreNotPictureInPicture() {
+    @Test func otherClosableFloatingWindowsAreNotPictureInPicture() {
         // #90's closable-only windows disable zoom too (macOS Join Network: close
         // enabled, minimize and zoom disabled); a missing minimize or zoom button,
         // or an enabled minimize button, never matches the Firefox pattern
@@ -118,51 +119,51 @@ final class PictureInPictureDetectorTests: XCTestCase {
             .init(close: true, minimize: true, zoom: false),
         ]
         for buttons in patterns {
-            XCTAssertFalse(
-                PictureInPictureDetector.isPictureInPicture(
+            #expect(
+                !PictureInPictureDetector.isPictureInPicture(
                     pid: 100, frame: floatingDocument, buttons: buttons,
                     onScreenWindows: [onScreen(3, frame: floatingDocument)], screenFrames: [screen]),
                 "\(buttons)")
         }
     }
 
-    func testButtonlessOrUnreadFloatingWindowKeepsTheLayerRule() {
+    @Test func buttonlessOrUnreadFloatingWindowKeepsTheLayerRule() {
         // no close button, or its state never read: the floating layer alone decides
-        XCTAssertTrue(
+        #expect(
             PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: chromiumPiP, buttons: .init(),
                 onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
     }
 
-    func testButtonlessModalAlertIsNotPictureInPicture() {
+    @Test func buttonlessModalAlertIsNotPictureInPicture() {
         // Measured (#115): an app-modal NSAlert or NSOpenPanel floats at layer 8
         // and has no close button, like Ghostty's update alert in AeroSpace's corpus
         let alert = CGRect(x: 590, y: 205, width: 260, height: 176)
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: alert, buttons: .init(),
                 onScreenWindows: [onScreen(8, frame: alert)], screenFrames: [screen]))
     }
 
-    func testFullscreenFloatingSurfaceStaysEligible() {
+    @Test func fullscreenFloatingSurfaceStaysEligible() {
         // the fullscreen exception holds whatever the title bar reports
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: screen, buttons: .init(close: false),
                 onScreenWindows: [onScreen(20, frame: screen)], screenFrames: [screen]))
     }
 
-    func testDisabledButtonsAloneNeverMakeANormalWindowPiP() {
-        XCTAssertFalse(
-            PictureInPictureDetector.isPictureInPicture(
+    @Test func disabledButtonsAloneNeverMakeANormalWindowPiP() {
+        #expect(
+            !PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: floatingDocument, buttons: .init(close: false),
                 onScreenWindows: [onScreen(0, frame: floatingDocument)], screenFrames: [screen]))
     }
 
-    func testSmallFrameDriftStillMatches() {
+    @Test func smallFrameDriftStillMatches() {
         // AX and window-server frames can disagree by a pixel or two
         let drifted = pipFrame.offsetBy(dx: 2, dy: -2)
-        XCTAssertTrue(
+        #expect(
             PictureInPictureDetector.isPictureInPicture(
                 pid: 100, frame: drifted,
                 onScreenWindows: [onScreen(3)], screenFrames: [screen]))

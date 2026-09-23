@@ -1,97 +1,98 @@
-import XCTest
+import CoreGraphics
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-@MainActor
-final class PersistentShortcutTests: XCTestCase {
-    func testExactModifierMatching() {
+@MainActor  // reads ShortcutFormatter.keyLabels (see ShortcutFormatterLayoutTests)
+struct PersistentShortcutTests {
+    @Test func exactModifierMatching() {
         let shortcut = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])
-        XCTAssertTrue(shortcut.matches(keyCode: KeyCode.space, flags: [.maskAlternate]))
+        #expect(shortcut.matches(keyCode: KeyCode.space, flags: [.maskAlternate]))
         // extra relevant modifiers must not match
-        XCTAssertFalse(shortcut.matches(keyCode: KeyCode.space, flags: [.maskAlternate, .maskShift]))
-        XCTAssertFalse(shortcut.matches(keyCode: KeyCode.space, flags: [.maskCommand]))
-        XCTAssertFalse(shortcut.matches(keyCode: KeyCode.tab, flags: [.maskAlternate]))
+        #expect(!shortcut.matches(keyCode: KeyCode.space, flags: [.maskAlternate, .maskShift]))
+        #expect(!shortcut.matches(keyCode: KeyCode.space, flags: [.maskCommand]))
+        #expect(!shortcut.matches(keyCode: KeyCode.tab, flags: [.maskAlternate]))
         // irrelevant flags (caps lock, fn, key-pad bits) are ignored
         var flags: CGEventFlags = [.maskAlternate]
         flags.insert(.maskAlphaShift)
         flags.insert(.maskNonCoalesced)
-        XCTAssertTrue(shortcut.matches(keyCode: KeyCode.space, flags: flags))
+        #expect(shortcut.matches(keyCode: KeyCode.space, flags: flags))
     }
 
-    func testModifierOnlyOrBareKeyIsRejected() {
-        XCTAssertEqual(
-            PersistentShortcut(keyCode: 0, modifiers: []).validate(against: .commandTab),
-            .needsModifier)
+    @Test func modifierOnlyOrBareKeyIsRejected() {
+        #expect(
+            PersistentShortcut(keyCode: 0, modifiers: []).validate(against: .commandTab) == .needsModifier)
         // Shift alone is not enough: shift+letter is normal typing
-        XCTAssertEqual(
-            PersistentShortcut(keyCode: 0, modifiers: [.maskShift]).validate(against: .commandTab),
-            .needsModifier)
+        #expect(
+            PersistentShortcut(keyCode: 0, modifiers: [.maskShift]).validate(against: .commandTab) == .needsModifier)
     }
 
     /// The glyphs in the message come from ShortcutFormatter, never a second
     /// hardcoded representation (issue #114).
-    func testNeedsModifierExplanationUsesFormatterGlyphs() {
+    @Test func needsModifierExplanationUsesFormatterGlyphs() {
         let glyphs = [CGEventFlags.maskCommand, .maskAlternate, .maskControl]
             .map(ShortcutFormatter.modifierSymbols)
             .joined(separator: ", ")
-        XCTAssertEqual(
-            PersistentShortcut.ValidationError.needsModifier.explanation,
-            "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
+        #expect(
+            PersistentShortcut.ValidationError.needsModifier.explanation
+                == "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
         // every modifier the message names is, on its own, enough to pass validation
         for modifier in PersistentShortcut.ValidationError.qualifyingModifiers {
-            XCTAssertNil(
+            #expect(
                 PersistentShortcut(keyCode: KeyCode.space, modifiers: modifier)
-                    .validate(against: .commandTab))
+                    .validate(against: .commandTab) == nil)
         }
     }
 
-    func testConflictWithSwitcherShortcutIsRejected() {
+    @Test func conflictWithSwitcherShortcutIsRejected() {
         let cmdTab = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskCommand])
-        XCTAssertEqual(cmdTab.validate(against: .commandTab), .conflictsWithSwitcherShortcut)
+        #expect(cmdTab.validate(against: .commandTab) == .conflictsWithSwitcherShortcut)
         let cmdShiftTab = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskCommand, .maskShift])
-        XCTAssertEqual(cmdShiftTab.validate(against: .commandTab), .conflictsWithSwitcherShortcut)
+        #expect(cmdShiftTab.validate(against: .commandTab) == .conflictsWithSwitcherShortcut)
         // fine when the switcher uses a different hold modifier
-        XCTAssertNil(cmdTab.validate(against: .optionTab))
+        #expect(cmdTab.validate(against: .optionTab) == nil)
         let optionTab = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskAlternate])
-        XCTAssertEqual(optionTab.validate(against: .optionTab), .conflictsWithSwitcherShortcut)
+        #expect(optionTab.validate(against: .optionTab) == .conflictsWithSwitcherShortcut)
     }
 
-    func testValidShortcuts() {
-        XCTAssertNil(
-            PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).validate(against: .commandTab))
+    @Test func validShortcuts() {
+        #expect(
+            PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).validate(against: .commandTab)
+                == nil)
         // key code 40 is K
-        XCTAssertNil(
+        #expect(
             PersistentShortcut(keyCode: 40, modifiers: [.maskCommand, .maskShift]).validate(
-                against: .commandTab))
+                against: .commandTab) == nil)
     }
 
-    func testEncodingRoundTrip() {
+    @Test func encodingRoundTrip() {
         let original = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskControl, .maskAlternate])
         let decoded = PersistentShortcut(encoded: original.encoded)
-        XCTAssertEqual(decoded, original)
-        XCTAssertNil(PersistentShortcut(encoded: ""))
-        XCTAssertNil(PersistentShortcut(encoded: "garbage"))
-        XCTAssertNil(PersistentShortcut(encoded: "1:2:3"))
+        #expect(decoded == original)
+        #expect(PersistentShortcut(encoded: "") == nil)
+        #expect(PersistentShortcut(encoded: "garbage") == nil)
+        #expect(PersistentShortcut(encoded: "1:2:3") == nil)
     }
 
-    func testDisplayString() {
-        XCTAssertEqual(PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).displayString, "⌥Space")
-        XCTAssertEqual(
-            PersistentShortcut(keyCode: 40, modifiers: [.maskControl, .maskShift, .maskCommand]).displayString,
-            "⌃⇧⌘K")
+    @Test func displayString() {
+        #expect(PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).displayString == "⌥Space")
+        #expect(
+            PersistentShortcut(keyCode: 40, modifiers: [.maskControl, .maskShift, .maskCommand]).displayString == "⌃⇧⌘K"
+        )
     }
 
-    func testPreferencesDefaultIsOptionTabAndCanBeCleared() throws {
+    @Test func preferencesDefaultIsOptionTabAndCanBeCleared() throws {
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = Preferences(defaults: defaults)
-        XCTAssertEqual(preferences.persistentShortcut, .optionTab)
+        #expect(preferences.persistentShortcut == .optionTab)
         let shortcut = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])
         preferences.persistentShortcut = shortcut
-        XCTAssertEqual(preferences.persistentShortcut, shortcut)
+        #expect(preferences.persistentShortcut == shortcut)
         preferences.persistentShortcut = nil
-        XCTAssertNil(preferences.persistentShortcut)
-        XCTAssertNil(Preferences(defaults: defaults).persistentShortcut)
+        #expect(preferences.persistentShortcut == nil)
+        #expect(Preferences(defaults: defaults).persistentShortcut == nil)
     }
 }

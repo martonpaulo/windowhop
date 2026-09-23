@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
@@ -6,7 +7,7 @@ import XCTest
 /// budget with held slots, so the ceiling, refill order and cancellation are
 /// observed without touching the screen (#86).
 @MainActor
-final class CaptureBudgetTests: XCTestCase {
+struct CaptureBudgetTests {
     /// Records which workers got a slot, in order, and which were refused.
     private actor Log {
         private(set) var started: [Int] = []
@@ -19,13 +20,13 @@ final class CaptureBudgetTests: XCTestCase {
     /// test waits for the budget to reach the state it is about to assert.
     private func eventually(
         _ condition: @escaping () async -> Bool,
-        file: StaticString = #filePath, line: UInt = #line
+        sourceLocation: SourceLocation = #_sourceLocation
     ) async {
         for _ in 0..<2000 {
             if await condition() { return }
             try? await Task.sleep(nanoseconds: 1_000_000)
         }
-        XCTFail("condition not reached", file: file, line: line)
+        Issue.record("condition not reached", sourceLocation: sourceLocation)
     }
 
     /// Starts one worker per id; each keeps its slot until the test releases it.
@@ -44,7 +45,7 @@ final class CaptureBudgetTests: XCTestCase {
         }
     }
 
-    func testNoMoreThanTheLimitHoldASlotAcrossCallers() async {
+    @Test func noMoreThanTheLimitHoldASlotAcrossCallers() async {
         let budget = CaptureBudget(limit: 4)
         let log = Log()
         budget.advance(to: 1)
@@ -56,12 +57,12 @@ final class CaptureBudgetTests: XCTestCase {
         await eventually { await log.started.count == 4 }
         try? await Task.sleep(nanoseconds: 20_000_000)
         let started = await log.started.count
-        XCTAssertEqual(started, 4)
-        XCTAssertEqual(budget.inFlight, 4)
+        #expect(started == 4)
+        #expect(budget.inFlight == 4)
         budget.advance(to: 2)
     }
 
-    func testAFinishedCaptureHandsItsSlotToTheOldestWaiter() async {
+    @Test func aFinishedCaptureHandsItsSlotToTheOldestWaiter() async {
         let budget = CaptureBudget(limit: 1)
         let log = Log()
         budget.advance(to: 1)
@@ -78,11 +79,11 @@ final class CaptureBudgetTests: XCTestCase {
         budget.release()
         await eventually { await log.started == [0, 1, 2] }
 
-        XCTAssertEqual(budget.inFlight, 1, "a handed-over slot is still one slot")
+        #expect(budget.inFlight == 1, "a handed-over slot is still one slot")
         budget.advance(to: 2)
     }
 
-    func testTheDwellSnapshotIsServedBeforeQueuedTiles() async {
+    @Test func theDwellSnapshotIsServedBeforeQueuedTiles() async {
         let budget = CaptureBudget(limit: 1)
         let log = Log()
         budget.advance(to: 1)
@@ -99,11 +100,11 @@ final class CaptureBudgetTests: XCTestCase {
         await dwell.value
 
         let started = await log.started
-        XCTAssertEqual(started, [0, 99])
+        #expect(started == [0, 99])
         budget.advance(to: 2)
     }
 
-    func testAnEndedSessionRefusesWaitersButLetsRunningCapturesFinish() async {
+    @Test func anEndedSessionRefusesWaitersButLetsRunningCapturesFinish() async {
         let budget = CaptureBudget(limit: 2)
         let log = Log()
         budget.advance(to: 1)
@@ -114,29 +115,29 @@ final class CaptureBudgetTests: XCTestCase {
         budget.advance(to: 2)
 
         await eventually { await log.refused.count == 3 }
-        XCTAssertEqual(budget.inFlight, 2, "running captures keep their slots")
+        #expect(budget.inFlight == 2, "running captures keep their slots")
         budget.release()
         budget.release()
-        XCTAssertEqual(budget.inFlight, 0)
+        #expect(budget.inFlight == 0)
         let started = await log.started.count
-        XCTAssertEqual(started, 2, "no waiter of the ended session started")
+        #expect(started == 2, "no waiter of the ended session started")
     }
 
-    func testAStaleRequestNeverTakesASlot() async {
+    @Test func aStaleRequestNeverTakesASlot() async {
         let budget = CaptureBudget(limit: 4)
         budget.advance(to: 3)
 
         let granted = await budget.acquire(generation: 2)
 
-        XCTAssertFalse(granted)
-        XCTAssertEqual(budget.inFlight, 0)
+        #expect(!granted)
+        #expect(budget.inFlight == 0)
     }
 
-    func testTheNextSessionUsesSlotsFreedByTheLastOne() async {
+    @Test func theNextSessionUsesSlotsFreedByTheLastOne() async {
         let budget = CaptureBudget(limit: 1)
         budget.advance(to: 1)
         let first = await budget.acquire(generation: 1)
-        XCTAssertTrue(first)
+        #expect(first)
 
         // a capture of the ended session is still running when the next opens
         budget.advance(to: 2)
@@ -144,7 +145,7 @@ final class CaptureBudgetTests: XCTestCase {
         _ = startWorkers(0..<1, budget: budget, generation: 2, log: log)
         try? await Task.sleep(nanoseconds: 20_000_000)
         let beforeRelease = await log.started
-        XCTAssertEqual(beforeRelease, [], "the ceiling spans sessions")
+        #expect(beforeRelease == [], "the ceiling spans sessions")
 
         budget.release()
         await eventually { await log.started == [0] }

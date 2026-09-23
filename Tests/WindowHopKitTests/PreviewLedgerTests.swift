@@ -1,123 +1,124 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
 /// Captures finish asynchronously and out of order; the ledger decides what a
 /// late result may still do. These are the regression rules that keep a
 /// preview from ever reaching the wrong window or a vanished one.
-final class PreviewLedgerTests: XCTestCase {
-    func testLateResultAfterEvictionIsDiscarded() {
+struct PreviewLedgerTests {
+    @Test func lateResultAfterEvictionIsDiscarded() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a", "b"])
         ledger.evict("a")
-        XCTAssertFalse(ledger.shouldStore("a"))
-        XCTAssertFalse(ledger.shouldDeliver("a", capturedIn: generation))
-        XCTAssertTrue(ledger.shouldStore("b"))
-        XCTAssertTrue(ledger.shouldDeliver("b", capturedIn: generation))
+        #expect(!ledger.shouldStore("a"))
+        #expect(!ledger.shouldDeliver("a", capturedIn: generation))
+        #expect(ledger.shouldStore("b"))
+        #expect(ledger.shouldDeliver("b", capturedIn: generation))
     }
 
-    func testStaleSessionResultStoresButNeverDeliversLive() {
+    @Test func staleSessionResultStoresButNeverDeliversLive() {
         var ledger = PreviewLedger<String>()
         let first = ledger.beginSession(ids: ["a"])
         let second = ledger.beginSession(ids: ["a"])
         // the old session's capture is still fresh content for the cache,
         // but only the current session may paint tiles
-        XCTAssertTrue(ledger.shouldStore("a"))
-        XCTAssertFalse(ledger.shouldDeliver("a", capturedIn: first))
-        XCTAssertTrue(ledger.shouldDeliver("a", capturedIn: second))
+        #expect(ledger.shouldStore("a"))
+        #expect(!ledger.shouldDeliver("a", capturedIn: first))
+        #expect(ledger.shouldDeliver("a", capturedIn: second))
     }
 
-    func testEndSessionStopsDeliveryButKeepsCacheWarm() {
+    @Test func endSessionStopsDeliveryButKeepsCacheWarm() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
         ledger.endSession()
-        XCTAssertTrue(ledger.shouldStore("a"))
-        XCTAssertFalse(ledger.shouldDeliver("a", capturedIn: generation))
+        #expect(ledger.shouldStore("a"))
+        #expect(!ledger.shouldDeliver("a", capturedIn: generation))
     }
 
-    func testRapidReopenDeliversOnlyToTheCurrentSession() {
+    @Test func rapidReopenDeliversOnlyToTheCurrentSession() {
         var ledger = PreviewLedger<String>()
         let first = ledger.beginSession(ids: ["a"])
         ledger.endSession()
         let third = ledger.beginSession(ids: ["a"])
-        XCTAssertFalse(ledger.shouldDeliver("a", capturedIn: first))
-        XCTAssertTrue(ledger.shouldDeliver("a", capturedIn: third))
+        #expect(!ledger.shouldDeliver("a", capturedIn: first))
+        #expect(ledger.shouldDeliver("a", capturedIn: third))
     }
 
-    func testExtendingASessionDeliversToTheNewWindow() {
+    @Test func extendingASessionDeliversToTheNewWindow() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
         ledger.extendSession(ids: ["b"])
-        XCTAssertTrue(ledger.shouldDeliver("b", capturedIn: generation))
+        #expect(ledger.shouldDeliver("b", capturedIn: generation))
     }
 
-    func testExtendingASessionKeepsInFlightCapturesDeliverable() {
+    @Test func extendingASessionKeepsInFlightCapturesDeliverable() {
         // a window appearing mid-session must not blank the tiles that are still
         // filling in: extending may never invalidate the running generation
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
         ledger.extendSession(ids: ["b"])
-        XCTAssertTrue(ledger.shouldDeliver("a", capturedIn: generation))
+        #expect(ledger.shouldDeliver("a", capturedIn: generation))
     }
 
-    func testExtendedWindowLosesDeliveryOnceTheSessionEnds() {
+    @Test func extendedWindowLosesDeliveryOnceTheSessionEnds() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
         ledger.extendSession(ids: ["b"])
         ledger.endSession()
-        XCTAssertTrue(ledger.shouldStore("b"))
-        XCTAssertFalse(ledger.shouldDeliver("b", capturedIn: generation))
+        #expect(ledger.shouldStore("b"))
+        #expect(!ledger.shouldDeliver("b", capturedIn: generation))
     }
 
-    func testEvictAllDiscardsEveryInFlightResult() {
+    @Test func evictAllDiscardsEveryInFlightResult() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a", "b"])
         ledger.evictAll()
-        XCTAssertFalse(ledger.shouldStore("a"))
-        XCTAssertFalse(ledger.shouldDeliver("b", capturedIn: generation))
+        #expect(!ledger.shouldStore("a"))
+        #expect(!ledger.shouldDeliver("b", capturedIn: generation))
     }
 
     // MARK: - Retry allowance (#91)
 
-    func testAFailedCaptureGetsOneRetryPerSession() {
+    @Test func aFailedCaptureGetsOneRetryPerSession() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a", "b"])
-        XCTAssertTrue(ledger.claimRetry("a", capturedIn: generation))
-        XCTAssertFalse(ledger.claimRetry("a", capturedIn: generation), "a second retry")
-        XCTAssertTrue(ledger.claimRetry("b", capturedIn: generation), "allowances are per window")
+        #expect(ledger.claimRetry("a", capturedIn: generation) == true)
+        #expect(ledger.claimRetry("a", capturedIn: generation) == false, "a second retry")
+        #expect(ledger.claimRetry("b", capturedIn: generation) == true, "allowances are per window")
     }
 
-    func testANewSessionRestoresTheRetryAllowance() {
+    @Test func aNewSessionRestoresTheRetryAllowance() {
         var ledger = PreviewLedger<String>()
         let first = ledger.beginSession(ids: ["a"])
-        XCTAssertTrue(ledger.claimRetry("a", capturedIn: first))
+        #expect(ledger.claimRetry("a", capturedIn: first) == true)
         ledger.endSession()
         let second = ledger.beginSession(ids: ["a"])
-        XCTAssertTrue(ledger.claimRetry("a", capturedIn: second))
+        #expect(ledger.claimRetry("a", capturedIn: second) == true)
     }
 
-    func testNoRetryAfterEviction() {
+    @Test func noRetryAfterEviction() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
         ledger.evict("a")
-        XCTAssertFalse(ledger.claimRetry("a", capturedIn: generation))
+        #expect(ledger.claimRetry("a", capturedIn: generation) == false)
     }
 
-    func testNoRetryForAnEndedOrReplacedSession() {
+    @Test func noRetryForAnEndedOrReplacedSession() {
         var ledger = PreviewLedger<String>()
         let first = ledger.beginSession(ids: ["a"])
         ledger.endSession()
-        XCTAssertFalse(ledger.claimRetry("a", capturedIn: first))
+        #expect(ledger.claimRetry("a", capturedIn: first) == false)
         let second = ledger.beginSession(ids: ["a"])
-        XCTAssertFalse(ledger.claimRetry("a", capturedIn: first), "a superseded session")
-        XCTAssertTrue(ledger.claimRetry("a", capturedIn: second))
+        #expect(ledger.claimRetry("a", capturedIn: first) == false, "a superseded session")
+        #expect(ledger.claimRetry("a", capturedIn: second) == true)
     }
 
-    func testAWindowThatJoinedTheSessionGetsItsOwnRetry() {
+    @Test func aWindowThatJoinedTheSessionGetsItsOwnRetry() {
         var ledger = PreviewLedger<String>()
         let generation = ledger.beginSession(ids: ["a"])
-        XCTAssertFalse(ledger.claimRetry("late", capturedIn: generation), "not in the session yet")
+        #expect(ledger.claimRetry("late", capturedIn: generation) == false, "not in the session yet")
         ledger.extendSession(ids: ["late"])
-        XCTAssertTrue(ledger.claimRetry("late", capturedIn: generation))
+        #expect(ledger.claimRetry("late", capturedIn: generation) == true)
     }
 }

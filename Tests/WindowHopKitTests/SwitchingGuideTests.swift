@@ -1,12 +1,14 @@
 import CoreGraphics
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
 /// The switching guide is the first thing a new user reads after granting
 /// Accessibility. It must follow the shortcuts actually configured, and every
 /// key label in it must be the one `ShortcutFormatter` produces.
-final class SwitchingGuideTests: XCTestCase {
+@MainActor  // reads ShortcutFormatter.keyLabels (see ShortcutFormatterLayoutTests)
+struct SwitchingGuideTests {
     private static let keyK: Int64 = 40
 
     private func guide(
@@ -17,64 +19,62 @@ final class SwitchingGuideTests: XCTestCase {
         SwitchingGuide(switcherShortcut: spec, persistentShortcut: persistent, enabled: enabled)
     }
 
-    func testEachSwitcherShortcutNamesItsOwnHoldModifier() {
+    @Test func eachSwitcherShortcutNamesItsOwnHoldModifier() {
         for spec in ShortcutSpec.allCases {
             let held = guide(spec).firstSteps[0]
             let glyph = ShortcutFormatter.modifierSymbols(spec.holdModifier)
             let spoken = ShortcutFormatter.spokenModifiers(spec.holdModifier)
-            XCTAssertTrue(held.display.hasPrefix("Hold \(glyph) and press "), held.display)
-            XCTAssertTrue(held.display.contains("Release \(glyph) to switch"), held.display)
-            XCTAssertTrue(held.spoken.hasPrefix("Hold \(spoken) and press Tab"), held.spoken)
-            XCTAssertTrue(held.spoken.contains("Release \(spoken) to switch"), held.spoken)
+            #expect(held.display.hasPrefix("Hold \(glyph) and press "), "\(held.display)")
+            #expect(held.display.contains("Release \(glyph) to switch"), "\(held.display)")
+            #expect(held.spoken.hasPrefix("Hold \(spoken) and press Tab"), "\(held.spoken)")
+            #expect(held.spoken.contains("Release \(spoken) to switch"), "\(held.spoken)")
         }
     }
 
-    func testHeldAndPersistentSessionsExplainDifferentConfirmations() {
+    @Test func heldAndPersistentSessionsExplainDifferentConfirmations() {
         let steps = guide().firstSteps
-        XCTAssertEqual(steps.count, 2)
+        #expect(steps.count == 2)
         // held: releasing the modifier confirms
-        XCTAssertTrue(steps[0].display.contains("Release"))
+        #expect(steps[0].display.contains("Release"))
         // persistent: an explicit key confirms, and one cancels
-        XCTAssertTrue(steps[1].spoken.contains("without holding a key"))
-        XCTAssertTrue(steps[1].spoken.contains("Return or Space switches"))
-        XCTAssertTrue(steps[1].spoken.contains("Escape cancels"))
+        #expect(steps[1].spoken.contains("without holding a key"))
+        #expect(steps[1].spoken.contains("Return or Space switches"))
+        #expect(steps[1].spoken.contains("Escape cancels"))
     }
 
-    func testCustomPersistentShortcutAppearsInBothForms() {
+    @Test func customPersistentShortcutAppearsInBothForms() {
         let custom = PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate])
         let persistent = guide(persistent: custom).firstSteps[1]
-        XCTAssertTrue(persistent.display.hasPrefix("Press ⌃⌥K to open WindowHop"), persistent.display)
-        XCTAssertTrue(
-            persistent.spoken.hasPrefix("Press Control Option K to open WindowHop"),
-            persistent.spoken)
+        #expect(persistent.display.hasPrefix("Press ⌃⌥K to open WindowHop"), "\(persistent.display)")
+        #expect(
+            persistent.spoken.hasPrefix("Press Control Option K to open WindowHop"), "\(persistent.spoken)")
     }
 
-    func testUnassignedPersistentShortcutPointsToShortcuts() {
+    @Test func unassignedPersistentShortcutPointsToShortcuts() {
         let persistent = guide(persistent: nil).firstSteps[1]
-        XCTAssertTrue(persistent.display.hasPrefix("Open WindowHop has no shortcut."))
-        XCTAssertTrue(persistent.display.contains("Record one in Shortcuts"))
+        #expect(persistent.display.hasPrefix("Open WindowHop has no shortcut."))
+        #expect(persistent.display.contains("Record one in Shortcuts"))
     }
 
-    func testDisabledWindowHopHandsSwitchingToTheNativeSwitcher() {
+    @Test func disabledWindowHopHandsSwitchingToTheNativeSwitcher() {
         // whatever WindowHop's own shortcut is, the native switcher is ⌘⇥
         let steps = guide(.optionTab, enabled: false).firstSteps
-        XCTAssertEqual(steps.map(\.display), ["WindowHop is off. ⌘⇥ opens the native app switcher."])
-        XCTAssertEqual(
-            steps.map(\.spoken),
-            ["WindowHop is off. Command Tab opens the native app switcher."])
+        #expect(steps.map(\.display) == ["WindowHop is off. ⌘⇥ opens the native app switcher."])
+        #expect(
+            steps.map(\.spoken) == ["WindowHop is off. Command Tab opens the native app switcher."])
     }
 
-    func testKeyReferenceDescribesTheShortcutsEvenWhenDisabled() {
+    @Test func keyReferenceDescribesTheShortcutsEvenWhenDisabled() {
         let enabled = guide(enabled: true).keyReference
-        XCTAssertEqual(guide(enabled: false).keyReference, enabled)
-        XCTAssertEqual(Array(enabled.prefix(2)), guide().firstSteps)
-        XCTAssertTrue(enabled[2].display.contains("⌫ closes the selected window after you confirm"))
-        XCTAssertTrue(enabled[2].spoken.contains("Delete closes the selected window"))
+        #expect(guide(enabled: false).keyReference == enabled)
+        #expect(Array(enabled.prefix(2)) == guide().firstSteps)
+        #expect(enabled[2].display.contains("⌫ closes the selected window after you confirm"))
+        #expect(enabled[2].spoken.contains("Delete closes the selected window"))
     }
 
     /// Every key glyph in the copy is one the formatter produces for a key the
     /// sentence is about, so a second representation of a key cannot creep in.
-    func testEveryGlyphComesFromTheFormatter() {
+    @Test func everyGlyphComesFromTheFormatter() {
         let custom = PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate])
         let formatterGlyphs = Set(
             ([.maskControl, .maskAlternate, .maskShift, .maskCommand] as [CGEventFlags])
@@ -105,9 +105,9 @@ final class SwitchingGuideTests: XCTestCase {
                         ] + $0.displayString.map(String.init)
                     } ?? [])
                 let text = reference.map(\.display).joined(separator: " ")
-                XCTAssertEqual(glyphs(in: text), glyphs(in: expected.joined()), text)
+                #expect(glyphs(in: text) == glyphs(in: expected.joined()), "\(text)")
                 // the spoken form names keys in words only
-                XCTAssertTrue(glyphs(in: reference.map(\.spoken).joined()).isEmpty)
+                #expect(glyphs(in: reference.map(\.spoken).joined()).isEmpty)
             }
         }
     }

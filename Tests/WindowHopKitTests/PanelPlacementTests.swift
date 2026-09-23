@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class PanelPlacementTests: XCTestCase {
+final class PanelPlacementTests {
     private func display(
         _ id: String,
         width: CGFloat = 1920,
@@ -22,49 +23,49 @@ final class PanelPlacementTests: XCTestCase {
 
     // MARK: - Resolver
 
-    func testAllDisplaysTargetsEveryConnectedDisplay() {
+    @Test func allDisplaysTargetsEveryConnectedDisplay() {
         let targets = PanelDisplayResolver.targets(
             placement: .allDisplays,
             chosenDisplayID: nil,
             available: [laptop, external],
             pointerDisplayID: laptop.id)
 
-        XCTAssertEqual(targets, [laptop, external])
+        #expect(targets == [laptop, external])
     }
 
-    func testPointerDisplayTargetsOnlyTheDisplayHoldingThePointer() {
+    @Test func pointerDisplayTargetsOnlyTheDisplayHoldingThePointer() {
         let targets = PanelDisplayResolver.targets(
             placement: .pointerDisplay,
             chosenDisplayID: nil,
             available: [laptop, external],
             pointerDisplayID: external.id)
 
-        XCTAssertEqual(targets, [external])
+        #expect(targets == [external])
     }
 
-    func testSpecificDisplayTargetsTheChosenDisplayRegardlessOfThePointer() {
+    @Test func specificDisplayTargetsTheChosenDisplayRegardlessOfThePointer() {
         let targets = PanelDisplayResolver.targets(
             placement: .specificDisplay,
             chosenDisplayID: external.id,
             available: [laptop, external],
             pointerDisplayID: laptop.id)
 
-        XCTAssertEqual(targets, [external])
+        #expect(targets == [external])
     }
 
-    func testDisconnectedChosenDisplayFallsBackToThePointerDisplay() {
+    @Test func disconnectedChosenDisplayFallsBackToThePointerDisplay() {
         let targets = PanelDisplayResolver.targets(
             placement: .specificDisplay,
             chosenDisplayID: "unplugged",
             available: [laptop, external],
             pointerDisplayID: external.id)
 
-        XCTAssertEqual(
-            targets, [external],
+        #expect(
+            targets == [external],
             "An unplugged monitor must not leave the switcher without a display")
     }
 
-    func testReconnectingTheChosenDisplayRestoresItWithoutReconfiguration() {
+    @Test func reconnectingTheChosenDisplayRestoresItWithoutReconfiguration() {
         let stored = external.id
         let whileUnplugged = PanelDisplayResolver.targets(
             placement: .specificDisplay,
@@ -77,23 +78,23 @@ final class PanelPlacementTests: XCTestCase {
             available: [laptop, external],
             pointerDisplayID: laptop.id)
 
-        XCTAssertEqual(whileUnplugged, [laptop])
-        XCTAssertEqual(afterReconnect, [external])
+        #expect(whileUnplugged == [laptop])
+        #expect(afterReconnect == [external])
     }
 
-    func testUnresolvablePointerStillProducesATarget() {
+    @Test func unresolvablePointerStillProducesATarget() {
         let targets = PanelDisplayResolver.targets(
             placement: .pointerDisplay,
             chosenDisplayID: nil,
             available: [laptop, external],
             pointerDisplayID: nil)
 
-        XCTAssertEqual(targets, [laptop])
+        #expect(targets == [laptop])
     }
 
-    func testNoConnectedDisplayResolvesToNoPanels() {
+    @Test func noConnectedDisplayResolvesToNoPanels() {
         for placement in SwitcherDisplayPlacement.allCases {
-            XCTAssertTrue(
+            #expect(
                 PanelDisplayResolver.targets(
                     placement: placement,
                     chosenDisplayID: "anything",
@@ -103,22 +104,22 @@ final class PanelPlacementTests: XCTestCase {
         }
     }
 
-    func testEveryPlacementAlwaysYieldsADisplayWhenOneExists() {
+    @Test func everyPlacementAlwaysYieldsADisplayWhenOneExists() {
         for placement in SwitcherDisplayPlacement.allCases {
             let targets = PanelDisplayResolver.targets(
                 placement: placement,
                 chosenDisplayID: nil,
                 available: [laptop],
                 pointerDisplayID: nil)
-            XCTAssertFalse(
-                targets.isEmpty,
+            #expect(
+                !targets.isEmpty,
                 "\(placement.rawValue) left the switcher with no display")
         }
     }
 
     // MARK: - Shared grid
 
-    func testMostConstrainedExtentTakesTheNarrowestAndShortestIndependently() {
+    @Test func mostConstrainedExtentTakesTheNarrowestAndShortestIndependently() {
         // the narrowest and the shortest can be different displays; the shared
         // grid has to fit inside both
         let wideButShort = display("wide", width: 3840, height: 900)
@@ -126,15 +127,15 @@ final class PanelPlacementTests: XCTestCase {
 
         let extent = SwitcherGridCapacity.mostConstrainedExtent([wideButShort, narrowButTall])
 
-        XCTAssertEqual(extent?.width, 1200)
-        XCTAssertEqual(extent?.height, 900)
+        #expect(extent?.width == 1200)
+        #expect(extent?.height == 900)
     }
 
-    func testMostConstrainedExtentIsNilWithoutDisplays() {
-        XCTAssertNil(SwitcherGridCapacity.mostConstrainedExtent([]))
+    @Test func mostConstrainedExtentIsNilWithoutDisplays() {
+        #expect(SwitcherGridCapacity.mostConstrainedExtent([]) == nil)
     }
 
-    func testColumnsNeverDropBelowOneOnATinyDisplay() {
+    @Test func columnsNeverDropBelowOneOnATinyDisplay() {
         let columns = SwitcherGridCapacity.columns(
             visibleWidth: 200,
             tileWidth: 400,
@@ -143,10 +144,10 @@ final class PanelPlacementTests: XCTestCase {
             maxWidthFraction: 0.9,
             tileCount: 8)
 
-        XCTAssertEqual(columns, 1)
+        #expect(columns == 1)
     }
 
-    func testColumnsNeverExceedTheNumberOfTiles() {
+    @Test func columnsNeverExceedTheNumberOfTiles() {
         let columns = SwitcherGridCapacity.columns(
             visibleWidth: 6000,
             tileWidth: 200,
@@ -155,12 +156,12 @@ final class PanelPlacementTests: XCTestCase {
             maxWidthFraction: 0.9,
             tileCount: 3)
 
-        XCTAssertEqual(columns, 3)
+        #expect(columns == 3)
     }
 
-    func testTheSharedGridFitsTheMostConstrainedDisplay() throws {
+    @Test func theSharedGridFitsTheMostConstrainedDisplay() throws {
         let displays = [external, small]
-        let extent = try XCTUnwrap(SwitcherGridCapacity.mostConstrainedExtent(displays))
+        let extent = try #require(SwitcherGridCapacity.mostConstrainedExtent(displays))
 
         let shared = SwitcherGridCapacity.columns(
             visibleWidth: extent.width, tileWidth: 300, spacing: 12,
@@ -172,13 +173,13 @@ final class PanelPlacementTests: XCTestCase {
             visibleWidth: external.visibleFrame.width, tileWidth: 300, spacing: 12,
             padding: 16, maxWidthFraction: 0.9, tileCount: 20)
 
-        XCTAssertEqual(shared, onSmallest)
-        XCTAssertLessThan(
-            shared, onLargest,
+        #expect(shared == onSmallest)
+        #expect(
+            shared < onLargest,
             "the shared grid is expected to cost the larger display columns")
     }
 
-    func testRowsNeverDropBelowOne() {
+    @Test func rowsNeverDropBelowOne() {
         let rows = SwitcherGridCapacity.maxVisibleRows(
             visibleHeight: 100,
             tileHeight: 400,
@@ -186,16 +187,16 @@ final class PanelPlacementTests: XCTestCase {
             padding: 16,
             maxHeightFraction: 0.8)
 
-        XCTAssertEqual(rows, 1)
+        #expect(rows == 1)
     }
 
     // MARK: - Capture scale
 
-    func testCaptureScaleTakesTheSharpestTargetSoRetinaIsNeverBlurred() {
-        XCTAssertEqual(SwitcherGridCapacity.captureScale([external, laptop], fallback: 1), 2)
+    @Test func captureScaleTakesTheSharpestTargetSoRetinaIsNeverBlurred() {
+        #expect(SwitcherGridCapacity.captureScale([external, laptop], fallback: 1) == 2)
     }
 
-    func testCaptureScaleFallsBackWithoutTargets() {
-        XCTAssertEqual(SwitcherGridCapacity.captureScale([], fallback: 2), 2)
+    @Test func captureScaleFallsBackWithoutTargets() {
+        #expect(SwitcherGridCapacity.captureScale([], fallback: 2) == 2)
     }
 }

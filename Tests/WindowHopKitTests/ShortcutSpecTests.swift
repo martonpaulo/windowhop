@@ -1,52 +1,53 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class ShortcutSpecTests: XCTestCase {
-    func testHoldModifiers() {
-        XCTAssertEqual(ShortcutSpec.commandTab.holdModifier, .maskCommand)
-        XCTAssertEqual(ShortcutSpec.optionTab.holdModifier, .maskAlternate)
-        XCTAssertEqual(ShortcutSpec.controlTab.holdModifier, .maskControl)
+@MainActor  // reads ShortcutFormatter.keyLabels (see ShortcutFormatterLayoutTests)
+struct ShortcutSpecTests {
+    @Test func holdModifiers() {
+        #expect(ShortcutSpec.commandTab.holdModifier == .maskCommand)
+        #expect(ShortcutSpec.optionTab.holdModifier == .maskAlternate)
+        #expect(ShortcutSpec.controlTab.holdModifier == .maskControl)
     }
 
-    func testDisplayNamesUseTheSharedFormatter() {
-        XCTAssertEqual(ShortcutSpec.commandTab.displayName, "⌘⇥")
-        XCTAssertEqual(ShortcutSpec.optionTab.displayName, "⌥⇥")
-        XCTAssertEqual(ShortcutSpec.controlTab.displayName, "⌃⇥")
+    @Test func displayNamesUseTheSharedFormatter() {
+        #expect(ShortcutSpec.commandTab.displayName == "⌘⇥")
+        #expect(ShortcutSpec.optionTab.displayName == "⌥⇥")
+        #expect(ShortcutSpec.controlTab.displayName == "⌃⇥")
     }
 
-    func testFormatterConsistency() {
+    @Test func formatterConsistency() {
         // ShortcutSpec and PersistentShortcut must render identical chords identically
         let persistent = PersistentShortcut(keyCode: KeyCode.tab, modifiers: [.maskCommand])
-        XCTAssertEqual(persistent.displayString, ShortcutSpec.commandTab.displayName)
+        #expect(persistent.displayString == ShortcutSpec.commandTab.displayName)
     }
 
-    func testFormatterKeyGlyphs() {
-        XCTAssertEqual(ShortcutFormatter.chord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab), "⇧⌘⇥")
-        XCTAssertEqual(ShortcutFormatter.chord(modifiers: [.maskAlternate], keyCode: KeyCode.space), "⌥Space")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.returnKey), "↩")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.escape), "⎋")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.delete), "⌫")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.forwardDelete), "⌦")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.leftArrow), "←")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.rightArrow), "→")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.upArrow), "↑")
-        XCTAssertEqual(ShortcutFormatter.keySymbol(for: KeyCode.downArrow), "↓")
+    @Test func formatterKeyGlyphs() {
+        #expect(ShortcutFormatter.chord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab) == "⇧⌘⇥")
+        #expect(ShortcutFormatter.chord(modifiers: [.maskAlternate], keyCode: KeyCode.space) == "⌥Space")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.returnKey) == "↩")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.escape) == "⎋")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.delete) == "⌫")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.forwardDelete) == "⌦")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.leftArrow) == "←")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.rightArrow) == "→")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.upArrow) == "↑")
+        #expect(ShortcutFormatter.keySymbol(for: KeyCode.downArrow) == "↓")
     }
 
-    func testSpokenChordForAccessibility() {
-        XCTAssertEqual(
-            ShortcutFormatter.spokenChord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab),
-            "Shift Command Tab")
-        XCTAssertEqual(
-            ShortcutFormatter.spokenChord(modifiers: [.maskAlternate], keyCode: KeyCode.space),
-            "Option Space")
+    @Test func spokenChordForAccessibility() {
+        #expect(
+            ShortcutFormatter.spokenChord(modifiers: [.maskCommand, .maskShift], keyCode: KeyCode.tab)
+                == "Shift Command Tab")
+        #expect(
+            ShortcutFormatter.spokenChord(modifiers: [.maskAlternate], keyCode: KeyCode.space) == "Option Space")
     }
 
-    func testRawValuesAreStable() {
+    @Test func rawValuesAreStable() {
         // persisted in UserDefaults; renaming cases would silently reset user settings
-        XCTAssertEqual(ShortcutSpec.commandTab.rawValue, "commandTab")
-        XCTAssertEqual(ShortcutSpec.optionTab.rawValue, "optionTab")
-        XCTAssertEqual(ShortcutSpec.controlTab.rawValue, "controlTab")
+        #expect(ShortcutSpec.commandTab.rawValue == "commandTab")
+        #expect(ShortcutSpec.optionTab.rawValue == "optionTab")
+        #expect(ShortcutSpec.controlTab.rawValue == "controlTab")
     }
 }

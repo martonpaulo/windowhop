@@ -1,4 +1,5 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
@@ -6,14 +7,13 @@ import XCTest
 /// survives, an invalid value falls back to its default, the old names are
 /// removed, and a second run changes nothing.
 @MainActor
-final class PreferencesKeyMigrationTests: XCTestCase {
-    private var suiteName: String!
-    private var defaults: UserDefaults!
+final class PreferencesKeyMigrationTests {
+    private let suiteName: String
+    private let defaults: UserDefaults
 
-    override func setUp() async throws {
-        try await super.setUp()
+    init() throws {
         suiteName = "windowhop-tests-\(UUID().uuidString)"
-        defaults = UserDefaults(suiteName: suiteName)
+        defaults = try #require(UserDefaults(suiteName: suiteName))
     }
 
     /// What this suite stores itself. `object(forKey:)` would also answer from
@@ -22,9 +22,8 @@ final class PreferencesKeyMigrationTests: XCTestCase {
         defaults.persistentDomain(forName: suiteName)?[name]
     }
 
-    override func tearDown() async throws {
+    isolated deinit {
         defaults.removePersistentDomain(forName: suiteName)
-        try await super.tearDown()
     }
 
     /// One non-default valid value and one invalid value per migrated key,
@@ -53,88 +52,86 @@ final class PreferencesKeyMigrationTests: XCTestCase {
         ("firstLaunchCompleted", .firstLaunchCompleted, true, "yes"),
     ]
 
-    func testEveryWindowHopOwnedKeyIsVersionedAndCoveredHere() {
+    @Test func everyWindowHopOwnedKeyIsVersionedAndCoveredHere() {
         let migrated = Set(PreferencesKeyMigration.renamedKeys.map(\.new))
-        XCTAssertEqual(migrated, Set(samples.map(\.key)))
+        #expect(migrated == Set(samples.map(\.key)))
         for (old, key) in PreferencesKeyMigration.renamedKeys {
-            XCTAssertEqual(key.rawValue, "\(old).v1")
+            #expect(key.rawValue == "\(old).v1")
         }
         // the two names that keep their spelling, and why, are in the migration's doc
-        XCTAssertEqual(
-            Set(Preferences.Key.allCases).subtracting(migrated),
-            [.automaticUpdateChecks, .navigationPreviewDelay])
-        XCTAssertEqual(Preferences.Key.automaticUpdateChecks.rawValue, "SUEnableAutomaticChecks")
+        #expect(
+            Set(Preferences.Key.allCases).subtracting(migrated) == [.automaticUpdateChecks, .navigationPreviewDelay])
+        #expect(Preferences.Key.automaticUpdateChecks.rawValue == "SUEnableAutomaticChecks")
     }
 
-    func testStoredValuesMoveToTheVersionedNames() {
+    @Test func storedValuesMoveToTheVersionedNames() {
         for sample in samples { defaults.set(sample.valid, forKey: sample.old) }
 
         PreferencesKeyMigration.migrate(defaults)
 
         for sample in samples {
-            XCTAssertNil(defaults.object(forKey: sample.old), "\(sample.old) was not removed")
-            XCTAssertEqual(
-                stored(sample.key.rawValue) as? NSObject,
-                sample.valid as? NSObject, "\(sample.old) was not copied")
+            #expect(defaults.object(forKey: sample.old) == nil, "\(sample.old) was not removed")
+            #expect(
+                (stored(sample.key.rawValue) as? NSObject) == (sample.valid as? NSObject),
+                "\(sample.old) was not copied")
         }
-        XCTAssertEqual(
-            defaults.integer(forKey: PreferencesKeyMigration.schemaKey),
-            PreferencesKeyMigration.currentSchema)
+        #expect(
+            defaults.integer(forKey: PreferencesKeyMigration.schemaKey) == PreferencesKeyMigration.currentSchema)
     }
 
-    func testMigratedChoicesLoadIntoPreferences() {
+    @Test func migratedChoicesLoadIntoPreferences() {
         for sample in samples { defaults.set(sample.valid, forKey: sample.old) }
 
         let preferences = Preferences(defaults: defaults)
 
-        XCTAssertFalse(preferences.switcherEnabled)
-        XCTAssertTrue(preferences.launchAtLogin)
-        XCTAssertEqual(preferences.shortcut, .controlTab)
-        XCTAssertNil(preferences.persistentShortcut, "an explicit unassigned choice survives")
-        XCTAssertEqual(preferences.appearanceMode, .windowPreviews)
-        XCTAssertEqual(preferences.expandedPreviewDelay, .fiveSeconds)
-        XCTAssertEqual(preferences.switcherRevealDelay, .off)
-        XCTAssertEqual(preferences.switcherDisplayPlacement, .specificDisplay)
-        XCTAssertEqual(preferences.switcherDisplayID, "37D8832A-2D66-02CA-B9F7-8F30A301B230")
-        XCTAssertFalse(preferences.includeOtherSpaces)
-        XCTAssertFalse(preferences.includeOtherDisplays)
-        XCTAssertTrue(preferences.includeMinimizedWindows)
-        XCTAssertTrue(preferences.includeHiddenApplicationWindows)
-        XCTAssertTrue(preferences.includePictureInPictureWindows)
-        XCTAssertTrue(preferences.showTabCounts)
-        XCTAssertTrue(preferences.showMenuBarItem)
-        XCTAssertTrue(preferences.showDockIcon)
-        XCTAssertTrue(preferences.firstLaunchCompleted)
+        #expect(!preferences.switcherEnabled)
+        #expect(preferences.launchAtLogin)
+        #expect(preferences.shortcut == .controlTab)
+        #expect(preferences.persistentShortcut == nil, "an explicit unassigned choice survives")
+        #expect(preferences.appearanceMode == .windowPreviews)
+        #expect(preferences.expandedPreviewDelay == .fiveSeconds)
+        #expect(preferences.switcherRevealDelay == .off)
+        #expect(preferences.switcherDisplayPlacement == .specificDisplay)
+        #expect(preferences.switcherDisplayID == "37D8832A-2D66-02CA-B9F7-8F30A301B230")
+        #expect(!preferences.includeOtherSpaces)
+        #expect(!preferences.includeOtherDisplays)
+        #expect(preferences.includeMinimizedWindows)
+        #expect(preferences.includeHiddenApplicationWindows)
+        #expect(preferences.includePictureInPictureWindows)
+        #expect(preferences.showTabCounts)
+        #expect(preferences.showMenuBarItem)
+        #expect(preferences.showDockIcon)
+        #expect(preferences.firstLaunchCompleted)
     }
 
-    func testInvalidValuesAreDroppedAndFallBackToDefaults() {
+    @Test func invalidValuesAreDroppedAndFallBackToDefaults() {
         for sample in samples { defaults.set(sample.invalid, forKey: sample.old) }
 
         PreferencesKeyMigration.migrate(defaults)
 
         for sample in samples {
-            XCTAssertNil(defaults.object(forKey: sample.old), "\(sample.old) was not removed")
-            XCTAssertNil(stored(sample.key.rawValue), "invalid \(sample.old) was copied")
+            #expect(defaults.object(forKey: sample.old) == nil, "\(sample.old) was not removed")
+            #expect(stored(sample.key.rawValue) == nil, "invalid \(sample.old) was copied")
         }
         let preferences = Preferences(defaults: defaults)
-        XCTAssertEqual(preferences.shortcut, Preferences.Defaults.shortcut)
-        XCTAssertEqual(preferences.persistentShortcut, Preferences.Defaults.persistentShortcut)
-        XCTAssertEqual(preferences.appearanceMode, Preferences.Defaults.appearanceMode)
-        XCTAssertEqual(preferences.switcherEnabled, Preferences.Defaults.switcherEnabled)
-        XCTAssertEqual(preferences.showDockIcon, Preferences.Defaults.showDockIcon)
-        XCTAssertEqual(preferences.switcherDisplayID, Preferences.Defaults.switcherDisplayID)
+        #expect(preferences.shortcut == Preferences.Defaults.shortcut)
+        #expect(preferences.persistentShortcut == Preferences.Defaults.persistentShortcut)
+        #expect(preferences.appearanceMode == Preferences.Defaults.appearanceMode)
+        #expect(preferences.switcherEnabled == Preferences.Defaults.switcherEnabled)
+        #expect(preferences.showDockIcon == Preferences.Defaults.showDockIcon)
+        #expect(preferences.switcherDisplayID == Preferences.Defaults.switcherDisplayID)
     }
 
-    func testAbsentValuesWriteOnlyTheSchema() {
+    @Test func absentValuesWriteOnlyTheSchema() {
         PreferencesKeyMigration.migrate(defaults)
 
         for sample in samples {
-            XCTAssertNil(stored(sample.key.rawValue))
+            #expect(stored(sample.key.rawValue) == nil)
         }
-        XCTAssertEqual(defaults.integer(forKey: PreferencesKeyMigration.schemaKey), 1)
+        #expect(defaults.integer(forKey: PreferencesKeyMigration.schemaKey) == 1)
     }
 
-    func testASecondRunChangesNothing() {
+    @Test func aSecondRunChangesNothing() {
         defaults.set(true, forKey: "showDockIcon")
         PreferencesKeyMigration.migrate(defaults)
         // an older build running afterwards writes the old name again
@@ -142,40 +139,40 @@ final class PreferencesKeyMigrationTests: XCTestCase {
 
         PreferencesKeyMigration.migrate(defaults)
 
-        XCTAssertEqual(stored(Preferences.Key.showDockIcon.rawValue) as? Bool, true)
-        XCTAssertEqual(stored("showDockIcon") as? Bool, false)
+        #expect((stored(Preferences.Key.showDockIcon.rawValue) as? Bool) == true)
+        #expect((stored("showDockIcon") as? Bool) == false)
     }
 
-    func testSparklesKeyAndTheLegacyDelayKeepTheirNames() {
+    @Test func sparklesKeyAndTheLegacyDelayKeepTheirNames() {
         defaults.set(false, forKey: "SUEnableAutomaticChecks")
         defaults.set("long", forKey: "navigationPreviewDelay")
         defaults.removeObject(forKey: "expandedPreviewDelay")
 
         let preferences = Preferences(defaults: defaults)
 
-        XCTAssertFalse(preferences.automaticUpdateChecks)
-        XCTAssertEqual(defaults.object(forKey: "SUEnableAutomaticChecks") as? Bool, false)
+        #expect(!preferences.automaticUpdateChecks)
+        #expect((defaults.object(forKey: "SUEnableAutomaticChecks") as? Bool) == false)
         // the 1.1.2 migration still reads its unversioned name after the rename
-        XCTAssertEqual(preferences.expandedPreviewDelay, .fiveSeconds)
-        XCTAssertNil(defaults.object(forKey: "navigationPreviewDelay"))
+        #expect(preferences.expandedPreviewDelay == .fiveSeconds)
+        #expect(defaults.object(forKey: "navigationPreviewDelay") == nil)
     }
 
-    func testRestoreDefaultsWorksOnTheVersionedNames() {
+    @Test func restoreDefaultsWorksOnTheVersionedNames() {
         for sample in samples { defaults.set(sample.valid, forKey: sample.old) }
         let preferences = Preferences(defaults: defaults)
 
         preferences.restoreDefaults()
 
         let reloaded = Preferences(defaults: defaults)
-        XCTAssertEqual(reloaded.shortcut, Preferences.Defaults.shortcut)
-        XCTAssertEqual(reloaded.appearanceMode, Preferences.Defaults.appearanceMode)
-        XCTAssertEqual(reloaded.showDockIcon, Preferences.Defaults.showDockIcon)
-        XCTAssertEqual(reloaded.switcherDisplayID, Preferences.Defaults.switcherDisplayID)
+        #expect(reloaded.shortcut == Preferences.Defaults.shortcut)
+        #expect(reloaded.appearanceMode == Preferences.Defaults.appearanceMode)
+        #expect(reloaded.showDockIcon == Preferences.Defaults.showDockIcon)
+        #expect(reloaded.switcherDisplayID == Preferences.Defaults.switcherDisplayID)
         // mirrors a system registration and first-run state: never reset
-        XCTAssertTrue(reloaded.launchAtLogin)
-        XCTAssertTrue(reloaded.firstLaunchCompleted)
+        #expect(reloaded.launchAtLogin)
+        #expect(reloaded.firstLaunchCompleted)
         for sample in samples {
-            XCTAssertNil(defaults.object(forKey: sample.old))
+            #expect(defaults.object(forKey: sample.old) == nil)
         }
     }
 }

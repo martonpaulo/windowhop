@@ -1,8 +1,9 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class WindowEligibilityTests: XCTestCase {
+struct WindowEligibilityTests {
     private func standardWindow(size: CGSize = CGSize(width: 800, height: 600)) -> WindowFacts {
         WindowFacts(
             role: "AXWindow", subrole: "AXStandardWindow", size: size,
@@ -12,63 +13,63 @@ final class WindowEligibilityTests: XCTestCase {
 
     // MARK: - isActualWindow
 
-    func testStandardWindowIsActual() {
-        XCTAssertTrue(WindowEligibility.isActualWindow(standardWindow()))
+    @Test func standardWindowIsActual() {
+        #expect(WindowEligibility.isActualWindow(standardWindow()))
     }
 
-    func testDialogIsActual() {
+    @Test func dialogIsActual() {
         var facts = standardWindow()
         facts.subrole = "AXDialog"
-        XCTAssertTrue(WindowEligibility.isActualWindow(facts))
+        #expect(WindowEligibility.isActualWindow(facts))
     }
 
-    func testMissingSizeIsRejected() {
+    @Test func missingSizeIsRejected() {
         var facts = standardWindow()
         facts.size = nil
-        XCTAssertFalse(WindowEligibility.isActualWindow(facts))
+        #expect(!WindowEligibility.isActualWindow(facts))
     }
 
-    func testTinySurfacesAreRejected() {
-        XCTAssertFalse(WindowEligibility.isActualWindow(standardWindow(size: CGSize(width: 90, height: 400))))
-        XCTAssertFalse(WindowEligibility.isActualWindow(standardWindow(size: CGSize(width: 400, height: 40))))
+    @Test func tinySurfacesAreRejected() {
+        #expect(!WindowEligibility.isActualWindow(standardWindow(size: CGSize(width: 90, height: 400))))
+        #expect(!WindowEligibility.isActualWindow(standardWindow(size: CGSize(width: 400, height: 40))))
     }
 
-    func testTooltipsAndMenusAreRejected() {
+    @Test func tooltipsAndMenusAreRejected() {
         for subrole in ["AXUnknown", "AXSystemDialog", nil] {
             var facts = standardWindow()
             facts.subrole = subrole
-            XCTAssertFalse(WindowEligibility.isActualWindow(facts), "subrole \(subrole ?? "nil")")
+            #expect(!WindowEligibility.isActualWindow(facts), "subrole \(subrole ?? "nil")")
         }
     }
 
-    func testJetbrainsNonWindowsWithoutTitleAreRejected() {
+    @Test func jetbrainsNonWindowsWithoutTitleAreRejected() {
         var facts = standardWindow()
         facts.bundleIdentifier = "com.jetbrains.intellij"
         facts.subrole = "AXDialog"
         facts.title = ""
-        XCTAssertFalse(WindowEligibility.isActualWindow(facts))
+        #expect(!WindowEligibility.isActualWindow(facts))
         facts.title = "UserResourceMapper.java"
-        XCTAssertTrue(WindowEligibility.isActualWindow(facts))
+        #expect(WindowEligibility.isActualWindow(facts))
     }
 
-    func testSteamWindowsNeedTitleAndRole() {
+    @Test func steamWindowsNeedTitleAndRole() {
         var facts = standardWindow()
         facts.bundleIdentifier = "com.valvesoftware.steam"
         facts.subrole = "AXUnknown"
         facts.title = "Library"
-        XCTAssertTrue(WindowEligibility.isActualWindow(facts))
+        #expect(WindowEligibility.isActualWindow(facts))
         facts.title = ""
-        XCTAssertFalse(WindowEligibility.isActualWindow(facts))
+        #expect(!WindowEligibility.isActualWindow(facts))
     }
 
-    func testFirefoxFullscreenVideoNeedsHeight() {
+    @Test func firefoxFullscreenVideoNeedsHeight() {
         var facts = standardWindow()
         facts.bundleIdentifier = "org.mozilla.firefox"
         facts.subrole = "AXUnknown"
         facts.size = CGSize(width: 1200, height: 300)
-        XCTAssertFalse(WindowEligibility.isActualWindow(facts))
+        #expect(!WindowEligibility.isActualWindow(facts))
         facts.size = CGSize(width: 1200, height: 800)
-        XCTAssertTrue(WindowEligibility.isActualWindow(facts))
+        #expect(WindowEligibility.isActualWindow(facts))
     }
 
     // MARK: - shouldDisplay
@@ -79,34 +80,34 @@ final class WindowEligibilityTests: XCTestCase {
             isOnCurrentSpace: true, isOnActiveDisplay: true)
     }
 
-    func testVisibleWindowIsDisplayed() {
-        XCTAssertTrue(WindowEligibility.shouldDisplay(visibleState(), policy: .init()))
+    @Test func visibleWindowIsDisplayed() {
+        #expect(WindowEligibility.shouldDisplay(visibleState(), policy: .init()))
     }
 
-    func testMinimizedWindowsFollowThePolicy() {
+    @Test func minimizedWindowsFollowThePolicy() {
         var state = visibleState()
         state.isMinimized = true
-        XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(
+        #expect(!WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
             WindowEligibility.shouldDisplay(
                 state, policy: .init(includeMinimizedWindows: true)))
     }
 
-    func testHiddenAppWindowsFollowThePolicy() {
+    @Test func hiddenAppWindowsFollowThePolicy() {
         var state = visibleState()
         state.isAppHidden = true
-        XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(
+        #expect(!WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
             WindowEligibility.shouldDisplay(
                 state, policy: .init(includeHiddenApplicationWindows: true)))
     }
 
-    func testOwnWindowsAreNeverDisplayed() {
+    @Test func ownWindowsAreNeverDisplayed() {
         var state = visibleState()
         state.isOwnWindow = true
-        XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(
-            WindowEligibility.shouldDisplay(
+        #expect(!WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
+            !WindowEligibility.shouldDisplay(
                 state,
                 policy: .init(
                     includeMinimizedWindows: true,
@@ -114,50 +115,50 @@ final class WindowEligibilityTests: XCTestCase {
                     includePictureInPictureWindows: true)))
     }
 
-    func testPictureInPictureWindowsFollowThePolicy() {
+    @Test func pictureInPictureWindowsFollowThePolicy() {
         var state = visibleState()
         state.isPictureInPicture = true
-        XCTAssertFalse(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertTrue(
+        #expect(!WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
             WindowEligibility.shouldDisplay(
                 state, policy: .init(includePictureInPictureWindows: true)))
     }
 
-    func testOtherSpaceWindowsFollowTheSetting() {
+    @Test func otherSpaceWindowsFollowTheSetting() {
         var state = visibleState()
         state.isOnCurrentSpace = false
-        XCTAssertTrue(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(
-            WindowEligibility.shouldDisplay(
+        #expect(WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
+            !WindowEligibility.shouldDisplay(
                 state, policy: .init(includeOtherSpaces: false)))
     }
 
-    func testOtherDisplayWindowsFollowTheSetting() {
+    @Test func otherDisplayWindowsFollowTheSetting() {
         var state = visibleState()
         state.isOnActiveDisplay = false
-        XCTAssertTrue(WindowEligibility.shouldDisplay(state, policy: .init()))
-        XCTAssertFalse(
-            WindowEligibility.shouldDisplay(
+        #expect(WindowEligibility.shouldDisplay(state, policy: .init()))
+        #expect(
+            !WindowEligibility.shouldDisplay(
                 state, policy: .init(includeOtherDisplays: false)))
     }
 
     /// The #38 snapshot trace counts exclusions by the first rule that applies.
-    func testExclusionReasonNamesTheFirstRuleThatApplies() {
+    @Test func exclusionReasonNamesTheFirstRuleThatApplies() {
         let strict = WindowInclusionPolicy(includeOtherSpaces: false, includeOtherDisplays: false)
         let offSpaceAndDisplay = WindowDisplayState(
             isMinimized: false, isAppHidden: false, isOwnWindow: false,
             isOnCurrentSpace: false, isOnActiveDisplay: false)
-        XCTAssertEqual(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: strict), .otherSpace)
-        XCTAssertNil(
-            WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: .init()),
+        #expect(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: strict) == .otherSpace)
+        #expect(
+            WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: .init()) == nil,
             "the default policy shows other Spaces and displays")
         let minimizedTab = WindowDisplayState(
             isMinimized: true, isAppHidden: false, isOwnWindow: false,
             isTabbed: true, isOnCurrentSpace: true, isOnActiveDisplay: true)
-        XCTAssertEqual(WindowEligibility.exclusionReason(minimizedTab, policy: .init()), .minimized)
+        #expect(WindowEligibility.exclusionReason(minimizedTab, policy: .init()) == .minimized)
     }
 
-    func testEveryUserFacingPolicyCombination() {
+    @Test func everyUserFacingPolicyCombination() {
         for stateBits in 0..<32 {
             let state = WindowDisplayState(
                 isMinimized: stateBits & 1 != 0,
@@ -182,9 +183,8 @@ final class WindowEligibilityTests: XCTestCase {
                     && (state.isOnCurrentSpace || policy.includeOtherSpaces)
                     && (state.isOnActiveDisplay || policy.includeOtherDisplays)
 
-                XCTAssertEqual(
-                    WindowEligibility.shouldDisplay(state, policy: policy),
-                    expected,
+                #expect(
+                    WindowEligibility.shouldDisplay(state, policy: policy) == expected,
                     "state=\(stateBits), policy=\(policyBits)")
             }
         }

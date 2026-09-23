@@ -1,34 +1,35 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopKit
 
-final class LoginItemStatusTests: XCTestCase {
+struct LoginItemStatusTests {
     /// The toggle is on whenever WindowHop is registered: a pending approval
     /// is still a registration, and turning the toggle off removes it.
-    func testToggleIsOnForEveryRegisteredState() {
+    @Test func toggleIsOnForEveryRegisteredState() {
         let on = LoginItemStatus.allCases.filter(\.isOn)
-        XCTAssertEqual(Set(on), [.enabled, .requiresApproval])
+        #expect(Set(on) == [.enabled, .requiresApproval])
     }
 
-    func testOnlyAnUnavailableItemLocksTheToggle() {
+    @Test func onlyAnUnavailableItemLocksTheToggle() {
         let locked = LoginItemStatus.allCases.filter { !$0.allowsChange }
-        XCTAssertEqual(locked, [.unavailable])
-        XCTAssertFalse(
-            LoginItemStatus.unavailable.isOn,
+        #expect(locked == [.unavailable])
+        #expect(
+            !LoginItemStatus.unavailable.isOn,
             "a locked toggle must never hide a registration it cannot remove")
     }
 
-    func testOnlyPendingApprovalOffersLoginItemsSettings() {
+    @Test func onlyPendingApprovalOffersLoginItemsSettings() {
         let offering = LoginItemStatus.allCases.filter(\.offersLoginItemsSettings)
-        XCTAssertEqual(offering, [.requiresApproval])
+        #expect(offering == [.requiresApproval])
     }
 
     /// States the toggle alone cannot express carry a sentence, so they are
     /// not signalled by the switch position (or color) alone.
-    func testStatesTheToggleCannotExpressAreExplained() {
-        XCTAssertNil(LoginItemStatus.enabled.explanation)
-        XCTAssertNil(LoginItemStatus.disabled.explanation)
-        XCTAssertTrue(LoginItemStatus.requiresApproval.explanation?.contains("Login Items") == true)
-        XCTAssertTrue(LoginItemStatus.unavailable.explanation?.contains("Applications folder") == true)
+    @Test func statesTheToggleCannotExpressAreExplained() {
+        #expect(LoginItemStatus.enabled.explanation == nil)
+        #expect(LoginItemStatus.disabled.explanation == nil)
+        #expect(LoginItemStatus.requiresApproval.explanation?.contains("Login Items") == true)
+        #expect(LoginItemStatus.unavailable.explanation?.contains("Applications folder") == true)
     }
 }
