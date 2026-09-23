@@ -68,6 +68,22 @@ document.querySelectorAll("[data-copy]").forEach((command) => {
   });
 });
 
+// On the home page, the header link of the section in view is marked as the
+// current location (Features, Download), like the current page on other pages.
+const sectionLinks = [...document.querySelectorAll('.site-header nav a[href^="#"]')]
+  .map((link) => [link, document.querySelector(link.getAttribute("href"))])
+  .filter(([, section]) => section);
+if ("IntersectionObserver" in window && sectionLinks.length) {
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      const link = sectionLinks.find(([, section]) => section === entry.target)[0];
+      if (entry.isIntersecting) link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
+    });
+  }, { rootMargin: "-40% 0px -55% 0px" });
+  sectionLinks.forEach(([, section]) => spy.observe(section));
+}
+
 // The hidden starting state exists only under html.js with motion allowed (see
 // styles/main.css), so without JavaScript or with Reduce Motion every section is
 // simply visible.

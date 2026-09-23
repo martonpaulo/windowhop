@@ -72,17 +72,12 @@ def groups(lines):
     return out
 
 
-def cards_html(lines):
-    """One site card per change type, in the site's grid (one, two or three wide)."""
-    found = groups(lines)
-    layout = {1: "stack", 2: "grid grid-2"}.get(len(found), "grid grid-3 stack-on-tablet")
-    cards = "\n".join(
-        f"""        <article class="card">
-          <h3>{html.escape(kind)}</h3>
-          <ul>{"".join(f"<li>{inline(item)}</li>" for item in items)}</ul>
-        </article>"""
-        for kind, items in found)
-    return f'      <div class="{layout}">\n{cards}\n      </div>'
+def groups_html(lines):
+    """Each change type as a small heading and a plain list, in the text column."""
+    return "\n".join(
+        f"""      <h3 class="notes-type">{html.escape(kind)}</h3>
+      <ul class="notes-list">{"".join(f"<li>{inline(item)}</li>" for item in items)}</ul>"""
+        for kind, items in groups(lines))
 
 
 def headlines(lines):
@@ -156,7 +151,7 @@ def version_section(version, date, lines, link):
     return f"""    <section class="section" id="v{version}" aria-labelledby="title-{version}">
       <p class="eyebrow"><time datetime="{date}">{long_date(date)}</time></p>
       <h2 id="title-{version}">{title}</h2>
-{cards_html(lines)}
+{groups_html(lines)}
     </section>"""
 
 
