@@ -30,13 +30,11 @@ public enum ProjectLinks {
         for version: AppVersion,
         macOS: OperatingSystemVersion
     ) -> URL {
-        var components = URLComponents(string: "https://github.com/martonpaulo/windowhop/issues/new")!
-        components.queryItems = [
+        repository.appending(path: "issues/new").appending(queryItems: [
             URLQueryItem(name: "template", value: bugReportTemplate),
             URLQueryItem(name: windowHopVersionField, value: reportedVersion(version)),
             URLQueryItem(name: macOSVersionField, value: reportedMacOS(macOS)),
-        ]
-        return components.url!
+        ])
     }
 
     /// "1.6.2 (build 10602, released 2026-09-15)". The date is the unlocalized

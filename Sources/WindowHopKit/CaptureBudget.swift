@@ -74,6 +74,6 @@ public final class CaptureBudget {
         generation = newGeneration
         let refused = waiters.filter { $0.generation != newGeneration }
         waiters.removeAll { $0.generation != newGeneration }
-        refused.forEach { $0.continuation.resume(returning: false) }
+        for waiter in refused { waiter.continuation.resume(returning: false) }
     }
 }

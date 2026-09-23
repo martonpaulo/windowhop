@@ -7,6 +7,12 @@
 // from drawFavicon, a small-size rendition of the same mark (issue #93).
 import AppKit
 
+/// AppKit returns nil here only when it cannot allocate the object; stop with its name.
+func required<T>(_ value: T?, _ what: String) -> T {
+    guard let value else { fatalError("could not create \(what)") }
+    return value
+}
+
 func drawIcon(canvas: CGFloat) -> NSImage {
     let image = NSImage(size: NSSize(width: canvas, height: canvas))
     image.lockFocus()
@@ -18,8 +24,9 @@ func drawIcon(canvas: CGFloat) -> NSImage {
     // Big Sur-style rounded square, 824pt on the 1024 grid
     let plate = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824),
                              xRadius: 185, yRadius: 185)
-    let gradient = NSGradient(starting: NSColor(calibratedRed: 0.13, green: 0.32, blue: 0.85, alpha: 1),
-                              ending: NSColor(calibratedRed: 0.33, green: 0.56, blue: 0.98, alpha: 1))!
+    let gradient = required(NSGradient(starting: NSColor(calibratedRed: 0.13, green: 0.32, blue: 0.85, alpha: 1),
+                                       ending: NSColor(calibratedRed: 0.33, green: 0.56, blue: 0.98, alpha: 1)),
+                            "the plate gradient")
     gradient.draw(in: plate, angle: 90)
 
     // back window (where you are leaving from)
@@ -62,17 +69,18 @@ func drawIcon(canvas: CGFloat) -> NSImage {
     return image
 }
 
-func writePNG(_ image: NSImage, to url: URL, pixels: Int) {
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
-                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+func writePNG(_ image: NSImage, to url: URL, pixels: Int) throws {
+    let rep = required(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+                                        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                        colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+                       "a \(pixels) px bitmap")
     rep.size = NSSize(width: pixels, height: pixels)
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     image.draw(in: NSRect(x: 0, y: 0, width: pixels, height: pixels),
                from: .zero, operation: .copy, fraction: 1)
     NSGraphicsContext.restoreGraphicsState()
-    try! rep.representation(using: .png, properties: [:])!.write(to: url)
+    try pngData(rep).write(to: url)
 }
 
 // The favicon is the app icon's mark redrawn for 16 to 48 pixels, where the app icon's
@@ -95,9 +103,10 @@ enum Favicon {
 }
 
 func drawFavicon(pixels: Int) -> NSBitmapImageRep {
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
-                               bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
-                               colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0)!
+    let rep = required(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+                                        bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                        colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+                       "a \(pixels) px bitmap")
     rep.size = NSSize(width: pixels, height: pixels)
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
@@ -114,8 +123,9 @@ func drawFavicon(pixels: Int) -> NSBitmapImageRep {
     let blue = NSColor(calibratedRed: 0.13, green: 0.32, blue: 0.85, alpha: 1)
     let plate = NSBezierPath(roundedRect: NSRect(x: 100, y: 100, width: 824, height: 824),
                              xRadius: 185, yRadius: 185)
-    NSGradient(starting: blue,
-               ending: NSColor(calibratedRed: 0.33, green: 0.56, blue: 0.98, alpha: 1))!
+    required(NSGradient(starting: blue,
+                        ending: NSColor(calibratedRed: 0.33, green: 0.56, blue: 0.98, alpha: 1)),
+             "the plate gradient")
         .draw(in: plate, angle: 90)
 
     NSColor(calibratedWhite: 1, alpha: Favicon.backWindowAlpha).setFill()
@@ -160,7 +170,7 @@ func drawFavicon(pixels: Int) -> NSBitmapImageRep {
 }
 
 func pngData(_ rep: NSBitmapImageRep) -> Data {
-    rep.representation(using: .png, properties: [:])!
+    required(rep.representation(using: .png, properties: [:]), "PNG data")
 }
 
 /// An ICO file whose entries are PNG images, which every current browser and Google
@@ -200,10 +210,10 @@ if arguments.first == "--favicon" {
     let outputDir = arguments.first ?? "build/icon"
     let iconsetURL = URL(fileURLWithPath: outputDir).appendingPathComponent("AppIcon.iconset")
     try? FileManager.default.createDirectory(at: iconsetURL, withIntermediateDirectories: true)
-    let master = drawIcon(canvas: 1024)
+    let source = drawIcon(canvas: 1024)
     for size in [16, 32, 128, 256, 512] {
-        writePNG(master, to: iconsetURL.appendingPathComponent("icon_\(size)x\(size).png"), pixels: size)
-        writePNG(master, to: iconsetURL.appendingPathComponent("icon_\(size)x\(size)@2x.png"), pixels: size * 2)
+        try writePNG(source, to: iconsetURL.appendingPathComponent("icon_\(size)x\(size).png"), pixels: size)
+        try writePNG(source, to: iconsetURL.appendingPathComponent("icon_\(size)x\(size)@2x.png"), pixels: size * 2)
     }
     print("wrote \(iconsetURL.path)")
 }

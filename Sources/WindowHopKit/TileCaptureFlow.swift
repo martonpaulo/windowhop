@@ -45,6 +45,8 @@ public enum TileCaptureResult<Image> {
 /// are provable with fakes. `Engine/PreviewProvider` supplies the real stages.
 @MainActor
 public enum TileCaptureFlow {
+    // Ten parameters: each stage is its own injected seam, so the flow is provable
+    // with fakes; `run` suppresses function_parameter_count for that reason (#97).
     /// - Parameters:
     ///   - lookup: matches every id to a capture target in one inventory read;
     ///     nil when the inventory could not be read, a missing id has no match.
@@ -53,7 +55,7 @@ public enum TileCaptureFlow {
     ///   - deliver: every captured image; the caller decides whether it still
     ///     reaches the cache and the panel.
     ///   - unavailable: ids whose failure is final for this session.
-    public static func run<ID: Hashable, Candidate, Image>(
+    public static func run<ID: Hashable, Candidate, Image>(  // swiftlint:disable:this function_parameter_count
         ids: [ID],
         budget: CaptureBudget,
         generation: Int,

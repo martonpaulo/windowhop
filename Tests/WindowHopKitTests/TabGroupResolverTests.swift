@@ -564,6 +564,9 @@ final class TabGroupResolverTests: XCTestCase {
             ]))
     }
 
+}
+
+extension TabGroupResolverTests {
     // MARK: - Discovery order (an active tab can be discovered before its siblings)
 
     func testInactiveSiblingArrivingAfterItsActiveTabIsHidden() {
@@ -652,11 +655,13 @@ final class TabGroupResolverTests: XCTestCase {
         for arrival in arrivals {
             var reported: [String]?
             if case .group(let titles) = arrival.observation { reported = titles }
+            // `apply` keeps the order, so the arrival stays at this index
+            let arrivalIndex = store.count
             store.append(
                 window(
                     arrival.id, arrival.id, frame: arrival.frame,
                     reportedTabTitles: reported))
-            let newWindow = { store.first { $0.id == arrival.id }! }
+            let newWindow = { store[arrivalIndex] }
             let others = { store.filter { $0.id != arrival.id } }
             if case .group = arrival.observation {
                 apply(
@@ -704,7 +709,7 @@ final class TabGroupResolverTests: XCTestCase {
     /// and no observed notification arrives. The session-start re-read then sees the
     /// active tab's bar and each inactive tab's empty children; in every read order
     /// the result is one entry that carries all three tabs.
-    func testSessionRereadAfterALiveMergeYieldsOneEntryInAnyOrder() {
+    func testSessionRereadAfterALiveMergeYieldsOneEntryInAnyOrder() throws {
         let reads: [(id: String, observation: TabObservation)] = [
             ("A", .group(["A", "C", "B"])), ("B", .standalone), ("C", .standalone),
         ]
@@ -715,7 +720,7 @@ final class TabGroupResolverTests: XCTestCase {
                 window("C", "C", frame: otherFrame.offsetBy(dx: -29, dy: -29)),
             ]
             for read in order {
-                var reread = store.first { $0.id == read.id }!
+                var reread = try XCTUnwrap(store.first { $0.id == read.id })
                 if case .group(let titles) = read.observation {
                     reread = window(
                         reread.id, reread.title, isTabbed: reread.isTabbed,

@@ -73,7 +73,11 @@ final class ShortcutRecorderControl: NSButton {
     }
 
     @objc private func toggleRecording() {
-        isRecording ? endRecording() : startRecording()
+        if isRecording {
+            endRecording()
+        } else {
+            startRecording()
+        }
     }
 
     private func startRecording() {

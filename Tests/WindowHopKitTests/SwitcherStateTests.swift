@@ -286,9 +286,9 @@ extension SwitcherStateTests {
         XCTAssertTrue(state.isConfirming(sessionID: state.sessionID))
     }
 
-    func testAppearanceModeDefaultsToAppIcons() {
+    func testAppearanceModeDefaultsToAppIcons() throws {
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = Preferences(defaults: defaults)
         XCTAssertEqual(preferences.appearanceMode, .appIcons)

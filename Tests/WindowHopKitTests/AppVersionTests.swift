@@ -49,10 +49,10 @@ final class AppVersionTests: XCTestCase {
         }
     }
 
-    func testDateDoesNotShiftWestOfUTC() {
+    func testDateDoesNotShiftWestOfUTC() throws {
         let saved = NSTimeZone.default
         defer { NSTimeZone.default = saved }
-        NSTimeZone.default = TimeZone(identifier: "America/Los_Angeles")!
+        NSTimeZone.default = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
         XCTAssertEqual(
             packaged().releaseDateText(locale: Locale(identifier: "en_US")),
             "September 15, 2026")

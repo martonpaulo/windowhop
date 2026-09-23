@@ -38,7 +38,7 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
     private static let specialKeys: [Int64] = [
         KeyCode.tab, KeyCode.space, KeyCode.returnKey, KeyCode.escape, KeyCode.delete,
         KeyCode.forwardDelete, KeyCode.leftArrow, KeyCode.rightArrow, KeyCode.upArrow,
-        KeyCode.downArrow, 96, /* F5 */
+        KeyCode.downArrow, 96,  // 96 is F5
     ]
 
     override func tearDown() {

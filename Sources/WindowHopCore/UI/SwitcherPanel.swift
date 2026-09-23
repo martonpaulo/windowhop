@@ -315,7 +315,7 @@ public final class SwitcherPanel: NSPanel {
         availability.beginSession()
         // a new session re-reads every preview and acquisition state, so no
         // tile may be skipped as unchanged
-        tilePool.forEach { $0.releasePreviewContent() }
+        for tile in tilePool { tile.releasePreviewContent() }
         update(items: items, selectedIndex: selectedIndex)
         orderFrontRegardless()
         hostView.refreshPointerLocation()
@@ -448,7 +448,7 @@ public final class SwitcherPanel: NSPanel {
     /// provider cache stays the only warm owner between sessions, and the
     /// next `show` reloads visible tiles from it.
     public func releasePreviewContent() {
-        tilePool.forEach { $0.releasePreviewContent() }
+        for tile in tilePool { tile.releasePreviewContent() }
         expandedPreviewView.releaseImage()
     }
 

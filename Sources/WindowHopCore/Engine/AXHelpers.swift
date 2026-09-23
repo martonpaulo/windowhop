@@ -13,6 +13,8 @@ public enum AXError: Error {
 /// through the public AX API — attribute names are app-defined strings by design.
 let kAXFullscreenAttribute = "AXFullScreen"
 
+// The retroactive conformance is deliberate: the SDK leaves AXUIElement unannotated (#97).
+// swift-format-ignore: AvoidRetroactiveConformances
 /// AX element references cross from the AX events thread to the AX reads queue and
 /// on to main as window identities (they are compared and hashed there, never read).
 ///
@@ -132,7 +134,7 @@ extension AXUIElement {
     /// AXValues of type .axError for attributes it could not read; this is their code.
     private func axErrorCode(_ value: CFTypeRef) -> ApplicationServices.AXError? {
         guard CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
-        let axValue = value as! AXValue
+        let axValue = unsafeDowncast(value, to: AXValue.self)
         guard AXValueGetType(axValue) == .axError else { return nil }
         var code = ApplicationServices.AXError.failure.rawValue
         guard AXValueGetValue(axValue, .axError, &code) else { return .failure }
@@ -143,7 +145,7 @@ extension AXUIElement {
     private func castSafely<T>(_ value: CFTypeRef) -> T? {
         switch CFGetTypeID(value) {
         case AXValueGetTypeID():
-            let axValue = value as! AXValue
+            let axValue = unsafeDowncast(value, to: AXValue.self)
             switch AXValueGetType(axValue) {
             case .axError:
                 return nil

@@ -47,7 +47,7 @@ final class TrackedAppLifecycleTests: XCTestCase {
         }
         // a store that never starts: the discovery each first subscription requests
         // reaches it and is dropped, as it is for an app the store no longer tracks
-        let isolated = IsolatedPreferences()
+        let isolated = try IsolatedPreferences()
         defer { isolated.remove() }
         let store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
         let apps = (0..<40).map { _ in TrackedApp(process, router: store.router) }
@@ -61,8 +61,8 @@ final class TrackedAppLifecycleTests: XCTestCase {
         }
         // let first attempts land, and possibly schedule retries, before stopping the rest
         _ = phases(of: apps)
-        apps.forEach { $0.stopObserving() }
-        apps.forEach { $0.startObserving() }
+        for app in apps { app.stopObserving() }
+        for app in apps { app.startObserving() }
         // outlive two retry delays: every pending retry must find its generation stale
         spinMainRunLoop(for: 1.2)
         XCTAssertEqual(phases(of: apps), Array(repeating: .stopped, count: apps.count))

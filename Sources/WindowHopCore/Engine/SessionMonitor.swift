@@ -50,7 +50,7 @@ final class SessionMonitor {
     }
 
     func stop() {
-        observers.forEach { $0.center.removeObserver($0.token) }
+        for observer in observers { observer.center.removeObserver(observer.token) }
         observers = []
     }
 }

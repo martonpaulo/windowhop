@@ -71,8 +71,8 @@ public final class WindowStore {
         runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) {
             [weak self] _, change in
             DispatchQueue.main.async { [weak self] in
-                (change.newValue ?? []).forEach { self?.addApp($0) }
-                (change.oldValue ?? []).forEach { self?.removeApp($0.processIdentifier) }
+                for app in change.newValue ?? [] { self?.addApp(app) }
+                for app in change.oldValue ?? [] { self?.removeApp(app.processIdentifier) }
             }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -85,7 +85,7 @@ public final class WindowStore {
         sessionMonitor = SessionMonitor { [weak self] event, needsRecovery in
             self?.sessionEvent(event, needsRecovery: needsRecovery)
         }
-        NSWorkspace.shared.runningApplications.forEach { addApp($0) }
+        for app in NSWorkspace.shared.runningApplications { addApp(app) }
     }
 
     public func stop() {
@@ -97,7 +97,7 @@ public final class WindowStore {
             self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
         sessionMonitor?.stop()
         sessionMonitor = nil
-        apps.values.forEach { $0.stopObserving() }
+        for app in apps.values { app.stopObserving() }
         apps = [:]
         discardPreviews(of: windows)
         order = MRUOrder()
@@ -308,7 +308,7 @@ public final class WindowStore {
     /// the preview cache — reopening Settings mints a fresh id each time, and
     /// the old ones would otherwise survive until the appearance changed.
     private func discardPreviews(of removed: [TrackedWindow]) {
-        removed.forEach { previews.evict($0.stableId) }
+        for window in removed { previews.evict(window.stableId) }
     }
 
     private func ownEntry(for window: NSWindow) -> TrackedWindow? {
@@ -549,7 +549,7 @@ public final class WindowStore {
                     prune: \(elements.count, privacy: .public) suspect(s), \(dead.count, privacy: .public) dead, \
                     \(confirmed.count, privacy: .public) removed
                     """)
-                confirmed.forEach { self.removeWindow($0, reason: "pruned") }
+                for element in confirmed { self.removeWindow(element, reason: "pruned") }
             }
         }
     }

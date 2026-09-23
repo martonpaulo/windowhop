@@ -200,9 +200,12 @@ actor AppObserver {
             axObserver = created
             observer = created
         }
+        guard let firstNotification = AppObserver.appNotifications.first else {
+            return .subscriptionFailed(generation: generation, retryable: false)
+        }
         do {
             let accepted = try axElement.subscribe(
-                observer, AppObserver.appNotifications.first!,
+                observer, firstNotification,
                 refcon: router.refcon)
             return accepted
                 ? .subscriptionSucceeded(generation: generation)

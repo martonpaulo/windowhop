@@ -17,7 +17,7 @@ final class PreviewEvictionTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
@@ -129,7 +129,7 @@ final class PreviewViewReleaseTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         preferences.appearanceMode = .windowPreviews
     }
 

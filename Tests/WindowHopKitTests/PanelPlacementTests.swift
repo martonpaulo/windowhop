@@ -158,9 +158,9 @@ final class PanelPlacementTests: XCTestCase {
         XCTAssertEqual(columns, 3)
     }
 
-    func testTheSharedGridFitsTheMostConstrainedDisplay() {
+    func testTheSharedGridFitsTheMostConstrainedDisplay() throws {
         let displays = [external, small]
-        let extent = try! XCTUnwrap(SwitcherGridCapacity.mostConstrainedExtent(displays))
+        let extent = try XCTUnwrap(SwitcherGridCapacity.mostConstrainedExtent(displays))
 
         let shared = SwitcherGridCapacity.columns(
             visibleWidth: extent.width, tileWidth: 300, spacing: 12,

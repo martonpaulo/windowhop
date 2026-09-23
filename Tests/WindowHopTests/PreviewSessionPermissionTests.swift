@@ -21,7 +21,7 @@ final class PreviewSessionPermissionTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         isolated.preferences.appearanceMode = .windowPreviews
         savedPermissionRequired = provider.onPermissionRequired
         savedUnavailable = provider.onPreviewUnavailable

@@ -8,16 +8,16 @@ import XCTest
 /// Each test uses its own autosave name and removes AppKit's key afterwards.
 @MainActor
 final class SettingsWindowFrameTests: XCTestCase {
-    private var autosaveName: String!
+    private var autosaveName = ""
     private var windows: [NSWindow] = []
     private var isolated: IsolatedPreferences!
 
-    private var defaultsKey: String { "NSWindow Frame \(autosaveName!)" }
+    private var defaultsKey: String { "NSWindow Frame \(autosaveName)" }
 
     override func setUp() async throws {
         try await super.setUp()
         _ = NSApplication.shared
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         autosaveName = "WindowHopSettingsTest-\(UUID().uuidString)"
     }
 

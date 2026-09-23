@@ -81,7 +81,11 @@ public enum LoginItem {
             return LoginItemChange(status: current, failed: false)
         }
         do {
-            try enabled ? service.register() : service.unregister()
+            if enabled {
+                try service.register()
+            } else {
+                try service.unregister()
+            }
         } catch {
             // the status read below decides whether the request took effect
         }

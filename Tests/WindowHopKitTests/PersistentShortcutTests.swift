@@ -59,8 +59,9 @@ final class PersistentShortcutTests: XCTestCase {
     func testValidShortcuts() {
         XCTAssertNil(
             PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate]).validate(against: .commandTab))
+        // key code 40 is K
         XCTAssertNil(
-            PersistentShortcut(keyCode: 40 /* K */, modifiers: [.maskCommand, .maskShift]).validate(
+            PersistentShortcut(keyCode: 40, modifiers: [.maskCommand, .maskShift]).validate(
                 against: .commandTab))
     }
 
@@ -80,9 +81,9 @@ final class PersistentShortcutTests: XCTestCase {
             "⌃⇧⌘K")
     }
 
-    func testPreferencesDefaultIsOptionTabAndCanBeCleared() {
+    func testPreferencesDefaultIsOptionTabAndCanBeCleared() throws {
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = Preferences(defaults: defaults)
         XCTAssertEqual(preferences.persistentShortcut, .optionTab)

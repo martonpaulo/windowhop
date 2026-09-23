@@ -98,12 +98,12 @@ final class SwitchingGuideTests: XCTestCase {
                         ShortcutFormatter.modifierSymbols(.maskShift),
                         ShortcutFormatter.keySymbol(for: KeyCode.delete),
                     ]
-                    + (persistent == nil
-                        ? []
-                        : [
+                    + (persistent.map {
+                        [
                             ShortcutFormatter.keySymbol(for: KeyCode.returnKey),
                             ShortcutFormatter.keySymbol(for: KeyCode.escape),
-                        ] + persistent!.displayString.map(String.init))
+                        ] + $0.displayString.map(String.init)
+                    } ?? [])
                 let text = reference.map(\.display).joined(separator: " ")
                 XCTAssertEqual(glyphs(in: text), glyphs(in: expected.joined()), text)
                 // the spoken form names keys in words only

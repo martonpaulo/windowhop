@@ -14,7 +14,7 @@ final class ExpandedSnapshotRetentionTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
     }
 
     override func tearDown() async throws {

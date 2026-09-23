@@ -4,6 +4,12 @@
 // communicates that this is the installer, not a second application icon.
 import AppKit
 
+/// AppKit returns nil here only when it cannot allocate the object; stop with its name.
+func required<T>(_ value: T?, _ what: String) -> T {
+    guard let value else { fatalError("could not create \(what)") }
+    return value
+}
+
 let sourcePath = "Support/AppIcon.icns"
 let iconsetPath = "artifacts/AppInstallerIcon.iconset"
 let outputPath = "Support/AppInstallerIcon.icns"
@@ -17,7 +23,7 @@ try fileManager.createDirectory(atPath: iconsetPath,
 
 func render(pixels: Int) throws -> Data {
     let logicalSize = NSSize(width: 1024, height: 1024)
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
+    let rep = required(NSBitmapImageRep(bitmapDataPlanes: nil,
                                pixelsWide: pixels,
                                pixelsHigh: pixels,
                                bitsPerSample: 8,
@@ -26,7 +32,8 @@ func render(pixels: Int) throws -> Data {
                                isPlanar: false,
                                colorSpaceName: .deviceRGB,
                                bytesPerRow: 0,
-                               bitsPerPixel: 0)!
+                               bitsPerPixel: 0),
+                       "a \(pixels) px bitmap")
     rep.size = logicalSize
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
@@ -45,15 +52,15 @@ func render(pixels: Int) throws -> Data {
     body.fill()
     NSGraphicsContext.current?.restoreGraphicsState()
 
-    NSGradient(colors: [NSColor(calibratedWhite: 0.99, alpha: 1),
-                        NSColor(calibratedWhite: 0.79, alpha: 1)])!
+    required(NSGradient(colors: [NSColor(calibratedWhite: 0.99, alpha: 1),
+                                 NSColor(calibratedWhite: 0.79, alpha: 1)]), "the body gradient")
         .draw(in: body, angle: -90)
 
     let lipRect = NSRect(x: bodyRect.minX, y: bodyRect.minY,
                          width: bodyRect.width, height: 190)
     let lip = NSBezierPath(roundedRect: lipRect, xRadius: 92, yRadius: 92)
-    NSGradient(colors: [NSColor(calibratedWhite: 0.72, alpha: 1),
-                        NSColor(calibratedWhite: 0.88, alpha: 1)])!
+    required(NSGradient(colors: [NSColor(calibratedWhite: 0.72, alpha: 1),
+                                 NSColor(calibratedWhite: 0.88, alpha: 1)]), "the lip gradient")
         .draw(in: lip, angle: -90)
     NSColor(calibratedWhite: 0.48, alpha: 0.7).setStroke()
     lip.lineWidth = 3
@@ -70,7 +77,7 @@ func render(pixels: Int) throws -> Data {
     NSColor.white.withAlphaComponent(0.92).setFill()
     NSBezierPath(ovalIn: NSRect(x: 814, y: 126, width: 46, height: 46)).fill()
     NSGraphicsContext.restoreGraphicsState()
-    return rep.representation(using: .png, properties: [:])!
+    return required(rep.representation(using: .png, properties: [:]), "PNG data")
 }
 
 let variants: [(String, Int)] = [

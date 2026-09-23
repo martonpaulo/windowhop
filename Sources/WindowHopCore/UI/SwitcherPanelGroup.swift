@@ -129,20 +129,20 @@ public final class SwitcherPanelGroup {
         presentationMode: SwitcherPresentationMode
     ) {
         self.items = items
-        panels.forEach {
-            $0.show(items: items, selectedIndex: selectedIndex, presentationMode: presentationMode)
+        for panel in panels {
+            panel.show(items: items, selectedIndex: selectedIndex, presentationMode: presentationMode)
         }
         announcer.reset()
         announceItem(at: selectedIndex)
     }
 
     public func presentAgain(presentationMode: SwitcherPresentationMode) {
-        panels.forEach { $0.presentAgain(presentationMode: presentationMode) }
+        for panel in panels { panel.presentAgain(presentationMode: presentationMode) }
     }
 
     public func update(items: [SwitcherItem], selectedIndex: Int) {
         self.items = items
-        panels.forEach { $0.update(items: items, selectedIndex: selectedIndex) }
+        for panel in panels { panel.update(items: items, selectedIndex: selectedIndex) }
         // reconciliation can move the selection to another window without any
         // navigation; the spoken target must follow what confirmation activates
         guard !panels.isEmpty, items.indices.contains(selectedIndex) else { return }
@@ -150,7 +150,7 @@ public final class SwitcherPanelGroup {
     }
 
     public func select(_ index: Int) {
-        panels.forEach { $0.select(index) }
+        for panel in panels { panel.select(index) }
         announceItem(at: index)
     }
 
@@ -160,19 +160,19 @@ public final class SwitcherPanelGroup {
     }
 
     public func updatePreview(id: AnyHashable, image: NSImage) {
-        panels.forEach { $0.updatePreview(id: id, image: image) }
+        for panel in panels { panel.updatePreview(id: id, image: image) }
     }
 
     public func updatePreviewUnavailable(id: AnyHashable) {
-        panels.forEach { $0.updatePreviewUnavailable(id: id) }
+        for panel in panels { panel.updatePreviewUnavailable(id: id) }
     }
 
     public func setPreviewPermissionStatus(_ status: ScreenRecordingPermission.Status) {
-        panels.forEach { $0.setPreviewPermissionStatus(status) }
+        for panel in panels { panel.setPreviewPermissionStatus(status) }
     }
 
     public func showExpandedPreview(id: AnyHashable, image: NSImage) {
-        panels.forEach { $0.showExpandedPreview(id: id, image: image) }
+        for panel in panels { panel.showExpandedPreview(id: id, image: image) }
     }
 
     /// The window expanded on the panels, or nil while they show the grid.
@@ -180,19 +180,19 @@ public final class SwitcherPanelGroup {
     public var expandedPreviewID: AnyHashable? { panels.first?.expandedPreviewID }
 
     public func hideExpandedPreview() {
-        panels.forEach { $0.hideExpandedPreview() }
+        for panel in panels { panel.hideExpandedPreview() }
     }
 
     /// Hides every panel. Ending a session must leave nothing on any display.
     public func hide() {
-        panels.forEach { $0.hide() }
+        for panel in panels { panel.hide() }
         items = []
         announcer.reset()
     }
 
     /// Ends every view's hold on preview images once a session is over.
     public func releasePreviewContent() {
-        panels.forEach { $0.releasePreviewContent() }
+        for panel in panels { panel.releasePreviewContent() }
     }
 
     // MARK: - Testing

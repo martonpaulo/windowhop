@@ -3,32 +3,32 @@ import XCTest
 @testable import WindowHopKit
 
 final class ExpandedPreviewSessionTests: XCTestCase {
-    func testSettledTargetBecomesExpandedWithoutCommitOrOriginState() {
+    func testSettledTargetBecomesExpandedWithoutCommitOrOriginState() throws {
         var session = ExpandedPreviewSession<String>()
-        let request = session.begin(targetedWindowID: "target")!
+        let request = try XCTUnwrap(session.begin(targetedWindowID: "target"))
 
         XCTAssertEqual(session.settle(request, availableWindowIDs: ["target"]), "target")
         XCTAssertEqual(session.expandedWindowID, "target")
     }
 
-    func testClosedTargetCannotExpandAndNeighborCanReplaceIt() {
+    func testClosedTargetCannotExpandAndNeighborCanReplaceIt() throws {
         var session = ExpandedPreviewSession<String>()
-        let closedRequest = session.begin(targetedWindowID: "closed")!
+        let closedRequest = try XCTUnwrap(session.begin(targetedWindowID: "closed"))
         session.retainAvailable(["neighbor"])
 
         XCTAssertNil(session.settle(closedRequest, availableWindowIDs: ["neighbor"]))
-        let neighborRequest = session.target("neighbor")!
+        let neighborRequest = try XCTUnwrap(session.target("neighbor"))
         XCTAssertEqual(
             session.settle(
                 neighborRequest,
                 availableWindowIDs: ["neighbor"]), "neighbor")
     }
 
-    func testRapidNavigationExpandsOnlyLatestSettledTarget() {
+    func testRapidNavigationExpandsOnlyLatestSettledTarget() throws {
         var session = ExpandedPreviewSession<String>()
-        let first = session.begin(targetedWindowID: "one")!
-        let second = session.target("two")!
-        let third = session.target("three")!
+        let first = try XCTUnwrap(session.begin(targetedWindowID: "one"))
+        let second = try XCTUnwrap(session.target("two"))
+        let third = try XCTUnwrap(session.target("three"))
         let available: Set<String> = ["one", "two", "three"]
 
         XCTAssertNil(session.settle(first, availableWindowIDs: available))
@@ -36,7 +36,7 @@ final class ExpandedPreviewSessionTests: XCTestCase {
         XCTAssertEqual(session.settle(third, availableWindowIDs: available), "three")
     }
 
-    func testSameApplicationWindowsRemainDistinctByStableIdentity() {
+    func testSameApplicationWindowsRemainDistinctByStableIdentity() throws {
         struct WindowID: Hashable {
             let application: String
             let stableID: Int
@@ -45,13 +45,13 @@ final class ExpandedPreviewSessionTests: XCTestCase {
         let second = WindowID(application: "Browser", stableID: 2)
         var session = ExpandedPreviewSession<WindowID>()
 
-        let request = session.begin(targetedWindowID: second)!
+        let request = try XCTUnwrap(session.begin(targetedWindowID: second))
         XCTAssertEqual(session.settle(request, availableWindowIDs: [first, second]), second)
     }
 
-    func testResetInvalidatesExpiredRequest() {
+    func testResetInvalidatesExpiredRequest() throws {
         var session = ExpandedPreviewSession<String>()
-        let request = session.begin(targetedWindowID: "target")!
+        let request = try XCTUnwrap(session.begin(targetedWindowID: "target"))
         session.reset()
 
         XCTAssertNil(session.settle(request, availableWindowIDs: ["target"]))
@@ -63,26 +63,26 @@ final class ExpandedPreviewSessionTests: XCTestCase {
 
     /// A store refresh that preserves the selection re-targets the same window.
     /// The pending request must survive: no new request, no new generation.
-    func testRetargetingTheSameWindowBeforeSettleKeepsThePendingRequest() {
+    func testRetargetingTheSameWindowBeforeSettleKeepsThePendingRequest() throws {
         var session = ExpandedPreviewSession<String>()
         let pending = session.begin(targetedWindowID: "A")
 
         XCTAssertNil(session.target("A"), "an unchanged target creates no new request")
         XCTAssertEqual(
-            session.settle(try! XCTUnwrap(pending), availableWindowIDs: ["A"]), "A",
+            session.settle(try XCTUnwrap(pending), availableWindowIDs: ["A"]), "A",
             "the original request must still settle")
     }
 
-    func testRetargetingTheSameWindowAfterSettleKeepsItExpanded() {
+    func testRetargetingTheSameWindowAfterSettleKeepsItExpanded() throws {
         var session = ExpandedPreviewSession<String>()
         let request = session.begin(targetedWindowID: "A")
-        _ = session.settle(try! XCTUnwrap(request), availableWindowIDs: ["A"])
+        _ = session.settle(try XCTUnwrap(request), availableWindowIDs: ["A"])
 
         XCTAssertNil(session.target("A"))
         XCTAssertEqual(session.expandedWindowID, "A")
     }
 
-    func testChangingTheTargetStillInvalidatesTheOldRequest() {
+    func testChangingTheTargetStillInvalidatesTheOldRequest() throws {
         var session = ExpandedPreviewSession<String>()
         let stale = session.begin(targetedWindowID: "A")
 
@@ -90,13 +90,13 @@ final class ExpandedPreviewSessionTests: XCTestCase {
 
         XCTAssertEqual(fresh?.windowID, "B")
         XCTAssertNil(
-            session.settle(try! XCTUnwrap(stale), availableWindowIDs: ["A", "B"]),
+            session.settle(try XCTUnwrap(stale), availableWindowIDs: ["A", "B"]),
             "the superseded request must not settle")
     }
 
     /// Navigating away and back is a real change in both directions, so it
     /// restarts dwell rather than reusing the abandoned request.
-    func testNavigatingAwayAndBackRestartsDwell() {
+    func testNavigatingAwayAndBackRestartsDwell() throws {
         var session = ExpandedPreviewSession<String>()
         let first = session.begin(targetedWindowID: "A")
         _ = session.target("B")
@@ -105,7 +105,7 @@ final class ExpandedPreviewSessionTests: XCTestCase {
 
         XCTAssertEqual(again?.windowID, "A")
         XCTAssertNotEqual(again, first)
-        XCTAssertNil(session.settle(try! XCTUnwrap(first), availableWindowIDs: ["A", "B"]))
-        XCTAssertEqual(session.settle(try! XCTUnwrap(again), availableWindowIDs: ["A", "B"]), "A")
+        XCTAssertNil(session.settle(try XCTUnwrap(first), availableWindowIDs: ["A", "B"]))
+        XCTAssertEqual(session.settle(try XCTUnwrap(again), availableWindowIDs: ["A", "B"]), "A")
     }
 }

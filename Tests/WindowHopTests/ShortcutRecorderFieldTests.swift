@@ -352,7 +352,7 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         flushUpdates()
         let control = try recorder()
 
-        control.onCapture?(PersistentShortcut(keyCode: 12 /* Q */, modifiers: [.maskCommand]))
+        control.onCapture?(PersistentShortcut(keyCode: 12, modifiers: [.maskCommand]))  // 12 is Q
 
         XCTAssertEqual(model.shortcut, Self.controlOptionK, "nothing is persisted")
         XCTAssertEqual(

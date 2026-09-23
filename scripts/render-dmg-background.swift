@@ -10,24 +10,32 @@
 // window 680x400, app icon centered at (180, 225), Applications at (500, 225).
 import AppKit
 
+/// AppKit returns nil here only when it cannot allocate the object; stop with its name.
+func required<T>(_ value: T?, _ what: String) -> T {
+    guard let value else { fatalError("could not create \(what)") }
+    return value
+}
+
 let size = NSSize(width: 680, height: 400)
 
 func draw(scale: CGFloat) -> NSBitmapImageRep {
-    let rep = NSBitmapImageRep(bitmapDataPlanes: nil,
+    let rep = required(NSBitmapImageRep(bitmapDataPlanes: nil,
                                pixelsWide: Int(size.width * scale),
                                pixelsHigh: Int(size.height * scale),
                                bitsPerSample: 8, samplesPerPixel: 4,
                                hasAlpha: true, isPlanar: false,
                                colorSpaceName: .deviceRGB,
-                               bytesPerRow: 0, bitsPerPixel: 0)!
+                               bytesPerRow: 0, bitsPerPixel: 0),
+                       "a bitmap at scale \(scale)")
     rep.size = size
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
     // Quiet semantic-looking surface with WindowHop's blue used only as an
     // accent. Finder renders the actual draggable icons above this artwork.
-    NSGradient(colors: [NSColor(calibratedRed: 0.97, green: 0.98, blue: 1, alpha: 1),
-                        NSColor(calibratedRed: 0.91, green: 0.94, blue: 0.98, alpha: 1)])!
+    required(NSGradient(colors: [NSColor(calibratedRed: 0.97, green: 0.98, blue: 1, alpha: 1),
+                                 NSColor(calibratedRed: 0.91, green: 0.94, blue: 0.98, alpha: 1)]),
+             "the background gradient")
         .draw(in: NSRect(origin: .zero, size: size), angle: -90)
 
     func text(_ string: String, font: NSFont, color: NSColor, centerYFromTop: CGFloat) {
@@ -82,7 +90,7 @@ let outputDirectory = "artifacts"
 try? FileManager.default.createDirectory(atPath: outputDirectory, withIntermediateDirectories: true)
 for (scale, name) in [(CGFloat(1), "dmg-bg.png"), (2, "dmg-bg@2x.png")] {
     let rep = draw(scale: scale)
-    try! rep.representation(using: .png, properties: [:])!
+    try required(rep.representation(using: .png, properties: [:]), "PNG data")
         .write(to: URL(fileURLWithPath: "\(outputDirectory)/\(name)"))
     print("wrote \(outputDirectory)/\(name)")
 }

@@ -318,35 +318,57 @@ enum DebugHarness {
             ?? NSWorkspace.shared.icon(for: .applicationBundle)
     }
 
+    /// One synthetic switcher row of the demo panel.
+    private struct DemoRow {
+        let title: String
+        let appName: String
+        let bundleID: String
+        let tabCount: Int?
+        let documentPath: String?
+        /// WindowHop's own row, whose tile uses the app icon.
+        let isOwnSettings: Bool
+
+        init(
+            _ title: String, _ appName: String, _ bundleID: String, _ tabCount: Int?,
+            _ documentPath: String?, _ isOwnSettings: Bool
+        ) {
+            self.title = title
+            self.appName = appName
+            self.bundleID = bundleID
+            self.tabCount = tabCount
+            self.documentPath = documentPath
+            self.isOwnSettings = isOwnSettings
+        }
+    }
+
     /// Covers the review checklist: several windows of the same app, duplicate and
     /// long titles, entries with and without tab counts, and the Settings entry.
     /// The duplicate TextEdit pair carries documents in different folders, so the
     /// tiles show the CollisionLabel qualifier the store would produce.
     private static func demoItems() -> [SwitcherItem] {
-        // The last field marks WindowHop's own row, whose tile uses the app icon.
-        let rows: [(String, String, String, Int?, String?, Bool)] = [
-            ("Project Plan", "Notes", "com.apple.Notes", nil, nil, false),
-            ("Apple Design Resources", "Safari", "com.apple.Safari", 7, nil, false),
-            ("Window Management Guide", "Safari", "com.apple.Safari", 12, nil, false),
-            ("Downloads", "Finder", "com.apple.finder", 3, nil, false),
-            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Work/Notes.txt", false),
-            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Personal/Notes.txt", false),
-            ("Terminal", "Terminal", "com.apple.Terminal", 2, nil, false),
-            ("WindowHop Settings", "WindowHop", "WindowHop", nil, nil, true),
+        let rows = [
+            DemoRow("Project Plan", "Notes", "com.apple.Notes", nil, nil, false),
+            DemoRow("Apple Design Resources", "Safari", "com.apple.Safari", 7, nil, false),
+            DemoRow("Window Management Guide", "Safari", "com.apple.Safari", 12, nil, false),
+            DemoRow("Downloads", "Finder", "com.apple.finder", 3, nil, false),
+            DemoRow("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Work/Notes.txt", false),
+            DemoRow("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Personal/Notes.txt", false),
+            DemoRow("Terminal", "Terminal", "com.apple.Terminal", 2, nil, false),
+            DemoRow("WindowHop Settings", "WindowHop", "WindowHop", nil, nil, true),
         ]
         let labels = CollisionLabel.labels(
             for: rows.map {
-                CollisionLabel.Entry(appId: $0.2, title: $0.0, documentPath: $0.4)
+                CollisionLabel.Entry(appId: $0.bundleID, title: $0.title, documentPath: $0.documentPath)
             })
         return rows.enumerated().map { index, row in
             let tileIcon =
-                row.5
+                row.isOwnSettings
                 ? (NSImage(contentsOfFile: "Support/AppIcon.icns")
-                    ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.2))
-                : icon(row.2)
+                    ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.bundleID))
+                : icon(row.bundleID)
             return SwitcherItem(
-                id: index, window: nil, title: row.0, displayTitle: labels[index],
-                appName: row.1, icon: tileIcon, tabCount: row.3)
+                id: index, window: nil, title: row.title, displayTitle: labels[index],
+                appName: row.appName, icon: tileIcon, tabCount: row.tabCount)
         }
     }
 
@@ -530,7 +552,7 @@ enum DebugHarness {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let items = store.snapshot()
             previews.dumpMatching(items: items) { lines in
-                lines.forEach { writeLine($0) }
+                for line in lines { writeLine(line) }
                 exit(0)
             }
         }

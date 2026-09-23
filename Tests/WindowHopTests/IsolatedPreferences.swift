@@ -1,4 +1,5 @@
 import Foundation
+import XCTest
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -13,8 +14,8 @@ final class IsolatedPreferences {
     /// A preview cache of its own, so no test sees another test's images.
     let previews: PreviewProvider
 
-    init() {
-        defaults = UserDefaults(suiteName: suiteName)!
+    init() throws {
+        defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
         preferences = Preferences(defaults: defaults)
         previews = PreviewProvider(preferences: preferences)
     }

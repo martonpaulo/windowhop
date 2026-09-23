@@ -249,8 +249,8 @@ final class PreferencesTests: XCTestCase {
 
     // MARK: - Launch at login default migration
 
-    func testUpgradedInstallKeepsOldLaunchAtLoginDefault() {
-        let (upgradedDefaults, suite) = unregisteredDefaults()
+    func testUpgradedInstallKeepsOldLaunchAtLoginDefault() throws {
+        let (upgradedDefaults, suite) = try unregisteredDefaults()
         upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
 
         let upgraded = Preferences(defaults: upgradedDefaults)
@@ -259,8 +259,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(stored(.launchAtLogin, in: suite) as? Bool, true)
     }
 
-    func testNewInstallDefaultsLaunchAtLoginOff() {
-        let (newDefaults, suite) = unregisteredDefaults()
+    func testNewInstallDefaultsLaunchAtLoginOff() throws {
+        let (newDefaults, suite) = try unregisteredDefaults()
 
         let fresh = Preferences(defaults: newDefaults)
 
@@ -268,9 +268,9 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(stored(.launchAtLogin, in: suite))
     }
 
-    func testStoredLaunchAtLoginChoiceSurvivesUpgrade() {
+    func testStoredLaunchAtLoginChoiceSurvivesUpgrade() throws {
         for choice in [false, true] {
-            let (upgradedDefaults, suite) = unregisteredDefaults()
+            let (upgradedDefaults, suite) = try unregisteredDefaults()
             upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
             upgradedDefaults.set(choice, forKey: Preferences.Key.launchAtLogin.rawValue)
 
@@ -281,13 +281,13 @@ final class PreferencesTests: XCTestCase {
         }
     }
 
-    func testLaunchAtLoginMigrationIsIdempotent() {
-        let (upgradedDefaults, suite) = unregisteredDefaults()
+    func testLaunchAtLoginMigrationIsIdempotent() throws {
+        let (upgradedDefaults, suite) = try unregisteredDefaults()
         upgradedDefaults.set(true, forKey: Preferences.Key.firstLaunchCompleted.rawValue)
         _ = Preferences(defaults: upgradedDefaults)
         let migrated = UserDefaults.standard.persistentDomain(forName: suite) as NSDictionary?
 
-        let again = Preferences(defaults: UserDefaults(suiteName: suite)!)
+        let again = Preferences(defaults: try XCTUnwrap(UserDefaults(suiteName: suite)))
 
         XCTAssertTrue(again.launchAtLogin)
         XCTAssertEqual(
@@ -313,9 +313,9 @@ final class PreferencesTests: XCTestCase {
     /// is process-wide, so defaults registered by earlier `Preferences` in this
     /// test process would answer for keys the suite never stored; the app has
     /// exactly one `Preferences`, whose migrations read before it registers.
-    private func unregisteredDefaults() -> (UserDefaults, String) {
+    private func unregisteredDefaults() throws -> (UserDefaults, String) {
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let clean = UserDefaults(suiteName: suite)!
+        let clean = try XCTUnwrap(UserDefaults(suiteName: suite))
         addTeardownBlock { clean.removePersistentDomain(forName: suite) }
         let registration = UserDefaults.registrationDomain
         var registered = clean.volatileDomain(forName: registration)
@@ -328,8 +328,8 @@ final class PreferencesTests: XCTestCase {
         UserDefaults.standard.persistentDomain(forName: suite)?[key.rawValue]
     }
 
-    func testLegacyOptionTabSwitcherWithoutStoredOpenShortcutLoadsUnassigned() {
-        let (legacy, suite) = unregisteredDefaults()
+    func testLegacyOptionTabSwitcherWithoutStoredOpenShortcutLoadsUnassigned() throws {
+        let (legacy, suite) = try unregisteredDefaults()
         legacy.set(ShortcutSpec.optionTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
 
         let loaded = Preferences(defaults: legacy)
@@ -346,8 +346,8 @@ final class PreferencesTests: XCTestCase {
         XCTAssertNil(Preferences(defaults: legacy).persistentShortcut)
     }
 
-    func testLegacyCommandTabSwitcherStillReceivesOpenDefault() {
-        let (legacy, suite) = unregisteredDefaults()
+    func testLegacyCommandTabSwitcherStillReceivesOpenDefault() throws {
+        let (legacy, suite) = try unregisteredDefaults()
         legacy.set(ShortcutSpec.commandTab.rawValue, forKey: Preferences.Key.shortcut.rawValue)
 
         let loaded = Preferences(defaults: legacy)
@@ -481,11 +481,11 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(restored.switcherDisplayPlacement, .allDisplays)
     }
 
-    func testAnUpgradeWithoutAStoredPlacementReceivesTheNewDefault() {
+    func testAnUpgradeWithoutAStoredPlacementReceivesTheNewDefault() throws {
         // an installation that predates the preference has nothing in its
         // persistent domain and must land on All displays with no migration step
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let clean = UserDefaults(suiteName: suite)!
+        let clean = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { clean.removePersistentDomain(forName: suite) }
         XCTAssertNil(
             clean.persistentDomain(forName: suite)?[

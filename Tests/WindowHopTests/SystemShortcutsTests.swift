@@ -42,7 +42,8 @@ final class SystemShortcutsTests: XCTestCase {
     /// Fn (`kEventKeyModifierFnMask`) is dropped: the tap ignores it when matching.
     func testFnIsDropped() {
         let fnMask = 1 << 17
-        let chords = SystemShortcuts.shortcuts(from: [entry(123 /* ← */, controlKey | fnMask)])
+        let leftArrow = 123
+        let chords = SystemShortcuts.shortcuts(from: [entry(leftArrow, controlKey | fnMask)])
         XCTAssertEqual(chords, [PersistentShortcut(keyCode: 123, modifiers: [.maskControl])])
     }
 

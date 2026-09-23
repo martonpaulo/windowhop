@@ -17,7 +17,7 @@ final class SwitcherPanelGroupTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
         announcements = []
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         let preferences = isolated.preferences
         group = SwitcherPanelGroup(
             preferences: preferences, previews: isolated.previews,

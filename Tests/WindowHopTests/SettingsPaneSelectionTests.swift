@@ -9,7 +9,7 @@ import XCTest
 @MainActor
 final class SettingsPaneSelectionTests: XCTestCase {
     private static let selectedPaneKey = "settingsSelectedPaneIdentifier"
-    private var autosaveName: String!
+    private var autosaveName = ""
     private var savedSelection: Any?
     private var windows: [NSWindow] = []
     private var isolated: IsolatedPreferences!
@@ -17,7 +17,7 @@ final class SettingsPaneSelectionTests: XCTestCase {
     override func setUp() async throws {
         try await super.setUp()
         _ = NSApplication.shared
-        isolated = IsolatedPreferences()
+        isolated = try IsolatedPreferences()
         autosaveName = "WindowHopSettingsPaneTest-\(UUID().uuidString)"
         savedSelection = UserDefaults.standard.object(forKey: Self.selectedPaneKey)
         UserDefaults.standard.set(SettingsPane.general.rawValue, forKey: Self.selectedPaneKey)
@@ -31,7 +31,7 @@ final class SettingsPaneSelectionTests: XCTestCase {
         windows = []
         isolated.remove()
         isolated = nil
-        UserDefaults.standard.removeObject(forKey: "NSWindow Frame \(autosaveName!)")
+        UserDefaults.standard.removeObject(forKey: "NSWindow Frame \(autosaveName)")
         UserDefaults.standard.set(savedSelection, forKey: Self.selectedPaneKey)
         try await super.tearDown()
     }

@@ -7,8 +7,8 @@ import XCTest
 /// weak reference, so a late notification can never keep a store alive.
 @MainActor
 final class AXNotificationRouterTests: XCTestCase {
-    func testRefconResolvesToTheSameRouter() {
-        let isolated = IsolatedPreferences()
+    func testRefconResolvesToTheSameRouter() throws {
+        let isolated = try IsolatedPreferences()
         defer { isolated.remove() }
         let store = WindowStore(preferences: isolated.preferences, previews: isolated.previews)
         let router = store.router
@@ -18,8 +18,8 @@ final class AXNotificationRouterTests: XCTestCase {
         XCTAssertTrue(router.store === store)
     }
 
-    func testRouterDoesNotKeepTheStoreAlive() {
-        let isolated = IsolatedPreferences()
+    func testRouterDoesNotKeepTheStoreAlive() throws {
+        let isolated = try IsolatedPreferences()
         defer { isolated.remove() }
         var store: WindowStore? = WindowStore(
             preferences: isolated.preferences,

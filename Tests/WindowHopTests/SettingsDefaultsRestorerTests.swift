@@ -5,9 +5,9 @@ import XCTest
 
 @MainActor
 final class SettingsDefaultsRestorerTests: XCTestCase {
-    func testRestoreAppliesPersistedDefaultsAndUpdateChecksButLeavesLaunchAtLogin() {
+    func testRestoreAppliesPersistedDefaultsAndUpdateChecksButLeavesLaunchAtLogin() throws {
         let suite = "windowhop-tests-\(UUID().uuidString)"
-        let defaults = UserDefaults(suiteName: suite)!
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = Preferences(defaults: defaults)
         preferences.launchAtLogin = !Preferences.Defaults.launchAtLogin
