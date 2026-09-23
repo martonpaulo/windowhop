@@ -80,14 +80,18 @@ struct PreviewCaptureSizingTests {
     @Test(arguments: [
         CGSize(width: 94, height: 59), CGSize(width: 3440, height: 1440),
         CGSize(width: 100, height: 900), CGSize(width: 4, height: 4),
+        CGSize(width: 188, height: 309), CGSize(width: 188.6, height: 118),
     ])
     func aSnapshotCoversTheCanvas(imageSize: CGSize) {
         let box = CGRect(origin: CGPoint(x: 8, y: 30), size: canvas)
         let filled = PreviewCaptureSizing.filledRect(imageSize: imageSize, in: box)
 
         #expect(filled.insetBy(dx: -0.01, dy: -0.01).contains(box))
-        #expect(abs(filled.midX - box.midX) < 0.01)
-        #expect(abs(filled.midY - box.midY) < 0.01)
+        // centred to the nearest whole point, so it lands on whole pixels (#130)
+        #expect(abs(filled.midX - box.midX) <= 0.5)
+        #expect(abs(filled.midY - box.midY) <= 0.5)
+        #expect(filled.minX == filled.minX.rounded())
+        #expect(filled.minY == filled.minY.rounded())
         // one side matches the canvas exactly, so the crop is as small as it can be
         #expect(abs(filled.width - box.width) < 0.01 || abs(filled.height - box.height) < 0.01)
     }

@@ -59,9 +59,13 @@ public enum PreviewCaptureSizing {
         guard let imageSize, imageSize.width > 0, imageSize.height > 0 else { return canvas }
         let scale = max(canvas.width / imageSize.width, canvas.height / imageSize.height)
         let filled = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        // A whole-point origin: centring an odd overflow put the image on a half
+        // pixel (y = -95.5 for a 309 px capture in a 118 pt canvas), and a 1x
+        // display then blended every row with its neighbour (#130). The nearest
+        // whole point still covers the canvas: it moves by at most half the overflow.
         return CGRect(
-            x: canvas.midX - filled.width / 2,
-            y: canvas.midY - filled.height / 2,
+            x: (canvas.midX - filled.width / 2).rounded(),
+            y: (canvas.midY - filled.height / 2).rounded(),
             width: filled.width, height: filled.height)
     }
 }

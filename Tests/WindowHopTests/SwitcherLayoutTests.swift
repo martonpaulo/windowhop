@@ -71,6 +71,20 @@ extension SharedAppState {
             }
         }
 
+        /// The regression: centring a 309-pixel-tall capture in the 118-point canvas
+        /// put it at y = -95.5, and on a 1x display every row was then blended with
+        /// its neighbour, so a sharp capture drew blurred (#130). Measured on screen
+        /// with one-pixel stripes: rows of 0.57 grey before, 1.0 and 0.0 after.
+        @Test(arguments: [NSSize(width: 188, height: 309), NSSize(width: 451, height: 118)])
+        func aCaptureAtTheCanvasScaleIsDrawnOnWholePixels(pixels: NSSize) {
+            let tile = configuredTile(imageSize: pixels)
+            let image = tile.previewImageFrameForTesting
+
+            #expect(image.origin.x == image.origin.x.rounded())
+            #expect(image.origin.y == image.origin.y.rounded())
+            #expect(image.size == pixels)
+        }
+
         @Test func overlaysStayCanvasAlignedAcrossSourceAspectRatios() {
             let wide = configuredTile(imageSize: NSSize(width: 400, height: 100))
             let tall = configuredTile(imageSize: NSSize(width: 100, height: 400))
