@@ -2,7 +2,7 @@
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test validate check
+.PHONY: help build test validate strings strings-check check
 
 # Any compiler warning fails `build` and `test`, locally and in CI. Package.swift turns
 # warnings into errors (`.treatAllWarnings(as: .error)`), but some Swift 6 diagnostics stay
@@ -22,4 +22,10 @@ test: ## Unit and integration tests; fails on any warning
 validate: ## Repository invariants, the static site and the release-script fixtures
 	scripts/validate.sh
 
-check: build test validate ## Everything a commit needs
+strings: ## Regenerate Support/Localizable.xcstrings and Support/en.lproj from the sources
+	scripts/strings.sh
+
+strings-check: ## Fail when the String Catalog is out of date with the sources
+	scripts/strings.sh --check
+
+check: build test validate strings-check ## Everything a commit needs

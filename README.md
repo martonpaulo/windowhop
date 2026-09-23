@@ -48,6 +48,7 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | --- | --- |
 | `swift test` | Run the unit suite, which must pass with zero warnings |
 | `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
+| `make strings` | Regenerate the English String Catalog (`Support/Localizable.xcstrings`) and its compiled `Support/en.lproj` after a copy change; `make strings-check` fails when they are out of date |
 | `swift build` | Build the debug binary; add `-c release` for the release build |
 | `scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip (`--help` lists every option) |
 | `scripts/make-dmg.sh [--version X.Y.Z] [--force]` | Build the branded DMG from `build/WindowHop.app` |

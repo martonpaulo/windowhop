@@ -77,3 +77,7 @@ jobs:
         run: make build CONFIGURATION=release
       - name: Tests
         run: make test
+      # The catalog's keys come from a compiler build, so this check lives here and
+      # not in `validate` (#99).
+      - name: String Catalog matches the sources
+        run: make strings-check

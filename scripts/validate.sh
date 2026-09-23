@@ -71,6 +71,27 @@ else
     pass "no telemetry"
 fi
 
+# --- String Catalog (#99) -----------------------------------------------------
+# English only: one catalog, one compiled table. Whether the catalog matches the
+# sources needs a compiler build, so `make strings-check` owns that check (CI runs it
+# in the build job); here the committed table must be the catalog's compiled form.
+LPROJS=$(find Support -maxdepth 1 -name '*.lproj' | sort | tr '\n' ' ')
+if [ "$LPROJS" = "Support/en.lproj " ] \
+    && [ "$(ls Support/en.lproj)" = "Localizable.strings" ] \
+    && [ "$(find Support -name '*.xcstrings' | tr '\n' ' ')" = "Support/Localizable.xcstrings " ]; then
+    pass "one English String Catalog and one compiled table"
+else
+    fail "Support/ must hold only Localizable.xcstrings and en.lproj/Localizable.strings (found: $LPROJS)"
+fi
+STRINGS_TMP=$(mktemp -d)
+if xcrun xcstringstool compile Support/Localizable.xcstrings --output-directory "$STRINGS_TMP" >/dev/null 2>&1 \
+    && cmp -s "$STRINGS_TMP/en.lproj/Localizable.strings" Support/en.lproj/Localizable.strings; then
+    pass "Support/en.lproj/Localizable.strings is the compiled catalog"
+else
+    fail "Support/en.lproj/Localizable.strings differs from the compiled catalog; run make strings"
+fi
+rm -rf "$STRINGS_TMP"
+
 # --- updater configuration ---------------------------------------------------
 for key in SUFeedURL SUPublicEDKey SUEnableAutomaticChecks; do
     if /usr/libexec/PlistBuddy -c "Print :$key" Support/Info.plist >/dev/null 2>&1; then
