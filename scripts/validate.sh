@@ -464,6 +464,7 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
     for page in "${pages[@]}"; do
       while IFS= read -r reference; do
         reference=${reference%%#*}
+        reference=${reference%%\?*}
         case "$reference" in
           http:*|https:*|'') continue ;;
           /*) file="site$reference" ;;
@@ -476,6 +477,16 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         }
       done < <(local_references "$page")
     done
+
+    # /assets/ is cached by browsers for a year (a Cloudflare rule on the custom
+    # domain), so the icon's address carries its content version: a new icon must be
+    # a new address, or visitors keep the old one.
+    icon_version=$(md5 -q site/assets/app-icon.png 2>/dev/null || md5sum site/assets/app-icon.png | cut -d' ' -f1)
+    icon_version=${icon_version:0:8}
+    if grep -ho '/assets/app-icon.png[^"]*"' "${pages[@]}" | grep -vqF "/assets/app-icon.png?v=$icon_version\""; then
+      echo "an app-icon.png reference lacks ?v=$icon_version (the icon's current content version)" >&2
+      exit 1
+    fi
 
     # Every published screenshot is used, and each one exists in a light and a dark
     # version: the pages show the one that matches the visitor's appearance.

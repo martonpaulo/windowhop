@@ -17,6 +17,7 @@ headings, `- ` bullets with indented continuation lines, paragraphs, **bold**,
 """
 
 import datetime
+import hashlib
 import html
 import pathlib
 import re
@@ -118,11 +119,20 @@ def page(title, description, content):
 """
 
 
+def icon_url(site):
+    """The icon's address with a content version: /assets/ is cached for a year."""
+    digest = hashlib.md5((site / "assets" / "app-icon.png").read_bytes()).hexdigest()[:8]
+    return f"/assets/app-icon.png?v={digest}"
+
+
+ICON = "/assets/app-icon.png"
+
+
 def entry_html(version, date, lines, heading="h1", link=False):
     title = f'<a href="/release-notes/{version}/">WindowHop {version}</a>' if link else f"WindowHop {version}"
     return f"""    <article class="notes-entry">
       <header class="notes-header">
-        <img src="/assets/app-icon.png" width="56" height="56" alt="">
+        <img src="{ICON}" width="56" height="56" alt="">
         <div>
           <{heading}>{title}</{heading}>
           <p class="notes-date"><time datetime="{date}">{long_date(date)}</time></p>
@@ -137,6 +147,8 @@ def main():
         sys.exit("usage: render-release-notes.py <staged-site-dir>")
     root = pathlib.Path(__file__).resolve().parent.parent
     site = pathlib.Path(sys.argv[1])
+    global ICON
+    ICON = icon_url(site)
     released = list(entries((root / "CHANGELOG.md").read_text()))
     if not released:
         sys.exit("render-release-notes: CHANGELOG.md has no released entry")

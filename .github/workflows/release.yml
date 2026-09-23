@@ -287,7 +287,7 @@ jobs:
             --archive "artifacts/WindowHop-$VERSION.zip" --signature "$SPARKLE_SIG_ATTRS"
           # make-appcast.sh (skill-deck's canonical copy) links the GitHub release
           # page; Sparkle's window shows the site's own notes page instead (#128).
-          sed -i '' "s#<sparkle:releaseNotesLink>https://github.com/martonpaulo/windowhop/releases/tag/v$VERSION</sparkle:releaseNotesLink>#<sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/$VERSION/</sparkle:releaseNotesLink>#" appcast.xml
+          perl -pi -e "s#<sparkle:releaseNotesLink>https://github.com/martonpaulo/windowhop/releases/tag/v$VERSION</sparkle:releaseNotesLink>#<sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/$VERSION/</sparkle:releaseNotesLink>\n      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>#" appcast.xml
           if ! git diff --quiet appcast.xml; then
             git add appcast.xml
             git commit -m "chore(release): appcast entry for $VERSION"

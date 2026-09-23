@@ -9,6 +9,7 @@
       <title>2.2.0</title>
       <pubDate>Wed, 23 Sep 2026 13:48:08 +0000</pubDate>
       <sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/2.2.0/</sparkle:releaseNotesLink>
+      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>
       <sparkle:version>20200</sparkle:version>
       <sparkle:shortVersionString>2.2.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -19,6 +20,7 @@
       <title>2.1.0</title>
       <pubDate>Wed, 23 Sep 2026 04:56:51 +0000</pubDate>
       <sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/2.1.0/</sparkle:releaseNotesLink>
+      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>
       <sparkle:version>20100</sparkle:version>
       <sparkle:shortVersionString>2.1.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
@@ -29,6 +31,7 @@
       <title>2.0.0</title>
       <pubDate>Wed, 23 Sep 2026 02:49:19 +0000</pubDate>
       <sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/2.0.0/</sparkle:releaseNotesLink>
+      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>
       <sparkle:version>20000</sparkle:version>
       <sparkle:shortVersionString>2.0.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
