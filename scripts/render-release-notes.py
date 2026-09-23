@@ -119,9 +119,9 @@ def page(title, description, content):
 """
 
 
-def icon_url(site):
+def icon_url(root):
     """The icon's address with a content version: /assets/ is cached for a year."""
-    digest = hashlib.md5((site / "assets" / "app-icon.png").read_bytes()).hexdigest()[:8]
+    digest = hashlib.md5((root / "site" / "assets" / "app-icon.png").read_bytes()).hexdigest()[:8]
     return f"/assets/app-icon.png?v={digest}"
 
 
@@ -148,7 +148,7 @@ def main():
     root = pathlib.Path(__file__).resolve().parent.parent
     site = pathlib.Path(sys.argv[1])
     global ICON
-    ICON = icon_url(site)
+    ICON = icon_url(root)
     released = list(entries((root / "CHANGELOG.md").read_text()))
     if not released:
         sys.exit("render-release-notes: CHANGELOG.md has no released entry")
