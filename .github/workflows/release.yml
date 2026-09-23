@@ -36,12 +36,13 @@ jobs:
           xcodebuild -version
           xcodebuild -version | grep -qx "Xcode $XCODE_VERSION"
 
-      # Keyed like validate.yml, so a release restores the cache main already built.
-      - name: Restore the SwiftPM build cache
+      # Only SwiftPM's download cache: a signed release always compiles from a clean
+      # .build, never from objects a previous run left behind.
+      - name: Restore the SwiftPM download cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: .build
-          key: swiftpm-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('Package.resolved') }}
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: swiftpm-downloads-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Package.resolved') }}
 
       - name: Tests and validation
         run: |
