@@ -15,7 +15,7 @@ Switch between windows, not just apps. Fast, native macOS window switcher with l
 
 [![Validate](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/validate.yml?branch=main&style=flat&labelColor=30363d&label=validate)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml)
 [![Deploy](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/deploy.yml?branch=main&style=flat&labelColor=30363d&label=deploy)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml)
-[![Release](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/release.yml?style=flat&labelColor=30363d&label=release)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
+[![Released](https://img.shields.io/github/release-date/martonpaulo/windowhop?style=flat&labelColor=30363d&color=0a66c8&label=released&display_date=published_at)](https://windowhop.martonpaulo.com/release-notes/)
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-0a66c8?style=flat&labelColor=30363d)](https://www.apple.com/macos/)
 [![Swift 6.2](https://img.shields.io/badge/Swift-6.2-0a66c8?style=flat&labelColor=30363d)](https://swift.org/)
 [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-0a66c8?style=flat&labelColor=30363d)](https://sparkle-project.org/)
