@@ -160,7 +160,7 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   (default) and Window Previews, and theming is system Light/Dark only. No themes, no
   custom sizes, no layout or opacity options. This rule governs how the panel *looks*.
   Where the panel is drawn is display behavior, not appearance, and lives with the other
-  display settings in Settings → Windows (see `WindowHopKit/PanelPlacement.swift`).
+  display settings in Settings → Switcher (see `WindowHopKit/PanelPlacement.swift`).
 - All shortcut strings render through `WindowHopKit/ShortcutFormatter` — never hardcode a
   second representation of the same key.
 - All UI dimensions come from `UI/DesignTokens.swift` — no hardcoded sizes,

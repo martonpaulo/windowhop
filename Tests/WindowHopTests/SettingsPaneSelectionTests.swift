@@ -64,6 +64,11 @@ extension SharedAppState {
             #expect(try prepare(controller, selecting: .about).selectedPane == .about)
         }
 
+        @Test func aPaneSavedByTwoPointZeroOpensWhereItsControlsMoved() throws {
+            UserDefaults.standard.set("appearance", forKey: Self.selectedPaneKey)
+            #expect(try prepare(makeController(), selecting: nil).selectedPane == .switcher)
+        }
+
         @Test func plainShowKeepsTheLastSelectedPane() throws {
             let controller = makeController()
             _ = try prepare(controller, selecting: .about)

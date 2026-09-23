@@ -242,22 +242,26 @@ enum DebugHarness {
         if let tabs = settingsContent as? NSTabViewController {
             let settingsWindow = NSWindow(contentViewController: tabs)
             settingsWindow.styleMask.insert([.titled, .closable])
-            settingsWindow.appearance = NSAppearance(named: .aqua)
             settingsWindow.orderBack(nil)
             pending += 1
-            var index = 0
+            // every pane in Light, then every pane in Dark
+            let renders = [("", NSAppearance.Name.aqua), ("-dark", .darkAqua)].flatMap { suffix, appearance in
+                paneNames.indices.map { (index: $0, name: paneNames[$0] + suffix, appearance: appearance) }
+            }
+            var next = 0
             func renderNextPane() {
-                guard index < paneNames.count else {
+                guard next < renders.count else {
                     settingsWindow.orderOut(nil)
                     finishOne()
                     return
                 }
-                let name = paneNames[index]
-                tabs.selectedTabViewItemIndex = index
-                index += 1
+                let render = renders[next]
+                next += 1
+                settingsWindow.appearance = NSAppearance(named: render.appearance)
+                tabs.selectedTabViewItemIndex = render.index
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
                     if let frameView = settingsWindow.contentView?.superview {
-                        write(frameView, "settings-\(name)")
+                        write(frameView, "settings-\(render.name)")
                     }
                     renderNextPane()
                 }
@@ -502,12 +506,7 @@ enum DebugHarness {
         app.setActivationPolicy(.accessory)
         if let appearance { app.appearance = NSAppearance(named: appearance) }
         let controller = SettingsWindowController.makeContentViewController(
-            makeSettingsDependencies(makePreferences()))
-        if let pane, let tabs = controller as? NSTabViewController,
-            let index = tabs.tabViewItems.firstIndex(where: { $0.identifier as? String == pane })
-        {
-            tabs.selectedTabViewItemIndex = index
-        }
+            makeSettingsDependencies(makePreferences()), selecting: pane)
         let window = NSWindow(contentViewController: controller)
         window.styleMask = [.titled, .closable, .miniaturizable]
         // Published captures keep the traffic lights and drop the words: the product's name

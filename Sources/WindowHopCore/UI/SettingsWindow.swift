@@ -3,9 +3,9 @@ import SwiftUI
 import WindowHopKit
 
 /// The Settings window: a native multi-pane layout (toolbar-style
-/// NSTabViewController, exactly like classic System Settings panes) hosting
-/// SwiftUI content. Every pane is the same size, so selecting one never resizes
-/// or re-centers the window.
+/// NSTabViewController, like the settings of Safari or Mail) hosting SwiftUI
+/// content. Each pane is as tall as its content, so the window resizes when the
+/// pane changes, keeping its top edge in place (#121).
 ///
 /// Its position survives relaunch through AppKit's frame autosave — OS/UI
 /// restoration state under AppKit's own key, not a `Preferences` value, so
@@ -36,11 +36,17 @@ public final class SettingsWindowController {
         self.frameAutosaveName = frameAutosaveName
     }
 
-    /// The settings UI, also used by the debug render harness.
+    /// The settings UI, also used by the debug render harness, which can open
+    /// it on a pane by its identifier (a 2.0.0 identifier included).
     public static func makeContentViewController(
-        _ dependencies: SettingsDependencies
+        _ dependencies: SettingsDependencies,
+        selecting paneIdentifier: String? = nil
     ) -> NSViewController {
-        SettingsTabViewController(dependencies)
+        let tabs = SettingsTabViewController(dependencies)
+        if let pane = paneIdentifier.flatMap(SettingsPane.init(savedIdentifier:)) {
+            tabs.select(pane)
+        }
+        return tabs
     }
 
     /// Individual panes for the render harness (the toolbar lives on the window
@@ -94,9 +100,9 @@ public final class SettingsWindowController {
         let newWindow = NSWindow(contentViewController: Self.makeContentViewController(dependencies))
         newWindow.styleMask = [.titled, .closable, .miniaturizable]
         newWindow.isReleasedWhenClosed = false
-        // the pane canvas decides the size; only the origin comes from the
-        // saved frame, so a frame saved by a build with another canvas size
-        // cannot resize the window
+        // the selected pane decides the size; only the top edge comes from the
+        // saved frame, so a frame saved with another pane, or by a build with
+        // another layout, cannot resize the window
         let canvasSize = newWindow.frame.size
         if newWindow.setFrameUsingName(frameAutosaveName) {
             let restored = newWindow.frame
@@ -145,24 +151,30 @@ public struct SettingsDependencies {
     }
 }
 
-/// The Settings panes, in presentation order. Splitting shortcuts and window
-/// filters out of General keeps every pane scannable at a glance and close to
-/// the same length, instead of one pane taller than a laptop display.
+/// The Settings panes, in presentation order. General holds the app itself,
+/// Shortcuts the keys, Switcher everything about what the switcher shows and
+/// where, and About the version, updates, and credits (#121).
 enum SettingsPane: String, CaseIterable {
     case general
     case shortcuts
-    case windows
-    case appearance
-    case updates
+    case switcher
     case about
+
+    /// The pane a saved identifier names. 2.0.0 had six panes; a person who
+    /// last used one of the merged ones reopens on the pane that now holds it.
+    init?(savedIdentifier: String) {
+        switch savedIdentifier {
+        case "windows", "appearance": self = .switcher
+        case "updates": self = .about
+        default: self.init(rawValue: savedIdentifier)
+        }
+    }
 
     var title: String {
         switch self {
         case .general: String(localized: "General")
         case .shortcuts: String(localized: "Shortcuts")
-        case .windows: String(localized: "Windows")
-        case .appearance: String(localized: "Appearance")
-        case .updates: String(localized: "Updates")
+        case .switcher: String(localized: "Switcher")
         case .about: String(localized: "About")
         }
     }
@@ -171,9 +183,7 @@ enum SettingsPane: String, CaseIterable {
         switch self {
         case .general: "gearshape"
         case .shortcuts: "keyboard"
-        case .windows: "macwindow.on.rectangle"
-        case .appearance: "rectangle.grid.1x2"
-        case .updates: "arrow.triangle.2.circlepath"
+        case .switcher: "macwindow.on.rectangle"
         case .about: "info.circle"
         }
     }
@@ -187,12 +197,10 @@ enum SettingsPane: String, CaseIterable {
             ShortcutsPane(
                 preferences: preferences,
                 setShortcutRecordingActive: dependencies.setShortcutRecordingActive)
-        case .windows: WindowsPane(preferences: preferences)
-        case .appearance:
-            AppearancePane(preferences: preferences, evictPreviews: dependencies.evictPreviews)
-        case .updates:
-            UpdatesPane(preferences: preferences, updateManager: dependencies.updateManager)
-        case .about: AboutPane()
+        case .switcher:
+            SwitcherPane(preferences: preferences, evictPreviews: dependencies.evictPreviews)
+        case .about:
+            AboutPane(preferences: preferences, updateManager: dependencies.updateManager)
         }
     }
 
@@ -226,9 +234,9 @@ final class SettingsTabViewController: NSTabViewController {
             addTabViewItem(item)
         }
         if let saved = UserDefaults.standard.string(forKey: Self.selectedPaneKey),
-            let index = SettingsPane.allCases.firstIndex(where: { $0.rawValue == saved })
+            let pane = SettingsPane(savedIdentifier: saved)
         {
-            selectedTabViewItemIndex = index
+            select(pane)
         }
     }
 
@@ -254,13 +262,59 @@ final class SettingsTabViewController: NSTabViewController {
 }
 
 extension View {
-    /// One canvas for every pane: identical size, content anchored at the top,
-    /// scrollable when it outgrows the canvas.
+    /// Every pane is one fixed width and as tall as its content, which the
+    /// hosting controller turns into the window size. A pane taller than the
+    /// display stops at the display's usable height and scrolls.
     fileprivate func settingsPane() -> some View {
         formStyle(.grouped)
-            .frame(
-                width: DesignTokens.settingsPaneWidth,
-                height: DesignTokens.settingsPaneHeight)
+            .frame(width: DesignTokens.settingsPaneWidth)
+            .frame(maxHeight: settingsPaneMaxHeight())
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    /// Secondary, callout-sized explanatory text: footers and inline notes.
+    fileprivate func settingsNote() -> some View {
+        font(.callout).foregroundStyle(.secondary)
+    }
+}
+
+/// The tallest pane that still leaves the window's title bar and toolbar on
+/// the main display.
+@MainActor
+private func settingsPaneMaxHeight() -> CGFloat {
+    let usable = NSScreen.main?.visibleFrame.height ?? DesignTokens.settingsPaneFallbackDisplayHeight
+    return max(usable - DesignTokens.settingsWindowChromeAllowance, DesignTokens.settingsPaneMinimumHeight)
+}
+
+/// A permission's state as a row value: a green check when granted, an orange
+/// warning otherwise. The words carry the state, so color is never the only cue.
+private struct PermissionStatus: View {
+    let granted: Bool
+
+    var body: some View {
+        if granted {
+            Label("Allowed", systemImage: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        } else {
+            Label("Not allowed", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+        }
+    }
+}
+
+/// One key drawn as a key cap, like the keys in the macOS keyboard settings.
+private struct KeyCap: View {
+    let key: String
+
+    var body: some View {
+        Text(key)
+            .font(.callout)
+            .frame(minWidth: DesignTokens.settingsKeyCapMinWidth)
+            .padding(.horizontal, DesignTokens.settingsKeyCapHorizontalPadding)
+            .padding(.vertical, DesignTokens.settingsKeyCapVerticalPadding)
+            .background(
+                RoundedRectangle(cornerRadius: DesignTokens.settingsKeyCapCornerRadius)
+                    .strokeBorder(.tertiary, lineWidth: DesignTokens.settingsKeyCapStrokeWidth))
     }
 }
 
@@ -270,6 +324,7 @@ struct GeneralPane: View {
     @Bindable private var preferences: Preferences
     private let restorer: SettingsDefaultsRestorer
     @State private var launchAtLogin: LaunchAtLoginModel
+    @State private var accessibilityGranted = AccessibilityPermission.isGranted
     @State private var restoreConfirmationShown = false
     @State private var quitConfirmationShown = false
 
@@ -279,27 +334,38 @@ struct GeneralPane: View {
         _launchAtLogin = State(initialValue: LaunchAtLoginModel(preferences: preferences))
     }
 
-    private var switchingGuide: SwitchingGuide {
+    private var status: SwitchingGuide.Phrase {
         SwitchingGuide(
             switcherShortcut: preferences.shortcut,
             persistentShortcut: preferences.persistentShortcut,
-            enabled: preferences.switcherEnabled)
+            enabled: preferences.switcherEnabled
+        ).status
     }
 
     var body: some View {
         Form {
-            // first, so the pane Settings opens on after the permission grant
-            // says how to switch; derived from the current shortcuts
             Section {
-                ForEach(switchingGuide.firstSteps, id: \.display) { step in
-                    Text(step.display)
-                        .accessibilityLabel(step.spoken)
+                // first, so the pane Settings opens on after the permission
+                // grant says whether and how WindowHop switches
+                HStack(spacing: DesignTokens.settingsStatusSpacing) {
+                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                        .resizable()
+                        .frame(
+                            width: DesignTokens.settingsStatusIconSize,
+                            height: DesignTokens.settingsStatusIconSize
+                        )
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: DesignTokens.settingsAboutTitleSpacing) {
+                        Text("WindowHop").font(.headline)
+                        Text(status.display)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel(status.spoken)
+                    }
+                    Spacer()
+                    Toggle("Enable WindowHop", isOn: $preferences.switcherEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
                 }
-            } header: {
-                Text("Switch windows")
-            }
-            Section {
-                Toggle("Enable WindowHop", isOn: $preferences.switcherEnabled)
                 // The binding, not onChange: the toggle shows the status macOS
                 // reports, and only a click requests a change. A refreshed
                 // status never flows back into a change handler.
@@ -315,85 +381,100 @@ struct GeneralPane: View {
                         LoginItemStatus.changeFailedExplanation,
                         systemImage: "exclamationmark.triangle.fill"
                     )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .settingsNote()
                 } else if let explanation = launchAtLogin.status.explanation {
                     Label(
                         explanation,
                         systemImage: launchAtLogin.status.offersLoginItemsSettings
                             ? "exclamationmark.triangle.fill" : "info.circle"
                     )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+                    .settingsNote()
                 }
                 if launchAtLogin.status.offersLoginItemsSettings {
                     Button("Open Login Items Settings…") {
                         launchAtLogin.openLoginItemsSettings()
                     }
                 }
-            } footer: {
-                Text(
-                    "Disabling WindowHop hands \(SwitchingGuide.nativeSwitcherChord.display) back to the native app switcher without quitting."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
             }
             Section {
-                Toggle("Show menu bar item", isOn: $preferences.showMenuBarItem)
-                Toggle("Show Dock icon", isOn: $preferences.showDockIcon)
+                Toggle("Menu bar", isOn: $preferences.showMenuBarItem)
+                Toggle("Dock", isOn: $preferences.showDockIcon)
             } header: {
-                Text("Appears in")
+                Text("Show WindowHop in")
+            } footer: {
+                Text("When both are off, open WindowHop again to show this window.")
+                    .settingsNote()
             }
             Section {
-                Button("Restore Defaults…") {
-                    restoreConfirmationShown = true
-                }
-                .confirmationDialog(
-                    "Restore all WindowHop settings?",
-                    isPresented: $restoreConfirmationShown
-                ) {
-                    Button("Restore Defaults") {
-                        restorer.restore()
-                    }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text(
-                        "Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions, launch at login and cached previews are unchanged."
-                    )
-                }
-                // macOS Form buttons ignore the destructive role's tint; make the
-                // destructive intent visible explicitly
-                Button(role: .destructive) {
-                    quitConfirmationShown = true
+                LabeledContent {
+                    PermissionStatus(granted: accessibilityGranted)
                 } label: {
-                    Text("Quit WindowHop…")
-                        .foregroundStyle(.red)
+                    Text("Accessibility")
+                    Text("Needed to list and switch windows.")
                 }
-                .confirmationDialog(
-                    "Quit WindowHop?",
-                    isPresented: $quitConfirmationShown
-                ) {
-                    Button("Quit WindowHop", role: .destructive) {
-                        NSApp.terminate(nil)
+                if !accessibilityGranted {
+                    Button("Open System Settings…") {
+                        AccessibilityPermission.openSystemSettings()
                     }
-                    Button("Cancel", role: .cancel) {}
-                } message: {
-                    Text(
-                        "The native \(SwitchingGuide.nativeSwitcherChord.display) app switcher takes over until you open WindowHop again."
-                    )
+                }
+            } header: {
+                Text("Permissions")
+            }
+            Section {
+                HStack {
+                    Button("Restore Defaults…") {
+                        restoreConfirmationShown = true
+                    }
+                    .confirmationDialog(
+                        "Restore all WindowHop settings?",
+                        isPresented: $restoreConfirmationShown
+                    ) {
+                        Button("Restore Defaults") {
+                            restorer.restore()
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text(
+                            "Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions, launch at login and cached previews are unchanged."
+                        )
+                    }
+                    Spacer()
+                    // quitting loses no data, so the button is not styled as
+                    // destructive; the confirmation still says what changes
+                    Button("Quit WindowHop…") {
+                        quitConfirmationShown = true
+                    }
+                    .confirmationDialog(
+                        "Quit WindowHop?",
+                        isPresented: $quitConfirmationShown
+                    ) {
+                        Button("Quit WindowHop") {
+                            NSApp.terminate(nil)
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text(
+                            "The native \(SwitchingGuide.nativeSwitcherChord.display) app switcher takes over until you open WindowHop again."
+                        )
+                    }
                 }
             }
         }
         .settingsPane()
         // the window is retained, so re-read what System Settings may have
         // changed whenever the pane shows or WindowHop becomes active; nothing polls
-        .onAppear { launchAtLogin.refresh() }
+        .onAppear { refreshSystemState() }
         .onReceive(
             NotificationCenter.default.publisher(
                 for: NSApplication.didBecomeActiveNotification)
         ) { _ in
-            launchAtLogin.refresh()
+            refreshSystemState()
         }
+    }
+
+    private func refreshSystemState() {
+        launchAtLogin.refresh()
+        accessibilityGranted = AccessibilityPermission.isGranted
     }
 }
 
@@ -404,13 +485,25 @@ struct ShortcutsPane: View {
     let setShortcutRecordingActive: (Bool) -> Void
     @State private var shortcutValidationMessage: String?
 
+    private var guide: SwitchingGuide {
+        SwitchingGuide(
+            switcherShortcut: preferences.shortcut,
+            persistentShortcut: preferences.persistentShortcut,
+            enabled: preferences.switcherEnabled)
+    }
+
     var body: some View {
+        let guide = guide
         Form {
             Section {
-                Picker("Switcher shortcut", selection: $preferences.shortcut) {
+                Picker(selection: $preferences.shortcut) {
                     ForEach(ShortcutSpec.allCases) { spec in
                         Text(spec.displayName).tag(spec)
                     }
+                } label: {
+                    Text("Switch windows")
+                    Text(guide.heldHint.display)
+                        .accessibilityLabel(guide.heldHint.spoken)
                 }
                 .pickerStyle(.menu)
                 .onChange(of: preferences.shortcut) { _, newValue in
@@ -422,28 +515,48 @@ struct ShortcutsPane: View {
                         shortcutValidationMessage = error.explanation
                     }
                 }
-                LabeledContent("Open WindowHop") {
+                LabeledContent {
                     ShortcutRecorderField(
                         shortcut: $preferences.persistentShortcut,
                         validationMessage: $shortcutValidationMessage,
                         switcherShortcut: preferences.shortcut,
-                        onRecordingChanged: setShortcutRecordingActive)
+                        onRecordingChanged: setShortcutRecordingActive
+                    )
+                    .frame(width: DesignTokens.settingsRecorderWidth)
+                } label: {
+                    Text("Open WindowHop")
+                    Text(guide.persistentHint.display)
+                        .accessibilityLabel(guide.persistentHint.spoken)
                 }
                 if let shortcutValidationMessage {
                     Text(shortcutValidationMessage)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .settingsNote()
                 }
-            } footer: {
-                let reference = SwitchingGuide(
-                    switcherShortcut: preferences.shortcut,
-                    persistentShortcut: preferences.persistentShortcut,
-                    enabled: preferences.switcherEnabled
-                ).keyReference
-                Text(reference.map(\.display).joined(separator: " "))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel(reference.map(\.spoken).joined(separator: " "))
+                // the delay belongs to the held shortcut, so it sits under it
+                Picker(selection: $preferences.switcherRevealDelay) {
+                    ForEach(SwitcherRevealDelay.allCases) { delay in
+                        Text(delay.displayName).tag(delay)
+                    }
+                } label: {
+                    Text("Delay before showing")
+                    Text("A quicker press switches without showing the switcher.")
+                }
+                .pickerStyle(.menu)
+            }
+            Section {
+                ForEach(guide.sessionKeys) { row in
+                    LabeledContent(row.action) {
+                        HStack(spacing: DesignTokens.settingsKeyCapSpacing) {
+                            ForEach(row.keys, id: \.display) { key in
+                                KeyCap(key: key.display)
+                            }
+                        }
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(row.spoken)
+                }
+            } header: {
+                Text("While the switcher is open")
             }
         }
         .settingsPane()
@@ -453,233 +566,132 @@ struct ShortcutsPane: View {
     }
 }
 
-// MARK: - Windows
+// MARK: - Switcher
 
-struct WindowsPane: View {
+struct SwitcherPane: View {
     @Bindable var preferences: Preferences
+    let evictPreviews: () -> Void
+    @State private var screenRecordingStatus = ScreenRecordingPermission.status
     @State private var connectedDisplays = ConnectedDisplaysModel()
 
-    /// One entry per selectable display. A chosen display that is currently
-    /// disconnected stays in the list, named as such: dropping it would destroy
-    /// the user's choice every time a monitor is unplugged.
-    private struct DisplayOption: Identifiable, Hashable {
-        let id: String
-        let label: String
-    }
+    private var previewsSelected: Bool { preferences.appearanceMode == .windowPreviews }
 
-    private var displayOptions: [DisplayOption] {
-        var options = connectedDisplays.displays.map {
-            DisplayOption(id: $0.id, label: $0.name)
-        }
-        if let chosen = preferences.switcherDisplayID,
-            !connectedDisplays.displays.contains(where: { $0.id == chosen })
-        {
-            options.append(DisplayOption(id: chosen, label: String(localized: "Selected display (disconnected)")))
-        }
-        return options
-    }
-
-    /// UserDefaults cannot hold nil, and a Picker cannot select it either; the
-    /// empty string is the single representation of "no display chosen".
-    private var chosenDisplay: Binding<String> {
+    /// UserDefaults holds a placement and a display identifier; the menu shows
+    /// them as one choice (`SwitcherPlacementChoice`).
+    private var placementChoice: Binding<SwitcherPlacementChoice> {
         Binding(
-            get: { preferences.switcherDisplayID ?? "" },
-            set: { preferences.switcherDisplayID = $0.isEmpty ? nil : $0 })
+            get: {
+                SwitcherPlacementChoice(
+                    placement: preferences.switcherDisplayPlacement,
+                    displayID: preferences.switcherDisplayID)
+            },
+            set: { choice in
+                preferences.switcherDisplayID = choice.displayID(keeping: preferences.switcherDisplayID)
+                preferences.switcherDisplayPlacement = choice.placement
+            })
+    }
+
+    private var displayEntries: [SwitcherPlacementChoice.DisplayEntry] {
+        SwitcherPlacementChoice.displayEntries(
+            connected: connectedDisplays.displays.map {
+                SwitcherPlacementChoice.DisplayEntry(id: $0.id, name: $0.name)
+            },
+            chosenDisplayID: preferences.switcherDisplayPlacement == .specificDisplay
+                ? preferences.switcherDisplayID : nil,
+            disconnectedLabel: String(localized: "Selected display (disconnected)"))
     }
 
     var body: some View {
         Form {
             Section {
-                Toggle("Include windows from other Spaces", isOn: $preferences.includeOtherSpaces)
-                Toggle("Include windows from other displays", isOn: $preferences.includeOtherDisplays)
-                Toggle("Include minimized windows", isOn: $preferences.includeMinimizedWindows)
-                Toggle(
-                    "Include windows from hidden applications",
-                    isOn: $preferences.includeHiddenApplicationWindows)
-                Toggle(
-                    "Include Picture-in-Picture windows",
-                    isOn: $preferences.includePictureInPictureWindows)
-            } header: {
-                Text("Windows shown")
-            } footer: {
-                Text(
-                    "WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Picker(
-                    "Show the switcher on",
-                    selection: $preferences.switcherDisplayPlacement
-                ) {
-                    ForEach(SwitcherDisplayPlacement.allCases) { placement in
-                        Text(placement.displayName).tag(placement)
+                AppearanceModePicker(selection: $preferences.appearanceMode)
+                    .onChange(of: preferences.appearanceMode) { _, newValue in
+                        // ask for the permission only when the user opts into previews
+                        if newValue == .windowPreviews, !ScreenRecordingPermission.isGranted {
+                            _ = ScreenRecordingPermission.request()
+                            screenRecordingStatus = ScreenRecordingPermission.status
+                        }
+                        if newValue == .appIcons {
+                            // back to icons: no reason to retain any snapshot
+                            evictPreviews()
+                        }
                     }
+                Toggle(isOn: $preferences.showTabCounts) {
+                    Text("Show tab counts")
+                    Text("A badge with the number of tabs in a window.")
                 }
-                if preferences.switcherDisplayPlacement == .specificDisplay {
-                    Picker("Display", selection: chosenDisplay) {
-                        ForEach(displayOptions) { option in
-                            Text(option.label).tag(option.id)
+                // App Icons has no snapshot to enlarge and needs no extra
+                // permission; the stored delay is kept for a switch back
+                if previewsSelected {
+                    Picker(selection: $preferences.expandedPreviewDelay) {
+                        ForEach(ExpandedPreviewDelay.allCases) { delay in
+                            Text(delay.displayName).tag(delay)
+                        }
+                    } label: {
+                        Text("Enlarge preview after a pause")
+                        Text("The window is not activated until you confirm.")
+                    }
+                    .pickerStyle(.menu)
+                    LabeledContent {
+                        PermissionStatus(granted: screenRecordingStatus.isAuthorized)
+                    } label: {
+                        Text("Screen Recording")
+                        Text("Captured only while the switcher is open. Never saved to disk or sent.")
+                    }
+                    if !screenRecordingStatus.isAuthorized {
+                        Button(
+                            screenRecordingStatus == .notDetermined
+                                ? "Grant Permission…"
+                                : "Open System Settings…"
+                        ) {
+                            if screenRecordingStatus == .notDetermined {
+                                _ = ScreenRecordingPermission.request()
+                                screenRecordingStatus = ScreenRecordingPermission.status
+                            } else {
+                                ScreenRecordingPermission.openSystemSettings()
+                            }
                         }
                     }
                 }
             } header: {
-                Text("Switcher placement")
-            } footer: {
-                Text(
-                    "This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                Text("Style")
             }
-
             Section {
-                Picker(
-                    "Delay before showing the switcher",
-                    selection: $preferences.switcherRevealDelay
-                ) {
-                    ForEach(SwitcherRevealDelay.allCases) { delay in
-                        Text(delay.displayName).tag(delay)
+                Toggle("Other Spaces", isOn: $preferences.includeOtherSpaces)
+                Toggle("Other displays", isOn: $preferences.includeOtherDisplays)
+                Toggle("Minimized windows", isOn: $preferences.includeMinimizedWindows)
+                Toggle("Hidden apps", isOn: $preferences.includeHiddenApplicationWindows)
+                Toggle("Picture in Picture", isOn: $preferences.includePictureInPictureWindows)
+            } header: {
+                Text("Include windows from")
+            } footer: {
+                Text("Tabs of one window are one entry. Menus and system overlays are never listed.")
+                    .settingsNote()
+            }
+            Section {
+                Picker("Show the switcher on", selection: placementChoice) {
+                    Text(SwitcherDisplayPlacement.allDisplays.displayName)
+                        .tag(SwitcherPlacementChoice.allDisplays)
+                    Text(SwitcherDisplayPlacement.pointerDisplay.displayName)
+                        .tag(SwitcherPlacementChoice.pointerDisplay)
+                    if !displayEntries.isEmpty {
+                        Divider()
+                        ForEach(displayEntries) { entry in
+                            Text(entry.name).tag(SwitcherPlacementChoice.display(id: entry.id))
+                        }
                     }
                 }
                 .pickerStyle(.menu)
             } header: {
-                Text("Switcher delay")
+                Text("Placement")
             } footer: {
-                Text(
-                    "While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is \(Preferences.Defaults.switcherRevealDelay.displayName)."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                Text("While a chosen display is disconnected, the switcher opens on the display with the pointer.")
+                    .settingsNote()
             }
         }
         .settingsPane()
         .onAppear { connectedDisplays.startObserving() }
         .onDisappear { connectedDisplays.stopObserving() }
-        .onChange(of: preferences.switcherDisplayPlacement) { _, placement in
-            // choosing "a specific display" with nothing stored would show an
-            // empty picker; preselect the display the pointer is on
-            guard placement == .specificDisplay, preferences.switcherDisplayID == nil else { return }
-            preferences.switcherDisplayID =
-                DisplayRegistry.pointerDisplayID()
-                ?? connectedDisplays.displays.first?.id
-        }
-    }
-}
-
-// MARK: - Appearance
-
-struct AppearancePane: View {
-    @Bindable var preferences: Preferences
-    let evictPreviews: () -> Void
-    @State private var screenRecordingStatus = ScreenRecordingPermission.status
-
-    private var previewsSelected: Bool { preferences.appearanceMode == .windowPreviews }
-
-    var body: some View {
-        Form {
-            Section {
-                Picker("Switcher shows", selection: $preferences.appearanceMode) {
-                    ForEach(AppearanceMode.allCases) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                }
-                .pickerStyle(.radioGroup)
-                .onChange(of: preferences.appearanceMode) { _, newValue in
-                    // ask for the permission only when the user opts into previews
-                    if newValue == .windowPreviews, !ScreenRecordingPermission.isGranted {
-                        _ = ScreenRecordingPermission.request()
-                        screenRecordingStatus = ScreenRecordingPermission.status
-                    }
-                    if newValue == .appIcons {
-                        // back to icons: no reason to retain any snapshot
-                        evictPreviews()
-                    }
-                }
-                Toggle("Show tab counts", isOn: $preferences.showTabCounts)
-            } footer: {
-                Text(
-                    "App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            }
-            Section {
-                Picker(
-                    "Show an expanded preview after pausing",
-                    selection: $preferences.expandedPreviewDelay
-                ) {
-                    ForEach(ExpandedPreviewDelay.allCases) { delay in
-                        Text(delay.displayName).tag(delay)
-                    }
-                }
-                .pickerStyle(.menu)
-                // App Icons has no snapshot to enlarge; the stored delay is
-                // kept, so switching back to Window Previews restores it
-                .disabled(!preferences.appearanceMode.supportsExpandedPreview)
-            } header: {
-                Text("Expanded Preview")
-            } footer: {
-                // one text for both modes, so the pane height never changes
-                Text(
-                    "Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            }
-            // this section is always present so the window height never jumps
-            // when the appearance mode changes
-            Section {
-                if !previewsSelected {
-                    Label("App Icons never needs any extra permission.", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                    Text(
-                        "Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots."
-                    )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                } else if screenRecordingStatus.isAuthorized {
-                    Label("Screen Recording access is granted.", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                    Text("Snapshots are captured only while the switcher is open.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Label(
-                        "Window Previews needs Screen Recording access.", systemImage: "exclamationmark.triangle.fill"
-                    )
-                    .foregroundStyle(.orange)
-                    Text(
-                        "Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation."
-                    )
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    Button(
-                        screenRecordingStatus == .notDetermined
-                            ? "Grant Permission"
-                            : "Open System Settings"
-                    ) {
-                        if screenRecordingStatus == .notDetermined {
-                            _ = ScreenRecordingPermission.request()
-                            screenRecordingStatus = ScreenRecordingPermission.status
-                        } else {
-                            ScreenRecordingPermission.openSystemSettings()
-                        }
-                    }
-                }
-            } header: {
-                Text("Screen Recording")
-            } footer: {
-                Text(
-                    "Captures run only while the switcher is open. Recent tile-sized previews may remain in memory for the next open; they are never written to disk or transmitted."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
-            }
-        }
-        .settingsPane()
         .onReceive(
             NotificationCenter.default.publisher(
                 for: NSApplication.didBecomeActiveNotification)
@@ -689,17 +701,136 @@ struct AppearancePane: View {
     }
 }
 
-// MARK: - Updates
+/// App Icons or Window Previews, chosen by a thumbnail of each, like the
+/// appearance picker in System Settings. It is one control for VoiceOver, with
+/// each option a selectable button.
+private struct AppearanceModePicker: View {
+    @Binding var selection: AppearanceMode
 
-struct UpdatesPane: View {
+    var body: some View {
+        HStack(spacing: DesignTokens.settingsStyleOptionSpacing) {
+            ForEach(AppearanceMode.allCases) { mode in
+                let selected = selection == mode
+                Button {
+                    selection = mode
+                } label: {
+                    VStack(spacing: DesignTokens.settingsStyleLabelSpacing) {
+                        StyleThumbnail(mode: mode)
+                            .overlay(
+                                RoundedRectangle(
+                                    cornerRadius: DesignTokens.settingsStyleThumbnailCornerRadius
+                                        + DesignTokens.settingsStyleSelectionInset
+                                )
+                                .inset(by: -DesignTokens.settingsStyleSelectionInset)
+                                .strokeBorder(
+                                    selected ? Color.accentColor : .clear,
+                                    lineWidth: DesignTokens.settingsStyleSelectionWidth))
+                        Text(mode.displayName)
+                            .foregroundStyle(selected ? .primary : .secondary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(selected ? [.isSelected] : [])
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DesignTokens.settingsStylePickerPadding)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Switcher style")
+    }
+}
+
+/// A miniature switcher: three app icons, or three window snapshots.
+private struct StyleThumbnail: View {
+    let mode: AppearanceMode
+
+    var body: some View {
+        HStack(spacing: DesignTokens.settingsStyleThumbnailItemSpacing) {
+            ForEach(0..<3, id: \.self) { _ in
+                switch mode {
+                case .appIcons:
+                    RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailIconCornerRadius)
+                        .fill(Color.accentColor.opacity(0.75))
+                        .frame(
+                            width: DesignTokens.settingsStyleThumbnailIconSize,
+                            height: DesignTokens.settingsStyleThumbnailIconSize)
+                case .windowPreviews:
+                    RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailPreviewCornerRadius)
+                        .fill(.tertiary)
+                        .frame(
+                            width: DesignTokens.settingsStyleThumbnailPreviewWidth,
+                            height: DesignTokens.settingsStyleThumbnailPreviewHeight)
+                }
+            }
+        }
+        .frame(
+            width: DesignTokens.settingsStyleThumbnailWidth,
+            height: DesignTokens.settingsStyleThumbnailHeight
+        )
+        .background(
+            RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailCornerRadius)
+                .fill(.background.secondary)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailCornerRadius)
+                .strokeBorder(.separator)
+        )
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - About
+
+struct AboutPane: View {
     @Bindable var preferences: Preferences
     let updateManager: UpdateManager
     private let appVersion = AppVersion.main
 
+    /// "Version 2.1.0 (20100) · 23 September 2026", or the version alone.
+    private var versionLine: String {
+        guard let released = appVersion.releaseDateText() else { return appVersion.versionLabel }
+        return String(
+            localized: "\(appVersion.versionLabel) · \(released)",
+            comment: "The version label, then the release date.")
+    }
+
+    private var updateStatus: String {
+        if !updateManager.isAvailable {
+            return String(localized: "Updates work in the installed app, not in development builds.")
+        }
+        if let lastCheck = updateManager.lastCheckDate {
+            return String(
+                localized: "Last checked \(lastCheck.formatted(.relative(presentation: .named))).",
+                comment: "The placeholder is a relative time, such as 2 hours ago.")
+        }
+        return String(localized: "Not checked yet.")
+    }
+
     var body: some View {
         Form {
-            if let availableVersion = updateManager.availableVersion {
-                Section {
+            Section {
+                VStack(spacing: DesignTokens.settingsAboutTitleSpacing) {
+                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
+                        .resizable()
+                        .frame(
+                            width: DesignTokens.settingsAboutIconSize,
+                            height: DesignTokens.settingsAboutIconSize
+                        )
+                        .accessibilityLabel("WindowHop application icon")
+                    Text("WindowHop")
+                        .font(.title2.weight(.semibold))
+                    Text("Switch between windows, not just apps.")
+                        .foregroundStyle(.secondary)
+                    Text(versionLine)
+                        .settingsNote()
+                        .textSelection(.enabled)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DesignTokens.settingsAboutHeaderPadding)
+            }
+            Section {
+                if let availableVersion = updateManager.availableVersion {
                     // mirrors Sparkle's own prompt: installing (or postponing/
                     // skipping) continues in the standard Sparkle dialog
                     LabeledContent {
@@ -714,10 +845,8 @@ struct UpdatesPane: View {
                         .foregroundStyle(.tint)
                     }
                 }
-            }
-            Section {
                 Toggle(
-                    "Automatically check for updates",
+                    "Check for updates automatically",
                     isOn: $preferences.automaticUpdateChecks
                 )
                 .onChange(of: preferences.automaticUpdateChecks) { _, newValue in
@@ -730,95 +859,39 @@ struct UpdatesPane: View {
                     }
                     .disabled(!updateManager.isAvailable)
                 } label: {
-                    Text(appVersion.versionLabel)
-                    if let released = appVersion.releaseDateText() {
-                        Text("Released \(released)")
-                    }
-                }
-                if !updateManager.isAvailable {
-                    Text("Updates are available in the installed app (WindowHop.app), not in development builds.")
-                        .font(.callout)
+                    Text(updateStatus)
                         .foregroundStyle(.secondary)
                 }
+            } header: {
+                Text("Updates")
             } footer: {
-                Text(
-                    "Update checks against GitHub are WindowHop's only routine network activity. No telemetry, no accounts. Updates are cryptographically verified before installing."
-                )
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                Text("Update checks are WindowHop's only network activity. No telemetry.")
+                    .settingsNote()
             }
-        }
-        .settingsPane()
-    }
-}
-
-// MARK: - About
-
-struct AboutPane: View {
-    private let appVersion = AppVersion.main
-
-    /// Nil for the unbundled development binary, which then hides the row.
-    private let bundleIdentifier = Bundle.main.bundleIdentifier
-
-    var body: some View {
-        Form {
             Section {
-                HStack(spacing: DesignTokens.settingsAboutHeaderSpacing) {
-                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
-                        .resizable()
-                        .frame(
-                            width: DesignTokens.settingsAboutIconSize,
-                            height: DesignTokens.settingsAboutIconSize
-                        )
-                        .accessibilityLabel("WindowHop application icon")
-                    VStack(alignment: .leading, spacing: DesignTokens.settingsAboutTitleSpacing) {
-                        Text("WindowHop")
-                            .font(.title2.weight(.semibold))
-                        Text("Switch between windows, not just apps.")
-                            .foregroundStyle(.secondary)
-                        Text("Developed by Marton Paulo")
+                VStack(spacing: DesignTokens.settingsAboutFooterSpacing) {
+                    HStack(spacing: DesignTokens.settingsAboutLinkSpacing) {
+                        Link("Website", destination: ProjectLinks.website)
+                        Link("GitHub", destination: ProjectLinks.repository)
+                        // opens the prefilled form in the browser; nothing is sent
+                        // until the person reviews and submits it there
+                        Link(
+                            "Report an Issue…",
+                            destination: ProjectLinks.issueReport(
+                                for: appVersion, macOS: ProcessInfo.processInfo.operatingSystemVersion))
+                    }
+                    HStack(spacing: DesignTokens.settingsAboutLinkSpacing / 2) {
+                        // the bundle's canonical line; omitted rather than invented
+                        // when no Info.plist is embedded (swift build runs)
+                        if let copyright = appVersion.copyright {
+                            Text(copyright)
+                                .settingsNote()
+                        }
+                        Link("AltTab on GitHub", destination: ProjectLinks.altTabRepository)
                             .font(.callout)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, DesignTokens.settingsAboutTitleSpacing)
                     }
                 }
-                .padding(.vertical, DesignTokens.settingsAboutHeaderPadding)
-                LabeledContent("Version", value: appVersion.displayVersion)
-                if let released = appVersion.releaseDateText() {
-                    LabeledContent("Released", value: released)
-                }
-                if let bundleIdentifier {
-                    LabeledContent("Bundle identifier", value: bundleIdentifier)
-                }
-            }
-            Section {
-                Link("WindowHop Website", destination: ProjectLinks.website)
-                Link(
-                    "WindowHop on GitHub",
-                    destination: ProjectLinks.repository)
-                // opens the prefilled form in the browser; nothing is sent
-                // until the person reviews and submits it there
-                Link(
-                    "Report an Issue…",
-                    destination: ProjectLinks.issueReport(
-                        for: appVersion, macOS: ProcessInfo.processInfo.operatingSystemVersion))
-            }
-            Section {
-                LabeledContent("License", value: "GPL-3.0")
-                Text("Derived from AltTab by Louis Pontoise (lwouis) and contributors. Thank you.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Link(
-                    "AltTab on GitHub",
-                    destination: ProjectLinks.altTabRepository)
-            } footer: {
-                // the bundle's canonical line; omitted rather than invented
-                // when no Info.plist is embedded (swift build runs)
-                if let copyright = appVersion.copyright {
-                    Text(copyright)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
+                .frame(maxWidth: .infinity)
             }
         }
         .settingsPane()

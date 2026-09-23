@@ -58,7 +58,7 @@ Preview regressions pin:
   one frame, invisible helper windows, and indistinguishable windows that must stay
   without a preview instead of receiving a guess;
 - one shared Settings pane size, so selecting a pane never resizes the window;
-- the Settings window position restored across launches with the canvas size kept, and a
+- the Settings window position restored across launches with the selected pane's size kept, and a
   saved frame on a vanished display recovered onto the main display;
 - borderless App Icons selection and the shared semantic preview selection plate in
   Light and Dark Mode;
@@ -141,7 +141,7 @@ The published Settings images instead capture the real window, because its toolb
 only on a real window:
 
 ```sh
-build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings windows   # prints WINDOW_ID <n>, then READY
+build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings switcher  # prints WINDOW_ID <n>, then READY
 screencapture -x -l<n> site/screenshots/settings-windows.png
 ```
 

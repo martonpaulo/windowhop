@@ -200,3 +200,46 @@ final class PanelPlacementTests {
         #expect(SwitcherGridCapacity.captureScale([], fallback: 2) == 2)
     }
 }
+
+/// Settings shows placement as one menu; the stored preferences stay two.
+struct SwitcherPlacementChoiceTests {
+    @Test func readsEachStoredPlacement() {
+        #expect(SwitcherPlacementChoice(placement: .allDisplays, displayID: "A") == .allDisplays)
+        #expect(SwitcherPlacementChoice(placement: .pointerDisplay, displayID: nil) == .pointerDisplay)
+        #expect(SwitcherPlacementChoice(placement: .specificDisplay, displayID: "A") == .display(id: "A"))
+    }
+
+    @Test func specificPlacementWithoutADisplayReadsAsThePointerDisplay() {
+        for missing in [nil, ""] as [String?] {
+            #expect(
+                SwitcherPlacementChoice(placement: .specificDisplay, displayID: missing) == .pointerDisplay)
+        }
+    }
+
+    @Test func writesBackThePlacementAndTheDisplay() {
+        let choices: [SwitcherPlacementChoice] = [.allDisplays, .pointerDisplay, .display(id: "B")]
+        for choice in choices {
+            let stored = choice.displayID(keeping: "A")
+            #expect(SwitcherPlacementChoice(placement: choice.placement, displayID: stored) == choice)
+        }
+        // a display-free choice keeps the last display for a later switch back
+        #expect(SwitcherPlacementChoice.allDisplays.displayID(keeping: "A") == "A")
+        #expect(SwitcherPlacementChoice.display(id: "B").displayID(keeping: "A") == "B")
+    }
+
+    @Test func keepsADisconnectedChoiceAtTheEnd() {
+        let connected = [
+            SwitcherPlacementChoice.DisplayEntry(id: "A", name: "Built-in"),
+            SwitcherPlacementChoice.DisplayEntry(id: "B", name: "Studio"),
+        ]
+        let kept = SwitcherPlacementChoice.displayEntries(
+            connected: connected, chosenDisplayID: "C", disconnectedLabel: "Gone")
+        #expect(kept.map(\.id) == ["A", "B", "C"])
+        #expect(kept.last?.name == "Gone")
+        for chosen in ["A", "", nil] as [String?] {
+            #expect(
+                SwitcherPlacementChoice.displayEntries(
+                    connected: connected, chosenDisplayID: chosen, disconnectedLabel: "Gone") == connected)
+        }
+    }
+}

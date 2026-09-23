@@ -1,6 +1,16 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    " or " : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " or "
+          }
+        }
+      }
+    },
     "%@ didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost." : {
       "localizations" : {
         "en" : {
@@ -60,6 +70,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ was already asked to quit and is still running. Closing the window still uses the normal, safe path."
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "comment" : "The version label, then the release date.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "comment" : "An action in the switcher, then the keys that perform it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@: %@"
           }
         }
       }
@@ -144,6 +176,26 @@
         }
       }
     },
+    "A badge with the number of tabs in a window." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A badge with the number of tabs in a window."
+          }
+        }
+      }
+    },
+    "A quicker press switches without showing the switcher." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A quicker press switches without showing the switcher."
+          }
+        }
+      }
+    },
     "A specific display" : {
       "localizations" : {
         "en" : {
@@ -170,6 +222,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "About WindowHop"
+          }
+        }
+      }
+    },
+    "Accessibility" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accessibility"
           }
         }
       }
@@ -204,6 +266,16 @@
         }
       }
     },
+    "Allowed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allowed"
+          }
+        }
+      }
+    },
     "AltTab on GitHub" : {
       "localizations" : {
         "en" : {
@@ -224,66 +296,6 @@
         }
       }
     },
-    "App Icons never needs any extra permission." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App Icons never needs any extra permission."
-          }
-        }
-      }
-    },
-    "App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title."
-          }
-        }
-      }
-    },
-    "Appearance" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appearance"
-          }
-        }
-      }
-    },
-    "Appears in" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Appears in"
-          }
-        }
-      }
-    },
-    "Automatically check for updates" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Automatically check for updates"
-          }
-        }
-      }
-    },
-    "Bundle identifier" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bundle identifier"
-          }
-        }
-      }
-    },
     "Cancel" : {
       "localizations" : {
         "en" : {
@@ -294,12 +306,12 @@
         }
       }
     },
-    "Captures run only while the switcher is open. Recent tile-sized previews may remain in memory for the next open; they are never written to disk or transmitted." : {
+    "Captured only while the switcher is open. Never saved to disk or sent." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Captures run only while the switcher is open. Recent tile-sized previews may remain in memory for the next open; they are never written to disk or transmitted."
+            "value" : "Captured only while the switcher is open. Never saved to disk or sent."
           }
         }
       }
@@ -310,6 +322,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Check for Updates…"
+          }
+        }
+      }
+    },
+    "Check for updates automatically" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check for updates automatically"
           }
         }
       }
@@ -330,6 +352,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Close Window"
+          }
+        }
+      }
+    },
+    "Close the selected window…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close the selected window…"
           }
         }
       }
@@ -385,12 +417,12 @@
         }
       }
     },
-    "Delay before showing the switcher" : {
+    "Delay before showing" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delay before showing the switcher"
+            "value" : "Delay before showing"
           }
         }
       }
@@ -401,26 +433,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Delete"
-          }
-        }
-      }
-    },
-    "Derived from AltTab by Louis Pontoise (lwouis) and contributors. Thank you." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Derived from AltTab by Louis Pontoise (lwouis) and contributors. Thank you."
-          }
-        }
-      }
-    },
-    "Developed by Marton Paulo" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Developed by Marton Paulo"
           }
         }
       }
@@ -445,22 +457,12 @@
         }
       }
     },
-    "Disabling WindowHop hands %@ back to the native app switcher without quitting." : {
+    "Dock" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Disabling WindowHop hands %@ back to the native app switcher without quitting."
-          }
-        }
-      }
-    },
-    "Display" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Display"
+            "value" : "Dock"
           }
         }
       }
@@ -515,6 +517,16 @@
         }
       }
     },
+    "Enlarge preview after a pause" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enlarge preview after a pause"
+          }
+        }
+      }
+    },
     "Enter" : {
       "localizations" : {
         "en" : {
@@ -531,16 +543,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Escape"
-          }
-        }
-      }
-    },
-    "Expanded Preview" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Expanded Preview"
           }
         }
       }
@@ -625,12 +627,22 @@
         }
       }
     },
-    "Grant Permission" : {
+    "GitHub" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Grant Permission"
+            "value" : "GitHub"
+          }
+        }
+      }
+    },
+    "Grant Permission…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grant Permission…"
           }
         }
       }
@@ -641,6 +653,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Help"
+          }
+        }
+      }
+    },
+    "Hidden apps" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hidden apps"
           }
         }
       }
@@ -675,13 +697,13 @@
         }
       }
     },
-    "Hold %@ and press %@ to cycle through windows (add %@ to go back). Release %@ to switch." : {
-      "comment" : "Placeholders are key names or symbols: the held modifier, Tab, Shift.",
+    "Hold %@ and press %@. Release %@ to switch." : {
+      "comment" : "Placeholders are key names or symbols: the held modifier, Tab.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold %@ and press %@ to cycle through windows (add %@ to go back). Release %@ to switch."
+            "value" : "Hold %@ and press %@. Release %@ to switch."
           }
         }
       }
@@ -696,63 +718,12 @@
         }
       }
     },
-    "In either session, %@ closes the selected window after you confirm." : {
-      "comment" : "The placeholder is the Delete key's name or symbol.",
+    "Include windows from" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "In either session, %@ closes the selected window after you confirm."
-          }
-        }
-      }
-    },
-    "Include Picture-in-Picture windows" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include Picture-in-Picture windows"
-          }
-        }
-      }
-    },
-    "Include minimized windows" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include minimized windows"
-          }
-        }
-      }
-    },
-    "Include windows from hidden applications" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include windows from hidden applications"
-          }
-        }
-      }
-    },
-    "Include windows from other Spaces" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include windows from other Spaces"
-          }
-        }
-      }
-    },
-    "Include windows from other displays" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Include windows from other displays"
+            "value" : "Include windows from"
           }
         }
       }
@@ -774,6 +745,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Key %@"
+          }
+        }
+      }
+    },
+    "Last checked %@." : {
+      "comment" : "The placeholder is a relative time, such as 2 hours ago.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last checked %@."
           }
         }
       }
@@ -818,12 +800,12 @@
         }
       }
     },
-    "License" : {
+    "Menu bar" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "License"
+            "value" : "Menu bar"
           }
         }
       }
@@ -838,12 +820,52 @@
         }
       }
     },
+    "Minimized windows" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minimized windows"
+          }
+        }
+      }
+    },
+    "Needed to list and switch windows." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needed to list and switch windows."
+          }
+        }
+      }
+    },
     "New" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "New"
+          }
+        }
+      }
+    },
+    "Next window" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next window"
+          }
+        }
+      }
+    },
+    "No shortcut. Record one to open the switcher without holding a key." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No shortcut. Record one to open the switcher without holding a key."
           }
         }
       }
@@ -858,12 +880,54 @@
         }
       }
     },
+    "Not allowed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not allowed"
+          }
+        }
+      }
+    },
+    "Not checked yet." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not checked yet."
+          }
+        }
+      }
+    },
     "Off" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Off"
+          }
+        }
+      }
+    },
+    "Off. %@ opens the native app switcher." : {
+      "comment" : "The placeholder is the native app switcher shortcut, ⌘⇥.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Off. %@ opens the native app switcher."
+          }
+        }
+      }
+    },
+    "On. %@ switches windows." : {
+      "comment" : "The placeholder is the switcher shortcut, such as ⌘⇥.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On. %@ switches windows."
           }
         }
       }
@@ -898,6 +962,16 @@
         }
       }
     },
+    "Open Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        }
+      }
+    },
     "Open System Settings" : {
       "localizations" : {
         "en" : {
@@ -908,22 +982,22 @@
         }
       }
     },
+    "Open System Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open System Settings…"
+          }
+        }
+      }
+    },
     "Open WindowHop" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Open WindowHop"
-          }
-        }
-      }
-    },
-    "Open WindowHop has no shortcut. Record one in Shortcuts to keep the switcher open without holding a key." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Open WindowHop has no shortcut. Record one in Shortcuts to keep the switcher open without holding a key."
           }
         }
       }
@@ -944,6 +1018,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Option"
+          }
+        }
+      }
+    },
+    "Other Spaces" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other Spaces"
+          }
+        }
+      }
+    },
+    "Other displays" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Other displays"
           }
         }
       }
@@ -978,13 +1072,32 @@
         }
       }
     },
-    "Press %@ to open WindowHop without holding a key. %@ or the arrow keys move, %@ or %@ switches, %@ cancels." : {
-      "comment" : "Placeholders are key names or symbols: the Open WindowHop shortcut, Tab, Return, Space, Escape.",
+    "Permissions" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Press %@ to open WindowHop without holding a key. %@ or the arrow keys move, %@ or %@ switches, %@ cancels."
+            "value" : "Permissions"
+          }
+        }
+      }
+    },
+    "Picture in Picture" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picture in Picture"
+          }
+        }
+      }
+    },
+    "Placement" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Placement"
           }
         }
       }
@@ -996,6 +1109,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Press a shortcut. %@ cancels, %@ clears."
+          }
+        }
+      }
+    },
+    "Previous window" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Previous window"
           }
         }
       }
@@ -1090,26 +1213,6 @@
         }
       }
     },
-    "Released" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Released"
-          }
-        }
-      }
-    },
-    "Released %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Released %@"
-          }
-        }
-      }
-    },
     "Report an Issue…" : {
       "localizations" : {
         "en" : {
@@ -1196,16 +1299,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Screen Recording"
-          }
-        }
-      }
-    },
-    "Screen Recording access is granted." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Screen Recording access is granted."
           }
         }
       }
@@ -1330,32 +1423,12 @@
         }
       }
     },
-    "Show Dock icon" : {
+    "Show WindowHop in" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Show Dock icon"
-          }
-        }
-      }
-    },
-    "Show an expanded preview after pausing" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show an expanded preview after pausing"
-          }
-        }
-      }
-    },
-    "Show menu bar item" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Show menu bar item"
+            "value" : "Show WindowHop in"
           }
         }
       }
@@ -1380,22 +1453,33 @@
         }
       }
     },
-    "Snapshots are captured only while the switcher is open." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Snapshots are captured only while the switcher is open."
-          }
-        }
-      }
-    },
     "Space" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Space"
+          }
+        }
+      }
+    },
+    "Stays open without holding a key. %@ or %@ switches." : {
+      "comment" : "Placeholders are key names or symbols: Return, Space.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stays open without holding a key. %@ or %@ switches."
+          }
+        }
+      }
+    },
+    "Style" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Style"
           }
         }
       }
@@ -1410,6 +1494,16 @@
         }
       }
     },
+    "Switch to the selected window" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Switch to the selected window"
+          }
+        }
+      }
+    },
     "Switch windows" : {
       "localizations" : {
         "en" : {
@@ -1420,42 +1514,22 @@
         }
       }
     },
-    "Switcher delay" : {
+    "Switcher" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Switcher delay"
+            "value" : "Switcher"
           }
         }
       }
     },
-    "Switcher placement" : {
+    "Switcher style" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Switcher placement"
-          }
-        }
-      }
-    },
-    "Switcher shortcut" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Switcher shortcut"
-          }
-        }
-      }
-    },
-    "Switcher shows" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Switcher shows"
+            "value" : "Switcher style"
           }
         }
       }
@@ -1480,6 +1554,16 @@
         }
       }
     },
+    "Tabs of one window are one entry. Menus and system overlays are never listed." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tabs of one window are one entry. Menus and system overlays are never listed."
+          }
+        }
+      }
+    },
     "The display with the pointer" : {
       "localizations" : {
         "en" : {
@@ -1500,22 +1584,22 @@
         }
       }
     },
+    "The window is not activated until you confirm." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The window is not activated until you confirm."
+          }
+        }
+      }
+    },
     "This is already the switcher shortcut. Choose a different combination." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "This is already the switcher shortcut. Choose a different combination."
-          }
-        }
-      }
-    },
-    "This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected."
           }
         }
       }
@@ -1541,16 +1625,6 @@
         }
       }
     },
-    "Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation."
-          }
-        }
-      }
-    },
     "Up Arrow" : {
       "localizations" : {
         "en" : {
@@ -1561,12 +1635,12 @@
         }
       }
     },
-    "Update checks against GitHub are WindowHop's only routine network activity. No telemetry, no accounts. Updates are cryptographically verified before installing." : {
+    "Update checks are WindowHop's only network activity. No telemetry." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Update checks against GitHub are WindowHop's only routine network activity. No telemetry, no accounts. Updates are cryptographically verified before installing."
+            "value" : "Update checks are WindowHop's only network activity. No telemetry."
           }
         }
       }
@@ -1581,12 +1655,12 @@
         }
       }
     },
-    "Updates are available in the installed app (WindowHop.app), not in development builds." : {
+    "Updates work in the installed app, not in development builds." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Updates are available in the installed app (WindowHop.app), not in development builds."
+            "value" : "Updates work in the installed app, not in development builds."
           }
         }
       }
@@ -1601,16 +1675,6 @@
         }
       }
     },
-    "Version" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Version"
-          }
-        }
-      }
-    },
     "Version %@" : {
       "localizations" : {
         "en" : {
@@ -1621,12 +1685,32 @@
         }
       }
     },
+    "Website" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Website"
+          }
+        }
+      }
+    },
     "Welcome to WindowHop" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Welcome to WindowHop"
+          }
+        }
+      }
+    },
+    "When both are off, open WindowHop again to show this window." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When both are off, open WindowHop again to show this window."
           }
         }
       }
@@ -1642,12 +1726,22 @@
         }
       }
     },
-    "While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is %@." : {
+    "While a chosen display is disconnected, the switcher opens on the display with the pointer." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is %@."
+            "value" : "While a chosen display is disconnected, the switcher opens on the display with the pointer."
+          }
+        }
+      }
+    },
+    "While the switcher is open" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "While the switcher is open"
           }
         }
       }
@@ -1668,36 +1762,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Window Previews"
-          }
-        }
-      }
-    },
-    "Window Previews needs Screen Recording access." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Window Previews needs Screen Recording access."
-          }
-        }
-      }
-    },
-    "Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds."
-          }
-        }
-      }
-    },
-    "Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots."
           }
         }
       }
@@ -1742,33 +1806,12 @@
         }
       }
     },
-    "WindowHop Website" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WindowHop Website"
-          }
-        }
-      }
-    },
     "WindowHop application icon" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "WindowHop application icon"
-          }
-        }
-      }
-    },
-    "WindowHop is off. %@ opens the native app switcher." : {
-      "comment" : "The placeholder is the native app switcher shortcut, ⌘Tab.",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WindowHop is off. %@ opens the native app switcher."
           }
         }
       }
@@ -1803,26 +1846,6 @@
         }
       }
     },
-    "WindowHop on GitHub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WindowHop on GitHub"
-          }
-        }
-      }
-    },
-    "WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed."
-          }
-        }
-      }
-    },
     "WindowHop window switcher" : {
       "localizations" : {
         "en" : {
@@ -1849,26 +1872,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "WindowHop, paused"
-          }
-        }
-      }
-    },
-    "Windows" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Windows"
-          }
-        }
-      }
-    },
-    "Windows shown" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Windows shown"
           }
         }
       }

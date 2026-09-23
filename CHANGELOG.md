@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Settings is shorter and easier to scan**: four panes instead of six. General shows
+  whether WindowHop is on and whether Accessibility is allowed. Shortcuts lists the keys
+  that work in the switcher, one row per action. Switcher holds the style, the windows it
+  lists and where it appears, with one menu for the display. About holds the version,
+  updates and credits. Each pane is as tall as its content, and every setting keeps its
+  value.
+
 - **Grant Accessibility again after this update**: WindowHop has a new bundle identifier,
   `com.martonpaulo.windowhop`, and macOS treats it as a new app. After the update,
   WindowHop opens its setup window: grant Accessibility again, and Screen Recording again

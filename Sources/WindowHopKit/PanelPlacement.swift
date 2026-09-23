@@ -157,3 +157,71 @@ public enum SwitcherGridCapacity {
         displays.map(\.backingScale).max() ?? fallback
     }
 }
+
+/// The one "Show the switcher on" choice Settings offers: the two display-free
+/// placements, or a display by its stable identifier. It is a view of the two
+/// stored preferences, not a third one, so it needs no migration: a specific
+/// display is `specificDisplay` plus `switcherDisplayID`.
+public enum SwitcherPlacementChoice: Hashable, Sendable {
+    case allDisplays
+    case pointerDisplay
+    case display(id: String)
+
+    /// The choice the stored preferences describe. A specific placement with no
+    /// display stored has no display to name, so it reads as the pointer
+    /// display, which is where `PanelDisplayResolver` draws it.
+    public init(placement: SwitcherDisplayPlacement, displayID: String?) {
+        switch placement {
+        case .allDisplays: self = .allDisplays
+        case .pointerDisplay: self = .pointerDisplay
+        case .specificDisplay:
+            if let displayID, !displayID.isEmpty {
+                self = .display(id: displayID)
+            } else {
+                self = .pointerDisplay
+            }
+        }
+    }
+
+    public var placement: SwitcherDisplayPlacement {
+        switch self {
+        case .allDisplays: .allDisplays
+        case .pointerDisplay: .pointerDisplay
+        case .display: .specificDisplay
+        }
+    }
+
+    /// The display identifier to store. Choosing a display-free placement keeps
+    /// the last chosen display, so choosing a display again later is one step.
+    public func displayID(keeping current: String?) -> String? {
+        switch self {
+        case .allDisplays, .pointerDisplay: current
+        case .display(let id): id
+        }
+    }
+
+    /// One display in the menu.
+    public struct DisplayEntry: Hashable, Identifiable, Sendable {
+        public let id: String
+        public let name: String
+
+        public init(id: String, name: String) {
+            self.id = id
+            self.name = name
+        }
+    }
+
+    /// The menu's display entries: every connected display, then a chosen
+    /// display that is disconnected, kept so that unplugging a monitor never
+    /// destroys the choice.
+    public static func displayEntries(
+        connected: [DisplayEntry],
+        chosenDisplayID: String?,
+        disconnectedLabel: String
+    ) -> [DisplayEntry] {
+        guard let chosenDisplayID, !chosenDisplayID.isEmpty,
+            !connected.contains(where: { $0.id == chosenDisplayID })
+        else { return connected }
+        return connected + [DisplayEntry(id: chosenDisplayID, name: disconnectedLabel)]
+    }
+}

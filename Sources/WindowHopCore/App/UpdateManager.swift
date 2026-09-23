@@ -7,7 +7,7 @@ import WindowHopKit
 /// UI handles the whole experience (prompt with the new version, install,
 /// remind-later, skip-this-version — so the same version never nags twice);
 /// the updater only starts from a real app bundle (development builds run
-/// without it). The Settings Updates pane additionally mirrors the latest
+/// without it). Settings › About additionally mirrors the latest
 /// known available version, observed through the updater delegate.
 @MainActor
 @Observable
@@ -48,6 +48,10 @@ public final class UpdateManager: NSObject, SPUUpdaterDelegate {
         controller?.updater.automaticallyChecksForUpdates =
             preferences.automaticUpdateChecks
     }
+
+    /// When Sparkle last checked, scheduled or manual; nil before the first
+    /// check and in development builds.
+    public var lastCheckDate: Date? { controller?.updater.lastUpdateCheckDate }
 
     public func checkForUpdates() {
         controller?.checkForUpdates(nil)

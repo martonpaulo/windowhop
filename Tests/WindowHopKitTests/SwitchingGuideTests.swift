@@ -4,8 +4,7 @@ import Testing
 
 @testable import WindowHopKit
 
-/// The switching guide is the first thing a new user reads after granting
-/// Accessibility. It must follow the shortcuts actually configured, and every
+/// The switching guide is the copy Settings shows about switching. It must follow the shortcuts actually configured, and every
 /// key label in it must be the one `ShortcutFormatter` produces.
 @MainActor  // reads ShortcutFormatter.keyLabels (see ShortcutFormatterLayoutTests)
 struct SwitchingGuideTests {
@@ -21,55 +20,54 @@ struct SwitchingGuideTests {
 
     @Test func eachSwitcherShortcutNamesItsOwnHoldModifier() {
         for spec in ShortcutSpec.allCases {
-            let held = guide(spec).firstSteps[0]
+            let held = guide(spec).heldHint
             let glyph = ShortcutFormatter.modifierSymbols(spec.holdModifier)
             let spoken = ShortcutFormatter.spokenModifiers(spec.holdModifier)
             #expect(held.display.hasPrefix("Hold \(glyph) and press "), "\(held.display)")
-            #expect(held.display.contains("Release \(glyph) to switch"), "\(held.display)")
-            #expect(held.spoken.hasPrefix("Hold \(spoken) and press Tab"), "\(held.spoken)")
-            #expect(held.spoken.contains("Release \(spoken) to switch"), "\(held.spoken)")
+            #expect(held.display.hasSuffix("Release \(glyph) to switch."), "\(held.display)")
+            #expect(held.spoken == "Hold \(spoken) and press Tab. Release \(spoken) to switch.")
         }
     }
 
-    @Test func heldAndPersistentSessionsExplainDifferentConfirmations() {
-        let steps = guide().firstSteps
-        #expect(steps.count == 2)
-        // held: releasing the modifier confirms
-        #expect(steps[0].display.contains("Release"))
-        // persistent: an explicit key confirms, and one cancels
-        #expect(steps[1].spoken.contains("without holding a key"))
-        #expect(steps[1].spoken.contains("Return or Space switches"))
-        #expect(steps[1].spoken.contains("Escape cancels"))
-    }
-
-    @Test func customPersistentShortcutAppearsInBothForms() {
-        let custom = PersistentShortcut(keyCode: Self.keyK, modifiers: [.maskControl, .maskAlternate])
-        let persistent = guide(persistent: custom).firstSteps[1]
-        #expect(persistent.display.hasPrefix("Press ⌃⌥K to open WindowHop"), "\(persistent.display)")
-        #expect(
-            persistent.spoken.hasPrefix("Press Control Option K to open WindowHop"), "\(persistent.spoken)")
-    }
-
-    @Test func unassignedPersistentShortcutPointsToShortcuts() {
-        let persistent = guide(persistent: nil).firstSteps[1]
-        #expect(persistent.display.hasPrefix("Open WindowHop has no shortcut."))
-        #expect(persistent.display.contains("Record one in Shortcuts"))
+    @Test func statusNamesTheConfiguredChordWhenOn() {
+        for spec in ShortcutSpec.allCases {
+            let status = guide(spec).status
+            let chord = ShortcutFormatter.chord(modifiers: spec.holdModifier, keyCode: KeyCode.tab)
+            #expect(status.display == "On. \(chord) switches windows.")
+            #expect(!status.spoken.contains(chord))
+        }
     }
 
     @Test func disabledWindowHopHandsSwitchingToTheNativeSwitcher() {
         // whatever WindowHop's own shortcut is, the native switcher is ⌘⇥
-        let steps = guide(.optionTab, enabled: false).firstSteps
-        #expect(steps.map(\.display) == ["WindowHop is off. ⌘⇥ opens the native app switcher."])
-        #expect(
-            steps.map(\.spoken) == ["WindowHop is off. Command Tab opens the native app switcher."])
+        let status = guide(.optionTab, enabled: false).status
+        #expect(status.display == "Off. ⌘⇥ opens the native app switcher.")
+        #expect(status.spoken == "Off. Command Tab opens the native app switcher.")
     }
 
-    @Test func keyReferenceDescribesTheShortcutsEvenWhenDisabled() {
-        let enabled = guide(enabled: true).keyReference
-        #expect(guide(enabled: false).keyReference == enabled)
-        #expect(Array(enabled.prefix(2)) == guide().firstSteps)
-        #expect(enabled[2].display.contains("⌫ closes the selected window after you confirm"))
-        #expect(enabled[2].spoken.contains("Delete closes the selected window"))
+    @Test func persistentHintExplainsTheExplicitConfirmation() {
+        let hint = guide().persistentHint
+        #expect(hint.display == "Stays open without holding a key. ↩ or Space switches.")
+        #expect(hint.spoken == "Stays open without holding a key. Return or Space switches.")
+    }
+
+    @Test func unassignedPersistentShortcutAsksForOne() {
+        let hint = guide(persistent: nil).persistentHint
+        #expect(hint.display.hasPrefix("No shortcut. Record one"))
+        #expect(hint.spoken == hint.display)
+    }
+
+    @Test func sessionKeysDescribeTheShortcutsEvenWhenDisabled() {
+        let rows = guide(enabled: true).sessionKeys
+        #expect(guide(enabled: false).sessionKeys == rows)
+        #expect(
+            rows.map(\.action) == [
+                "Next window", "Previous window", "Switch to the selected window",
+                "Close the selected window…", "Open Settings", "Cancel",
+            ])
+        #expect(rows[1].keys.map(\.display) == ["⇧⇥", "←"])
+        #expect(rows[5].spoken == "Cancel: Escape")
+        #expect(rows[0].spoken == "Next window: Tab or Right Arrow")
     }
 
     /// Every key glyph in the copy is one the formatter produces for a key the
@@ -90,24 +88,26 @@ struct SwitchingGuideTests {
 
         for spec in ShortcutSpec.allCases {
             for persistent in [PersistentShortcut.optionTab, custom, nil] {
-                let reference = guide(spec, persistent: persistent).keyReference
+                let current = guide(spec, persistent: persistent)
+                let phrases =
+                    [current.status, current.heldHint, current.persistentHint]
+                    + current.sessionKeys.flatMap(\.keys)
                 let expected =
                     [
                         ShortcutFormatter.modifierSymbols(spec.holdModifier),
-                        ShortcutFormatter.keySymbol(for: KeyCode.tab),
-                        ShortcutFormatter.modifierSymbols(.maskShift),
-                        ShortcutFormatter.keySymbol(for: KeyCode.delete),
+                        ShortcutFormatter.modifierSymbols([.maskShift, .maskCommand]),
                     ]
-                    + (persistent.map {
-                        [
-                            ShortcutFormatter.keySymbol(for: KeyCode.returnKey),
-                            ShortcutFormatter.keySymbol(for: KeyCode.escape),
-                        ] + $0.displayString.map(String.init)
-                    } ?? [])
-                let text = reference.map(\.display).joined(separator: " ")
+                    + [
+                        KeyCode.tab, KeyCode.rightArrow, KeyCode.leftArrow, KeyCode.delete,
+                        KeyCode.escape,
+                    ].map(ShortcutFormatter.keySymbol)
+                    + (persistent == nil ? [] : [ShortcutFormatter.keySymbol(for: KeyCode.returnKey)])
+                    + [ShortcutFormatter.keySymbol(for: KeyCode.returnKey)]
+                let text = phrases.map(\.display).joined(separator: " ")
                 #expect(glyphs(in: text) == glyphs(in: expected.joined()), "\(text)")
                 // the spoken form names keys in words only
-                #expect(glyphs(in: reference.map(\.spoken).joined()).isEmpty)
+                #expect(glyphs(in: phrases.map(\.spoken).joined()).isEmpty)
+                #expect(glyphs(in: current.sessionKeys.map(\.spoken).joined()).isEmpty)
             }
         }
     }

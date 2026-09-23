@@ -99,7 +99,7 @@ capture switcher-previews-light   native --demo-switcher --previews --columns 4
 capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
 # The argument domain pins overlay scroll bars for this one process, so the operator's
 # "Show scroll bars: Always" setting does not draw a scroller track into the image.
-capture settings-windows          native --demo-settings windows --light \
+capture settings-windows          native --demo-settings switcher --light \
     -AppleShowScrollBars WhenScrolling
 
 # The hero's srcset and imagesrcset in site/index.html list exactly these widths.

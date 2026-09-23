@@ -9,7 +9,7 @@ Open an [issue](https://github.com/martonpaulo/windowhop/issues) with your macOS
 WindowHop version from Settings → About, whether the switcher is in App Icons or Window Previews
 mode, and what you did, expected, and got. For a missing window, say whether it is minimized,
 hidden, on another Space, or on another display — those are excluded by default and configurable
-under Settings → Windows.
+under Settings → Switcher.
 
 `log stream --level debug --process WindowHop`, run while you reproduce the problem, shows input and session
 behavior, which is the most useful attachment for a switching or shortcut bug. Report a vulnerability through the private channel in

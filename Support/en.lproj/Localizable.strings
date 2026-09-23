@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key> or </key>
+	<string> or </string>
 	<key>%@ didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost.</key>
 	<string>%@ didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost.</string>
 	<key>%@ is also a macOS shortcut</key>
@@ -14,6 +16,10 @@
 	<string>%@ tabs</string>
 	<key>%@ was already asked to quit and is still running. Closing the window still uses the normal, safe path.</key>
 	<string>%@ was already asked to quit and is still running. Closing the window still uses the normal, safe path.</string>
+	<key>%@ · %@</key>
+	<string>%@ · %@</string>
+	<key>%@: %@</key>
+	<string>%@: %@</string>
 	<key>1 second</key>
 	<string>1 second</string>
 	<key>100 ms</key>
@@ -30,44 +36,44 @@
 	<string>5 seconds</string>
 	<key>500 ms</key>
 	<string>500 ms</string>
+	<key>A badge with the number of tabs in a window.</key>
+	<string>A badge with the number of tabs in a window.</string>
+	<key>A quicker press switches without showing the switcher.</key>
+	<string>A quicker press switches without showing the switcher.</string>
 	<key>A specific display</key>
 	<string>A specific display</string>
 	<key>About</key>
 	<string>About</string>
 	<key>About WindowHop</key>
 	<string>About WindowHop</string>
+	<key>Accessibility</key>
+	<string>Accessibility</string>
 	<key>Accessibility access needed</key>
 	<string>Accessibility access needed</string>
 	<key>Add at least one modifier key (%@) so normal typing can't open WindowHop.</key>
 	<string>Add at least one modifier key (%@) so normal typing can't open WindowHop.</string>
 	<key>All displays</key>
 	<string>All displays</string>
+	<key>Allowed</key>
+	<string>Allowed</string>
 	<key>AltTab on GitHub</key>
 	<string>AltTab on GitHub</string>
 	<key>App Icons</key>
 	<string>App Icons</string>
-	<key>App Icons never needs any extra permission.</key>
-	<string>App Icons never needs any extra permission.</string>
-	<key>App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title.</key>
-	<string>App Icons shows each window as a large application icon. Window Previews shows a snapshot of each window instead. Both show one entry per window with its title.</string>
-	<key>Appearance</key>
-	<string>Appearance</string>
-	<key>Appears in</key>
-	<string>Appears in</string>
-	<key>Automatically check for updates</key>
-	<string>Automatically check for updates</string>
-	<key>Bundle identifier</key>
-	<string>Bundle identifier</string>
 	<key>Cancel</key>
 	<string>Cancel</string>
-	<key>Captures run only while the switcher is open. Recent tile-sized previews may remain in memory for the next open; they are never written to disk or transmitted.</key>
-	<string>Captures run only while the switcher is open. Recent tile-sized previews may remain in memory for the next open; they are never written to disk or transmitted.</string>
+	<key>Captured only while the switcher is open. Never saved to disk or sent.</key>
+	<string>Captured only while the switcher is open. Never saved to disk or sent.</string>
 	<key>Check for Updates…</key>
 	<string>Check for Updates…</string>
+	<key>Check for updates automatically</key>
+	<string>Check for updates automatically</string>
 	<key>Close</key>
 	<string>Close</string>
 	<key>Close Window</key>
 	<string>Close Window</string>
+	<key>Close the selected window…</key>
+	<string>Close the selected window…</string>
 	<key>Close “%@” in %@?</key>
 	<string>Close “%@” in %@?</string>
 	<key>Command</key>
@@ -78,22 +84,16 @@
 	<string>Copy</string>
 	<key>Cut</key>
 	<string>Cut</string>
-	<key>Delay before showing the switcher</key>
-	<string>Delay before showing the switcher</string>
+	<key>Delay before showing</key>
+	<string>Delay before showing</string>
 	<key>Delete</key>
 	<string>Delete</string>
-	<key>Derived from AltTab by Louis Pontoise (lwouis) and contributors. Thank you.</key>
-	<string>Derived from AltTab by Louis Pontoise (lwouis) and contributors. Thank you.</string>
-	<key>Developed by Marton Paulo</key>
-	<string>Developed by Marton Paulo</string>
 	<key>Development build</key>
 	<string>Development build</string>
 	<key>Disable</key>
 	<string>Disable</string>
-	<key>Disabling WindowHop hands %@ back to the native app switcher without quitting.</key>
-	<string>Disabling WindowHop hands %@ back to the native app switcher without quitting.</string>
-	<key>Display</key>
-	<string>Display</string>
+	<key>Dock</key>
+	<string>Dock</string>
 	<key>Down Arrow</key>
 	<string>Down Arrow</string>
 	<key>Edit</key>
@@ -104,12 +104,12 @@
 	<string>Enable WindowHop</string>
 	<key>Enabled it but the toggle doesn't stick? An update can leave a stale entry behind — reset it and grant again:</key>
 	<string>Enabled it but the toggle doesn't stick? An update can leave a stale entry behind — reset it and grant again:</string>
+	<key>Enlarge preview after a pause</key>
+	<string>Enlarge preview after a pause</string>
 	<key>Enter</key>
 	<string>Enter</string>
 	<key>Escape</key>
 	<string>Escape</string>
-	<key>Expanded Preview</key>
-	<string>Expanded Preview</string>
 	<key>Expanded preview of %@, %@</key>
 	<string>Expanded preview of %@, %@</string>
 	<key>Expanded window preview</key>
@@ -126,36 +126,32 @@
 	<string>Forward Delete</string>
 	<key>General</key>
 	<string>General</string>
-	<key>Grant Permission</key>
-	<string>Grant Permission</string>
+	<key>GitHub</key>
+	<string>GitHub</string>
+	<key>Grant Permission…</key>
+	<string>Grant Permission…</string>
 	<key>Help</key>
 	<string>Help</string>
+	<key>Hidden apps</key>
+	<string>Hidden apps</string>
 	<key>Hide</key>
 	<string>Hide</string>
 	<key>Hide Others</key>
 	<string>Hide Others</string>
 	<key>Hide WindowHop</key>
 	<string>Hide WindowHop</string>
-	<key>Hold %@ and press %@ to cycle through windows (add %@ to go back). Release %@ to switch.</key>
-	<string>Hold %@ and press %@ to cycle through windows (add %@ to go back). Release %@ to switch.</string>
+	<key>Hold %@ and press %@. Release %@ to switch.</key>
+	<string>Hold %@ and press %@. Release %@ to switch.</string>
 	<key>If the window has unsaved changes, %@ will ask about them.</key>
 	<string>If the window has unsaved changes, %@ will ask about them.</string>
-	<key>In either session, %@ closes the selected window after you confirm.</key>
-	<string>In either session, %@ closes the selected window after you confirm.</string>
-	<key>Include Picture-in-Picture windows</key>
-	<string>Include Picture-in-Picture windows</string>
-	<key>Include minimized windows</key>
-	<string>Include minimized windows</string>
-	<key>Include windows from hidden applications</key>
-	<string>Include windows from hidden applications</string>
-	<key>Include windows from other Spaces</key>
-	<string>Include windows from other Spaces</string>
-	<key>Include windows from other displays</key>
-	<string>Include windows from other displays</string>
+	<key>Include windows from</key>
+	<string>Include windows from</string>
 	<key>Install Update…</key>
 	<string>Install Update…</string>
 	<key>Key %@</key>
 	<string>Key %@</string>
+	<key>Last checked %@.</key>
+	<string>Last checked %@.</string>
 	<key>Launch at login</key>
 	<string>Launch at login</string>
 	<key>Launch at login could not be configured. Run WindowHop from the Applications folder and try again.</key>
@@ -164,42 +160,70 @@
 	<string>Launch at login is available when WindowHop runs from the Applications folder.</string>
 	<key>Left Arrow</key>
 	<string>Left Arrow</string>
-	<key>License</key>
-	<string>License</string>
+	<key>Menu bar</key>
+	<string>Menu bar</string>
 	<key>Minimize</key>
 	<string>Minimize</string>
+	<key>Minimized windows</key>
+	<string>Minimized windows</string>
+	<key>Needed to list and switch windows.</key>
+	<string>Needed to list and switch windows.</string>
 	<key>New</key>
 	<string>New</string>
+	<key>Next window</key>
+	<string>Next window</string>
+	<key>No shortcut. Record one to open the switcher without holding a key.</key>
+	<string>No shortcut. Record one to open the switcher without holding a key.</string>
 	<key>None</key>
 	<string>None</string>
+	<key>Not allowed</key>
+	<string>Not allowed</string>
+	<key>Not checked yet.</key>
+	<string>Not checked yet.</string>
 	<key>Off</key>
 	<string>Off</string>
+	<key>Off. %@ opens the native app switcher.</key>
+	<string>Off. %@ opens the native app switcher.</string>
+	<key>On. %@ switches windows.</key>
+	<string>On. %@ switches windows.</string>
 	<key>Open</key>
 	<string>Open</string>
 	<key>Open Accessibility Setup…</key>
 	<string>Open Accessibility Setup…</string>
 	<key>Open Login Items Settings…</key>
 	<string>Open Login Items Settings…</string>
+	<key>Open Settings</key>
+	<string>Open Settings</string>
 	<key>Open System Settings</key>
 	<string>Open System Settings</string>
+	<key>Open System Settings…</key>
+	<string>Open System Settings…</string>
 	<key>Open WindowHop</key>
 	<string>Open WindowHop</string>
-	<key>Open WindowHop has no shortcut. Record one in Shortcuts to keep the switcher open without holding a key.</key>
-	<string>Open WindowHop has no shortcut. Record one in Shortcuts to keep the switcher open without holding a key.</string>
 	<key>Open WindowHop shortcut</key>
 	<string>Open WindowHop shortcut</string>
 	<key>Option</key>
 	<string>Option</string>
+	<key>Other Spaces</key>
+	<string>Other Spaces</string>
+	<key>Other displays</key>
+	<string>Other displays</string>
 	<key>Paste</key>
 	<string>Paste</string>
 	<key>Paused</key>
 	<string>Paused</string>
 	<key>Permission reset — enable WindowHop in the list</key>
 	<string>Permission reset — enable WindowHop in the list</string>
-	<key>Press %@ to open WindowHop without holding a key. %@ or the arrow keys move, %@ or %@ switches, %@ cancels.</key>
-	<string>Press %@ to open WindowHop without holding a key. %@ or the arrow keys move, %@ or %@ switches, %@ cancels.</string>
+	<key>Permissions</key>
+	<string>Permissions</string>
+	<key>Picture in Picture</key>
+	<string>Picture in Picture</string>
+	<key>Placement</key>
+	<string>Placement</string>
 	<key>Press a shortcut. %@ cancels, %@ clears.</key>
 	<string>Press a shortcut. %@ cancels, %@ clears.</string>
+	<key>Previous window</key>
+	<string>Previous window</string>
 	<key>Print</key>
 	<string>Print</string>
 	<key>Quit</key>
@@ -218,10 +242,6 @@
 	<string>Recording</string>
 	<key>Redo</key>
 	<string>Redo</string>
-	<key>Released</key>
-	<string>Released</string>
-	<key>Released %@</key>
-	<string>Released %@</string>
 	<key>Report an Issue…</key>
 	<string>Report an Issue…</string>
 	<key>Reset Stuck Permission…</key>
@@ -240,8 +260,6 @@
 	<string>Save</string>
 	<key>Screen Recording</key>
 	<string>Screen Recording</string>
-	<key>Screen Recording access is granted.</key>
-	<string>Screen Recording access is granted.</string>
 	<key>Screen Recording permission required</key>
 	<string>Screen Recording permission required</string>
 	<key>Screen Recording permission required — Open System Settings</key>
@@ -266,80 +284,74 @@
 	<string>Shortcuts, appearance, window filters, update checks, and app visibility return to their original values. macOS permissions, launch at login and cached previews are unchanged.</string>
 	<key>Show All</key>
 	<string>Show All</string>
-	<key>Show Dock icon</key>
-	<string>Show Dock icon</string>
-	<key>Show an expanded preview after pausing</key>
-	<string>Show an expanded preview after pausing</string>
-	<key>Show menu bar item</key>
-	<string>Show menu bar item</string>
+	<key>Show WindowHop in</key>
+	<string>Show WindowHop in</string>
 	<key>Show tab counts</key>
 	<string>Show tab counts</string>
 	<key>Show the switcher on</key>
 	<string>Show the switcher on</string>
-	<key>Snapshots are captured only while the switcher is open.</key>
-	<string>Snapshots are captured only while the switcher is open.</string>
 	<key>Space</key>
 	<string>Space</string>
+	<key>Stays open without holding a key. %@ or %@ switches.</key>
+	<string>Stays open without holding a key. %@ or %@ switches.</string>
+	<key>Style</key>
+	<string>Style</string>
 	<key>Switch between windows, not just apps.</key>
 	<string>Switch between windows, not just apps.</string>
+	<key>Switch to the selected window</key>
+	<string>Switch to the selected window</string>
 	<key>Switch windows</key>
 	<string>Switch windows</string>
-	<key>Switcher delay</key>
-	<string>Switcher delay</string>
-	<key>Switcher placement</key>
-	<string>Switcher placement</string>
-	<key>Switcher shortcut</key>
-	<string>Switcher shortcut</string>
-	<key>Switcher shows</key>
-	<string>Switcher shows</string>
+	<key>Switcher</key>
+	<string>Switcher</string>
+	<key>Switcher style</key>
+	<string>Switcher style</string>
 	<key>System Settings → Privacy &amp; Security → Accessibility → enable WindowHop</key>
 	<string>System Settings → Privacy &amp; Security → Accessibility → enable WindowHop</string>
 	<key>Tab</key>
 	<string>Tab</string>
+	<key>Tabs of one window are one entry. Menus and system overlays are never listed.</key>
+	<string>Tabs of one window are one entry. Menus and system overlays are never listed.</string>
 	<key>The display with the pointer</key>
 	<string>The display with the pointer</string>
 	<key>The native %@ app switcher takes over until you open WindowHop again.</key>
 	<string>The native %@ app switcher takes over until you open WindowHop again.</string>
+	<key>The window is not activated until you confirm.</key>
+	<string>The window is not activated until you confirm.</string>
 	<key>This is already the switcher shortcut. Choose a different combination.</key>
 	<string>This is already the switcher shortcut. Choose a different combination.</string>
-	<key>This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected.</key>
-	<string>This is where the switcher appears, not which windows it lists. The display with the pointer is the one you are looking at, which is not always the one holding keyboard focus. If a specific display is disconnected, the switcher opens on the display with the pointer and returns to your choice when that display is reconnected.</string>
 	<key>Type shortcut… (%@ cancels, %@ clears)</key>
 	<string>Type shortcut… (%@ cancels, %@ clears)</string>
 	<key>Undo</key>
 	<string>Undo</string>
-	<key>Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation.</key>
-	<string>Until it is granted, cached previews remain visible and other cards use a static fallback instead of an indefinite loading animation.</string>
 	<key>Up Arrow</key>
 	<string>Up Arrow</string>
-	<key>Update checks against GitHub are WindowHop's only routine network activity. No telemetry, no accounts. Updates are cryptographically verified before installing.</key>
-	<string>Update checks against GitHub are WindowHop's only routine network activity. No telemetry, no accounts. Updates are cryptographically verified before installing.</string>
+	<key>Update checks are WindowHop's only network activity. No telemetry.</key>
+	<string>Update checks are WindowHop's only network activity. No telemetry.</string>
 	<key>Updates</key>
 	<string>Updates</string>
-	<key>Updates are available in the installed app (WindowHop.app), not in development builds.</key>
-	<string>Updates are available in the installed app (WindowHop.app), not in development builds.</string>
+	<key>Updates work in the installed app, not in development builds.</key>
+	<string>Updates work in the installed app, not in development builds.</string>
 	<key>Use Anyway</key>
 	<string>Use Anyway</string>
-	<key>Version</key>
-	<string>Version</string>
 	<key>Version %@</key>
 	<string>Version %@</string>
+	<key>Website</key>
+	<string>Website</string>
 	<key>Welcome to WindowHop</key>
 	<string>Welcome to WindowHop</string>
+	<key>When both are off, open WindowHop again to show this window.</key>
+	<string>When both are off, open WindowHop again to show this window.</string>
 	<key>While WindowHop is running, it takes over %@ and macOS won't respond to it. You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.</key>
 	<string>While WindowHop is running, it takes over %@ and macOS won't respond to it. You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.</string>
-	<key>While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is %@.</key>
-	<string>While you hold the switcher shortcut, the switcher appears after this delay. A quicker press switches to your previous window without showing it. Open WindowHop always shows the switcher immediately. The default is %@.</string>
+	<key>While a chosen display is disconnected, the switcher opens on the display with the pointer.</key>
+	<string>While a chosen display is disconnected, the switcher opens on the display with the pointer.</string>
+	<key>While the switcher is open</key>
+	<string>While the switcher is open</string>
 	<key>Window</key>
 	<string>Window</string>
 	<key>Window Previews</key>
 	<string>Window Previews</string>
-	<key>Window Previews needs Screen Recording access.</key>
-	<string>Window Previews needs Screen Recording access.</string>
-	<key>Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds.</key>
-	<string>Window Previews only. After you pause, WindowHop enlarges the latest snapshot inside the switcher. The real window is not activated until you confirm; cancelling leaves the desktop unchanged. The default delay is 3 seconds.</string>
-	<key>Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots.</key>
-	<string>Window Previews will ask for Screen Recording when you select it — macOS requires that permission for window snapshots.</string>
 	<key>WindowHop</key>
 	<string>WindowHop</string>
 	<key>WindowHop %@ is available</key>
@@ -348,32 +360,20 @@
 	<string>WindowHop Settings</string>
 	<key>WindowHop Settings (⌘,)</key>
 	<string>WindowHop Settings (⌘,)</string>
-	<key>WindowHop Website</key>
-	<string>WindowHop Website</string>
 	<key>WindowHop application icon</key>
 	<string>WindowHop application icon</string>
-	<key>WindowHop is off. %@ opens the native app switcher.</key>
-	<string>WindowHop is off. %@ opens the native app switcher.</string>
 	<key>WindowHop is running from a temporary macOS location, so this permission can't be saved. Move WindowHop.app into Applications with Finder, then open it again.</key>
 	<string>WindowHop is running from a temporary macOS location, so this permission can't be saved. Move WindowHop.app into Applications with Finder, then open it again.</string>
 	<key>WindowHop is waiting for your approval in System Settings › General › Login Items.</key>
 	<string>WindowHop is waiting for your approval in System Settings › General › Login Items.</string>
 	<key>WindowHop needs Accessibility access</key>
 	<string>WindowHop needs Accessibility access</string>
-	<key>WindowHop on GitHub</key>
-	<string>WindowHop on GitHub</string>
-	<key>WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed.</key>
-	<string>WindowHop shows a curated set of normal windows by default. Additional categories are opt-in and update the switcher immediately. Menus, tooltips, tab siblings, and system overlays are never listed.</string>
 	<key>WindowHop window switcher</key>
 	<string>WindowHop window switcher</string>
 	<key>WindowHop, Accessibility access needed</key>
 	<string>WindowHop, Accessibility access needed</string>
 	<key>WindowHop, paused</key>
 	<string>WindowHop, paused</string>
-	<key>Windows</key>
-	<string>Windows</string>
-	<key>Windows shown</key>
-	<string>Windows shown</string>
 	<key>Zoom</key>
 	<string>Zoom</string>
 	<key>macOS requires this permission to list your windows and to switch between them with the keyboard. It is the only permission WindowHop always needs: the default App Icons appearance works without Screen Recording. If you turn on Window Previews, WindowHop asks for Screen Recording and takes snapshots only while the switcher is open, keeping them in memory — they are never saved or sent anywhere. The only time WindowHop uses the network is to check for and download its own updates.</key>

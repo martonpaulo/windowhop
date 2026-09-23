@@ -132,7 +132,7 @@ window and desktop stacking unchanged.
 
 Tabs are never separate switcher entries. Finder, Safari, and Terminal tab groups collapse
 to their visible top-level window. Optional tab-count metadata is hidden by default and
-can be enabled in Settings → Appearance without changing preview width.
+can be enabled in Settings → Switcher without changing preview width.
 
 ### Open WindowHop shortcut
 
@@ -268,7 +268,7 @@ this again.
   Recording, enable WindowHop, then return to the app. App Icons remains fully usable
   without it.
 - **A window is missing** — minimized, hidden-app, and PiP windows are excluded by
-  default and can be enabled under Settings → Windows. Public Accessibility APIs
+  default and can be enabled under Settings → Switcher. Public Accessibility APIs
   reveal an unvisited Space only after you visit it once.
 - **A previous build's Accessibility toggle does not stick** — ensure WindowHop is in
   Applications and use the one-time recovery above. Running directly from Downloads or

@@ -21,18 +21,46 @@ enum DesignTokens {
     static let chromeButtonOutsideOverlap: CGFloat = 10
 
     // MARK: Settings window
-    /// Every pane renders into this one canvas, so selecting a pane never
-    /// resizes the window (the native Settings behavior): panes with less
-    /// content simply end in empty space, and a pane that outgrows the canvas —
-    /// large Dynamic Type, a long localization — scrolls inside it. The height
-    /// fits the tallest pane at the default text size and stays well inside a
-    /// laptop display's usable height.
+    /// Every pane has this width and is as tall as its content, so the window
+    /// resizes when the pane changes, as in the settings of Safari or Mail
+    /// (#121). Each pane stays short enough for a laptop display.
     static let settingsPaneWidth: CGFloat = 560
-    static let settingsPaneHeight: CGFloat = 540
+    /// Room for the title bar, the toolbar, and a margin, taken from the
+    /// display's usable height to cap a pane; a taller pane scrolls.
+    static let settingsWindowChromeAllowance: CGFloat = 120
+    static let settingsPaneMinimumHeight: CGFloat = 320
+    static let settingsPaneFallbackDisplayHeight: CGFloat = 800
+    static let settingsRecorderWidth: CGFloat = 160
     static let settingsAboutIconSize: CGFloat = 64
-    static let settingsAboutHeaderSpacing: CGFloat = 16
     static let settingsAboutTitleSpacing: CGFloat = 3
     static let settingsAboutHeaderPadding: CGFloat = 4
+    static let settingsAboutFooterSpacing: CGFloat = 6
+    static let settingsAboutLinkSpacing: CGFloat = 20
+    /// The General status row: the app icon beside the on/off sentence.
+    static let settingsStatusIconSize: CGFloat = 32
+    static let settingsStatusSpacing: CGFloat = 12
+    /// Session keys in Shortcuts, drawn as key caps.
+    static let settingsKeyCapMinWidth: CGFloat = 14
+    static let settingsKeyCapHorizontalPadding: CGFloat = 6
+    static let settingsKeyCapVerticalPadding: CGFloat = 2
+    static let settingsKeyCapCornerRadius: CGFloat = 5
+    static let settingsKeyCapStrokeWidth: CGFloat = 1
+    static let settingsKeyCapSpacing: CGFloat = 4
+    /// The App Icons / Window Previews thumbnails in Switcher › Style.
+    static let settingsStyleOptionSpacing: CGFloat = 24
+    static let settingsStyleLabelSpacing: CGFloat = 6
+    static let settingsStylePickerPadding: CGFloat = 6
+    static let settingsStyleThumbnailWidth: CGFloat = 120
+    static let settingsStyleThumbnailHeight: CGFloat = 64
+    static let settingsStyleThumbnailCornerRadius: CGFloat = 8
+    static let settingsStyleThumbnailItemSpacing: CGFloat = 5
+    static let settingsStyleThumbnailIconSize: CGFloat = 22
+    static let settingsStyleThumbnailIconCornerRadius: CGFloat = 5
+    static let settingsStyleThumbnailPreviewWidth: CGFloat = 30
+    static let settingsStyleThumbnailPreviewHeight: CGFloat = 22
+    static let settingsStyleThumbnailPreviewCornerRadius: CGFloat = 3
+    static let settingsStyleSelectionInset: CGFloat = 3
+    static let settingsStyleSelectionWidth: CGFloat = 2.5
 
     // MARK: Tiles (both appearances)
     /// Preview canvases use this radius for their fixed content and focus ring.

@@ -263,7 +263,7 @@ unaffected by placement.
 
 ## Presentation
 
-Fixed-size tiles in one of two appearances (Settings → Appearance; changing it
+Fixed-size tiles in one of two appearances (Settings → Switcher; changing it
 applies on the next session, no restart):
 
 - **App Icons** (default): a large application icon dominates a compact tile.
