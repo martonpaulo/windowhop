@@ -475,6 +475,35 @@ main {
   text-decoration: none;
 }
 
+/* Command: one Terminal command to copy, such as the Homebrew install. It is
+   selectable (it is text to copy) and scrolls sideways rather than wrapping. */
+.command {
+  max-width: 100%;
+  margin: 0;
+  padding: var(--space-xs) var(--space-s);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-strong);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.section > .command-label {
+  margin-top: var(--space-l);
+  font-size: var(--text-sm);
+}
+
+.section > .command {
+  width: fit-content;
+  margin-top: var(--space-2xs);
+}
+
+.download > .command {
+  margin-inline: auto;
+}
+
 /* Card: the one surface for feature tiles, steps, comparisons, help, FAQ items
    and figures. */
 .card {
@@ -1126,6 +1155,17 @@ a.pill:hover {
 
 .section.download > .download-count {
   font-size: var(--text-sm);
+}
+
+/* The Homebrew line sits right above its command, and the help link on its own row. */
+.section.download > p.command-label {
+  margin-block: var(--space-l) 0;
+}
+
+.section.download > .text-link {
+  display: flex;
+  width: fit-content;
+  margin-inline: auto;
 }
 
 /* Inner pages (/help/, /alttab-alternative/) open with a left-aligned title. */

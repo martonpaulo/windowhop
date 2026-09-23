@@ -79,6 +79,11 @@
   - Release workflow: `.github/workflows/release.yml`, run by a `vX.Y.Z` tag on the current
     `main` commit, pushed or dispatched by hand on that tag. It is the only thing that
     publishes; the local `scripts/` rehearse and diagnose, and never publish a release.
+  - Homebrew: the cask `martonpaulo/tap/windowhop` in the public `martonpaulo/homebrew-tap`
+    repository (`brew install --cask martonpaulo/tap/windowhop`). `release.yml` bumps its
+    version and sha256 when the optional `HOMEBREW_TAP_TOKEN` secret exists; otherwise bump
+    them by hand after the release. The cask is `auto_updates`, so Sparkle updates an install
+    from an older cask.
   - Update feed: Sparkle, from `appcast.xml` on `raw.githubusercontent.com`, written by
     `release.yml` only after the update ZIP is downloadable. Each item's release notes are
     the site's `/release-notes/X.Y.Z/` page, rendered from `CHANGELOG.md` at deploy time

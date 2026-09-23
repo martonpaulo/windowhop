@@ -20,6 +20,10 @@ env:
 jobs:
   release:
     runs-on: macos-26
+    # Optional: a fine-grained token with Contents read/write on martonpaulo/homebrew-tap.
+    # A secret cannot appear in a step's `if:`, so it is exposed here and tested as env.
+    env:
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     steps:
       - name: Require a release tag
         run: |
@@ -295,6 +299,23 @@ jobs:
             git pull --rebase origin main
             git push origin main
           fi
+
+      # Keeps the Homebrew cask (martonpaulo/homebrew-tap) on the version just published.
+      # Without the token the step is skipped and the cask is bumped by hand; the cask is
+      # marked auto_updates, so an older cask still installs and Sparkle updates it.
+      - name: Update the Homebrew cask
+        if: env.HOMEBREW_TAP_TOKEN != ''
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA=$(shasum -a 256 "artifacts/WindowHop-$VERSION.dmg" | cut -d' ' -f1)
+          git clone --depth 1 "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/martonpaulo/homebrew-tap.git" "$RUNNER_TEMP/tap"
+          cd "$RUNNER_TEMP/tap"
+          perl -pi -e "s/^  version \".*\"/  version \"$VERSION\"/; s/^  sha256 \".*\"/  sha256 \"$SHA\"/" Casks/windowhop.rb
+          git diff --stat
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: WindowHop $VERSION"
+          git push origin HEAD
 
       # The appcast commit is pushed with GITHUB_TOKEN, which starts no workflow,
       # and the release commit's own deploy ran before the release existed. Publish

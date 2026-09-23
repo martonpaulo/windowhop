@@ -45,6 +45,14 @@ on another Space or another display.
 4. WindowHop asks for **Accessibility** permission. Choose **Open System Settings** and turn
    on WindowHop. It needs this permission to see your windows and switch to them.
 
+**With Homebrew** instead, in Terminal:
+
+```sh
+brew install --cask martonpaulo/tap/windowhop
+```
+
+Then open WindowHop from Applications and allow Accessibility (step 4).
+
 That is all. WindowHop updates itself: it checks for new versions and asks before it installs
 one.
 
@@ -136,7 +144,8 @@ internet is the update check. You can read every line of the code in this reposi
 ## Uninstall
 
 1. Quit WindowHop: choose **Quit WindowHop…** in Settings → General.
-2. Move WindowHop from Applications to the Trash.
+2. Move WindowHop from Applications to the Trash, or, if you installed it with Homebrew, run
+   `brew uninstall --zap --cask windowhop`, which also removes its settings.
 3. Optional: remove WindowHop from System Settings → Privacy & Security → Accessibility and
    Screen Recording.
 
