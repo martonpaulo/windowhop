@@ -95,7 +95,9 @@ or another version.
 
 The download section shows "Downloaded N times", and the hero shows the same total and the
 repository's GitHub star count as two small pills under the buttons (the star pill links to
-the stargazers). The number is the sum of GitHub's
+the stargazers). The same step writes `/stats.json` (`{"downloads": N, "stars": N}`), which the README's
+shields.io downloads badge reads, so the README shows the site's count rather than GitHub's
+total, which also counts Sparkle update archives. The number is the sum of GitHub's
 `download_count` over every release's `WindowHop-<version>.dmg` and
 `WindowHop-<version>-Installer.zip`: the files a person downloads to install. Sparkle update
 archives are excluded because an update is an existing install (`docs/product.md`), and so is
