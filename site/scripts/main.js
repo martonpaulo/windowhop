@@ -37,6 +37,22 @@ document
     last.textContent = lead + [...words, glued].join(" ") + trail;
   });
 
+// Copy buttons: shown only here, since copying needs JavaScript. The label says
+// "Copied" for a moment, and a screen reader hears it through aria-live.
+document.querySelectorAll("[data-copy]").forEach((button) => {
+  button.hidden = false;
+  button.setAttribute("aria-live", "polite");
+  button.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(button.dataset.copy);
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Select and copy";
+    }
+    setTimeout(() => { button.textContent = "Copy"; }, 1600);
+  });
+});
+
 // The hidden starting state exists only under html.js with motion allowed (see
 // styles/main.css), so without JavaScript or with Reduce Motion every section is
 // simply visible.

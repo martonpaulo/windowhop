@@ -92,13 +92,13 @@ if [ -n "$total" ]; then
   if [ "$total" -eq 1 ]; then noun="time"; else noun="times"; fi
   replace "$placeholder" "<p class=\"download-count\" id=\"download-count\">Downloaded $grouped $noun</p>"
   if [ "$total" -eq 1 ]; then noun="download"; else noun="downloads"; fi
-  parts+=("<span class=\"pill\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M8 2v8m0 0 3.5-3.5M8 10 4.5 6.5M3 13h10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>$grouped $noun</span>")
+  parts+=("<span>$grouped $noun</span>")
   echo "download count: $grouped"
 fi
 if [ -n "$star_count" ]; then
   grouped=$(group "$star_count")
   if [ "$star_count" -eq 1 ]; then noun="star"; else noun="stars"; fi
-  parts+=("<a class=\"pill\" href=\"https://github.com/$repo/stargazers\" rel=\"noopener\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z\" fill=\"currentColor\"/></svg>$grouped $noun on GitHub</a>")
+  parts+=("<a target=\"_blank\" href=\"https://github.com/$repo\" rel=\"noopener\">★ $grouped $noun on GitHub</a>")
   echo "star count: $grouped"
 fi
 # The same two numbers as JSON, for the README's shields.io badges: the downloads

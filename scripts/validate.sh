@@ -451,12 +451,16 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
       }
     done
 
-    # Every link that leaves the site carries rel="noopener". Its arrow is drawn once,
+    # Every link that leaves the site opens in a new tab (target="_blank", the
+    # owner's rule) and carries rel="noopener". Its arrow is drawn once,
     # by the a[href^="http"]::after rule in main.css (a marker above), so the markup
     # never repeats it.
     while IFS= read -r line; do
         case "$line" in *'rel="noopener"'*) ;; *)
             echo "external link without rel=\"noopener\": $line" >&2; exit 1 ;;
+        esac
+        case "$line" in *'target="_blank"'*) ;; *)
+            echo "external link that does not open in a new tab: $line" >&2; exit 1 ;;
         esac
     done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' "${pages[@]}" || true)
 

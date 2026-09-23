@@ -33,7 +33,7 @@ def inline(text):
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     return re.sub(
         r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
-        lambda m: f'<a href="{html.escape(m.group(2))}" rel="noopener">{m.group(1)}</a>',
+        lambda m: f'<a target="_blank" href="{html.escape(m.group(2))}" rel="noopener">{m.group(1)}</a>',
         text,
     )
 
