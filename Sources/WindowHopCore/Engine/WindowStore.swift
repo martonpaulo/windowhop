@@ -429,7 +429,8 @@ public final class WindowStore {
                 for (id, element, attributes, tabs) in reads {
                     guard let window = self.windowsById[id], window.ax == element else { continue }
                     window.update(from: attributes, tabs: tabs)
-                    self.updateTabGroup(for: window, tabs: tabs)
+                    // a session-open re-read is not focus evidence (#82 rule 2)
+                    self.updateTabGroup(for: window, tabs: tabs, isFocusEvent: false)
                 }
                 self.onChange?()
             }
