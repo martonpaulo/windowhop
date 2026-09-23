@@ -183,13 +183,25 @@ Upstream commits after the base revision that the same pass mapped to WindowHop 
 
 | Repository | License (from file) | Reviewed revision | Private API | Areas | Verdict | Issues |
 | --- | --- | --- | --- | --- | --- | --- |
-| [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) | MIT | `5f08f9c0`, 2026-09-21 | Partial (`_AXUIElementGetWindow` only) | `Core/`, `Engine/` | Reference only (private API); its `axDumps/` corpus of real AX dumps with window/dialog/popup labels, including browser PiP windows, is the strongest outside eligibility evidence; latest-wins cancellable focus job corroborates [#41](https://github.com/martonpaulo/windowhop/issues/41) | [#41](https://github.com/martonpaulo/windowhop/issues/41), [#90](https://github.com/martonpaulo/windowhop/issues/90), proposed: eligibility counterexample corpus |
+| [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) | MIT | `5f08f9c0`, 2026-09-21 | Partial (`_AXUIElementGetWindow` only) | `Core/`, `Engine/` | Reference only for code (private API); its `axDumps/` corpus is imported as test data (see below); latest-wins cancellable focus job corroborates [#41](https://github.com/martonpaulo/windowhop/issues/41) | [#41](https://github.com/martonpaulo/windowhop/issues/41), [#90](https://github.com/martonpaulo/windowhop/issues/90), [#115](https://github.com/martonpaulo/windowhop/issues/115) |
 | [mrkai77/Loop](https://github.com/mrkai77/Loop) | GPL-3.0 | `df26d565`, 2026-09-06 | Yes (SkyLight, `@_silgen_name`) | `Input/` | Reference only; its event tap re-enables only after `tapDisabledByTimeout`, not `tapDisabledByUserInput`, and tears down after a restart cascade | [#84](https://github.com/martonpaulo/windowhop/issues/84) |
 | [rxhanson/Rectangle](https://github.com/rxhanson/Rectangle) | MIT (GitHub reports NOASSERTION because of the Spectacle notice) | `12a9bc79`, 2026-09-16 | Partial (`_AXUIElementGetWindow`) | `Engine/` | Reference only (window management is a non-goal; `AXEnhancedUserInterface` handling matters only when setting frames) | none |
 | [Hammerspoon/hammerspoon](https://github.com/Hammerspoon/hammerspoon) | MIT | `23e387e2`, 2026-07-08 | Partial (`_AXUIElementGetWindow`, `CGSSetDebugOptions`, Spaces) | `Engine/` | Reference only (`hs.window.filter` default app skip lists and allowed roles) | none |
 | [tmandry/Swindler](https://github.com/tmandry/Swindler) | MIT | `bf2c42f1`, 2022-09-05 (last push 2023-12-31) | No | `Engine/` | Reference only (unmaintained, PromiseKit-based; public-API Space identity via per-display tracker windows and fake-AX test doubles) | none |
 | [ianyh/Amethyst](https://github.com/ianyh/Amethyst) | MIT | `6508ee2c`, 2026-08-19 | Yes (`CGSCopySpaces*`, `_SLPSSetFrontProcessWithOptions`) | none | Excluded (tiling non-goal; private Spaces and focus) | none |
 | [asmvik/yabai](https://github.com/asmvik/yabai) | MIT | `dd845723`, 2026-06-14 | Yes (SkyLight; scripting addition needs SIP partially disabled) | none | Excluded (private API, SIP) | none |
+
+### Imported test data
+
+`Tests/WindowHopTests/Fixtures/AeroSpaceAXDumps/` is AeroSpace's `axDumps/` directory copied
+verbatim from `5f08f9c0c9daea6bb0f652da71d80a02e0b3f6cf` (2026-09-21): 125 real AX attribute
+dumps labeled `window`, `dialog` or `popup`. It is MIT-licensed data, Copyright (c) 2023
+Nikita Bobko; the license travels with it as `LICENSE.txt` in that directory. No AeroSpace
+code is imported or ported. `AeroSpaceAXDumpCorpusTests` maps each dump to `WindowFacts`
+and the Picture-in-Picture facts and asserts WindowHop's decision; every disagreement with a
+label is recorded there with its reason
+([#115](https://github.com/martonpaulo/windowhop/issues/115)). To refresh, copy the directory
+from a newer revision, re-pin it here, and re-read each changed decision.
 
 ## Consulting other sources when planning
 

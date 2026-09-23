@@ -32,7 +32,9 @@ let package = Package(
         .testTarget(
             name: "WindowHopTests",
             dependencies: ["WindowHopCore"],
-            path: "Tests/WindowHopTests"
+            path: "Tests/WindowHopTests",
+            // AeroSpace's MIT-licensed AX dump corpus, imported verbatim (UPSTREAM.md)
+            resources: [.copy("Fixtures/AeroSpaceAXDumps")]
         ),
     ]
 )
