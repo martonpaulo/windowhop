@@ -232,7 +232,8 @@ public final class SwitcherController {
     /// Names the window the way its tile does, so two same-app windows sharing a
     /// raw title stay distinguishable where the destructive action is confirmed.
     static func closeConfirmationMessage(for item: SwitcherItem) -> String {
-        "Close “\(item.displayTitle)” in \(item.appName)?"
+        String(localized: "Close “\(item.displayTitle)” in \(item.appName)?",
+               comment: "Placeholders are the window title and the application name.")
     }
 
     private func presentCloseConfirmation(for item: SwitcherItem, sessionID: UInt64) {
@@ -245,15 +246,15 @@ public final class SwitcherController {
         alert.alertStyle = .warning
         alert.messageText = Self.closeConfirmationMessage(for: item)
         alert.informativeText = quitEscalatesToForce
-            ? "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path."
-            : "If the window has unsaved changes, \(item.appName) will ask about them."
-        alert.addButton(withTitle: "Cancel")
-        let closeButton = alert.addButton(withTitle: "Close Window")
+            ? String(localized: "\(item.appName) was already asked to quit and is still running. Closing the window still uses the normal, safe path.")
+            : String(localized: "If the window has unsaved changes, \(item.appName) will ask about them.")
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        let closeButton = alert.addButton(withTitle: String(localized: "Close Window"))
         closeButton.hasDestructiveAction = true
         if offersQuit {
             let quitTitle = quitEscalatesToForce
-                ? "Force Quit \(item.appName)…"
-                : "Quit \(item.appName)"
+                ? String(localized: "Force Quit \(item.appName)…")
+                : String(localized: "Quit \(item.appName)")
             let quitButton = alert.addButton(withTitle: quitTitle)
             quitButton.hasDestructiveAction = true
         }
@@ -300,13 +301,14 @@ public final class SwitcherController {
     /// Force Quit is never the default, never silent, and always a second,
     /// explicitly destructive confirmation after a failed graceful Quit.
     private func runForceQuitConfirmation(_ app: TrackedApp) {
-        let name = app.name ?? "the application"
+        let name = app.name ?? String(localized: "the application",
+                                             comment: "Stands in for an application name in the Force Quit alert.")
         let alert = NSAlert()
         alert.alertStyle = .critical
-        alert.messageText = "Force Quit \(name)?"
-        alert.informativeText = "\(name) didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost."
-        alert.addButton(withTitle: "Cancel")
-        let forceButton = alert.addButton(withTitle: "Force Quit")
+        alert.messageText = String(localized: "Force Quit \(name)?")
+        alert.informativeText = String(localized: "\(name) didn't quit when asked. Force quitting ends it immediately and any unsaved changes will be lost.")
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        let forceButton = alert.addButton(withTitle: String(localized: "Force Quit"))
         forceButton.hasDestructiveAction = true
         if alert.runModal() == .alertSecondButtonReturn {
             WindowActions.forceQuit(app)

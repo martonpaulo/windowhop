@@ -34,56 +34,57 @@ public enum MainMenuBuilder {
 
         // App menu. Services wiring and placement follow AltTab's
         // src/ui/MainMenu.swift (see UPSTREAM.md).
-        let appMenu = NSMenu(title: "WindowHop")
+        let appMenu = NSMenu(title: String(localized: "WindowHop"))
         // opens Settings › About rather than AppKit's standard About panel,
         // so every entry point reaches the same About
-        appMenu.addItem(item("About WindowHop", #selector(MainMenuActions.openAboutFromMenu(_:))))
+        appMenu.addItem(item(String(localized: "About WindowHop"), #selector(MainMenuActions.openAboutFromMenu(_:))))
         appMenu.addItem(.separator())
-        appMenu.addItem(item("Settings…", #selector(MainMenuActions.openSettingsFromMenu(_:)), ","))
+        appMenu.addItem(item(String(localized: "Settings…"),
+                             #selector(MainMenuActions.openSettingsFromMenu(_:)), ","))
         var servicesMenu: NSMenu?
         if isRegular {
             appMenu.addItem(.separator())
-            let services = NSMenu(title: "Services")
-            let servicesItem = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
+            let services = NSMenu(title: String(localized: "Services"))
+            let servicesItem = NSMenuItem(title: String(localized: "Services"), action: nil, keyEquivalent: "")
             servicesItem.submenu = services
             appMenu.addItem(servicesItem)
             servicesMenu = services
             appMenu.addItem(.separator())
-            appMenu.addItem(item("Hide WindowHop", #selector(NSApplication.hide(_:)), "h"))
-            appMenu.addItem(item("Hide Others", #selector(NSApplication.hideOtherApplications(_:)),
+            appMenu.addItem(item(String(localized: "Hide WindowHop"), #selector(NSApplication.hide(_:)), "h"))
+            appMenu.addItem(item(String(localized: "Hide Others"), #selector(NSApplication.hideOtherApplications(_:)),
                                  "h", [.option, .command]))
-            appMenu.addItem(item("Show All", #selector(NSApplication.unhideAllApplications(_:))))
+            appMenu.addItem(item(String(localized: "Show All"), #selector(NSApplication.unhideAllApplications(_:))))
         }
         appMenu.addItem(.separator())
-        appMenu.addItem(item("Quit WindowHop", #selector(NSApplication.terminate(_:)), "q"))
+        appMenu.addItem(item(String(localized: "Quit WindowHop"), #selector(NSApplication.terminate(_:)), "q"))
         mainMenu.addItem(menuBarItem(appMenu))
 
         // standard Edit menu so text fields (e.g. the shortcut recorder pane)
         // support the usual editing shortcuts
-        let editMenu = NSMenu(title: "Edit")
-        editMenu.addItem(item("Undo", Selector(("undo:")), "z"))
-        editMenu.addItem(item("Redo", Selector(("redo:")), "Z"))
+        let editMenu = NSMenu(title: String(localized: "Edit"))
+        editMenu.addItem(item(String(localized: "Undo"), Selector(("undo:")), "z"))
+        editMenu.addItem(item(String(localized: "Redo"), Selector(("redo:")), "Z"))
         editMenu.addItem(.separator())
-        editMenu.addItem(item("Cut", #selector(NSText.cut(_:)), "x"))
-        editMenu.addItem(item("Copy", #selector(NSText.copy(_:)), "c"))
-        editMenu.addItem(item("Paste", #selector(NSText.paste(_:)), "v"))
-        editMenu.addItem(item("Select All", #selector(NSText.selectAll(_:)), "a"))
+        editMenu.addItem(item(String(localized: "Cut"), #selector(NSText.cut(_:)), "x"))
+        editMenu.addItem(item(String(localized: "Copy"), #selector(NSText.copy(_:)), "c"))
+        editMenu.addItem(item(String(localized: "Paste"), #selector(NSText.paste(_:)), "v"))
+        editMenu.addItem(item(String(localized: "Select All"), #selector(NSText.selectAll(_:)), "a"))
         mainMenu.addItem(menuBarItem(editMenu))
 
-        let windowMenu = NSMenu(title: "Window")
-        windowMenu.addItem(item("Close", #selector(NSWindow.performClose(_:)), "w"))
-        windowMenu.addItem(item("Minimize", #selector(NSWindow.performMiniaturize(_:)), "m"))
+        let windowMenu = NSMenu(title: String(localized: "Window"))
+        windowMenu.addItem(item(String(localized: "Close"), #selector(NSWindow.performClose(_:)), "w"))
+        windowMenu.addItem(item(String(localized: "Minimize"), #selector(NSWindow.performMiniaturize(_:)), "m"))
         if isRegular {
             // AppKit disables it for the non-resizable Settings window
-            windowMenu.addItem(item("Zoom", #selector(NSWindow.performZoom(_:))))
+            windowMenu.addItem(item(String(localized: "Zoom"), #selector(NSWindow.performZoom(_:))))
         }
         mainMenu.addItem(menuBarItem(windowMenu))
 
         var helpMenu: NSMenu?
         if isRegular {
             // no "WindowHop Help" item: the project ships no help documentation
-            let help = NSMenu(title: "Help")
-            help.addItem(item("Report an Issue…", #selector(MainMenuActions.reportIssue(_:))))
+            let help = NSMenu(title: String(localized: "Help"))
+            help.addItem(item(String(localized: "Report an Issue…"), #selector(MainMenuActions.reportIssue(_:))))
             mainMenu.addItem(menuBarItem(help))
             helpMenu = help
         }

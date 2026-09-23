@@ -328,8 +328,8 @@ final class SwitcherTileView: NSView {
         closeButton.bezelStyle = .regularSquare
         closeButton.target = self
         closeButton.action = #selector(closeClicked)
-        closeButton.toolTip = "Close Window"
-        closeButton.setAccessibilityLabel("Close Window")
+        closeButton.toolTip = String(localized: "Close Window")
+        closeButton.setAccessibilityLabel(String(localized: "Close Window"))
         closeButton.isHidden = true
         addSubview(closeButton)
 
@@ -338,7 +338,7 @@ final class SwitcherTileView: NSView {
         // essential actions stay keyboard-reachable (Delete); this mirrors the
         // hover control for VoiceOver users
         setAccessibilityCustomActions([
-            NSAccessibilityCustomAction(name: "Close Window") { [weak self] in
+            NSAccessibilityCustomAction(name: String(localized: "Close Window")) { [weak self] in
                 self?.onCloseRequest?()
                 return true
             },
@@ -358,7 +358,11 @@ final class SwitcherTileView: NSView {
     }
 
     private static func tabsText(for item: SwitcherItem) -> String {
-        item.tabCount.map { "\($0) tabs" } ?? ""
+        // String(count) keeps the digits unformatted, as before the catalog: an integer
+        // interpolated into String(localized:) follows the locale's digit grouping
+        item.tabCount.map { count in
+            String(localized: "\(String(count)) tabs", comment: "The placeholder is a tab count.")
+        } ?? ""
     }
 
     func configure(item: SwitcherItem,

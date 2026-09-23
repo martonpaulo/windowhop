@@ -37,7 +37,7 @@ final class ExpandedPreviewView: NSView {
 
         setAccessibilityElement(true)
         setAccessibilityRole(.group)
-        setAccessibilityLabel("Expanded window preview")
+        setAccessibilityLabel(String(localized: "Expanded window preview"))
         applyColors()
     }
 
@@ -63,7 +63,7 @@ final class ExpandedPreviewView: NSView {
     func updateMetadata(item: SwitcherItem) {
         badgeView.image = item.icon
         titleLabel.stringValue = item.displayTitle
-        setAccessibilityValue("Expanded preview of \(item.displayTitle), \(item.appName)")
+        setAccessibilityValue(String(localized: "Expanded preview of \(item.displayTitle), \(item.appName)"))
         needsLayout = true
     }
 

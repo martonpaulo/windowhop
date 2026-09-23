@@ -89,7 +89,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         statusRow.tag = ItemTag.status.rawValue
         statusRow.isHidden = true
         menu.addItem(statusRow)
-        let setupItem = NSMenuItem(title: "Open Accessibility Setup…",
+        let setupItem = NSMenuItem(title: String(localized: "Open Accessibility Setup…"),
                                    action: #selector(openAccessibilitySetup), keyEquivalent: "")
         setupItem.target = self
         setupItem.tag = ItemTag.accessibilitySetup.rawValue
@@ -99,21 +99,24 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         statusSeparator.tag = ItemTag.statusSeparator.rawValue
         statusSeparator.isHidden = true
         menu.addItem(statusSeparator)
-        let toggleItem = NSMenuItem(title: "Disable", action: #selector(toggleEnabled), keyEquivalent: "")
+        let toggleItem = NSMenuItem(title: String(localized: "Disable"),
+                                    action: #selector(toggleEnabled), keyEquivalent: "")
         toggleItem.target = self
         toggleItem.tag = ItemTag.toggle.rawValue
         menu.addItem(toggleItem)
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: "")
+        let settingsItem = NSMenuItem(title: String(localized: "Settings…"),
+                                      action: #selector(openSettings), keyEquivalent: "")
         settingsItem.target = self
         menu.addItem(settingsItem)
-        let updatesItem = NSMenuItem(title: "Check for Updates…",
+        let updatesItem = NSMenuItem(title: String(localized: "Check for Updates…"),
                                      action: #selector(checkForUpdates), keyEquivalent: "")
         updatesItem.target = self
         updatesItem.tag = ItemTag.checkForUpdates.rawValue
         updatesItem.isHidden = true
         menu.addItem(updatesItem)
         menu.addItem(.separator())
-        let quitItem = NSMenuItem(title: "Quit WindowHop", action: #selector(quit), keyEquivalent: "")
+        let quitItem = NSMenuItem(title: String(localized: "Quit WindowHop"),
+                                  action: #selector(quit), keyEquivalent: "")
         quitItem.target = self
         menu.addItem(quitItem)
         return menu
@@ -130,7 +133,7 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
         menu.item(withTag: ItemTag.accessibilitySetup.rawValue)?.isHidden = !state.offersAccessibilitySetup
         menu.item(withTag: ItemTag.statusSeparator.rawValue)?.isHidden = state.statusText == nil
         menu.item(withTag: ItemTag.toggle.rawValue)?.title =
-            preferences.switcherEnabled ? "Disable" : "Enable"
+            preferences.switcherEnabled ? String(localized: "Disable") : String(localized: "Enable")
         // a development build has no updater: hide the command rather than
         // offering one that does nothing
         menu.item(withTag: ItemTag.checkForUpdates.rawValue)?.isHidden = !updaterAvailable()

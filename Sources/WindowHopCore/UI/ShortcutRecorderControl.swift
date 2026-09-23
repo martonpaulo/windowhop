@@ -55,7 +55,7 @@ final class ShortcutRecorderControl: NSButton {
         setButtonType(.momentaryPushIn)
         target = self
         action = #selector(toggleRecording)
-        setAccessibilityLabel("Open WindowHop shortcut")
+        setAccessibilityLabel(String(localized: "Open WindowHop shortcut"))
         refreshTitle()
     }
 
@@ -130,14 +130,18 @@ final class ShortcutRecorderControl: NSButton {
         let escape = KeyCode.escape
         let delete = KeyCode.delete
         if isRecording {
-            title = "Type shortcut… (\(ShortcutFormatter.keySymbol(for: escape)) cancels, "
-                + "\(ShortcutFormatter.keySymbol(for: delete)) clears)"
-            setAccessibilityValue("Recording")
-            setAccessibilityHelp("Press a shortcut. \(ShortcutFormatter.spokenKeyName(for: escape)) "
-                + "cancels, \(ShortcutFormatter.spokenKeyName(for: delete)) clears.")
+            let escapeSymbol = ShortcutFormatter.keySymbol(for: escape)
+            let deleteSymbol = ShortcutFormatter.keySymbol(for: delete)
+            title = String(localized: "Type shortcut… (\(escapeSymbol) cancels, \(deleteSymbol) clears)",
+                           comment: "Placeholders are the Escape and Delete key symbols.")
+            setAccessibilityValue(String(localized: "Recording"))
+            let escapeName = ShortcutFormatter.spokenKeyName(for: escape)
+            let deleteName = ShortcutFormatter.spokenKeyName(for: delete)
+            setAccessibilityHelp(String(localized: "Press a shortcut. \(escapeName) cancels, \(deleteName) clears.",
+                                        comment: "Placeholders are the spoken Escape and Delete key names."))
         } else {
-            title = shortcut?.displayString ?? "Record Shortcut…"
-            setAccessibilityValue(shortcut?.spokenString ?? "None")
+            title = shortcut?.displayString ?? String(localized: "Record Shortcut…")
+            setAccessibilityValue(shortcut?.spokenString ?? String(localized: "None"))
             setAccessibilityHelp(validationMessage)
         }
         NSAccessibility.post(element: self, notification: .valueChanged)
@@ -221,8 +225,8 @@ struct ShortcutRecorderField: NSViewRepresentable {
         alert.alertStyle = .warning
         alert.messageText = copy.title
         alert.informativeText = copy.message
-        alert.addButton(withTitle: "Cancel")
-        alert.addButton(withTitle: "Use Anyway")
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        alert.addButton(withTitle: String(localized: "Use Anyway"))
         if let window {
             alert.beginSheetModal(for: window) { completion($0 == .alertSecondButtonReturn) }
         } else {

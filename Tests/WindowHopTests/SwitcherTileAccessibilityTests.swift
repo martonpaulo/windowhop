@@ -118,4 +118,15 @@ final class SwitcherTileAccessibilityTests: XCTestCase {
             XCTAssertFalse(tile.accessibilityPerformPress(), "mode: \(mode)")
         }
     }
+
+    /// The tab count reaches the label through the String Catalog; an integer
+    /// interpolated into `String(localized:)` would gain the locale's grouping
+    /// ("1,200 tabs"), so the count keeps the digits it had before the catalog (#99).
+    func testTabCountKeepsItsDigitsUnformatted() {
+        let item = SwitcherItem(id: AnyHashable("a"), window: nil, title: "Docs",
+                                appName: "Browser", icon: nil, tabCount: 1200)
+
+        XCTAssertEqual(SwitcherTileView.accessibilityText(for: item, showTabCounts: true),
+                       "Docs, Browser, 1200 tabs")
+    }
 }

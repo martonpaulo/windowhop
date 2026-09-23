@@ -15,7 +15,7 @@ public final class SettingsWindowController {
     public static let shared = SettingsWindowController()
 
     /// The switcher-entry title; the window's visible title follows the pane name.
-    public static let switcherEntryTitle = "WindowHop Settings"
+    public static let switcherEntryTitle = String(localized: "WindowHop Settings")
 
     static let defaultFrameAutosaveName = "WindowHopSettings"
 
@@ -114,12 +114,12 @@ enum SettingsPane: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .shortcuts: "Shortcuts"
-        case .windows: "Windows"
-        case .appearance: "Appearance"
-        case .updates: "Updates"
-        case .about: "About"
+        case .general: String(localized: "General")
+        case .shortcuts: String(localized: "Shortcuts")
+        case .windows: String(localized: "Windows")
+        case .appearance: String(localized: "Appearance")
+        case .updates: String(localized: "Updates")
+        case .about: String(localized: "About")
         }
     }
 
@@ -390,7 +390,7 @@ struct WindowsPane: View {
         }
         if let chosen = preferences.switcherDisplayID,
            !connectedDisplays.displays.contains(where: { $0.id == chosen }) {
-            options.append(DisplayOption(id: chosen, label: "Selected display (disconnected)"))
+            options.append(DisplayOption(id: chosen, label: String(localized: "Selected display (disconnected)")))
         }
         return options
     }

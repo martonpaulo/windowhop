@@ -17,7 +17,7 @@ public final class PermissionOnboardingController {
         if window == nil {
             let hosting = NSHostingController(rootView: PermissionOnboardingView())
             let newWindow = NSWindow(contentViewController: hosting)
-            newWindow.title = "Welcome to WindowHop"
+            newWindow.title = String(localized: "Welcome to WindowHop")
             newWindow.styleMask = [.titled, .closable]
             newWindow.isReleasedWhenClosed = false
             newWindow.center()

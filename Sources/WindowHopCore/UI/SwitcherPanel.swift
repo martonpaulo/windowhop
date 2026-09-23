@@ -182,7 +182,7 @@ public final class SwitcherPanel: NSPanel {
         // Global panel action: contextual during held cycling, persistent for
         // Open WindowHop sessions, and never measured as part of the grid.
         settingsButton.image = NSImage(systemSymbolName: "gearshape.circle.fill",
-                                       accessibilityDescription: "WindowHop Settings")?
+                                       accessibilityDescription: String(localized: "WindowHop Settings"))?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: DesignTokens.chromeButtonSymbolSize,
                                                                   weight: .semibold)
                 .applying(.init(paletteColors: [DesignTokens.overlayGlyphColor,
@@ -191,8 +191,8 @@ public final class SwitcherPanel: NSPanel {
         settingsButton.imagePosition = .imageOnly
         settingsButton.target = self
         settingsButton.action = #selector(settingsClicked)
-        settingsButton.toolTip = "WindowHop Settings (⌘,)"
-        settingsButton.setAccessibilityLabel("WindowHop Settings")
+        settingsButton.toolTip = String(localized: "WindowHop Settings (⌘,)")
+        settingsButton.setAccessibilityLabel(String(localized: "WindowHop Settings"))
         settingsButton.alphaValue = 0
         settingsButton.isEnabled = false
         settingsButton.setAccessibilityHidden(true)
@@ -203,7 +203,7 @@ public final class SwitcherPanel: NSPanel {
 
         permissionButton.image = NSImage(
             systemSymbolName: "lock.shield.fill",
-            accessibilityDescription: "Screen Recording permission required")?
+            accessibilityDescription: String(localized: "Screen Recording permission required"))?
             .withSymbolConfiguration(NSImage.SymbolConfiguration(
                 pointSize: DesignTokens.permissionGlyphSymbolSize,
                 weight: .semibold)
@@ -213,15 +213,15 @@ public final class SwitcherPanel: NSPanel {
         permissionButton.imagePosition = .imageOnly
         permissionButton.target = self
         permissionButton.action = #selector(permissionClicked)
-        permissionButton.toolTip = "Screen Recording permission required — Open System Settings"
+        permissionButton.toolTip = String(localized: "Screen Recording permission required — Open System Settings")
         permissionButton.setAccessibilityLabel(
-            "Screen Recording permission required. Open System Settings")
+            String(localized: "Screen Recording permission required. Open System Settings"))
         permissionButton.isHidden = true
         hostView.addSubview(permissionButton)
 
         chromeView.setAccessibilityElement(true)
         chromeView.setAccessibilityRole(.list)
-        chromeView.setAccessibilityLabel("WindowHop window switcher")
+        chromeView.setAccessibilityLabel(String(localized: "WindowHop window switcher"))
 
         accessibilityDisplayObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
