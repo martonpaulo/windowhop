@@ -97,7 +97,7 @@ jobs:
 
           echo "last deployed: $LAST"
           echo "candidate:     $HEAD_SHA"
-          CHANGED=$(git diff --name-only "$LAST" "$HEAD_SHA" -- site .github/workflows/deploy.yml CHANGELOG.md scripts/render-release-notes.py scripts/render-download-count.sh) \
+          CHANGED=$(git diff --name-only "$LAST" "$HEAD_SHA" -- site .github/workflows/deploy.yml CHANGELOG.md scripts/render-release-notes.py scripts/render-download-count.sh scripts/version-site-assets.py) \
             || publish true "diff failed"
           echo "changed published input:"; echo "${CHANGED:-(none)}"
           if [ -n "$CHANGED" ]; then publish true "site changed"; else publish false "site unchanged"; fi
@@ -111,8 +111,8 @@ jobs:
         with:
           ref: ${{ needs.scope.outputs.sha }}
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      # The count and the release notes are written into a staged copy, never into
-      # site/ itself. The count script exits 0 without it when GitHub's API is
+      # The count, the release notes and the asset versions are written into a staged
+      # copy, never into site/ itself. The count script exits 0 without it when GitHub's API is
       # unavailable; the notes come from CHANGELOG.md, one page per release (#128).
       - name: Stage the site with the download count and release notes
         env:
@@ -121,6 +121,7 @@ jobs:
           cp -R site "$RUNNER_TEMP/site"
           scripts/render-download-count.sh "$RUNNER_TEMP/site"
           python3 scripts/render-release-notes.py "$RUNNER_TEMP/site"
+          python3 scripts/version-site-assets.py "$RUNNER_TEMP/site"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/site

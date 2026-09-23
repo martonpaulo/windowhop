@@ -493,16 +493,6 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
       done < <(local_references "$page")
     done
 
-    # /assets/ is cached by browsers for a year (a Cloudflare rule on the custom
-    # domain), so the icon's address carries its content version: a new icon must be
-    # a new address, or visitors keep the old one.
-    icon_version=$(md5 -q site/assets/app-icon.png 2>/dev/null || md5sum site/assets/app-icon.png | cut -d' ' -f1)
-    icon_version=${icon_version:0:8}
-    if grep -ho '/assets/app-icon.png[^"]*"' "${pages[@]}" | grep -vqF "/assets/app-icon.png?v=$icon_version\""; then
-      echo "an app-icon.png reference lacks ?v=$icon_version (the icon's current content version)" >&2
-      exit 1
-    fi
-
     # Every published screenshot is used, and each one exists in a light and a dark
     # version: the pages show the one that matches the visitor's appearance.
     for shot in site/screenshots/*.webp; do
@@ -551,6 +541,22 @@ else
 fi
 grep -q "render-release-notes.py" .github/workflows/deploy.yml \
     || fail "deploy.yml does not render the release notes"
+
+# --- asset versions --------------------------------------------------------------
+# The deploy appends ?v=<content md5> to every local stylesheet, script and image
+# address, so browsers never pair new HTML with a cached old file.
+versions_dir=$(mktemp -d)
+cp -R site "$versions_dir/site"
+if python3 scripts/version-site-assets.py "$versions_dir/site" >/dev/null \
+    && grep -q '/styles/main.css?v=[0-9a-f]\{8\}"' "$versions_dir/site/index.html" \
+    && grep -q '/scripts/main.js?v=[0-9a-f]\{8\}"' "$versions_dir/site/help/index.html" \
+    && grep -q '/assets/app-icon.png?v=[0-9a-f]\{8\}"' "$versions_dir/site/404.html" \
+    && grep -q "version-site-assets.py" .github/workflows/deploy.yml; then
+    pass "the deploy versions every local asset address"
+else
+    fail "scripts/version-site-assets.py did not version the staged pages, or deploy.yml does not run it"
+fi
+rm -rf "$versions_dir"
 
 # --- canonical release scripts ------------------------------------------------
 # These are byte-identical copies of skill-deck's project-release assets, whose

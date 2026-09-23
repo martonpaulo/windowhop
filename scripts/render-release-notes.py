@@ -20,7 +20,6 @@ headings, `- ` bullets with indented continuation lines, paragraphs, **bold**,
 """
 
 import datetime
-import hashlib
 import html
 import pathlib
 import re
@@ -159,12 +158,6 @@ def page(title, description, content, header="", footer="", body_class="notes-pa
 """
 
 
-def icon_url(root):
-    """The icon's address with a content version: /assets/ is cached for a year."""
-    digest = hashlib.md5((root / "site" / "assets" / "app-icon.png").read_bytes()).hexdigest()[:8]
-    return f"/assets/app-icon.png?v={digest}"
-
-
 ICON = "/assets/app-icon.png"
 
 
@@ -187,8 +180,6 @@ def main():
         sys.exit("usage: render-release-notes.py <staged-site-dir>")
     root = pathlib.Path(__file__).resolve().parent.parent
     site = pathlib.Path(sys.argv[1])
-    global ICON
-    ICON = icon_url(root)
     released = list(entries((root / "CHANGELOG.md").read_text()))
     header, footer = chrome(root / "site")
     if not released:
