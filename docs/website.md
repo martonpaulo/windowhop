@@ -133,8 +133,9 @@ commit with GitHub's official Pages actions. The repository Pages
 source must be **GitHub Actions**. The workflow uses only read access to repository content
 plus the scoped `pages: write` and `id-token: write` permissions required for deployment.
 
-Its `scope` job (`deployments: read`) skips the upload and deployment when `site/` and
-`deploy.yml` are identical to the commit of the last **successful** `github-pages`
+Its `scope` job (`deployments: read`) skips the upload and deployment when `site/`,
+`deploy.yml`, `CHANGELOG.md` (the release notes pages) and the two render scripts are
+identical to the commit of the last **successful** `github-pages`
 deployment, so a documentation-only push publishes nothing. It compares against that
 deployment rather than the previous push, so a site change whose deploy failed or was
 cancelled still publishes next time. A manual `workflow_dispatch` always publishes (the

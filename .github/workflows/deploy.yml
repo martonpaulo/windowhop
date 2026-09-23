@@ -87,7 +87,7 @@ jobs:
 
           echo "last deployed: $LAST"
           echo "candidate:     $HEAD_SHA"
-          CHANGED=$(git diff --name-only "$LAST" "$HEAD_SHA" -- site .github/workflows/deploy.yml) \
+          CHANGED=$(git diff --name-only "$LAST" "$HEAD_SHA" -- site .github/workflows/deploy.yml CHANGELOG.md scripts/render-release-notes.py scripts/render-download-count.sh) \
             || publish true "diff failed"
           echo "changed published input:"; echo "${CHANGED:-(none)}"
           if [ -n "$CHANGED" ]; then publish true "site changed"; else publish false "site unchanged"; fi
