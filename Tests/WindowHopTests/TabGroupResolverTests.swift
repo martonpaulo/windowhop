@@ -102,6 +102,81 @@ final class TabGroupResolverTests: XCTestCase {
         XCTAssertTrue(changes.isEmpty)
     }
 
+    // MARK: - Detached tabs (#82)
+
+    /// Measured sequence: Move Tab to New Window on A's active tab. B (the remaining,
+    /// formerly inactive tab) reports standalone first, unmoved; then A, moved out.
+    func testTwoTabGroupDissolvesWhenItsActiveTabReportsStandalone() {
+        let movedOut = window("A", "Untitled", groupIds: ["A", "B"], frame: otherFrame)
+        let remaining = window("B", "Untitled 2", isTabbed: true, groupIds: ["A", "B"])
+        let first = TabGroupResolver.resolve(active: remaining, observation: .standalone,
+                                             sameAppWindows: [window("A", "Untitled", groupIds: ["A", "B"])],
+                                             isFocusEvent: true)
+        XCTAssertTrue(first.isEmpty, "B's frame still equals the group's recorded frame")
+        let second = TabGroupResolver.resolve(active: movedOut, observation: .standalone,
+                                              sameAppWindows: [remaining])
+        XCTAssertEqual(second["A"], State(isTabbed: false, groupIds: nil))
+        XCTAssertEqual(second["B"], State(isTabbed: false, groupIds: nil),
+                       "a lone former tab is a window again")
+    }
+
+    func testDetachedInactiveTabBecomesAnEntryOnFocusWithADifferentFrame() {
+        let groupActive = window("A", "Documents", groupIds: ["A", "B", "C"])
+        let dragged = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B", "C"],
+                             frame: otherFrame)
+        let stays = window("C", "Desktop", isTabbed: true, groupIds: ["A", "B", "C"])
+        let changes = TabGroupResolver.resolve(active: dragged, observation: .standalone,
+                                               sameAppWindows: [groupActive, stays],
+                                               isFocusEvent: true)
+        XCTAssertEqual(changes["B"], State(isTabbed: false, groupIds: nil))
+        XCTAssertEqual(changes["A"], State(isTabbed: false, groupIds: ["A", "C"]))
+        XCTAssertEqual(changes["C"], State(isTabbed: true, groupIds: ["A", "C"]))
+    }
+
+    func testTransientStandaloneDuringTabSwitchKeepsTheGroup() {
+        // an inactive tab reading no tab bar keeps the group unless it is focused
+        // somewhere else: same frame, no focus event, or an unknown frame
+        let groupActive = window("A", "Documents", groupIds: ["A", "B"])
+        let sameFrame = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])
+        XCTAssertTrue(TabGroupResolver.resolve(active: sameFrame, observation: .standalone,
+                                               sameAppWindows: [groupActive],
+                                               isFocusEvent: true).isEmpty)
+        let moved = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"], frame: otherFrame)
+        XCTAssertTrue(TabGroupResolver.resolve(active: moved, observation: .standalone,
+                                               sameAppWindows: [groupActive]).isEmpty)
+        let unknownFrame = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"],
+                                  frame: .some(nil))
+        XCTAssertTrue(TabGroupResolver.resolve(active: unknownFrame, observation: .standalone,
+                                               sameAppWindows: [groupActive],
+                                               isFocusEvent: true).isEmpty)
+    }
+
+    func testUnknownObservationNeverDetaches() {
+        let groupActive = window("A", "Documents", groupIds: ["A", "B"])
+        let dragged = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"], frame: otherFrame)
+        XCTAssertTrue(TabGroupResolver.resolve(active: dragged, observation: .unknown,
+                                               sameAppWindows: [groupActive],
+                                               isFocusEvent: true).isEmpty)
+        XCTAssertTrue(TabGroupResolver.resolve(active: groupActive, observation: .unknown,
+                                               sameAppWindows: [dragged]).isEmpty)
+    }
+
+    func testDetachLeavesAnotherGroupIntact() {
+        let activeOne = window("A", "Documents", groupIds: ["A", "B"])
+        let inactiveOne = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])
+        let activeTwo = window("C", "Pictures", groupIds: ["C", "D"], frame: otherFrame)
+        let inactiveTwo = window("D", "Music", isTabbed: true, groupIds: ["C", "D"], frame: otherFrame)
+        let dissolved = TabGroupResolver.resolve(active: activeOne, observation: .standalone,
+                                                 sameAppWindows: [inactiveOne, activeTwo, inactiveTwo])
+        XCTAssertEqual(Set(dissolved.keys), ["A", "B"])
+        let dragged = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"],
+                             frame: CGRect(x: 0, y: 0, width: 500, height: 400))
+        let detached = TabGroupResolver.resolve(active: dragged, observation: .standalone,
+                                                sameAppWindows: [activeOne, activeTwo, inactiveTwo],
+                                                isFocusEvent: true)
+        XCTAssertEqual(Set(detached.keys), ["A", "B"])
+    }
+
     func testStaleGroupMembersAreCleared() {
         let active = window("A", "Documents")
         let formerSibling = window("B", "Downloads", isTabbed: true, groupIds: ["A", "B"])

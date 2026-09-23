@@ -67,6 +67,14 @@ Each read of a window's tab bar is a `TabObservation`: `.group` (every tab butto
 `.standalone` (children read, no tab bar of 2 or more tabs), or `.unknown` (some AX read
 failed). Only a complete read changes membership; `.unknown` keeps the last known group
 and tab count, and the next complete read recovers without a retry timer.
+A detached tab becomes an entry again on public facts only (#82). When a group's active
+tab reports `.standalone`, every member recorded with it is released; a group that still
+exists re-forms on its new active tab's next tab bar. An inactive tab that reports
+`.standalone` with a focused- or main-window event and a frame different from its group's
+active tab was dragged out: it leaves, and the old group shrinks as on a close. Any other
+`.standalone` from an inactive tab keeps it hidden. Measured on macOS 26 with TextEdit's
+Move Tab to New Window: in a two-tab group the remaining tab reports first, unmoved, and
+used to stay hidden; in a three-tab group the new active tab's tab bar arrives first.
 Discovery order is arbitrary, so a late-arriving sibling is matched against the active
 tab's last complete tab bar (`TabGroupResolver.resolveArrival`); only groups with an
 unmatched title equal to the newcomer's are resolved again.

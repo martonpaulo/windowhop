@@ -52,12 +52,14 @@ public enum TabGroupResolver {
     }
 
     /// A window (`active`) was just observed (see `TabObservation`).
-    /// `sameAppWindows` are the other windows of the same app.
+    /// `sameAppWindows` are the other windows of the same app. `isFocusEvent` is true
+    /// when the observation came with a focused- or main-window notification.
     /// Returns per-window state changes; windows not in the result are unchanged.
     public static func resolve<ID: Hashable>(
         active: WindowDescriptor<ID>,
         observation: TabObservation,
-        sameAppWindows: [WindowDescriptor<ID>]
+        sameAppWindows: [WindowDescriptor<ID>],
+        isFocusEvent: Bool = false
     ) -> [ID: WindowTabState<ID>] {
         var changes = [ID: WindowTabState<ID>]()
         let tabTitles: [String]
@@ -67,12 +69,8 @@ public enum TabGroupResolver {
             // shrink or dissolve a known group (upstream 8c8d2836 draws the same line)
             return changes
         case .standalone:
-            // inactive tabs also have no AXTabGroup child but are still tabbed;
-            // only clear a window that was its group's *active* tab
-            if active.groupIds != nil, !active.isTabbed {
-                changes[active.id] = WindowTabState(isTabbed: false, groupIds: nil)
-            }
-            return changes
+            return resolveStandalone(active: active, sameAppWindows: sameAppWindows,
+                                     isFocusEvent: isFocusEvent)
         case .group(let titles):
             tabTitles = titles
         }
@@ -100,6 +98,45 @@ public enum TabGroupResolver {
             && window.groupIds?.contains(active.id) == true {
             changes[window.id] = WindowTabState(isTabbed: false, groupIds: nil)
         }
+        return changes
+    }
+
+    /// A complete read found no tab bar. Inactive tabs have none either, so this alone
+    /// proves nothing about an inactive tab; two facts show that a tab left its group.
+    /// Measured for #82 on macOS 26 (TextEdit, Window ▸ Move Tab to New Window on the
+    /// active tab of a two-tab group): the remaining, formerly inactive tab reports
+    /// standalone first, with its frame unchanged, then the moved-out tab reports
+    /// standalone; the remaining window used to stay hidden as a tab.
+    /// 1. The group's active tab reports standalone: its tab bar is gone, so every
+    ///    member recorded with it is released. A group that still exists is formed
+    ///    again by its new active tab's next tab bar read.
+    /// 2. An inactive tab is focused and its frame differs from its group's active tab:
+    ///    it was dragged out into a window of its own. It leaves, and the old group
+    ///    shrinks as if the window had closed.
+    /// Anything else keeps the state: upstream 0af8eb3d measured a momentary
+    /// standalone during a tab switch and confirms detachment with private Space
+    /// facts; focus and frame are their public stand-ins here.
+    private static func resolveStandalone<ID: Hashable>(
+        active: WindowDescriptor<ID>,
+        sameAppWindows: [WindowDescriptor<ID>],
+        isFocusEvent: Bool
+    ) -> [ID: WindowTabState<ID>] {
+        var changes = [ID: WindowTabState<ID>]()
+        guard let groupIds = active.groupIds else { return changes }
+        if !active.isTabbed {
+            changes[active.id] = WindowTabState(isTabbed: false, groupIds: nil)
+            for window in sameAppWindows where window.groupIds?.contains(active.id) == true {
+                changes[window.id] = WindowTabState(isTabbed: false, groupIds: nil)
+            }
+            return changes
+        }
+        guard isFocusEvent,
+              let groupActive = sameAppWindows.first(where: { groupIds.contains($0.id) && !$0.isTabbed }),
+              let frame = active.frame, let groupFrame = groupActive.frame,
+              rounded(frame) != rounded(groupFrame) else { return changes }
+        changes[active.id] = WindowTabState(isTabbed: false, groupIds: nil)
+        changes.merge(resolveRemoval(removedId: active.id, groupIds: groupIds,
+                                     remainingWindows: sameAppWindows)) { _, new in new }
         return changes
     }
 

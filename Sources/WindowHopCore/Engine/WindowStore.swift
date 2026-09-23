@@ -137,14 +137,14 @@ public final class WindowStore {
                      attributes: AXAttributes, tabs: TabObservation) {
         guard started, let app = apps[pid] else { return }
         let existing = windows.first { $0.ax == element }
+        let isFocusEvent = notification == kAXFocusedWindowChangedNotification
+            || notification == kAXMainWindowChangedNotification
         let window: TrackedWindow
         if let existing {
             existing.update(from: attributes, tabs: tabs)
             window = existing
         } else {
             let facts = app.windowFacts(from: attributes)
-            let isFocusEvent = notification == kAXFocusedWindowChangedNotification
-                || notification == kAXMainWindowChangedNotification
             // unknown non-windows (menus, tooltips, …) are ignored entirely, but a window
             // that just got focused is real even if its subrole looks wrong mid-animation
             guard WindowEligibility.isActualWindow(facts) || isFocusEvent else { return }
@@ -155,13 +155,15 @@ public final class WindowStore {
                 app.subscribeToWindowNotifications(element)
             }
         }
-        updateTabGroup(for: window, tabs: tabs)
+        let tabsBefore = (isTabbed: window.isTabbed, groupCount: window.tabGroupIds?.count)
+        updateTabGroup(for: window, tabs: tabs, isFocusEvent: isFocusEvent)
         if existing == nil {
             // an active tab discovered earlier may be waiting for this window
             let sameApp = windows.filter { $0.app === app && $0 !== window }
             applyTabStates(TabGroupResolver.resolveArrival(newWindow: tabDescriptor(window),
                                                            sameAppWindows: sameApp.map(tabDescriptor)))
         }
+        traceTabEvent(notification, window: window, tabs: tabs, before: tabsBefore)
         switch notification {
         case kAXFocusedWindowChangedNotification, kAXMainWindowChangedNotification:
             // Photoshop focuses a window after you focus another app; ignore those
@@ -195,6 +197,7 @@ public final class WindowStore {
         forget(removed)
         discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
+            DebugLog.log("tabs: removed \(Self.traceId(removed)) group \(groupIds.count)")
             let remaining = windows.filter { $0.app === removed.app }
             applyTabStates(TabGroupResolver.resolveRemoval(
                 removedId: removed.stableId,
@@ -293,7 +296,7 @@ public final class WindowStore {
                                           reportedTabTitles: window.reportedTabTitles)
     }
 
-    private func updateTabGroup(for window: TrackedWindow, tabs: TabObservation) {
+    private func updateTabGroup(for window: TrackedWindow, tabs: TabObservation, isFocusEvent: Bool) {
         // cheap fast path: an incomplete read changes nothing, and a window with no
         // tab bar and no group membership has nothing to maintain
         switch tabs {
@@ -304,17 +307,52 @@ public final class WindowStore {
         let sameApp = windows.filter { $0.app === window.app && $0 !== window }
         applyTabStates(TabGroupResolver.resolve(active: tabDescriptor(window),
                                                 observation: tabs,
-                                                sameAppWindows: sameApp.map(tabDescriptor)))
+                                                sameAppWindows: sameApp.map(tabDescriptor),
+                                                isFocusEvent: isFocusEvent))
     }
 
     private func applyTabStates(_ changes: [UUID: TabGroupResolver.WindowTabState<UUID>]) {
         guard !changes.isEmpty else { return }
         for window in windows {
             if let change = changes[window.stableId] {
+                DebugLog.log("tabs: change \(Self.traceId(window)) tabbed \(window.isTabbed)->\(change.isTabbed) "
+                    + "group \(window.tabGroupIds?.count ?? 0)->\(change.groupIds?.count ?? 0)")
                 window.isTabbed = change.isTabbed
                 window.tabGroupIds = change.groupIds
             }
         }
+    }
+
+    /// Title-free tab trace for WINDOWHOP_DEBUG (#82): only windows with a tab bar or
+    /// a recorded group are logged. `frameEqualsGroup` compares the window's frame with
+    /// its group's active member, rounded like TabGroupResolver does.
+    private func traceTabEvent(_ notification: String, window: TrackedWindow, tabs: TabObservation,
+                               before: (isTabbed: Bool, groupCount: Int?)) {
+        guard DebugLog.enabled else { return }
+        let observation: String
+        switch tabs {
+        case .unknown: observation = "unknown"
+        case .standalone: observation = "standalone"
+        case .group(let titles): observation = "group(\(titles.count))"
+        }
+        guard before.groupCount != nil || window.tabGroupIds != nil || observation.hasPrefix("group")
+        else { return }
+        let activeMember = windows.first {
+            window.tabGroupIds?.contains($0.stableId) == true && !$0.isTabbed && $0 !== window
+        }
+        let frameEqualsGroup = activeMember.map { member -> String in
+            guard let a = member.frame?.integral, let b = window.frame?.integral else { return "?" }
+            return a == b ? "yes" : "no"
+        } ?? "-"
+        let hiddenTabs = windows.filter { $0.app === window.app && $0.isTabbed }.count
+        DebugLog.log("tabs: \(notification) \(Self.traceId(window)) \(observation) "
+            + "tabbed \(before.isTabbed)->\(window.isTabbed) "
+            + "group \(before.groupCount ?? 0)->\(window.tabGroupIds?.count ?? 0) "
+            + "frameEqualsGroup \(frameEqualsGroup) appHiddenTabs \(hiddenTabs)")
+    }
+
+    private static func traceId(_ window: TrackedWindow) -> String {
+        String(window.stableId.uuidString.prefix(8))
     }
 
     /// Re-enumerate every app on Space change: discovers windows we could not see
