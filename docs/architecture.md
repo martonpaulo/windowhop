@@ -3,6 +3,16 @@
 Four layers, one direction of knowledge: UI and Input know the Core; the Core knows nothing
 about AppKit or AX.
 
+The Core is its own SwiftPM library target, `WindowHopKit` (`Sources/WindowHopKit/`), with no
+package dependencies. `WindowHopCore` (`Sources/WindowHopCore/`: `Engine/`, `Input/`, `UI/`,
+`App/`) depends on it and on Sparkle, and every file that uses a Kit type says
+`import WindowHopKit`. The compiler therefore enforces the direction of knowledge: a Kit file
+cannot name an Engine, Input, UI or App type. `scripts/validate.sh` enforces the Kit import
+allowlist recorded in `AGENTS.md` (Foundation, CoreGraphics value types, Combine or
+Observation, Synchronization) and rejects AX, `NSWorkspace` and ScreenCaptureKit references in
+the Kit. Tests follow the same split: `WindowHopKitTests` depends only on the Kit, and
+`WindowHopTests` covers the integration layers.
+
 ```
 ┌──────────── UI ────────────┐  SwitcherPanel + SwitcherTileView (AppKit),
 │                            │  Settings/Onboarding (SwiftUI), ShortcutRecorderControl,
@@ -11,7 +21,7 @@ about AppKit or AX.
 ├────────── Engine ──────────┤  WindowStore ← AXNotificationRouter ← TrackedApp observers
 │                            │  WindowActions, AccessibilityPermission, LoginItem
 ├─────────── App ────────────┤  AppDelegate lifecycle, UpdateManager (Sparkle)
-└─────────── Core ──────────┘  SwitcherState, WindowEligibility, TabGroupResolver,
+└──── Core (WindowHopKit) ───┘  SwitcherState, WindowEligibility, TabGroupResolver,
                                 MRUOrder, TitleResolver, PersistentShortcut, Preferences,
                                 ExpandedPreviewSession, SpaceMembership, ObserverLifecycle
                                 (pure, unit-tested)
@@ -146,7 +156,7 @@ through plain AppKit.
    window's identity is preserved whenever it survives; when the selected identity
    changes, the new target is announced once. An entry that briefly loses its
    location metadata while Spaces update is retained rather than removed, which is distinct
-   from appending a new one (`Core/SessionListReconciler.swift`, and
+   from appending a new one (`WindowHopKit/SessionListReconciler.swift`, and
    `SwitcherController.shouldPreserveAcrossLocationRefresh`).
 6. While a **held** session runs, a 0.5 s timer cross-checks `NSEvent.modifierFlags` to
    recover from missed key-up events. Sticky sessions have no such timer — modifier
@@ -155,7 +165,7 @@ through plain AppKit.
 The shortcut recorder in Settings (`UI/ShortcutRecorderControl`) stays custom rather than
 adopting a library such as KeyboardShortcuts
 ([#74](https://github.com/martonpaulo/windowhop/issues/74)). Adopting one would override
-three recorded rules: Sparkle is the only runtime dependency, `Core/ShortcutFormatter` is the
+three recorded rules: Sparkle is the only runtime dependency, `WindowHopKit/ShortcutFormatter` is the
 only owner of key names, and product copy is English-only with no `.lproj` bundle. It would
 also not remove the hardest part of the job: a library recorder cannot see `EventTap`, so
 coordination with the tap would stay custom either way. Matching stays in `EventTap`, and
@@ -170,7 +180,7 @@ failed translation use the fixed ANSI table in `KeyCodeNames`. Special keys (Tab
 Space, arrows, F-keys…) never consult the layout. The recorder refreshes its title on
 `kTISNotifySelectedKeyboardInputSourceChanged` only while it is in a window.
 
-Conflict knowledge for a recorded chord has one owner, `Core/ShortcutConflicts.swift`
+Conflict knowledge for a recorded chord has one owner, `WindowHopKit/ShortcutConflicts.swift`
 (`PersistentShortcut.assessCapture`): accept, reject with a named reason (reserved by
 macOS, standard app command), or confirm (an enabled macOS shortcut). Its inputs are
 fixtures in tests; in the app, `Engine/SystemShortcuts` reads the enabled symbolic hotkeys
@@ -182,7 +192,7 @@ the reason inline or the confirmation sheet. The load path never re-assesses a s
 Where the panel is drawn is display *behavior*, not appearance, and is owned by three
 pieces with one responsibility each:
 
-- `Core/PanelPlacement.swift` — the pure rule. `PanelDisplayResolver` maps
+- `WindowHopKit/PanelPlacement.swift` — the pure rule. `PanelDisplayResolver` maps
   (placement preference, chosen display, connected displays, pointer display) to the
   ordered target set, and every fallback lives here: a chosen display that is not
   connected resolves to the pointer display, and the result is never empty while any
@@ -298,7 +308,7 @@ image state on reconfigure, so a snapshot can never appear on another window's
 card (regression-tested, including rapid list changes).
 
 Accessibility and the window server describe the same window with different data, so
-`PreviewMatcher` (pure, unit-tested, in `Core/`) pairs them. Titles disagree by design —
+`PreviewMatcher` (pure, unit-tested, in `WindowHopKit`) pairs them. Titles disagree by design —
 Chromium reports `Page – Brave – Profile` through AX while the window server knows only
 `Page` — and frames agree exactly but are not unique, because same-size, stacked, zoomed,
 and full-screen windows of one app share a frame and every app also owns invisible helper
@@ -323,7 +333,7 @@ recovery action remains available. Acquisition, matching, or capture failure als
 static skeleton, without exposing technical copy. A cached snapshot is never replaced by
 an ordinary capture or permission failure. All paths keep constant geometry and selection,
 with no badge, surface, or title movement. The acquisition state is kept per window for the
-session by the pure `PreviewAvailability` (in `Core/`), not by the pooled tile, so a list
+session by the pure `PreviewAvailability` (in `WindowHopKit`), not by the pooled tile, so a list
 refresh, retitle, or reorder keeps a failed or permission-blocked card static instead of
 resetting it to a loading pulse that no capture would ever end.
 
@@ -423,7 +433,7 @@ changes nothing. The appcast lives at
 EdDSA-signed (`SUPublicEDKey` embedded in Info.plist, private key in Keychain/CI secret).
 Update checks are the app's only network activity.
 
-Build metadata has one reader, `Core/AppVersion` (version, build, release date), used by
+Build metadata has one reader, `WindowHopKit/AppVersion` (version, build, release date), used by
 Settings › About, the Updates pane and support reports. The release date is the packaged
 commit's committer date (`git log -1 --format=%cs`), written as `AppReleaseDate`
 (`YYYY-MM-DD`) by `scripts/stamp-app-metadata.sh`. `release.yml` runs it on the runner's
@@ -455,7 +465,7 @@ identity validation is explicitly inapplicable.
 ## Launch and reopen
 
 Decided on [#80](https://github.com/martonpaulo/windowhop/issues/80) (option C, the
-visibility-aware hybrid). `AppDelegate` asks the pure `Core/LaunchPresentation` rule at launch
+visibility-aware hybrid). `AppDelegate` asks the pure `WindowHopKit/LaunchPresentation` rule at launch
 and at reopen; `LaunchPresentationTests` covers every row. The menu bar item and the Dock
 icon are both hidden by default, so "another visible surface" means the user turned one on.
 

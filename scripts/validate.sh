@@ -85,7 +85,7 @@ else
     pass "release date is left to packaging"
 fi
 
-# "Report an Issue…" prefills these bug-report inputs by id (Core/ProjectLinks.swift);
+# "Report an Issue…" prefills these bug-report inputs by id (WindowHopKit/ProjectLinks.swift);
 # renaming one would silently drop the prefill
 for field_id in windowhop-version macos-version; do
     if grep -qE "^[[:space:]]*id: $field_id[[:space:]]*$" .github/ISSUE_TEMPLATE/bug_report.yml; then

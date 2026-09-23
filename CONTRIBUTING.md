@@ -58,7 +58,7 @@ to test credentials; use the local packaging commands and Apple tooling directly
   or while the onboarding window is open.
 - **One entry per top-level window.** Tabs are never separate entries.
 - **No new dependencies.** Sparkle (updates) is the single approved runtime dependency.
-- Business rules live in `Sources/WindowHopCore/Core/` as pure code **with tests**.
+- Business rules live in `Sources/WindowHopKit/` as pure code **with tests** in `Tests/WindowHopKitTests/`.
 - Every user-facing feature must declare its default and configurability decision. New
   preferences use typed centralized defaults and participate in Restore Defaults; see
   [the defaults contract](docs/feature-defaults.md).

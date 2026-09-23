@@ -10,7 +10,8 @@
   window switcher with large app icons or live previews — free, GPL, no telemetry.
 - Repository: `martonpaulo/windowhop` (public)
 - Public identifiers: bundle identifier `com.perso.windowhop`; SwiftPM package, executable
-  target, and app name `WindowHop`; library target `WindowHopCore`
+  target, and app name `WindowHop`; library targets `WindowHopKit` (pure rules) and
+  `WindowHopCore` (Engine, Input, UI, App)
 - Landing page: <https://windowhop.martonpaulo.com/> (custom domain in `site/CNAME`),
   published from `site/` by `.github/workflows/deploy.yml`. It lives in this repository;
   there is no separate site repo. `docs/` holds developer documentation and is never published.
@@ -139,8 +140,8 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   (default) and Window Previews, and theming is system Light/Dark only. No themes, no
   custom sizes, no layout or opacity options. This rule governs how the panel *looks*.
   Where the panel is drawn is display behavior, not appearance, and lives with the other
-  display settings in Settings → Windows (see `Core/PanelPlacement.swift`).
-- All shortcut strings render through `Core/ShortcutFormatter` — never hardcode a
+  display settings in Settings → Windows (see `WindowHopKit/PanelPlacement.swift`).
+- All shortcut strings render through `WindowHopKit/ShortcutFormatter` — never hardcode a
   second representation of the same key.
 - All UI dimensions come from `UI/DesignTokens.swift` — no hardcoded sizes,
   insets, radii, or font sizes in views.
@@ -150,10 +151,24 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 
 ## Architecture (see docs/architecture.md)
 
-- `Core/` — pure logic, no AppKit/AX imports beyond value types. All business rules live
-  here (eligibility, MRU, title fallback, tab-group resolution, PiP detection,
-  preview-result ledger, session state machine, shortcut model, settings defaults).
-  New behavior rules go here **with unit tests**.
+- `WindowHopKit` (`Sources/WindowHopKit/`, the Core) — pure logic in its own target with
+  no dependencies. All business rules live here (eligibility, MRU, title fallback,
+  tab-group resolution, PiP detection, preview-result ledger, session state machine,
+  shortcut model, settings defaults). New behavior rules go here **with unit tests** in
+  `Tests/WindowHopKitTests/`, which depends only on the Kit.
+  - **Kit import contract** (`scripts/validate.sh` enforces it): `Foundation`;
+    `CoreGraphics` for value types only (`CGEventFlags`, `CGRect`, `CGWindowID`);
+    `Combine` until #101 moves `Preferences` to `Observation`; and `Synchronization`
+    (a standard-library module, used by `ShortcutFormatter`'s `Mutex`). No AppKit, AX,
+    `NSWorkspace`, ScreenCaptureKit or Sparkle. This diverges from the shared
+    "a Kit imports only Foundation" rule, because the issue's "no AppKit, AX or Sparkle
+    imports beyond value types" already admits CoreGraphics value types; wrapping
+    `CGEventFlags` and `CGRect` in Kit-owned types was rejected as churn with no safety
+    gain (#100).
+  - Every file outside the Kit imports it explicitly (`import WindowHopKit`), never
+    through `@_exported import`.
+- `WindowHopCore` (`Sources/WindowHopCore/`) holds `Engine/`, `Input/`, `UI/` and `App/`
+  and depends on `WindowHopKit` and Sparkle; `Tests/WindowHopTests/` covers it.
 - `Engine/` — AX integration: `TrackedApp`/`TrackedWindow`, `WindowStore` (main-thread
   source of truth), `AXNotificationRouter` (AX thread → reads queue → main).
 - `Input/` — `EventTap` (tap thread; modes off/watching/sessionHeld/sessionSticky/
@@ -185,7 +200,7 @@ For every new user-facing behavior or presentation feature:
   preferences.
 - Do not add settings for bug fixes, security behavior, internal implementation details,
   mandatory accessibility behavior, or features with only one valid outcome.
-- Store defaults in `Core/Preferences.Defaults`. Do not duplicate fallback values in
+- Store defaults in `WindowHopKit/Preferences.Defaults`. Do not duplicate fallback values in
   views, services, tests, shortcut registration, or migration code.
 - Persist configurable preferences through the existing typed `Preferences.Key`
   infrastructure and keep `Preferences` as the runtime source of truth.
@@ -266,7 +281,7 @@ notes. A missing configurability decision is a review failure.
 - Maintain one owner and one source of truth for each business rule, state, mapping, default,
   and copy value.
 - Keep business rules out of presentation, transport, CLI, and adapter layers — in this
-  project that means `Core/`, not `UI/`, `Engine/`, or `Input/`.
+  project that means `WindowHopKit`, not `UI/`, `Engine/`, or `Input/`.
 - Derive values instead of storing synchronized copies. Model invalid states explicitly.
 - Do not add dependencies, services, layers, caches, observers, timers, polling, or
   background jobs without a current requirement and a clear owner. See the idle-polling and
@@ -431,7 +446,7 @@ to publish an issue or change code. Do not ask again for a decision already reco
 ## Tests and validation
 
 - Add or update focused tests for changed behavior, regressions, persistence, migrations,
-  validation, and critical accessibility. Business rules in `Core/` ship with unit tests.
+  validation, and critical accessibility. Business rules in `WindowHopKit` ship with unit tests.
 - A behavioral bug fix includes a regression test proven to fail without the fix: run it
   against the unfixed code and see it fail before committing.
 - Test observable contracts at stable seams; avoid tests that only mirror implementation
@@ -473,7 +488,7 @@ to publish an issue or change code. Do not ask again for a decision already reco
 - Product definition: `docs/product.md` — what WindowHop is for and what it will never do. A
   proposal that contradicts a non-goal there loses until that document changes.
 - Domain glossary: `CONTEXT.md` (optional; create only when a term is genuinely ambiguous
-  across `Core/`, `Engine/`, `Input/`, and `UI/`)
+  across `WindowHopKit`, `Engine/`, `Input/`, and `UI/`)
 - Architecture decision records: `docs/adr/` (create only when a decision needs its rationale
   recorded; `docs/architecture.md` stays the description of what exists today)
 - Handoffs: `.scratch/handoffs/`

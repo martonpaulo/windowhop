@@ -6,7 +6,7 @@
 
 - [ ] `swift test` passes
 - [ ] `scripts/validate.sh` passes
-- [ ] Business-rule changes come with tests in `Tests/WindowHopTests`
+- [ ] Business-rule changes come with tests in `Tests/WindowHopKitTests`
 - [ ] Every user-facing feature declares its default and configurability decision
 - [ ] New preferences use typed centralized defaults, preserve existing values, and are covered by Restore Defaults tests (or explicitly excluded because they mirror a system registration)
 - [ ] Non-configurable behavior is justified (bug/security/internal/accessibility/single valid outcome)
