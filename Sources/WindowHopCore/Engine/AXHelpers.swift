@@ -12,8 +12,19 @@ public enum AXError: Error {
 /// through the public AX API — attribute names are app-defined strings by design.
 let kAXFullscreenAttribute = "AXFullScreen"
 
+/// AX element references cross from the AX events thread to the AX reads queue and
+/// on to main as window identities (they are compared and hashed there, never read).
+///
+/// `@unchecked Sendable` invariant: an AXUIElement is an immutable CF reference to a
+/// remote accessibility object. Retaining, releasing, hashing and comparing it is
+/// thread-safe (atomic CF reference counting, CFEqual/CFHash over immutable pid and
+/// token), and every call that talks to the target app goes through the AX reads or
+/// actions queues, never main. The SDK does not annotate the type, so this one
+/// conformance stands in for it.
+extension AXUIElement: @retroactive @unchecked Sendable {}
+
 /// Batched attribute values for one AX call.
-public struct AXAttributes {
+public struct AXAttributes: Sendable {
     public var title: String?
     public var role: String?
     public var subrole: String?

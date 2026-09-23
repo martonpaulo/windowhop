@@ -9,8 +9,10 @@ public enum BackgroundWork {
     public static let axEventsThread = RunLoopThread(name: "windowhop.ax-events")
     /// Hosts the CGEvent tap's run-loop source.
     public static let eventTapThread = RunLoopThread(name: "windowhop.event-tap")
-    /// All AX attribute reads and discovery work.
-    public static let axReadsQueue = DispatchQueue(label: "windowhop.ax-reads", qos: .userInteractive)
+    /// All AX attribute reads and discovery work. A serial queue that is also the
+    /// executor of every `AppObserver` actor, so observer state is actor-isolated
+    /// while keeping FIFO order with the other AX reads.
+    public static let axReadsQueue = DispatchSerialQueue(label: "windowhop.ax-reads", qos: .userInteractive)
     /// AX actions (raise, close, de-fullscreen) so they can't block reads or the UI.
     public static let axActionsQueue = DispatchQueue(label: "windowhop.ax-actions", qos: .userInteractive)
 

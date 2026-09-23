@@ -115,9 +115,9 @@ public final class WindowStore {
     /// Enumerates an app's current windows on the AX reads queue. Called when an app
     /// becomes observable and again on Space changes (public AX only returns windows
     /// of the current Space; re-enumerating on Space change builds the full inventory).
-    func discoverWindows(of app: TrackedApp) {
+    func discoverWindows(of observer: AppObserver) {
         // a request that outlived the app's removal (or a pid reused by a new app) is stale
-        guard started, apps[app.pid] === app else { return }
+        guard started, let app = apps[observer.pid], app.observer === observer else { return }
         let element = app.axElement
         let pid = app.pid
         BackgroundWork.axReadsQueue.async {
@@ -151,9 +151,7 @@ public final class WindowStore {
             window = TrackedWindow(ax: element, app: app, attributes: attributes, tabs: tabs)
             windowsById[window.stableId] = window
             order.add(window.stableId)
-            BackgroundWork.axReadsQueue.async {
-                app.subscribeToWindowNotifications(element)
-            }
+            app.observer.enqueueWindowSubscription(element)
         }
         let tabsBefore = (isTabbed: window.isTabbed, groupCount: window.tabGroupIds?.count)
         updateTabGroup(for: window, tabs: tabs, isFocusEvent: isFocusEvent)

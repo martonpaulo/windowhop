@@ -1,4 +1,5 @@
 import AppKit
+import Synchronization
 import XCTest
 @testable import WindowHopCore
 
@@ -6,18 +7,24 @@ import XCTest
 /// start/stop requests. Run with `swift test --sanitize=thread` to check that observer
 /// state stays confined to the AX reads queue; without the sanitizer it still checks
 /// that no pending work revives a stopped app.
+@MainActor
 final class TrackedAppLifecycleTests: XCTestCase {
-    /// Reads each app's phase on the queue that owns it. Waiting on an expectation keeps
-    /// the main run loop serving the main-queue hops the observers schedule.
+    /// Reads each app's phase inside its observer actor, behind the work already queued.
+    /// Waiting on an expectation keeps the main run loop serving the main-queue hops
+    /// the observers schedule.
     private func phases(of apps: [TrackedApp]) -> [ObserverLifecycle.Phase] {
         let read = expectation(description: "phases read on the AX reads queue")
-        var result: [ObserverLifecycle.Phase] = []
+        let observers = apps.map(\.observer)
+        let result = Mutex<[ObserverLifecycle.Phase]>([])
         BackgroundWork.axReadsQueue.async {
-            result = apps.map(\.lifecycle.phase)
+            let phases = observers.map { observer in
+                observer.assumeIsolated { $0.lifecycle.phase }
+            }
+            result.withLock { $0 = phases }
             read.fulfill()
         }
         wait(for: [read], timeout: 30)
-        return result
+        return result.withLock { $0 }
     }
 
     private func spinMainRunLoop(for seconds: TimeInterval) {

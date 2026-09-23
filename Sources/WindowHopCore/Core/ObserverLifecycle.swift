@@ -15,15 +15,15 @@ import Foundation
 /// - subscribing: an attempt of the current generation is in flight or scheduled
 /// - ready:       the app accepted the first notification; later `start`s are no-ops
 /// - stopped:     the app is no longer tracked
-public struct ObserverLifecycle: Equatable {
-    public enum Phase: Equatable {
+public struct ObserverLifecycle: Equatable, Sendable {
+    public enum Phase: Equatable, Sendable {
         case idle
         case subscribing(generation: UInt64, attemptsLeft: Int)
         case ready(generation: UInt64)
         case stopped
     }
 
-    public enum Event: Equatable {
+    public enum Event: Equatable, Sendable {
         /// The app is eligible for observation (launched, activation policy allows it).
         case start
         /// The first app-level notification was accepted.
@@ -37,7 +37,7 @@ public struct ObserverLifecycle: Equatable {
         case stop
     }
 
-    public enum Command: Equatable {
+    public enum Command: Equatable, Sendable {
         /// Create the observer if needed and attempt the first app-level subscription.
         case subscribe(generation: UInt64)
         /// Deliver `.retryDue(generation)` after `delay` seconds.
