@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-09-23
+
 ### Changed
 
 - **Full release notes in the update window**: the update window shows the release notes
@@ -671,7 +673,8 @@ apps exposing native tab groups; English-only interface.
   app's only network activity. No telemetry, no accounts.
 - Derived from AltTab v10.12.0 (GPL-3.0), rebuilt on public Apple APIs only.
 
-[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.3.1...HEAD
+[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.3.2...HEAD
+[2.3.2]: https://github.com/martonpaulo/windowhop/releases/tag/v2.3.2
 [2.3.1]: https://github.com/martonpaulo/windowhop/releases/tag/v2.3.1
 [2.3.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.3.0
 [2.2.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.2.0
