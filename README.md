@@ -59,6 +59,11 @@ brew install --cask martonpaulo/tap/windowhop
 
 Then open WindowHop from Applications and allow Accessibility (step 4).
 
+Already installed from the disk image? Run
+`brew install --cask --adopt martonpaulo/tap/windowhop` so Homebrew manages the app you
+have. It keeps the app and its settings; the installed version must match the cask's, so
+update WindowHop first if it is older.
+
 That is all. WindowHop updates itself: it checks for new versions and asks before it installs
 one.
 
