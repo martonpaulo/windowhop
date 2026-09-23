@@ -5,6 +5,22 @@ user-facing key participates in `Preferences.configurableKeys`, except one that 
 system registration (launch at login), and a regression test fails when a new
 configurable key is omitted from Restore Defaults without that explicit exception.
 
+## Key names
+
+Every `Preferences.Key` that WindowHop owns is stored under a constant, versioned name,
+`<name>.v1` (for example `showTabCounts.v1`). A later change to the shape of a stored value
+takes the next version (`<name>.v2`) with its own tested migration, and never reinterprets
+data stored under the old name. `PreferencesKeyMigration` moved the unversioned names once,
+from `Preferences.init(defaults:)` before the first read, guarded by the integer
+`preferences.schema` in the same domain: it copies each stored value that is valid for the
+key's current type, drops an invalid one (the key then takes its default), and removes the
+old name. Two names keep their spelling: `SUEnableAutomaticChecks`, which Sparkle owns and
+reads under that name, and `navigationPreviewDelay`, which exists only as the 1.1.2 name the
+expanded-preview migration reads. Window-state entries that are not `Preferences.Key`
+values (the Settings frame autosave and the selected pane) are outside this rule. An older
+WindowHop started after the migration no longer finds the old names and shows its
+defaults. Decided on #111.
+
 ## WindowHop 1.3.1 decisions
 
 | Feature | Default | Configurable | Settings / persistence / migration / Restore Defaults |

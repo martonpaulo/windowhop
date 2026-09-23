@@ -107,29 +107,34 @@ public final class Preferences {
     public static let windowFiltersDidChange = Notification.Name(
         "Preferences.windowFiltersDidChange")
 
+    /// Every persisted setting's `UserDefaults` name. WindowHop-owned names are
+    /// versioned (`<name>.v1`): a later change of a value's shape moves to `.v2`
+    /// with its own tested migration instead of reinterpreting stored data.
+    /// `PreferencesKeyMigration` moved the unversioned names once (#111).
     public enum Key: String, CaseIterable, Sendable {
-        case switcherEnabled
-        case launchAtLogin
-        case shortcut
-        case persistentShortcut
-        case appearanceMode
-        /// Kept only to migrate 1.1.2 dwell presets.
+        case switcherEnabled = "switcherEnabled.v1"
+        case launchAtLogin = "launchAtLogin.v1"
+        case shortcut = "shortcut.v1"
+        case persistentShortcut = "persistentShortcut.v1"
+        case appearanceMode = "appearanceMode.v1"
+        /// Kept only to migrate 1.1.2 dwell presets; never versioned.
         case navigationPreviewDelay
-        case expandedPreviewDelay
-        case switcherRevealDelay
-        case switcherDisplayPlacement
+        case expandedPreviewDelay = "expandedPreviewDelay.v1"
+        case switcherRevealDelay = "switcherRevealDelay.v1"
+        case switcherDisplayPlacement = "switcherDisplayPlacement.v1"
         /// The persistent UUID of the display chosen for `.specificDisplay`.
-        case switcherDisplayID
-        case includeOtherSpaces
-        case includeOtherDisplays
-        case includeMinimizedWindows
-        case includeHiddenApplicationWindows
-        case includePictureInPictureWindows
-        case showTabCounts
-        case showMenuBarItem
-        case showDockIcon
+        case switcherDisplayID = "switcherDisplayID.v1"
+        case includeOtherSpaces = "includeOtherSpaces.v1"
+        case includeOtherDisplays = "includeOtherDisplays.v1"
+        case includeMinimizedWindows = "includeMinimizedWindows.v1"
+        case includeHiddenApplicationWindows = "includeHiddenApplicationWindows.v1"
+        case includePictureInPictureWindows = "includePictureInPictureWindows.v1"
+        case showTabCounts = "showTabCounts.v1"
+        case showMenuBarItem = "showMenuBarItem.v1"
+        case showDockIcon = "showDockIcon.v1"
+        /// Sparkle's own name, which it reads and writes; never versioned.
         case automaticUpdateChecks = "SUEnableAutomaticChecks"
-        case firstLaunchCompleted
+        case firstLaunchCompleted = "firstLaunchCompleted.v1"
     }
 
     /// The only source for product defaults. Views, registration, migration,
@@ -322,6 +327,8 @@ public final class Preferences {
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        // before anything reads a key: move the unversioned names once
+        PreferencesKeyMigration.migrate(defaults)
         // Registration defaults are not persisted. Capture whether the user
         // explicitly cleared or customized Open WindowHop before registering
         // the new 1.3.1 default so upgrades never overwrite that choice.
