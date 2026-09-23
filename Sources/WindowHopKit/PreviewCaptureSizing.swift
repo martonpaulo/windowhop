@@ -26,12 +26,19 @@ public enum PreviewCaptureSizing {
     /// enlarged and blurred on a 1x ultrawide display (#127).
     public static func pixelSize(windowSize: CGSize, covering targetSize: CGSize, scale: CGFloat) -> CGSize {
         guard windowSize.width > 0, windowSize.height > 0 else { return CGSize(width: 1, height: 1) }
-        return scaled(
-            windowSize,
-            by: max(
-                targetSize.width * scale / windowSize.width,
-                targetSize.height * scale / windowSize.height),
-            rounding: .up)
+        let byWidth = targetSize.width * scale / windowSize.width
+        let byHeight = targetSize.height * scale / windowSize.height
+        guard max(byWidth, byHeight) < 2 else { return scaled(windowSize, by: 2, rounding: .up) }
+        // The side that sets the scale is exactly the canvas and only the other side
+        // rounds up. Rounding both up made 28% of window sizes a pixel too large on
+        // both sides, so the tile shrank them by 0.995 and resampled every pixel (#130).
+        return byWidth >= byHeight
+            ? CGSize(
+                width: targetSize.width * scale,
+                height: max(1, (windowSize.height * byWidth).rounded(.up)))
+            : CGSize(
+                width: max(1, (windowSize.width * byHeight).rounded(.up)),
+                height: targetSize.height * scale)
     }
 
     /// A fit rounds down so it never spills its target; a cover rounds up so it

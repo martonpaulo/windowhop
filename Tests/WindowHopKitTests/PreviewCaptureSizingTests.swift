@@ -52,6 +52,28 @@ struct PreviewCaptureSizingTests {
         #expect(pixels.height >= canvas.height)
     }
 
+    /// Rounding both sides up made 28% of window sizes one pixel too large on both
+    /// (189 px for a 188 px card), so the tile shrank them by 0.995 and resampled
+    /// every pixel (#130). The side that sets the scale is exactly the canvas.
+    @Test(arguments: [1.0, 2.0])
+    func aCoverCaptureIsDrawnAtExactlyItsOwnSize(scale: CGFloat) {
+        let box = CGRect(origin: .zero, size: canvas)
+        for width in stride(from: 200, through: 3440, by: 7) {
+            for height in [300, 777, 1409, 1415, 2000] {
+                let window = CGSize(width: width, height: height)
+                let pixels = PreviewCaptureSizing.pixelSize(
+                    windowSize: window, covering: canvas, scale: scale)
+                let points = PreviewCaptureSizing.pointSize(pixelSize: pixels, scale: scale)
+                let drawn = PreviewCaptureSizing.filledRect(imageSize: points, in: box)
+
+                #expect(
+                    pixels.width == canvas.width * scale || pixels.height == canvas.height * scale,
+                    "\(window) at \(scale)x -> \(pixels)")
+                #expect(drawn.size == points, "\(window) at \(scale)x is resampled")
+            }
+        }
+    }
+
     @Test func aTinyWindowIsCapturedAtNoMoreThanTwiceItsSize() {
         let pixels = PreviewCaptureSizing.pixelSize(
             windowSize: CGSize(width: 20, height: 10), targetSize: canvas, scale: 2)
