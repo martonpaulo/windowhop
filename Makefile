@@ -4,18 +4,18 @@
 
 .PHONY: help build test validate check
 
-# Any compiler warning fails `build` and `test`, locally and in CI.
-SWIFT_FLAGS := -Xswiftc -warnings-as-errors
+# Any compiler warning fails `build` and `test`, locally and in CI: Package.swift
+# owns that gate (`.treatAllWarnings(as: .error)`), so plain `swift build` enforces it too.
 CONFIGURATION ?= debug
 
 help: ## List the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build: ## Build (CONFIGURATION=debug|release); fails on any warning
-	swift build -c $(CONFIGURATION) $(SWIFT_FLAGS)
+	swift build -c $(CONFIGURATION)
 
 test: ## Unit and integration tests; fails on any warning
-	swift test $(SWIFT_FLAGS)
+	swift test
 
 validate: ## Repository invariants, the static site and the release-script fixtures
 	scripts/validate.sh
