@@ -41,6 +41,17 @@ extension SharedAppState {
             #expect(tile.previewCanvasFrameForTesting.width == 188)
         }
 
+        /// A snapshot smaller than the canvas, such as a half-size capture from
+        /// a 1x display, is scaled up to fill it, never left in its middle (#33).
+        @Test func aSmallSnapshotFillsTheCanvas() {
+            let tile = configuredTile(imageSize: NSSize(width: 94, height: 59))
+            let canvas = tile.previewCanvasFrameForTesting
+            let image = tile.previewImageFrameForTesting
+
+            #expect(abs(image.width - canvas.width) <= 1)
+            #expect(abs(image.midY - canvas.midY) < 0.5)
+        }
+
         /// Source images of any shape stay inside that canvas without cropping.
         @Test func everySourceAspectFitsInsideTheCanvas() {
             for size in [

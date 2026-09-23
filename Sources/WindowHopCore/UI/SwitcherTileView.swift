@@ -339,7 +339,7 @@ final class SwitcherTileView: NSView {
         previewShadowView.layer?.shadowOffset = DesignTokens.previewShadowOffset
         addSubview(previewShadowView)
 
-        previewView.imageScaling = .scaleProportionallyDown
+        previewView.imageScaling = .scaleProportionallyUpOrDown
         previewView.wantsLayer = true
         previewView.layer?.cornerRadius = DesignTokens.previewCornerRadius
         previewView.layer?.cornerCurve = .continuous
@@ -533,9 +533,11 @@ final class SwitcherTileView: NSView {
             ? DesignTokens.iconSelectionCornerRadius
             : DesignTokens.previewCornerRadius + selectionPadding
         if hasPreview {
-            // Aspect-fit inside the fixed display-aspect container: the whole
-            // window stays visible and the semantic surface owns letterboxing.
-            let fitted = fittedImageRect(in: contentBox, imageSize: previewView.image?.size)
+            // Aspect-fit inside the fixed display-aspect container, scaled up
+            // or down: the whole window stays visible, fills the canvas width
+            // or height (#33), and the semantic surface owns letterboxing.
+            let fitted = PreviewCaptureSizing.fittedRect(
+                imageSize: previewView.image?.size, in: contentBox)
             previewView.frame = fitted
             previewShadowView.frame = contentBox
             previewShadowView.layer?.shadowPath = CGPath(
@@ -603,16 +605,6 @@ final class SwitcherTileView: NSView {
             x: contentBox.minX - button / 2,
             y: contentBox.maxY - button / 2,
             width: button, height: button)
-    }
-
-    private func fittedImageRect(in frame: NSRect, imageSize: NSSize?) -> NSRect {
-        guard let imageSize, imageSize.width > 0, imageSize.height > 0 else { return frame }
-        let scale = min(frame.width / imageSize.width, frame.height / imageSize.height, 1)
-        let fittedSize = NSSize(width: imageSize.width * scale, height: imageSize.height * scale)
-        return NSRect(
-            x: frame.midX - fittedSize.width / 2,
-            y: frame.midY - fittedSize.height / 2,
-            width: fittedSize.width, height: fittedSize.height)
     }
 
     private func applySelectionStyle() {

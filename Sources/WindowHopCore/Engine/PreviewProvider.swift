@@ -130,11 +130,10 @@ public final class PreviewProvider {
         activeSessionGeneration = sessionGeneration
         sessionPermission = permissionStatus
         guard !requests.isEmpty else { return }
-        let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(
                 requests, generation: sessionGeneration,
-                pixelTarget: pixelTarget)
+                targetSize: targetSize, scale: scale)
         }
     }
 
@@ -150,11 +149,10 @@ public final class PreviewProvider {
         let requests = items.compactMap(makeCaptureRequest)
         guard !requests.isEmpty else { return }
         ledger.extendSession(ids: requests.map { $0.id })
-        let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(
                 requests, generation: sessionGeneration,
-                pixelTarget: pixelTarget)
+                targetSize: targetSize, scale: scale)
         }
     }
 
@@ -185,15 +183,12 @@ public final class PreviewProvider {
         else { return }
         expandedGeneration += 1
         let requestGeneration = expandedGeneration
-        let pixelTarget = CGSize(
-            width: targetSize.width * scale,
-            height: targetSize.height * scale)
         Task { [weak self] in
             await self?.captureExpanded(
                 request,
                 sessionGeneration: sessionGeneration,
                 requestGeneration: requestGeneration,
-                pixelTarget: pixelTarget)
+                targetSize: targetSize, scale: scale)
         }
     }
 
@@ -219,7 +214,8 @@ public final class PreviewProvider {
     /// running finish into the cache, but no further capture work starts.
     private func capture(
         _ requests: [CaptureRequest], generation sessionGeneration: Int,
-        pixelTarget: CGSize
+        targetSize: CGSize,
+        scale: CGFloat
     ) async {
         let requestsByID = Dictionary(
             requests.map { ($0.id, $0) },
@@ -240,7 +236,7 @@ public final class PreviewProvider {
                 return assignments.mapValues { content.windows[$0] }
             },
             capture: { scWindow in
-                await self.captureImage(scWindow, pixelTarget: pixelTarget)
+                await self.captureImage(scWindow, targetSize: targetSize, scale: scale)
             },
             isCurrent: { self.isTileSessionCurrent(sessionGeneration) },
             claimRetries: { ids in
@@ -300,7 +296,8 @@ public final class PreviewProvider {
         _ request: CaptureRequest,
         sessionGeneration: Int,
         requestGeneration: Int,
-        pixelTarget: CGSize
+        targetSize: CGSize,
+        scale: CGFloat
     ) async {
         let id = request.id
         await ExpandedCaptureFlow.run(
@@ -338,7 +335,7 @@ public final class PreviewProvider {
                         sessionGeneration: sessionGeneration,
                         requestGeneration: requestGeneration),
                     case .captured(let image) = await self.captureImage(
-                        scWindow, pixelTarget: pixelTarget)
+                        scWindow, targetSize: targetSize, scale: scale)
                 else { return nil }
                 return image
             },
@@ -361,16 +358,16 @@ public final class PreviewProvider {
 
     private func captureImage(
         _ scWindow: SCWindow,
-        pixelTarget: CGSize
+        targetSize: CGSize,
+        scale: CGFloat
     ) async -> TileCaptureResult<NSImage> {
         let windowSize = scWindow.frame.size
         guard windowSize.width > 1, windowSize.height > 1 else { return .failed(.invalidTarget) }
         let configuration = SCStreamConfiguration()
-        let fit = min(
-            pixelTarget.width / windowSize.width,
-            pixelTarget.height / windowSize.height, 2)
-        configuration.width = max(1, Int(windowSize.width * fit))
-        configuration.height = max(1, Int(windowSize.height * fit))
+        let pixels = PreviewCaptureSizing.pixelSize(
+            windowSize: windowSize, targetSize: targetSize, scale: scale)
+        configuration.width = Int(pixels.width)
+        configuration.height = Int(pixels.height)
         configuration.showsCursor = false
         configuration.ignoreShadowsSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
@@ -385,12 +382,14 @@ public final class PreviewProvider {
                 "tile capture failed: \(String(describing: failure), privacy: .public) (\(code, privacy: .public))")
             return .failed(failure)
         }
+        // points follow the scale the pixels were captured for; a fixed half
+        // size drew every snapshot at half its canvas on a 1x display (#33)
         return .captured(
             NSImage(
                 cgImage: cgImage,
-                size: NSSize(
-                    width: CGFloat(cgImage.width) / 2,
-                    height: CGFloat(cgImage.height) / 2)))
+                size: PreviewCaptureSizing.pointSize(
+                    pixelSize: CGSize(width: cgImage.width, height: cgImage.height),
+                    scale: scale)))
     }
 
     /// Keeps the capture error's meaning instead of discarding it. Only errors
