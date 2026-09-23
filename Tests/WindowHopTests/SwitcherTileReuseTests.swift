@@ -9,16 +9,19 @@ import XCTest
 /// these tests) is the observable proof that a tile was not reconfigured.
 @MainActor
 final class SwitcherTileReuseTests: XCTestCase {
-    private var savedAppearanceMode: AppearanceMode!
+    private var isolated: IsolatedPreferences!
+    private var preferences: Preferences { isolated.preferences }
+    private var previews: PreviewProvider { isolated.previews }
 
     override func setUp() async throws {
         try await super.setUp()
-        savedAppearanceMode = Preferences.shared.appearanceMode
-        Preferences.shared.appearanceMode = .windowPreviews
+        isolated = IsolatedPreferences()
+        preferences.appearanceMode = .windowPreviews
     }
 
     override func tearDown() async throws {
-        Preferences.shared.appearanceMode = savedAppearanceMode
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 
@@ -34,7 +37,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testUnchangedRefreshKeepsEveryTileAsItIs() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreview(id: "a", image: image)
         let first = try tile(panel, 0)
@@ -47,7 +50,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testChangedTitleReconfiguresOnlyThatTile() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreview(id: "a", image: image)
 
@@ -58,7 +61,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testReorderedWindowKeepsItsTileAndSnapshot() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         panel.updatePreview(id: "b", image: image)
         let bTile = try tile(panel, 1)
@@ -71,18 +74,18 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testAppearanceChangeReconfiguresEveryTile() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         panel.updatePreview(id: "a", image: image)
 
-        Preferences.shared.appearanceMode = .appIcons
+        preferences.appearanceMode = .appIcons
         panel.update(items: [item("a")], selectedIndex: 0)
 
         XCTAssertFalse(panel.tileShowsPreviewForTesting(at: 0))
     }
 
     func testANewSessionReconfiguresTilesItAlreadyShowed() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.show(items: [item("a")], selectedIndex: 0, presentationMode: .persistent)
         panel.updatePreview(id: "a", image: image)
         panel.hide()
@@ -96,7 +99,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testClickReportsTheTilesCurrentPositionAfterItMoved() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         var clicked: [Int] = []
         var closeRequested: [Int] = []
         panel.onItemClicked = { clicked.append($0) }
@@ -114,7 +117,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testTileOrderFollowsItemOrderAfterANewWindowTakesAFreedSlot() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b"), item("c")], selectedIndex: 0)
         panel.update(items: [item("b"), item("c"), item("new")], selectedIndex: 0)
 
@@ -127,7 +130,7 @@ final class SwitcherTileReuseTests: XCTestCase {
     }
 
     func testSelectionChangeRestylesOnlyTheTilesItAffects() throws {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, previews: previews, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b"), item("c")], selectedIndex: 0)
         for index in 0..<3 { try tile(panel, index).layoutSubtreeIfNeeded() }
 
