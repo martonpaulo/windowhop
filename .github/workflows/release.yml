@@ -147,6 +147,8 @@ jobs:
             "${{ steps.version.outputs.build }}" "$(git log -1 --format=%cs)"
           scripts/package-app.sh --version "${{ steps.version.outputs.version }}" \
             --build-number "${{ steps.version.outputs.build }}"
+          # the stamp is in the bundle now; leave the checkout clean for the appcast commit
+          git checkout -- Support/Info.plist
           scripts/verify-release-identity.sh --app build/WindowHop.app
 
       # The team App Store Connect API key is written to a private temporary file
