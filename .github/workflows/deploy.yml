@@ -16,9 +16,13 @@ on:
 permissions:
   contents: read
 
+# A deployment that has started always finishes; a newer run waits in the queue
+# (GitHub keeps only the newest pending one). Cancelling mid-deploy recorded an
+# `error` deployment, and when the newer run then skipped publishing, that error
+# stayed the latest github-pages status. GitHub's own Pages template does the same.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   # Publishing is skipped when the published input (site/ plus this workflow) is
