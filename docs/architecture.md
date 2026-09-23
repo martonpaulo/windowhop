@@ -471,6 +471,10 @@ no menu bar item to carry the pending state instead.
 - Missing permission stops the tap entirely — the shortcut is never partially intercepted.
 - `tapDisabledByTimeout/UserInput` events re-enable the tap in the callback; sleep/wake and
   session-switch notifications re-arm it from the app delegate.
+- A key-up is consumed only when the latest key-down of that key was consumed: every
+  key-down reassigns the key's ownership. A key-up missed while the tap was disabled
+  therefore heals at the next press of that key, and a re-enable neither resets the ledger
+  (which would leak a held session's Tab release) nor needs a timer (#84).
 - Modifier release is detected from event flags (covers left/right and both-held cases);
   the held-modifier guard covers missed events.
 
