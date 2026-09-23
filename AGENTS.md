@@ -108,7 +108,8 @@ Runtime checks (Accessibility permission is inherited when run from a trusted te
 WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
 ```
 
-The release scripts are byte-identical copies of skill-deck's `project-release` assets:
+The release scripts, `scripts/validate-site.sh`, `scripts/social-card.sh` and
+`scripts/lib/capture.sh` are byte-identical copies of skill-deck's `project-release` assets:
 never edit them here; change the callers, or change them upstream and copy again.
 
 Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunning.

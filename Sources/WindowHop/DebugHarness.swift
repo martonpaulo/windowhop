@@ -12,7 +12,7 @@ import WindowHopCore
 ///   matched to, without capturing any image. Requires both permissions.
 /// - `--demo-settings [pane] [--light | --dark]`: shows the real Settings window
 ///   (the toolbar only exists on a real window, so it cannot be rasterized
-///   offscreen) and prints its window number for `screencapture -l`. The
+///   offscreen) and prints the `scripts/lib/capture.sh` handshake. The
 ///   appearance flag pins Light or Dark; without it the window follows the
 ///   system, so a published capture would depend on the operator's setting.
 enum DebugHarness {
@@ -359,10 +359,28 @@ enum DebugHarness {
                     panel.prepareCloseForRendering(at: 2)
                 }
             }
-            print("demo panel window number \(panel.windowNumber)")
-            fflush(stdout)
+            // let the panel finish its fade and layout before announcing it
+            DispatchQueue.main.asyncAfter(deadline: .now() + captureSettleDelay) {
+                announceCaptureReady(panel, reportsKey: false)
+            }
         }
         app.run()
+    }
+
+    /// Time a demo window gets to finish fading in and laying out before it announces
+    /// itself as ready to capture.
+    private static let captureSettleDelay: TimeInterval = 1.2
+
+    /// Prints the handshake `scripts/lib/capture.sh` waits for (skill-deck's canonical
+    /// capture protocol): the backing scale, which must be Retina, the window number for
+    /// `screencapture -l`, optionally whether the window is key, then `READY`. The process
+    /// stays alive for the capture, so stdout is flushed rather than left in its buffer.
+    private static func announceCaptureReady(_ window: NSWindow, reportsKey: Bool) {
+        print("SCALE \(window.backingScaleFactor)")
+        print("WINDOW_ID \(window.windowNumber)")
+        if reportsKey { print("KEY \(window.isKeyWindow)") }
+        print("READY")
+        fflush(stdout)
     }
 
     private static func runWindowDump() {
@@ -413,15 +431,15 @@ enum DebugHarness {
         window.makeKeyAndOrderFront(nil)
         // A capture taken while the window is not key documents a greyed-out
         // title bar and inactive controls, so claim focus once more after the
-        // first run-loop turns and only then announce readiness.
+        // first run-loop turns and only then announce readiness. The handshake
+        // reports KEY, so the capture refuses a window that never became key.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             NSApp.activate(ignoringOtherApps: true)
             window.makeKeyAndOrderFront(nil)
-            print("settings window number \(window.windowNumber) "
-                + "(\(Int(window.frame.width))x\(Int(window.frame.height)))")
-            // the process stays alive for the capture, so a redirected stdout
-            // must not hold the window number in its buffer
-            fflush(stdout)
+            print("settings window \(Int(window.frame.width))x\(Int(window.frame.height))")
+            DispatchQueue.main.asyncAfter(deadline: .now() + captureSettleDelay) {
+                announceCaptureReady(window, reportsKey: true)
+            }
         }
         app.run()
     }

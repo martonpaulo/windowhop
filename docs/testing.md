@@ -97,8 +97,8 @@ The published Settings images instead capture the real window, because its toolb
 only on a real window:
 
 ```sh
-build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings windows   # prints its window number
-screencapture -x -l<window-number> site/screenshots/settings-windows.png
+build/WindowHop.app/Contents/MacOS/WindowHop --demo-settings windows   # prints WINDOW_ID <n>, then READY
+screencapture -x -l<n> site/screenshots/settings-windows.png
 ```
 
 `--demo-settings` shows the running user's real preferences, so set the documented
@@ -127,9 +127,13 @@ update feed.
 
 ## Published screenshots
 
-`scripts/capture-screenshots.sh` produces everything under `site/screenshots/`. It launches
-`--demo-switcher` / `--demo-settings`, waits for the demo to print its window number, and
-captures that one window with `screencapture -l<windowid>`.
+`scripts/capture-screenshots.sh` produces everything under `site/screenshots/`. It is a
+driver over `scripts/lib/capture.sh`, skill-deck's canonical capture protocol, kept
+byte-identical. It launches `--demo-switcher` / `--demo-settings`, which print the handshake
+`SCALE <backing scale>`, `WINDOW_ID <n>` (Settings adds `KEY true|false`) and then `READY`
+once the window has settled; the library refuses a scale below 2 or a Settings window that
+is not key, captures that one window with `screencapture -l<n>`, stops the demo and writes
+lossless WebP. The driver then caps the published width and writes the srcset variants.
 
 Capturing an on-screen window is what makes those images look like macOS: `screencapture`
 records the window as the compositor draws it, so the PNG keeps the rounded corners, the
@@ -152,7 +156,9 @@ Requirements and constraints:
   while it is not key documents a greyed-out title bar and inactive controls.
 - The Settings captures pass `--light`, which pins the window's appearance. Without it the
   window follows the operator's system setting, so the published images would change with
-  whoever ran the script. Light matches the site's default appearance.
+  whoever ran the script. Light matches the site's default appearance. For the same reason
+  they pass `-AppleShowScrollBars WhenScrolling`, an argument-domain override for that one
+  process, so an operator's "Show scroll bars: Always" does not draw a scroller track.
 - The Settings demo hides the window title (`titleVisibility = .hidden`): published images keep the
   traffic lights and the toolbar, and the product name is already beside every image.
 - The `width`/`height` attributes in `site/index.html` are the captured pixels halved. Update
@@ -175,7 +181,7 @@ Requirements and constraints:
   full-size file so a phone does not download 1916 px to draw about 350. The script resamples
   them from the lossless capture and encodes them `-near_lossless 60`: plain lossless makes a
   resampled screenshot so much larger that a narrower width can outweigh the full one.
-  `scripts/validate-site.sh` checks that every `srcset` candidate exists.
+  `make validate` checks that every `srcset` candidate exists.
 
 ## Release publication order
 

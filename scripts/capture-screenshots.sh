@@ -8,8 +8,14 @@
 # that: square corners, no shadow, no elevation. `--render-ui` stays the
 # layout/regression harness; this script produces the images people look at.
 #
+# This is a driver over scripts/lib/capture.sh, skill-deck's canonical capture
+# protocol, kept byte-identical: the demo prints SCALE, WINDOW_ID (and KEY for
+# Settings) and READY, and the library refuses a non-Retina scale, captures that
+# one window with its shadow, stops the demo and writes lossless WebP. What is
+# captured, the published widths and the srcset variants stay here.
+#
 # Requirements:
-#   * a Retina (2x) display, or the images come out at half resolution;
+#   * a Retina (2x) display; the library refuses anything less;
 #   * Screen Recording permission for the terminal running this;
 #   * `swift build` already done;
 #   * `cwebp` and `dwebp` (brew install webp) for the WebP the site publishes.
@@ -17,15 +23,17 @@
 # Usage: scripts/capture-screenshots.sh [output-directory]
 set -euo pipefail
 cd "$(dirname "$0")/.."
+. scripts/lib/capture.sh
+trap capture_cleanup EXIT
 
 OUTPUT=${1:-site/screenshots}
 BINARY=.build/debug/WindowHop
-mkdir -p "$OUTPUT"
 
 [ -x "$BINARY" ] || { echo "$BINARY missing; run swift build first" >&2; exit 1; }
+capture_preflight
+command -v dwebp >/dev/null 2>&1 || { echo "dwebp is required (brew install webp)" >&2; exit 1; }
 
-# Runs the demo binary with the given arguments, waits for it to print its
-# window number, captures that window with its shadow, and stops it.
+# Captures one demo window through the library, then caps its published width.
 #
 #   capture <name> <max-width|native> <demo arguments...>
 #
@@ -40,48 +48,25 @@ mkdir -p "$OUTPUT"
 capture() {
     local name=$1 max_width=$2
     shift 2
-    local log
-    log=$(mktemp)
-    "$BINARY" "$@" > "$log" 2>&1 &
-    local pid=$!
-    trap 'kill "$pid" 2>/dev/null || true; rm -f "$log"' RETURN
-
-    local window_number="" attempt=0
-    while [ $attempt -lt 60 ]; do
-        # pipefail would abort the whole script on the not-yet-printed case
-        window_number=$(grep -oE 'window number ([0-9]+)' "$log" | tail -1 | awk '{print $3}') || true
-        [ -n "$window_number" ] && break
-        attempt=$((attempt + 1))
-        sleep 0.25
-    done
-    if [ -z "$window_number" ]; then
-        echo "$name: the demo never reported a window number" >&2
-        cat "$log" >&2
-        return 1
-    fi
-    # let the panel finish its fade/layout before the shutter
-    sleep 1.2
-    # -o would drop the shadow, -l picks exactly this window, so nothing of the
-    # operator's own desktop can appear in a published image
-    screencapture -x -l"$window_number" -t png "$OUTPUT/$name.png"
-    kill "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
+    capture_window --name "$name" --output-dir "$OUTPUT" -- "$BINARY" "$@" >/dev/null || return 1
+    local image=$OUTPUT/$name.webp
     if [ "$max_width" != native ]; then
         local width
-        width=$(sips -g pixelWidth "$OUTPUT/$name.png" | tail -1 | awk '{print $2}')
+        width=$(sips -g pixelWidth "$image" | tail -1 | awk '{print $2}')
         if [ "$width" -gt "$max_width" ]; then
             # sips is built into macOS and its resampling is indistinguishable
-            # here from ImageMagick's Lanczos, so the script stays dependency-free
-            sips --resampleWidth "$max_width" "$OUTPUT/$name.png" >/dev/null
+            # here from ImageMagick's Lanczos; the result is re-encoded with the
+            # library's lossless settings
+            local png=$CAPTURE_DIR/$name-resampled.png
+            dwebp -quiet "$image" -o "$png"
+            sips --resampleWidth "$max_width" "$png" >/dev/null
+            cwebp -quiet -lossless -exact -z 9 -metadata none "$png" -o "$image"
+            rm -f "$png"
         fi
     fi
-    # Published as lossless WebP: identical pixels, about a third of the bytes.
-    # The alpha the shadow needs survives, and every macOS 14 browser reads it.
-    cwebp -quiet -lossless -z 9 -metadata none "$OUTPUT/$name.png" -o "$OUTPUT/$name.webp"
-    rm -f "$OUTPUT/$name.png"
     printf '%-32s %s  %sKB\n' "$name.webp" \
-        "$(sips -g pixelWidth -g pixelHeight "$OUTPUT/$name.webp" | tail -2 | tr -d ' \n')" \
-        "$(( $(stat -f%z "$OUTPUT/$name.webp") / 1024 ))"
+        "$(sips -g pixelWidth -g pixelHeight "$image" | tail -2 | tr -d ' \n')" \
+        "$(( $(stat -f%z "$image") / 1024 ))"
 }
 
 # Writes the narrower widths of an image the page serves through srcset, as
@@ -112,7 +97,10 @@ capture switcher-light            1660 --demo-switcher --columns 8
 capture switcher-dark             1660 --demo-switcher --dark --columns 8
 capture switcher-previews-light   native --demo-switcher --previews --columns 4
 capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
-capture settings-windows          native --demo-settings windows --light
+# The argument domain pins overlay scroll bars for this one process, so the operator's
+# "Show scroll bars: Always" setting does not draw a scroller track into the image.
+capture settings-windows          native --demo-settings windows --light \
+    -AppleShowScrollBars WhenScrolling
 
 # The hero's srcset and imagesrcset in site/index.html list exactly these widths.
 variants switcher-previews-light 480 720 958 1200
