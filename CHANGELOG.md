@@ -80,6 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Merged windows become one entry right away**: after Window › Merge All Windows, the
+  next switcher session shows the merged window once, with its tab count, instead of
+  listing every former window until something else changed.
 - **Floating windows stay in the switcher**: an app's ordinary window that floats above
   the others, such as a pinned document or an always-on-top dialog, is no longer mistaken
   for Picture in Picture and hidden. Browser Picture in Picture is still left out unless

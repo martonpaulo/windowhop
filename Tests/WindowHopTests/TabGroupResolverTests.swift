@@ -558,6 +558,56 @@ final class TabGroupResolverTests: XCTestCase {
             policy: .init())
     }
 
+    // MARK: - Live merge (#113)
+
+    /// Measured on macOS 26: after Window ▸ Merge All Windows the three former
+    /// windows are still tracked as standalone entries with their pre-merge frames,
+    /// and no observed notification arrives. The session-start re-read then sees the
+    /// active tab's bar and each inactive tab's empty children; in every read order
+    /// the result is one entry that carries all three tabs.
+    func testSessionRereadAfterALiveMergeYieldsOneEntryInAnyOrder() {
+        let reads: [(id: String, observation: TabObservation)] = [
+            ("A", .group(["A", "C", "B"])), ("B", .standalone), ("C", .standalone),
+        ]
+        for order in permutations(reads) {
+            var store = [window("A", "A"),
+                         window("B", "B", frame: otherFrame),
+                         window("C", "C", frame: otherFrame.offsetBy(dx: -29, dy: -29))]
+            for read in order {
+                var reread = store.first { $0.id == read.id }!
+                if case .group(let titles) = read.observation {
+                    reread = window(reread.id, reread.title, isTabbed: reread.isTabbed,
+                                    groupIds: reread.groupIds, frame: reread.frame,
+                                    reportedTabTitles: titles)
+                }
+                // WindowStore.updateTabGroup's fast path: no bar and no group is a no-op
+                if case .standalone = read.observation, reread.groupIds == nil { continue }
+                let changes = TabGroupResolver.resolve(
+                    active: reread, observation: read.observation,
+                    sameAppWindows: store.filter { $0.id != read.id })
+                store = store.map { $0.applying(changes[$0.id]) }
+            }
+            let visible = store.filter { isDisplayed($0, applying: [:]) }.map(\.id)
+            XCTAssertEqual(visible, ["A"], "order \(order.map(\.id))")
+            XCTAssertEqual(store.first?.groupIds.map(Set.init), ["A", "B", "C"])
+        }
+    }
+
+    func testSessionRereadTargetsOnlyAppsWithTwoOrMoreEntries() {
+        let entries: [(id: String, appId: String?)] = [
+            ("te1", "TextEdit"), ("safari", "Safari"), ("te2", "TextEdit"),
+            ("settings", nil), ("te3", "TextEdit"),
+        ]
+        XCTAssertEqual(TabGroupResolver.sessionRereadTargets(entries), ["te1", "te2", "te3"])
+    }
+
+    func testSessionRereadTargetsNothingWhenEveryAppHasOneEntry() {
+        let entries: [(id: String, appId: String?)] = [
+            ("te", "TextEdit"), ("safari", "Safari"), ("settings", nil), ("other", nil),
+        ]
+        XCTAssertTrue(TabGroupResolver.sessionRereadTargets(entries).isEmpty)
+    }
+
     // MARK: - Removal
 
     func testRemovalShrinksGroup() {

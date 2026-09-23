@@ -363,6 +363,41 @@ public final class WindowStore {
         }
     }
 
+    /// Session-start re-read of tab bars (#113). A live Window ▸ Merge All Windows
+    /// sends no observed AX notification, so merged windows would stay separate
+    /// entries until an unrelated event. Called once per session open, never while
+    /// idle; reads only the entries `TabGroupResolver.sessionRereadTargets` picks,
+    /// on the AX reads queue, and applies them in one main-thread pass.
+    public func rereadTabGroups(of items: [SwitcherItem]) {
+        let windows = items.compactMap(\.window)
+        let targetIds = Set(TabGroupResolver.sessionRereadTargets(
+            windows.map { (id: $0.stableId, appId: $0.app.map(ObjectIdentifier.init)) }))
+        let targets = windows.compactMap { window -> (UUID, AXUIElement)? in
+            guard targetIds.contains(window.stableId), let ax = window.ax else { return nil }
+            return (window.stableId, ax)
+        }
+        guard !targets.isEmpty else { return }
+        let keys = AXNotificationRouter.windowAttributeKeys + [kAXChildrenAttribute]
+        BackgroundWork.axReadsQueue.async { [weak self] in
+            let start = CFAbsoluteTimeGetCurrent()
+            let reads = targets.compactMap { id, element -> (UUID, AXUIElement, AXAttributes, TabObservation)? in
+                guard let attributes = try? element.attributes(keys) else { return nil }
+                return (id, element, attributes, AXUIElement.tabObservation(fromWindow: attributes))
+            }
+            DebugLog.log("tab re-read: \(reads.count)/\(targets.count) window(s) in "
+                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - start) * 1000))ms")
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.started, !reads.isEmpty else { return }
+                for (id, element, attributes, tabs) in reads {
+                    guard let window = self.windowsById[id], window.ax == element else { continue }
+                    window.update(from: attributes, tabs: tabs)
+                    self.updateTabGroup(for: window, tabs: tabs)
+                }
+                self.onChange?()
+            }
+        }
+    }
+
     // MARK: - Snapshot
 
     /// The visible, ordered switcher list under the current settings.

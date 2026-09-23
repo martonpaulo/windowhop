@@ -70,6 +70,17 @@ and tab count, and the next complete read recovers without a retry timer.
 Discovery order is arbitrary, so a late-arriving sibling is matched against the active
 tab's last complete tab bar (`TabGroupResolver.resolveArrival`); only groups with an
 unmatched title equal to the newcomer's are resolved again.
+A live merge is invisible to the observed notifications. Measured for #113 on macOS 26
+(TextEdit, Window ▸ Merge All Windows): none of the subscribed app or window
+notifications fire, the inactive tabs stay valid elements that keep their pre-merge
+frames, and only the active tab remains in `kAXWindows`. An app-level subscription would
+see `AXTitleChanged` on the new `AXTabButton`s, but it would also deliver every title
+change of every element in every app. Instead, each session open re-reads the tab bars of
+the entries whose app shows two or more of them (`TabGroupResolver.sessionRereadTargets`;
+a merge needs two windows) on the AX reads queue, next to the dead-window check, and
+applies them in one main-thread pass. The open session drops the merged tabs through its
+normal list refresh. Measured cost: 2–15 ms for three TextEdit windows; nothing runs
+while idle.
 Safari-style browsers expose one AX window per browser window, so nothing matches and
 each window simply carries its own tab count. Counts come only from counting
 `AXTabButton` children — never guessed, never parsed from titles.

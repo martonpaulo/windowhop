@@ -217,6 +217,25 @@ public enum TabGroupResolver {
         return remaining
     }
 
+    /// Which session entries to re-read when a switcher session opens. Measured on
+    /// macOS 26 (TextEdit, Window ▸ Merge All Windows): a live merge sends none of
+    /// the notifications WindowHop observes, so the new tab bar is only seen on the
+    /// next read. A merge needs two or more windows of one app, so only entries whose
+    /// app shows at least two of them can be hiding a tab; everything else is skipped.
+    /// Entries without an app (the own Settings window) are never re-read.
+    public static func sessionRereadTargets<ID: Hashable, AppID: Hashable>(
+        _ entries: [(id: ID, appId: AppID?)]
+    ) -> [ID] {
+        var counts = [AppID: Int]()
+        for entry in entries {
+            if let appId = entry.appId { counts[appId, default: 0] += 1 }
+        }
+        return entries.compactMap { entry in
+            guard let appId = entry.appId, counts[appId, default: 0] >= 2 else { return nil }
+            return entry.id
+        }
+    }
+
     /// A window disappeared; shrink its group. A group of one is no group at all.
     public static func resolveRemoval<ID: Hashable>(
         removedId: ID,

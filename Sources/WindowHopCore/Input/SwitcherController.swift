@@ -161,6 +161,8 @@ public final class SwitcherController {
             // a missed destroy notification once produced a duplicate entry;
             // validate the visible windows in the background and prune the dead
             WindowStore.shared.pruneIfDead(items.compactMap { $0.window?.ax })
+            // a live window merge sends no notification; see the tab bars now
+            WindowStore.shared.rereadTabGroups(of: items)
             scheduleReveal()
         case .select(let index):
             guard isRevealed else { break }
