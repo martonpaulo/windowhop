@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>WindowHop vs AltTab vs the Mac’s ⌘Tab · Compare Mac window switchers</title>
+  <meta name="description" content="An honest comparison of WindowHop, AltTab and the App Switcher built into macOS: what each one switches, permissions, price, privacy and which Macs they run on.">
+  <link rel="canonical" href="https://windowhop.martonpaulo.com/alttab-alternative/">
+  <meta name="theme-color" content="#08090b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="WindowHop">
+  <meta property="og:title" content="WindowHop vs AltTab vs the Mac’s ⌘Tab · Compare Mac window switchers">
+  <meta property="og:description" content="An honest comparison of WindowHop, AltTab and the App Switcher built into macOS: what each one switches, permissions, price, privacy and which Macs they run on.">
+  <meta property="og:url" content="https://windowhop.martonpaulo.com/alttab-alternative/">
+  <meta property="og:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The words Free for Mac, open source, WindowHop, Switch between windows, not just apps, beside a drawing of the switcher panel with eight window previews.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="WindowHop vs AltTab vs the Mac’s ⌘Tab · Compare Mac window switchers">
+  <meta name="twitter:description" content="An honest comparison of WindowHop, AltTab and the App Switcher built into macOS: what each one switches, permissions, price, privacy and which Macs they run on.">
+  <meta name="twitter:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
+  <link rel="stylesheet" href="/styles/main.css">
+  <script>document.documentElement.classList.add("js");</script>
+  <script src="/scripts/main.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "WindowHop", "item": "https://windowhop.martonpaulo.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Compare", "item": "https://windowhop.martonpaulo.com/alttab-alternative/" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" aria-label="Primary navigation">
+    <div class="site-header-inner">
+      <a class="brand" href="/" aria-label="WindowHop home">
+        <img src="/assets/app-icon.png" width="36" height="36" alt="">
+        <span>WindowHop</span>
+      </a>
+      <nav aria-label="Page sections">
+        <a href="/#features">Features</a>
+        <a href="/help/">Help</a>
+        <a href="/alttab-alternative/" aria-current="page">Compare</a>
+        <a href="/#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero" aria-labelledby="compare-title">
+      <p class="breadcrumb"><a href="/">WindowHop</a> › Compare</p>
+      <p class="eyebrow">Compare</p>
+      <h1 id="compare-title">WindowHop, AltTab or the Mac’s own ⌘Tab?</h1>
+      <p class="hero-summary">All three are good at different things. The Mac’s App Switcher is built in and switches apps. <a href="https://github.com/lwouis/alt-tab-macos" rel="noopener">AltTab<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, which WindowHop comes from, switches windows with many options. WindowHop switches windows with almost no setup. If one of them already works for you, keep it.</p>
+    </section>
+
+    <!-- Every claim here is checked against a source listed under the table: Apple's
+         keyboard shortcut documentation, AltTab's website and pricing page, and
+         AltTab's own source (UPSTREAM.md). Update the date when the facts are rechecked. -->
+    <section class="section" id="alttab-alternative" aria-labelledby="comparison-title">
+      <p class="eyebrow">Side by side</p>
+      <h2 id="comparison-title">What each switcher does.</h2>
+      <div class="table-scroll" role="region" aria-labelledby="comparison-title" tabindex="0">
+        <table class="compare-table">
+          <caption class="visually-hidden">The Mac’s App Switcher, WindowHop and AltTab compared, one row per feature</caption>
+          <thead>
+            <tr>
+              <th scope="col"><span class="visually-hidden">Feature</span></th>
+              <th scope="col">Mac App Switcher</th>
+              <th scope="col" class="is-ours">WindowHop</th>
+              <th scope="col">AltTab</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">What ⌘Tab switches</th>
+              <td>Apps</td>
+              <td class="is-ours">Windows</td>
+              <td>Windows (on <kbd>⌥</kbd><kbd>Tab</kbd> by default)</td>
+            </tr>
+            <tr>
+              <th scope="row">Several windows of one app</th>
+              <td>One tile for the app; <kbd>⌘</kbd><kbd>`</kbd> cycles its windows after you switch</td>
+              <td class="is-ours">One tile per window</td>
+              <td>One tile per window</td>
+            </tr>
+            <tr>
+              <th scope="row">Windows on other Spaces</th>
+              <td>Switches to the app’s Space</td>
+              <td class="is-ours">Yes, after you visit that Space once</td>
+              <td>Yes, on every Space</td>
+            </tr>
+            <tr>
+              <th scope="row">Windows on other displays</th>
+              <td>The app, not its windows</td>
+              <td class="is-ours"><span class="yes">Yes</span></td>
+              <td><span class="yes">Yes</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Styles</th>
+              <td>App icons</td>
+              <td class="is-ours">App Icons or Window Previews</td>
+              <td>Thumbnails; App Icons and Titles in Pro</td>
+            </tr>
+            <tr>
+              <th scope="row">Search by typing</th>
+              <td><span class="no">No</span></td>
+              <td class="is-ours"><span class="no">No</span></td>
+              <td>Yes, in Pro</td>
+            </tr>
+            <tr>
+              <th scope="row">Screen Recording permission</th>
+              <td>Not needed</td>
+              <td class="is-ours">Only for Window Previews</td>
+              <td>For Thumbnails, the free style</td>
+            </tr>
+            <tr>
+              <th scope="row">Accessibility permission</th>
+              <td>Not needed</td>
+              <td class="is-ours">Needed</td>
+              <td>Needed</td>
+            </tr>
+            <tr>
+              <th scope="row">Settings</th>
+              <td>None</td>
+              <td class="is-ours">Four short panes</td>
+              <td>Many options, up to 9 shortcuts in Pro</td>
+            </tr>
+            <tr>
+              <th scope="row">Price</th>
+              <td>Built into macOS</td>
+              <td class="is-ours">Free</td>
+              <td>Free; Pro costs $9.99 (or $24.99 for lifetime updates)</td>
+            </tr>
+            <tr>
+              <th scope="row">Open source</th>
+              <td>No</td>
+              <td class="is-ours">Yes, GPL-3.0</td>
+              <td>Yes, GPL-3.0</td>
+            </tr>
+            <tr>
+              <th scope="row">Data it sends</th>
+              <td>Part of macOS</td>
+              <td class="is-ours">Only the update check. No telemetry</td>
+              <td>Update checks, and crash reports after it asks you</td>
+            </tr>
+            <tr>
+              <th scope="row">Apple interfaces it uses</th>
+              <td>Built in</td>
+              <td class="is-ours">Public Apple APIs only</td>
+              <td>Public and private macOS APIs</td>
+            </tr>
+            <tr>
+              <th scope="row">Macs</th>
+              <td>Every Mac</td>
+              <td class="is-ours">Apple silicon, macOS 26 or later</td>
+              <td>Intel and Apple silicon, macOS 12 or later</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sources">Checked on 23 September 2026, with AltTab 11.7.1. Sources: <a href="https://support.apple.com/en-us/102650" rel="noopener">Mac keyboard shortcuts, Apple<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, <a href="https://alt-tab.app/pricing" rel="noopener">AltTab pricing<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, <a href="https://github.com/lwouis/alt-tab-macos" rel="noopener">AltTab source code<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>. Found something out of date? <a href="https://github.com/martonpaulo/windowhop/issues" rel="noopener">Tell us<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>.</p>
+    </section>
+
+    <section class="section" aria-labelledby="choose-title">
+      <p class="eyebrow">Which one fits you</p>
+      <h2 id="choose-title">Choose by how you work.</h2>
+      <div class="grid grid-3 stack-on-tablet">
+        <article class="card reveal">
+          <h3>Keep the Mac’s ⌘Tab if</h3>
+          <ul>
+            <li>You keep one window per app most of the time.</li>
+            <li>You want nothing to install and no permission to give.</li>
+          </ul>
+        </article>
+        <article class="card is-ours reveal">
+          <h3>Choose WindowHop if</h3>
+          <ul>
+            <li>You keep several windows of the same app open.</li>
+            <li>You want ⌘Tab to reach windows, with nearly no settings.</li>
+            <li>You want no Screen Recording permission, no telemetry and no paid tier.</li>
+            <li>You have an Apple silicon Mac with macOS 26 or later.</li>
+          </ul>
+        </article>
+        <article class="card reveal">
+          <h3>Choose AltTab if</h3>
+          <ul>
+            <li>You want to search windows by typing (Pro).</li>
+            <li>You want more styles, sizes and shortcuts.</li>
+            <li>You have an Intel Mac or a macOS version older than macOS 26.</li>
+          </ul>
+        </article>
+      </div>
+      <p>WindowHop and AltTab are free and open source under GPL-3.0. WindowHop keeps AltTab’s attribution and history, and credits Louis Pontoise (lwouis) and the AltTab contributors.</p>
+    </section>
+
+    <section class="download section reveal" aria-labelledby="try-title">
+      <img src="/assets/app-icon.png" alt="" width="96" height="96" loading="lazy">
+      <p class="eyebrow">Try it</p>
+      <h2 id="try-title">See if WindowHop is enough for you.</h2>
+      <p>It takes two minutes to install and one drag to remove.</p>
+      <div class="actions">
+        <a class="button primary" href="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-2.1.0.dmg" rel="noopener">Download WindowHop <span data-site-version>2.1.0</span><svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a class="button secondary" href="/help/">Read the help</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>Developed by Marton Paulo · GPL-3.0 licensed · © <span data-site-year>2026</span> WindowHop contributors.</p>
+      <nav aria-label="Site links">
+        <a href="https://github.com/martonpaulo/windowhop" rel="noopener">Source<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/martonpaulo/windowhop/issues" rel="noopener">Issues<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/martonpaulo/windowhop/releases" rel="noopener">Releases<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

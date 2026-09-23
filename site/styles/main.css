@@ -28,34 +28,93 @@
   --measure-title: 16ch;
 }
 
-/* --- WindowHop palette and page metrics ------------------------------------ */
+/* ==========================================================================
+   WindowHop site styles
+
+   1. Tokens       palette, spacing scale, radii, sizes, motion
+   2. Base         element defaults, focus, skip link
+   3. Layout       page width, section rhythm, grids, showcase
+   4. Components   button, card, keycap, pill, segmented control, figure
+   5. Site chrome  header, footer
+   6. Sections     hero, hero stats, download, open source, inner pages
+   7. Live demo    the interactive switcher in the home page hero
+   8. Motion       scroll-in reveal, hero entrance
+   9. Responsive   one block per breakpoint: 820px, 640px, 520px
+
+   Every length comes from a token. The spacing scale is a 0.25rem (4px)
+   grid: 0.25, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6, 8 rem. Breakpoints cannot be
+   custom properties in a media query, so their three values are named in
+   section 9 and nowhere else.
+   ========================================================================== */
+
+/* --- 1. Tokens --------------------------------------------------------------- */
+
 :root {
   color-scheme: light dark;
+
+  /* Palette. Accent text (eyebrows, links) is small, so it needs 4.5:1 on
+     --bg: #0067d6 gives 4.9:1. Filled buttons carry their own foreground and
+     background pair, because white on the dark-mode accent is only 2.46:1. */
   --bg: #f5f5f7;
   --surface: rgba(255, 255, 255, 0.72);
   --surface-strong: #fff;
   --text: #1d1d1f;
   --secondary: #6e6e73;
   --line: rgba(0, 0, 0, 0.08);
-  /* Accent text (eyebrows, links) is small, so it needs 4.5:1 on --bg: #0067d6
-     gives 4.9:1, where the earlier #0675e8 gave 4.1:1. */
   --accent: #0067d6;
   --accent-hover: #0b5fbb;
-  /* Filled buttons carry their own foreground/background pair: white text on
-     the dark-mode accent would be only 2.46:1. */
-  --button-primary-fg: #ffffff;
+  --button-primary-fg: #fff;
   --button-primary-bg: #0a66c8;
   --button-primary-bg-hover: #0b5fbb;
-  --button-glow: 0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent);
-  --button-glow-hover: 0 12px 28px color-mix(in srgb, var(--accent) 34%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 70%, white);
+  --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+
+  /* Elevation */
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
+  --shadow-button: 0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent);
+  --shadow-button-hover: 0 12px 28px color-mix(in srgb, var(--accent) 34%, transparent);
   --icon-shadow: drop-shadow(0 18px 28px rgba(37, 112, 228, 0.22));
-  --radius: 28px;
-  --radius-card: 24px;
-  --page-width: min(1180px, calc(100% - 40px));
-  /* The sticky header's own height: what anything else that sticks has to
-     clear so it does not park underneath it. */
-  --header-height: 65px;
+
+  /* Spacing: a 0.25rem grid */
+  --space-3xs: 0.25rem;  /*   4px */
+  --space-2xs: 0.5rem;   /*   8px */
+  --space-xs: 0.75rem;   /*  12px */
+  --space-s: 1rem;       /*  16px */
+  --space-m: 1.5rem;     /*  24px */
+  --space-l: 2rem;       /*  32px */
+  --space-xl: 3rem;      /*  48px */
+  --space-2xl: 4rem;     /*  64px */
+  --space-3xl: 6rem;     /*  96px */
+  --space-4xl: 8rem;     /* 128px */
+
+  /* Radii */
+  --radius-xs: 0.25rem;
+  --radius-s: 0.5rem;
+  --radius-m: 0.75rem;
+  --radius-l: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-pill: 999px;
+
+  /* Sizes */
+  --page-width: min(73.75rem, 100% - 2.5rem);   /* 1180px, 20px gutters */
+  --width-hero-copy: 51.25rem;                  /* 820px */
+  --width-demo: 65rem;                          /* 1040px */
+  --control-height: 3rem;
+  --control-height-s: 2.25rem;
+  --keycap-height: 3rem;
+  --keycap-min-width: 3.5rem;
+  --glyph-tile: 3rem;
+  --brand-icon: 2.25rem;
+  /* The sticky header's own height (brand icon + padding + hairline): what an
+     in-page link has to clear so its target does not park underneath it. */
+  --header-height: 3.8125rem;
+
+  /* Motion */
+  --duration-instant: 0.08s;
+  --duration-fast: 0.15s;
+  --duration-medium: 0.3s;
+  --duration-slow: 0.7s;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,49 +135,101 @@
   }
 }
 
-/* --- Shared structure ------------------------------------------------------
-   The section rhythm, hero, feature blocks, buttons and footer below are the
-   fleet's one landing-page design. Keep them in step across the three sites. */
+/* --- 2. Base ------------------------------------------------------------------ */
 
-* { box-sizing: border-box; }
-/* In-page links (Features, Install, Download) land below the sticky header, not under it. */
-html { scroll-behavior: smooth; scroll-padding-top: var(--header-height); }
-/* The footer sits at the bottom of the viewport on a short page (the 404
-   above all) instead of floating in the middle of it. svh keeps mobile browser
-   chrome from pushing it off; vh is the fallback for anything older. */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--header-height);
+}
+
+/* The footer sits at the bottom of the viewport on a short page (the 404 above
+   all). svh keeps mobile browser chrome from pushing it off; vh is the fallback. */
 body {
-  min-height: 100vh;
-  min-height: 100svh;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
   margin: 0;
+  background: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
   font-weight: var(--weight-body);
   line-height: var(--leading-body);
   letter-spacing: var(--tracking-body);
-  background: var(--bg);
-  color: var(--text);
-}
-a { color: inherit; }
-/* A link inside running copy shows itself. Navigation, buttons and link rows
-   carry their own treatment instead. */
-p a, li a, td a { color: var(--accent); text-decoration: underline; text-underline-offset: 0.18em; }
-.actions a, .link-row a, .site-footer a, .site-header a { text-decoration: none; }
-img { display: block; max-width: 100%; height: auto; }
-strong { font-weight: var(--weight-strong); }
-
-.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; padding: 10px 14px; border-radius: 10px; background: var(--text); color: var(--bg); text-decoration: none; }
-.skip-link:focus { top: 16px; }
-
-:where(a, button, input, select):focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--accent) 70%, white);
-  outline-offset: 4px;
-  border-radius: 8px;
 }
 
-/* One icon for every link that leaves the site: the GitHub button, another site
-   of the fleet, any external documentation. A link to another page of this site
-   never carries it. */
+a {
+  color: inherit;
+}
+
+/* A link inside running copy shows itself; navigation, buttons and cards carry
+   their own treatment. */
+p a,
+li a,
+td a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+strong {
+  font-weight: var(--weight-strong);
+}
+
+/* Balanced wrapping is for headings; body copy reads worse when the browser
+   evens out the last lines of a long paragraph. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: var(--space-3xs);
+  border-radius: var(--radius-s);
+}
+
+.skip-link {
+  position: fixed;
+  top: -5rem;
+  left: var(--space-s);
+  z-index: 100;
+  padding: var(--space-xs) var(--space-s);
+  border-radius: var(--radius-m);
+  background: var(--text);
+  color: var(--bg);
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  top: var(--space-s);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* One icon for every link that leaves the site; a link to another page of this
+   site never carries it. */
 .external-icon {
   flex: none;
   width: 0.7em;
@@ -128,265 +239,1563 @@ strong { font-weight: var(--weight-strong); }
   opacity: 0.8;
 }
 
-/* The header's background, blur and hairline span the viewport; only its
-   contents sit in the container, so the brand keeps the same left edge as every
-   section below it. The footer's rule is drawn the same way. */
+/* --- 3. Layout ---------------------------------------------------------------- */
+
+main {
+  flex: 1 0 auto;
+  width: var(--page-width);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0 0 var(--space-xs);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-display);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow);
+}
+
+/* The rhythm inside a section: eyebrow, heading, an optional lead paragraph,
+   then whatever the section shows. */
+.section {
+  padding: var(--space-4xl) 0;
+  border-top: 1px solid var(--line);
+}
+
+.section h2 {
+  max-width: var(--measure-title);
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display);
+}
+
+.section > :where(:not(.eyebrow, h2)) {
+  margin-top: var(--space-xl);
+}
+
+.section > p:not(.eyebrow),
+.showcase-copy > p:not(.eyebrow),
+.lead {
+  max-width: var(--measure);
+  margin: var(--space-m) 0 0;
+  color: var(--secondary);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+}
+
+/* A grid never sets its own top margin: the section rhythm above owns the
+   space between a heading and what follows it. */
+.grid {
+  display: grid;
+  gap: var(--space-s);
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stack {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+/* Prose paired with one figure: two columns from the tablet breakpoint up.
+   minmax(0, 1fr), not 1fr: a column whose automatic minimum is min-content
+   pushes the grid wider than the page container. */
+.showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(17.5rem, 27.5rem);
+  align-items: center;
+  gap: var(--space-3xl);
+}
+
+.showcase > * {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.showcase > :not(.showcase-copy) {
+  justify-self: end;
+}
+
+.showcase-copy h2 {
+  font-size: var(--text-xl);
+}
+
+.showcase.figure-first {
+  grid-template-columns: minmax(17.5rem, 27.5rem) minmax(0, 1fr);
+}
+
+.showcase.figure-first > .showcase-copy {
+  order: 2;
+}
+
+.showcase.figure-first > :not(.showcase-copy) {
+  justify-self: start;
+}
+
+/* --- 4. Components -------------------------------------------------------------- */
+
+/* Button: a short rise on hover with the shadow following on the same curve,
+   and the press putting it back down. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-height);
+  padding: 0 var(--space-m);
+  border-radius: var(--radius-pill);
+  font-size: 1rem;
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+  transition:
+    transform var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: none;
+}
+
+.button.primary {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+  box-shadow: var(--shadow-button);
+}
+
+.button.primary:hover {
+  background: var(--button-primary-bg-hover);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.button.secondary {
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* The version is written into the button's span, so the space before it has to
+   survive an empty span. */
+.button [data-site-version]::before {
+  content: "\00a0";
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
+
+/* Card: the one surface for feature tiles, steps, comparisons, help, FAQ items
+   and figures. */
+.card {
+  padding: var(--space-l);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.card h3 {
+  margin: 0 0 var(--space-2xs);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-display);
+}
+
+.card p,
+.card li {
+  margin: 0;
+  color: var(--secondary);
+}
+
+.card strong {
+  color: var(--text);
+}
+
+.card p + p,
+.card p + ul {
+  margin-top: var(--space-xs);
+}
+
+.card ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+.card li + li {
+  margin-top: var(--space-2xs);
+}
+
+.card-link {
+  display: block;
+  text-decoration: none;
+  transition:
+    transform var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.card-link:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.card-link-label {
+  display: inline-block;
+  margin-top: var(--space-s);
+  color: var(--accent);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+}
+
+/* The square accent tile above a feature card's heading: a glyph or a step
+   number. */
+.glyph-tile {
+  display: grid;
+  place-items: center;
+  width: var(--glyph-tile);
+  height: var(--glyph-tile);
+  margin-bottom: var(--space-l);
+  border-radius: var(--radius-m);
+  background: var(--accent-tint);
+  color: var(--accent);
+  font-size: var(--text-md);
+  font-weight: var(--weight-display);
+}
+
+/* Keycap: an inline key in running text. */
+kbd {
+  padding: 0 0.35em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-s);
+  background: var(--surface-strong);
+  color: var(--text);
+  font: inherit;
+  white-space: nowrap;
+}
+
+/* Keycap: a large key that can be pressed (the demo and the gesture cards). */
+.keycap {
+  display: grid;
+  place-items: center;
+  min-width: var(--keycap-min-width);
+  height: var(--keycap-height);
+  padding: 0 var(--space-s);
+  border: 0;
+  border-radius: var(--radius-m);
+  box-shadow: 0 3px 0 var(--line), inset 0 0 0 1px var(--line);
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+  transition:
+    transform var(--duration-instant) ease,
+    box-shadow var(--duration-instant) ease,
+    color var(--duration-instant) ease,
+    background-color var(--duration-instant) ease;
+}
+
+.keycap.is-held,
+.keycap.is-down {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+  color: var(--accent);
+}
+
+.keycap.is-down {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 var(--line), inset 0 0 0 1px var(--accent);
+}
+
+.keycap-row {
+  display: flex;
+  gap: var(--space-2xs);
+}
+
+/* Pill: a small rounded label, such as the hero's download and star counts. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs) var(--space-xs);
+  border-radius: var(--radius-pill);
+  background: var(--surface-strong);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--secondary);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
+
+/* Segmented control: a row of mutually exclusive buttons (role="radio"). */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-strong);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.segmented button {
+  min-height: var(--control-height-s);
+  padding: 0 var(--space-s);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  transition:
+    background-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.segmented button:hover:not([aria-checked="true"]) {
+  color: var(--accent);
+}
+
+.segmented [aria-checked="true"] {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
+}
+
+/* Figure: a screenshot on a card. Captures come from `screencapture -l`, so each
+   one already carries the window's own corners and shadow; a CSS radius or
+   shadow on the image would clip or double them. */
+figure {
+  margin: 0;
+}
+
+figure img {
+  margin-inline: auto;
+}
+
+.screens .card {
+  padding: var(--space-m);
+}
+
+figcaption {
+  padding: var(--space-s) var(--space-3xs) 0;
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+/* --- 5. Site chrome --------------------------------------------------------------- */
+
+/* The header's background, blur and hairline span the viewport; only its content
+   sits in the page container, so the brand keeps the left edge of every section. */
 .site-header {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
   backdrop-filter: blur(22px) saturate(1.4);
-  border-bottom: 1px solid var(--line);
 }
+
 .site-header-inner {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px 24px;
-  width: var(--page-width); margin-inline: auto; padding: 14px 0;
-}
-/* The wordmark is the site's name, not a navigation state: it stays --text on
-   every page, so the lockup never changes colour as the visitor moves around. */
-.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--text); font-weight: var(--weight-strong); text-decoration: none; letter-spacing: var(--tracking-display); }
-/* The icon artwork is a squircle on full transparency and carries its own
-   corners: a CSS radius would clip it a second time at a different curve. */
-.brand img { border-radius: 0; }
-.site-header nav { display: flex; gap: 24px; }
-.site-header nav a, .text-link, .link-row a, .site-footer a {
-  display: inline-flex; align-items: center;
-  color: var(--secondary); text-decoration: none;
-  font-size: var(--text-sm); font-weight: var(--weight-strong);
-}
-.site-header nav a:hover, .text-link:hover, .link-row a:hover, .site-footer a:hover { color: var(--accent); }
-/* Navigation only. The brand also marks the current page, but it is the site's
-   name rather than a nav state, so it must not change colour with the route. */
-.site-header nav [aria-current="page"] { color: var(--accent); }
-
-main { width: var(--page-width); margin-inline: auto; }
-main { flex: 1 0 auto; }
-.site-footer { margin-top: auto; }
-
-.hero { padding: 96px 0 72px; text-align: center; overflow: hidden; }
-.hero-copy { max-width: 820px; margin: 0 auto; }
-.eyebrow {
-  margin: 0 0 12px; color: var(--accent);
-  font-size: var(--text-xs); font-weight: var(--weight-display);
-  text-transform: uppercase; letter-spacing: var(--tracking-eyebrow);
-}
-/* Balanced wrapping is for headings. Body copy reads worse when the browser
-   evens out the last lines of a long paragraph. */
-h1, h2, h3 { text-wrap: balance; }
-h1 {
-  max-width: var(--measure-title); margin: 0 auto;
-  font-size: var(--text-3xl); line-height: var(--leading-tight);
-  letter-spacing: var(--tracking-display); font-weight: var(--weight-display);
-}
-/* drop-shadow follows the artwork's alpha, so the shadow takes the squircle's
-   shape instead of being cast by a square border box. */
-.hero-icon { margin: 0 auto 26px; filter: var(--icon-shadow); }
-.hero-summary {
-  max-width: var(--measure-narrow); margin: 26px auto 28px;
-  color: var(--secondary); font-size: var(--text-lg); line-height: var(--leading-relaxed);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-m);
+  width: var(--page-width);
+  margin-inline: auto;
+  padding: var(--space-xs) 0;
 }
 
-.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-/* Buttons take Mailbell's motion: a short rise on hover with the shadow
-   following it on the same curve, and the press putting the button back down. */
-.button {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 48px; padding: 0 22px; border-radius: 999px;
-  text-decoration: none; font-size: 1rem; font-weight: var(--weight-strong);
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease, color 0.12s ease;
-}
-.button:hover { transform: translateY(-1px); text-decoration: none; }
-.button:active { transform: translateY(0); }
-/* The soft halo under the download button. Mailbell's was a fixed rgba of its
-   own accent; here it is mixed from whichever accent the site carries. */
-.button.primary {
-  background: var(--button-primary-bg); color: var(--button-primary-fg);
-  box-shadow: var(--button-glow);
-}
-.button.primary:hover { background: var(--button-primary-bg-hover); box-shadow: var(--button-glow-hover); }
-.button.secondary { background: var(--surface-strong); color: var(--text); box-shadow: inset 0 0 0 1px var(--line); }
-.compatibility { margin: 18px 0 0; color: var(--secondary); font-size: var(--text-sm); }
-
-.section { padding: 120px 0; border-top: 1px solid var(--line); }
-.section h2 {
-  max-width: var(--measure-title); margin: 0;
-  font-size: var(--text-2xl); line-height: var(--leading-snug);
-  letter-spacing: var(--tracking-display); font-weight: var(--weight-display);
-}
-/* The rhythm inside a section: eyebrow, heading, an optional lead paragraph at
-   22px, then whatever the section shows at 48px. */
-.section > :not(.eyebrow):not(h2) { margin-top: 48px; }
-.section > p:not(.eyebrow) {
-  max-width: var(--measure); margin: 22px 0 0;
-  color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed);
+/* The wordmark is the site's name, not a navigation state: it keeps --text on
+   every page. The icon artwork carries its own corners, so it gets no radius. */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--text);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--tracking-display);
+  text-decoration: none;
 }
 
-/* Prose paired with a SINGLE figure: two columns from the tablet breakpoint up,
-   stacked below it with the copy first. Alternate `.showcase` and
-   `.showcase.figure-first` down a page so consecutive pairs never put the
-   figure on the same side. A figure that is itself the point, such as the hero
-   visual or a wide screenshot, stays full width instead. */
-/* minmax(0, 1fr), not 1fr: a column whose automatic minimum is min-content
-   pushes the grid wider than the shared container and the copy then starts hard
-   against the window edge instead of on the container's gutter. */
-.showcase { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 440px); align-items: center; gap: 72px; }
-.showcase > * { min-width: 0; margin-top: 0; }
-/* A heading that shares its row with a figure takes the step below the
-   full-width one, so it stays inside its column. */
-.showcase-copy h2 { font-size: var(--text-xl); }
-.showcase > :not(.showcase-copy) { justify-self: end; max-height: 560px; }
-.showcase-copy > p:not(.eyebrow) {
-  max-width: var(--measure); margin: 22px 0 0;
-  color: var(--secondary); font-size: var(--text-md); line-height: var(--leading-relaxed);
+.brand img {
+  width: var(--brand-icon);
+  height: var(--brand-icon);
 }
-.showcase.figure-first { grid-template-columns: minmax(280px, 440px) minmax(0, 1fr); }
-.showcase.figure-first > .showcase-copy { order: 2; }
-.showcase.figure-first > :not(.showcase-copy) { justify-self: start; }
 
-figure { margin: 0; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
-figcaption { padding: 16px 4px 2px; color: var(--secondary); font-size: var(--text-sm); }
-
-.feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.feature-grid article { min-height: 240px; padding: 30px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
-.feature-grid article > span {
-  display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 36px;
-  border-radius: 13px; background: color-mix(in srgb, var(--accent) 13%, transparent);
-  color: var(--accent); font-size: var(--text-md); font-weight: var(--weight-display);
+.site-header nav,
+.site-footer nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-m);
 }
-.feature-grid h3 { margin: 0 0 8px; font-size: var(--text-lg); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); font-weight: var(--weight-strong); }
-.feature-grid p { margin: 0; color: var(--secondary); }
 
-/* The AltTab comparison: two cards in the feature cards' surface, side by side
-   from the tablet breakpoint up. */
-.comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.comparison article { padding: 30px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
-.comparison h3 { margin: 0 0 14px; font-size: var(--text-lg); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); font-weight: var(--weight-strong); }
-.comparison ul { margin: 0; padding-left: 1.2em; color: var(--secondary); }
-.comparison li + li { margin-top: 8px; }
-.alternative > p a { color: var(--accent); }
+.site-header nav a,
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  color: var(--secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  text-decoration: none;
+}
 
-.download { text-align: center; }
-.download > img { margin: 0 auto 20px; }
-.download h2, .download > p:not(.eyebrow) { margin-inline: auto; }
-.download > p:not(.eyebrow) { margin-block: 18px 30px; }
-/* The section rhythm puts 48px under the buttons; the closing note and the
-   secondary link belong to them, so they sit closer. */
-.section.download > .compatibility { margin-top: 22px; }
-.section.download > .download-count { margin: 22px auto 0; font-size: var(--text-sm); }
-.section.download > .text-link { display: inline-flex; margin-top: 22px; color: var(--accent); }
-
-/* The closing open-source section: eyebrow, heading, what the project is and
-   who made it, then the row of outward links. */
-.open-source > p:not(.eyebrow):last-of-type { margin-bottom: 30px; }
-.link-row { display: flex; flex-wrap: wrap; gap: 12px 24px; }
-.link-row a { color: var(--accent); }
+.site-header nav a:hover,
+.site-footer a:hover,
+.site-header nav [aria-current="page"] {
+  color: var(--accent);
+}
 
 .site-footer {
+  margin-top: auto;
   border-top: 1px solid var(--line);
-  color: var(--secondary); font-size: var(--text-sm);
+  color: var(--secondary);
+  font-size: var(--text-sm);
 }
+
 .site-footer-inner {
-  display: flex; justify-content: space-between; gap: 12px 30px; flex-wrap: wrap;
-  width: var(--page-width); margin-inline: auto; padding: 32px 0 56px;
-}
-.site-footer p { margin: 0; }
-.site-footer nav { display: flex; flex-wrap: wrap; gap: 12px 20px; }
-
-@media (max-width: 820px) {
-  /* The nav wraps onto a second row below this width, so the header is taller. */
-  :root { --page-width: min(100% - 28px, 1180px); --header-height: 99px; }
-  /* The header keeps every destination on narrow screens: it wraps onto a
-     second centred row rather than dropping links the visitor came for. */
-  .site-header-inner { flex-wrap: wrap; justify-content: center; }
-  .site-header nav { width: 100%; justify-content: center; flex-wrap: wrap; gap: 8px 18px; }
-  .hero { padding-top: 68px; }
-  .section { padding: 86px 0; }
-  .feature-grid { grid-template-columns: 1fr; }
-  .comparison { grid-template-columns: 1fr; }
-  .showcase, .showcase.figure-first { grid-template-columns: 1fr; gap: 44px; }
-  .showcase > .showcase-copy { order: -1; }
-  .showcase > :not(.showcase-copy) { justify-self: center; max-height: 560px; }
-  .feature-grid article { min-height: 210px; }
-  .site-footer-inner { flex-direction: column; }
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-l);
+  width: var(--page-width);
+  margin-inline: auto;
+  padding: var(--space-l) 0 var(--space-2xl);
 }
 
-@media (max-width: 520px) {
-  .actions { align-items: stretch; flex-direction: column; }
-  .button { width: 100%; }
-  .feature-grid article { padding: 24px; }
-  .comparison article { padding: 24px; }
+.site-footer p {
+  margin: 0;
+}
+
+/* --- 6. Sections -------------------------------------------------------------------- */
+
+.hero {
+  padding: var(--space-3xl) 0 var(--space-2xl);
+  overflow: hidden;
+  text-align: center;
+}
+
+.hero-copy {
+  max-width: var(--width-hero-copy);
+  margin: 0 auto;
+}
+
+h1 {
+  max-width: var(--measure-title);
+  margin: 0 auto;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-display);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+
+/* drop-shadow follows the artwork's alpha, so the shadow takes the squircle's
+   shape instead of a square box. */
+.hero-icon {
+  margin: 0 auto var(--space-m);
+  filter: var(--icon-shadow);
+}
+
+.hero-summary {
+  max-width: var(--measure-narrow);
+  margin: var(--space-m) auto var(--space-l);
+  color: var(--secondary);
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+}
+
+.compatibility {
+  margin: var(--space-s) 0 0;
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+/* The download and star counts under the hero's buttons, written at deploy time
+   by scripts/render-download-count.sh (its markup uses these class names). */
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2xs);
+  margin: var(--space-s) 0 0;
+  font-size: var(--text-sm);
+}
+
+.hero-stats svg:not(.external-icon) {
+  color: var(--accent);
+}
+
+.hero-stats a:hover {
+  color: var(--accent);
+}
+
+/* The "How it works" cards: keys first, then the step. */
+.gesture .keycap-row {
+  margin-bottom: var(--space-m);
+}
+
+/* Features: a bento grid of cards in three widths. Each card sets --hue, which
+   colours its icon tile and the soft glow in its corner. */
+.bento {
+  grid-auto-flow: dense;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.feature {
+  --feature-color: hsl(var(--hue) 85% 58%);
+  --feature-color-end: hsl(calc(var(--hue) + 30) 80% 52%);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition:
+    transform var(--duration-medium) var(--ease-out),
+    border-color var(--duration-medium) ease;
+}
+
+.feature::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    circle at 100% 0%,
+    color-mix(in srgb, var(--feature-color) 18%, transparent),
+    transparent 55%
+  );
+  opacity: 0.7;
+  transition: opacity var(--duration-medium) ease;
+}
+
+.feature:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--feature-color) 40%, var(--line));
+}
+
+.feature:hover::before {
+  opacity: 1;
+}
+
+.feature .glyph-tile {
+  background: linear-gradient(135deg, var(--feature-color), var(--feature-color-end));
+  box-shadow: 0 var(--space-2xs) var(--space-m) color-mix(in srgb, var(--feature-color) 35%, transparent);
+  color: #fff;
+}
+
+.feature .glyph-tile svg {
+  width: 55%;
+  height: 55%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.feature-visual {
+  margin-top: var(--space-l);
+}
+
+.feature .keycap {
+  --keycap-height: 2.5rem;
+  --keycap-min-width: 2.5rem;
+
+  font-size: var(--text-sm);
+}
+
+.card .badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding: 0;
+  list-style: none;
+}
+
+.card .badge-row .pill {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+}
+
+/* Three small windows of one app, fanned out, each with the same app badge. */
+.mini-windows {
+  display: flex;
+  gap: var(--space-s);
+}
+
+.mini-window {
+  position: relative;
+  flex: 1;
+  max-width: 10rem;
+  aspect-ratio: 16 / 10;
+  padding: var(--space-xs);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--surface-strong);
+  transform: rotate(calc((var(--i) - 1) * 2deg));
+}
+
+.mini-window i {
+  display: block;
+  height: var(--space-2xs);
+  margin-top: var(--space-2xs);
+  border-radius: var(--radius-pill);
+  background: var(--line);
+}
+
+.mini-window i:first-child {
+  width: 60%;
+  margin-top: 0;
+  background: color-mix(in srgb, var(--feature-color) 40%, transparent);
+}
+
+.mini-window b {
+  position: absolute;
+  right: calc(var(--space-2xs) * -1);
+  bottom: calc(var(--space-2xs) * -1);
+  width: var(--space-l);
+  height: var(--space-l);
+  border-radius: 22%;
+  background: linear-gradient(180deg, color-mix(in srgb, #2f7df6 72%, white), #2f7df6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Screenshots of the real app, stacked. */
+.screens {
+  display: grid;
+  gap: var(--space-m);
+}
+
+.showcase picture img {
+  max-height: 35rem;
+  width: auto;
+}
+
+/* Install: numbered steps in reading order. The number is a CSS counter, so it
+   cannot drift from the list order; role="list" in the HTML keeps the list
+   announced in WebKit, which drops it without markers. */
+.steps {
+  counter-reset: step;
+}
+
+.steps > li {
+  counter-increment: step;
+}
+
+.steps > li::before {
+  content: counter(step);
+  display: grid;
+  place-items: center;
+  width: var(--space-l);
+  height: var(--space-l);
+  margin-bottom: var(--space-m);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 9%, transparent);
+  color: var(--accent);
+  font-weight: var(--weight-display);
+}
+
+.download {
+  text-align: center;
+}
+
+.download > img {
+  margin: 0 auto var(--space-m);
+}
+
+.download h2,
+.download > p:not(.eyebrow) {
+  margin-inline: auto;
+}
+
+.section.download > p:not(.eyebrow) {
+  margin-block: var(--space-s) var(--space-l);
+}
+
+.section.download > .download-count,
+.section.download > .text-link {
+  margin-top: var(--space-m);
+}
+
+.section.download > .download-count {
+  font-size: var(--text-sm);
+}
+
+/* Inner pages (/help/, /alttab-alternative/) open with a left-aligned title. */
+.page-hero {
+  padding: var(--space-3xl) 0 var(--space-2xl);
+}
+
+.page-hero h1 {
+  max-width: 18ch;
+  margin: 0;
+  font-size: var(--text-2xl);
+  text-align: left;
+}
+
+.page-hero .hero-summary {
+  max-width: var(--measure);
+  margin: var(--space-m) 0 0;
+}
+
+.breadcrumb {
+  margin: 0 0 var(--space-s);
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.keys-table {
+  width: 100%;
+  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.keys-table th,
+.keys-table td {
+  padding: var(--space-s) var(--space-m);
+  text-align: left;
+}
+
+.keys-table tr + tr > *,
+.keys-table tbody tr:first-child > * {
+  border-top: 1px solid var(--line);
+}
+
+.keys-table thead th {
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+.keys-table td {
+  color: var(--secondary);
+}
+
+.keys-table td:first-child {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* The comparison table on /alttab-alternative/. WindowHop's column is tinted;
+   on a narrow screen the table scrolls sideways inside its own region. */
+.table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+}
+
+.compare-table {
+  width: 100%;
+  min-width: 45rem;
+  border-collapse: collapse;
+}
+
+.compare-table th,
+.compare-table td {
+  padding: var(--space-s) var(--space-m);
+  text-align: left;
+  vertical-align: top;
+}
+
+.compare-table tbody tr {
+  border-top: 1px solid var(--line);
+}
+
+.compare-table thead th {
+  font-size: var(--text-md);
+}
+
+.compare-table tbody th {
+  width: 22%;
+  font-weight: var(--weight-strong);
+}
+
+.compare-table td {
+  color: var(--secondary);
+}
+
+.compare-table .is-ours {
+  background: var(--accent-tint);
+  color: var(--text);
+}
+
+.compare-table thead .is-ours {
+  color: var(--accent);
+}
+
+.yes,
+.no {
+  font-weight: var(--weight-strong);
+}
+
+.yes::before {
+  content: "✓ ";
+  color: var(--accent);
+}
+
+.no::before {
+  content: "– ";
+}
+
+.section > p.sources {
+  font-size: var(--text-sm);
+}
+
+.card.is-ours {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+.faq summary {
+  cursor: pointer;
+  font-size: var(--text-md);
+  font-weight: var(--weight-strong);
+}
+
+.faq .card {
+  padding: var(--space-m);
+}
+
+.faq .card p {
+  margin-top: var(--space-xs);
+}
+
+/* --- 7. Live demo (scripts/demo.js) ------------------------------------------------
+   A drawn desktop with WindowHop's switcher over it. Lengths inside the screen are
+   container units (cqi, a percentage of the screen's width), so the scene scales
+   like a picture while it stays real, interactive HTML. The scene's own sizes are
+   the --demo-* tokens below; a narrow screen overrides only those. */
+
+.demo {
+  width: min(var(--width-demo), 100%);
+  margin: var(--space-2xl) auto 0;
+}
+
+.demo > noscript img {
+  margin-inline: auto;
+}
+
+.demo-glyphs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.demo-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-m);
+}
+
+.demo-screen {
+  /* colours of the drawn desktop */
+  --wall: linear-gradient(135deg, #8ab8ff 0%, #b6a6ff 48%, #ffc6a6 100%);
+  --window: #fff;
+  --window-bar: #f0f0f2;
+  --ink: rgba(0, 0, 0, 0.13);
+  --ink-strong: rgba(0, 0, 0, 0.22);
+  --panel: rgba(246, 246, 248, 0.74);
+  --panel-ink: #1d1d1f;
+  --tile-selected: rgba(0, 0, 0, 0.12);
+  --window-close: #ff5f57;
+  --window-minimize: #febc2e;
+  --window-zoom: #28c840;
+
+  /* sizes of the drawn desktop, in cqi */
+  --demo-menubar: 3.2cqi;
+  --demo-type: 1cqi;            /* 1em inside a desktop window */
+  --demo-time: 1.4cqi;
+  --demo-panel-gap: 1.2cqi;
+  --demo-panel-padding: 1.8cqi;
+  --demo-panel-radius: 2.6cqi;
+  --demo-tile: 10.4cqi;
+  --demo-tile-preview: 18cqi;
+  --demo-tile-radius: 1.6cqi;
+  --demo-icon: 7.6cqi;
+  --demo-badge: 4.4cqi;
+  --demo-title: 1.2cqi;
+  --demo-preview-type: 0.32cqi;  /* 1em inside a preview's window */
+
+  position: relative;
+  container-type: inline-size;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  background: var(--wall);
+  box-shadow: var(--shadow);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .demo-screen {
+    --wall: linear-gradient(135deg, #16294f 0%, #3a2c63 52%, #5a2f45 100%);
+    --window: #25262b;
+    --window-bar: #303137;
+    --ink: rgba(255, 255, 255, 0.13);
+    --ink-strong: rgba(255, 255, 255, 0.24);
+    --panel: rgba(30, 31, 36, 0.72);
+    --panel-ink: #f5f5f7;
+    --tile-selected: rgba(255, 255, 255, 0.16);
+  }
+}
+
+@container (max-width: 600px) {
+  .demo-screen > * {
+    --demo-menubar: 6cqi;
+    --demo-type: 1.6cqi;
+    --demo-time: 2.8cqi;
+    --demo-panel-gap: 2cqi;
+    --demo-panel-padding: 3cqi;
+    --demo-panel-radius: 5cqi;
+    --demo-tile: 21cqi;
+    --demo-tile-preview: 28cqi;
+    --demo-tile-radius: 3cqi;
+    --demo-icon: 14cqi;
+    --demo-badge: 8cqi;
+    --demo-title: 2.8cqi;
+    --demo-preview-type: 0.5cqi;
+  }
+}
+
+.demo-menubar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 1.6cqi;
+  height: var(--demo-menubar);
+  padding: 0 2cqi;
+  background: color-mix(in srgb, var(--window) 55%, transparent);
+  backdrop-filter: blur(20px);
+}
+
+.demo-menubar b {
+  width: 1.3cqi;
+  height: 1.3cqi;
+  border-radius: 50%;
+  background: var(--panel-ink);
+  opacity: 0.8;
+}
+
+.demo-menubar span {
+  width: 5cqi;
+  height: 0.9cqi;
+  border-radius: 1cqi;
+  background: var(--ink-strong);
+}
+
+.demo-menubar time {
+  margin-left: auto;
+  color: var(--panel-ink);
+  font-size: var(--demo-time);
+  font-weight: var(--weight-strong);
+}
+
+.demo-desktop {
+  position: absolute;
+  inset: var(--demo-menubar) 0 0;
+}
+
+/* A drawn window. Its parts are sized in em, so the same markup is a desktop
+   window at --demo-type and a preview at --demo-preview-type. */
+.demo-window {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.2em;
+  background: var(--window);
+  box-shadow: 0 1.2em 3.6em rgba(0, 0, 0, 0.26), 0 0 0 0.1em rgba(0, 0, 0, 0.08);
+  color: var(--panel-ink);
+  font-size: var(--demo-type);
+}
+
+.demo-desktop .demo-window {
+  position: absolute;
+  top: var(--y);
+  left: var(--x);
+  width: var(--w);
+  height: var(--h);
+  transition: filter var(--duration-medium) ease;
+}
+
+.demo-desktop .demo-window:not(.is-front) {
+  filter: saturate(0.8) brightness(0.96);
+}
+
+.demo-window-bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.7em;
+  height: 2.6em;
+  padding: 0 1em;
+  background: var(--window-bar);
+}
+
+.demo-window-bar > span {
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  background: var(--window-close);
+}
+
+.demo-window-bar > span:nth-child(2) {
+  background: var(--window-minimize);
+}
+
+.demo-window-bar > span:nth-child(3) {
+  background: var(--window-zoom);
+}
+
+.demo-window-bar em {
+  flex: 1;
+  margin-right: 3em;
+  overflow: hidden;
+  font-size: 1.15em;
+  font-style: normal;
+  font-weight: var(--weight-strong);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.7;
+}
+
+.demo-window-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* The window contents: bars that stand for text, blocks that stand for images. */
+.demo-window-body i {
+  display: block;
+  height: 0.8em;
+  margin: 0.95em 1.2em 0;
+  border-radius: 0.4em;
+  background: var(--ink);
+}
+
+.wb-address {
+  height: 1.8em;
+  margin: 0.9em 1.2em 0;
+  border-radius: 1em;
+  background: var(--ink);
+}
+
+.wb-hero {
+  height: 38%;
+  margin: 1em 1.2em 0;
+  border-radius: 0.8em;
+  background: linear-gradient(135deg, #3d8bff, #7a5cff);
+}
+
+.wb-split {
+  display: grid;
+  grid-template-columns: 40% 1fr;
+}
+
+.wb-photo {
+  height: 13em;
+  margin: 1em 0 0 1.2em;
+  border-radius: 0.8em;
+  background: linear-gradient(160deg, #ffb45e, #e2703a);
+}
+
+.wb-diff i:nth-child(3n + 1) {
+  background: rgba(40, 200, 64, 0.28);
+}
+
+.wb-diff i:nth-child(3n + 2) {
+  background: rgba(255, 95, 87, 0.26);
+}
+
+.w-terminal .demo-window-bar {
+  background: #24262c;
+  color: #e6e6e6;
+}
+
+.w-terminal .demo-window-body {
+  background: #15171c;
+}
+
+.wb-shell i {
+  background: rgba(126, 231, 135, 0.55);
+}
+
+.wb-shell i:nth-child(even) {
+  background: rgba(201, 209, 217, 0.32);
+}
+
+.wb-shell.is-logs i:nth-child(3n) {
+  background: rgba(254, 188, 46, 0.5);
+}
+
+.w-notes .demo-window-body {
+  background: color-mix(in srgb, #ffd54a 16%, var(--window));
+}
+
+.wb-notes i {
+  background: rgba(160, 120, 20, 0.28);
+}
+
+.wb-mail > div {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 1em 1.2em 0;
+}
+
+.wb-mail b {
+  flex: none;
+  width: 3em;
+  height: 3em;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5ac8fa, #2f7df6);
+}
+
+.wb-mail > div > i {
+  flex: 1;
+  margin: 0;
+}
+
+.wb-mail > div > i + i {
+  display: none;
+}
+
+/* The switcher panel over the desktop. */
+.demo-panel {
+  position: absolute;
+  top: 52%;
+  left: 50%;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--demo-panel-gap);
+  width: max-content;
+  max-width: 92cqi;
+  padding: var(--demo-panel-padding);
+  border-radius: var(--demo-panel-radius);
+  background: var(--panel);
+  box-shadow: 0 2cqi 6cqi rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  color: var(--panel-ink);
+  outline: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(-50%, -50%) scale(0.96);
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) ease,
+    visibility 0s linear var(--duration-fast);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+
+.demo-screen.is-open .demo-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%);
+  transition:
+    opacity var(--duration-fast) ease,
+    transform var(--duration-fast) ease;
+}
+
+.demo-panel:focus-visible {
+  box-shadow: 0 0 0 3px var(--focus-ring), 0 2cqi 6cqi rgba(0, 0, 0, 0.3);
+}
+
+.demo-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8cqi;
+  width: var(--demo-tile);
+  padding: 0.8cqi 0.6cqi;
+  border-radius: var(--demo-tile-radius);
+  cursor: pointer;
+}
+
+.demo-tile.is-selected {
+  background: var(--tile-selected);
+}
+
+.demo-icon {
+  display: grid;
+  place-items: center;
+  width: var(--demo-icon);
+  aspect-ratio: 1;
+  border-radius: 22%;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app) 72%, white), var(--app));
+  box-shadow: 0 0.4cqi 1cqi rgba(0, 0, 0, 0.22);
+}
+
+.demo-icon svg {
+  width: 62%;
+  height: 62%;
+}
+
+.demo-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  min-height: 2.6em;
+  overflow: hidden;
+  font-size: var(--demo-title);
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.demo-screen[data-mode="previews"] .demo-tile {
+  width: var(--demo-tile-preview);
+  padding: 0.4cqi 0.4cqi 0.8cqi;
+}
+
+/* Previews select with an accent plate, as the real panel does. */
+.demo-screen[data-mode="previews"] .demo-tile.is-selected {
+  background: color-mix(in srgb, var(--accent) 78%, transparent);
+  color: #fff;
+}
+
+.demo-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+}
+
+.demo-preview .demo-window {
+  width: 100%;
+  height: 100%;
+  border-radius: 1cqi;
+  box-shadow: 0 0.3cqi 0.8cqi rgba(0, 0, 0, 0.2);
+  font-size: var(--demo-preview-type);
+}
+
+.demo-preview .demo-icon {
+  position: absolute;
+  right: -0.8cqi;
+  bottom: -0.8cqi;
+  width: var(--demo-badge);
+}
+
+/* Pause and play: a round glass button in the screen's corner. The demo moves
+   on its own, so it needs a way to stop it (WCAG 2.2.2). */
+.demo-play {
+  position: absolute;
+  right: var(--space-s);
+  bottom: var(--space-s);
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: var(--control-height-s);
+  height: var(--control-height-s);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--window) 62%, transparent);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  color: var(--panel-ink);
+  cursor: pointer;
+  transition:
+    transform var(--duration-fast) ease,
+    background-color var(--duration-fast) ease;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.demo-play:hover {
+  background: color-mix(in srgb, var(--window) 82%, transparent);
+  transform: scale(1.06);
+}
+
+.demo-play svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: currentColor;
+}
+
+.demo-play .icon-play,
+.demo-play.is-paused .icon-pause {
+  display: none;
+}
+
+.demo-play.is-paused .icon-play {
+  display: block;
+}
+
+.demo-keys {
+  justify-content: center;
+  margin-top: var(--space-m);
+}
+
+.demo-hint {
+  margin: var(--space-s) 0 0;
+  color: var(--secondary);
+  font-size: var(--text-sm);
+}
+
+.demo:not(.is-ready) .demo-hint {
+  display: none;
+}
+
+/* --- 8. Motion ---------------------------------------------------------------------
+   Sections fade up once as they scroll into view (scripts/main.js adds
+   .is-visible). The hidden start exists only with JavaScript (html.js, set in each
+   page's head) and with motion allowed, so nothing is ever hidden from a visitor
+   without scripts or with Reduce Motion. */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-m));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes land {
+  from {
+    transform: scale(0.97);
+  }
+
+  60% {
+    transform: scale(1.012);
+  }
+
+  to {
+    transform: none;
+  }
+}
+
+@keyframes keypress {
+  50% {
+    transform: translateY(3px);
+    box-shadow: 0 0 0 var(--line), inset 0 0 0 1px var(--accent);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .js .reveal {
+    opacity: 0;
+    transform: translateY(var(--space-l));
+    transition:
+      opacity var(--duration-slow) ease,
+      transform var(--duration-slow) var(--ease-out);
+  }
+
+  .js .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* The hero's lines enter one after another, then the demo. */
+  .hero-copy > * {
+    animation: rise 0.8s var(--ease-out) both;
+  }
+
+  .hero-copy > :nth-child(2) { animation-delay: 0.06s; }
+  .hero-copy > :nth-child(3) { animation-delay: 0.12s; }
+  .hero-copy > :nth-child(4) { animation-delay: 0.18s; }
+  .hero-copy > :nth-child(n + 5) { animation-delay: 0.24s; }
+
+  .demo {
+    animation: rise 0.9s 0.3s var(--ease-out) both;
+  }
+
+  .demo-desktop .demo-window.is-landing {
+    animation: land 0.45s var(--ease-out);
+  }
+
+  /* bento cards enter one after another */
+  .bento > :nth-child(2) { transition-delay: 0.06s; }
+  .bento > :nth-child(3) { transition-delay: 0.12s; }
+  .bento > :nth-child(4) { transition-delay: 0.18s; }
+  .bento > :nth-child(5) { transition-delay: 0.24s; }
+  .bento > :nth-child(6) { transition-delay: 0.3s; }
+
+  /* the keyboard card types its keys once as it appears */
+  .feature.is-visible .keycap {
+    animation: keypress 0.4s ease both;
+  }
+
+  .feature.is-visible .keycap:nth-child(2) { animation-delay: 0.5s; }
+  .feature.is-visible .keycap:nth-child(3) { animation-delay: 0.8s; }
+  .feature.is-visible .keycap:nth-child(4) { animation-delay: 1s; }
+  .feature.is-visible .keycap:nth-child(5) { animation-delay: 1.3s; }
+  .feature.is-visible .keycap:first-child { animation-delay: 0.3s; }
+
+  /* the three windows fan out as the card appears */
+  .mini-window {
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .js .feature:not(.is-visible) .mini-window {
+    transform: none;
+  }
+
+  /* each gesture card presses its keys twice as it appears */
+  .gesture .is-visible .keycap {
+    animation: keypress 0.5s ease 0.4s 2;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-  .button:hover, .button:active { transform: none; }
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .button:hover,
+  .card-link:hover {
+    transform: none;
+  }
 }
 
-/* --- WindowHop's own sections ---------------------------------------------- */
-
-.hero { min-height: min(880px, 92vh); }
-/* Screenshots are captured with `screencapture -l`, so each PNG already carries
-   the window's own corner radius, drop shadow and transparent elevation. Adding
-   a CSS radius on top clips those corners a second time at a different radius,
-   and a CSS shadow doubles the one in the image. */
-.hero-visual { display: block; width: min(1134px, 100%); margin: 62px auto 0; }
-/* The capture draws at 958px inside a box up to 1134px wide; as a block it would
-   sit against the left edge of that box, so it is centred in it. */
-.hero-visual img { margin-inline: auto; }
-
-.overview-visuals { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-
-/* Install: numbered steps in reading order. The number is drawn from a CSS
-   counter so it cannot drift from the list order; role="list" in the HTML keeps
-   the list announced in WebKit, which drops it without markers. */
-.steps {
-  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
-  padding: 0; list-style: none; counter-reset: step;
-}
-.steps li, .help-grid article {
-  padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card);
-}
-.steps li { counter-increment: step; }
-.steps li::before {
-  content: counter(step);
-  display: grid; place-items: center; width: 36px; height: 36px; margin-bottom: 22px;
-  /* 9%, lighter than the feature glyph tiles' 13%: the number is text, and at
-     13% the light accent on it is only 4.35:1. */
-  border-radius: 999px; background: color-mix(in srgb, var(--accent) 9%, transparent);
-  color: var(--accent); font-weight: var(--weight-display);
-}
-.steps h3, .help-grid h3 {
-  margin: 0 0 8px; font-size: var(--text-lg); line-height: var(--leading-snug);
-  letter-spacing: var(--tracking-display); font-weight: var(--weight-strong);
-}
-.steps p, .help-grid p, .help-grid li { margin: 0; color: var(--secondary); }
-.steps strong, .help-grid strong { color: var(--text); }
-kbd {
-  padding: 0 0.35em; border: 1px solid var(--line); border-radius: 6px;
-  background: var(--surface-strong); color: var(--text); font: inherit; white-space: nowrap;
-}
-
-.help-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.help-grid p + p, .help-grid p + ul { margin-top: 12px; }
-.help-grid ul { margin: 0; padding-left: 1.2em; }
-.help-grid li + li { margin-top: 8px; }
+/* --- 9. Responsive ------------------------------------------------------------------
+   820px: tablet and below, one column, the header nav on its own row.
+   640px: the demo screen becomes nearly square.
+   520px: phone, full-width buttons and tighter cards. */
 
 @media (max-width: 820px) {
-  .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .help-grid { grid-template-columns: 1fr; }
+  :root {
+    --page-width: min(100% - 1.75rem, 73.75rem);  /* 14px gutters */
+    --header-height: 6rem;                          /* the nav wraps to a second row */
+  }
+
+  .site-header-inner {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .site-header nav {
+    justify-content: center;
+    width: 100%;
+    gap: var(--space-2xs) var(--space-m);
+  }
+
+  .site-footer-inner {
+    flex-direction: column;
+  }
+
+  .hero {
+    padding-top: var(--space-2xl);
+  }
+
+  .hero-icon {
+    width: 7rem;
+    height: 7rem;
+  }
+
+  .section {
+    padding: var(--space-3xl) 0;
+  }
+
+  .page-hero {
+    padding: var(--space-2xl) 0 var(--space-xl);
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-2,
+  .grid-3.stack-on-tablet,
+  .bento {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+
+  .showcase,
+  .showcase.figure-first {
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+  }
+
+  .showcase > .showcase-copy {
+    order: -1;
+  }
+
+  .showcase > :not(.showcase-copy) {
+    justify-self: center;
+  }
+
+  .keys-table td:first-child {
+    white-space: normal;
+  }
 }
+
+@media (max-width: 640px) {
+  .demo-screen {
+    aspect-ratio: 1 / 1.05;
+  }
+}
+
 @media (max-width: 520px) {
-  .steps { grid-template-columns: 1fr; }
-  .steps li, .help-grid article { padding: 24px; }
-}
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-@media (max-width: 820px) {
-  .hero { min-height: auto; }
-  .hero-icon { width: 116px; height: 116px; }
-  .hero-visual { width: 100%; margin-top: 44px; }
-  .overview-visuals { grid-template-columns: 1fr; }
-}
+  .button {
+    width: 100%;
+  }
 
-/* The version is written by scripts/main.js, so the space before it has to
-   survive an empty span before that script runs. */
-.button [data-site-version]::before { content: "\00a0"; }
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    padding: var(--space-m);
+  }
+}

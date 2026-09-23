@@ -210,7 +210,8 @@ while IFS= read -r screenshot; do
     [ -n "$screenshot" ] || continue
     site_path=${screenshot#site/}
     if grep -qF "($screenshot)" $MARKDOWN_FILES \
-        || grep -qF -e "\"$site_path\"" -e "$site_path " site/index.html; then
+        || grep -qF -e "\"/$site_path\"" -e "/$site_path " -e "\"$site_path\"" -e "$site_path " \
+            site/index.html site/help/index.html site/alttab-alternative/index.html; then
         :
     else
         fail "unreferenced screenshot is tracked: $screenshot"
@@ -235,8 +236,11 @@ windowhop_site_checks() (
     set -euo pipefail
     required=(
       site/index.html
+      site/help/index.html
+      site/alttab-alternative/index.html
       site/styles/main.css
       site/scripts/main.js
+      site/scripts/demo.js
       site/assets/app-icon.png
       site/favicon.ico
       site/favicon-192.png
@@ -259,7 +263,9 @@ windowhop_site_checks() (
 
     # Link destinations and the displayed version live in the HTML, so the page works
     # without scripts; Support/Info.plist is the one source they must match.
-    pages=(site/index.html site/404.html)
+    # Every published page, and the ones search engines index (all but the 404).
+    pages=(site/index.html site/help/index.html site/alttab-alternative/index.html site/404.html)
+    indexed=(site/index.html site/help/index.html site/alttab-alternative/index.html)
     if grep -n 'href="#"' "${pages[@]}"; then
       echo "website has a link without a destination (href=\"#\")" >&2
       exit 1
@@ -284,6 +290,10 @@ windowhop_site_checks() (
     }
     # The deploy fills this element with the download total (scripts/render-download-count.sh);
     # the committed page keeps it empty and hidden so a failed count shows nothing.
+    grep -Fq '<p class="hero-stats" id="hero-stats" hidden></p>' site/index.html || {
+      echo "website is missing the empty, hidden hero-stats element" >&2
+      exit 1
+    }
     grep -Fq '<p class="download-count" id="download-count" hidden></p>' site/index.html || {
       echo "website is missing the empty, hidden download-count element" >&2
       exit 1
@@ -304,34 +314,59 @@ windowhop_site_checks() (
 
     for marker in 'id="features"' 'id="download"' 'id="install"' 'id="help"' "href=\"$DOWNLOAD_URL\"" \
                   'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
-                  'Developed by Marton Paulo' 'AltTab on GitHub' \
+                  'Developed by Marton Paulo' \
                   'Download WindowHop <span data-site-version>' 'class="external-icon"' \
-                  'id="alttab-alternative"'; do
-      grep -R -Fq "$marker" site/index.html site/styles/main.css || {
+                  'id="alttab-alternative"' 'id="demo"' '"@type": "FAQPage"'; do
+      grep -R -Fq "$marker" "${indexed[@]}" site/styles/main.css || {
         echo "website is missing required marker: $marker" >&2
         exit 1
       }
     done
-
-    # Search and share previews read different tags; they must say the same thing.
-    title=$(grep -oE '<title>[^<]*</title>' site/index.html | sed -E 's/<\/?title>//g')
-    description=$(grep -oE '<meta name="description" content="[^"]*"' site/index.html | sed -E 's/.*content="//; s/"$//')
-    test -n "$title" && test -n "$description" || {
-      echo "site/index.html is missing its <title> or meta description" >&2
+    # About (#123) and the site keep the AltTab credit as text; a bare "AltTab on GitHub"
+    # link read as WindowHop's own repository.
+    if grep -Fq 'AltTab on GitHub' "${pages[@]}"; then
+      echo "website links \"AltTab on GitHub\" on its own; keep the credit as text" >&2
       exit 1
-    }
-    for tag in 'property="og:title"' 'name="twitter:title"'; do
-      grep -Fq "<meta $tag content=\"$title\">" site/index.html || {
-        echo "site/index.html: $tag does not equal the <title>" >&2
+    fi
+
+    # Each indexed page names its own URL in the canonical link and og:url, and the
+    # sitemap lists it. The URL follows the file: site/help/index.html is /help/.
+    host=$(tr -d '[:space:]' < site/CNAME)
+    for page in "${indexed[@]}"; do
+      path=${page#site/}; path=${path%index.html}
+      url="https://$host/$path"
+      grep -Fq "<link rel=\"canonical\" href=\"$url\">" "$page" || { echo "$page: canonical is not $url" >&2; exit 1; }
+      grep -Fq "<meta property=\"og:url\" content=\"$url\">" "$page" || { echo "$page: og:url is not $url" >&2; exit 1; }
+      grep -Fq "<loc>$url</loc>" site/sitemap.xml || { echo "site/sitemap.xml does not list $url" >&2; exit 1; }
+      ! grep -qi 'noindex' "$page" || { echo "$page must not contain noindex" >&2; exit 1; }
+    done
+
+    # Search and share previews read different tags; they must say the same thing, on
+    # every indexed page, and no two pages share a title.
+    titles=""
+    for page in "${indexed[@]}"; do
+      title=$(grep -oE '<title>[^<]*</title>' "$page" | sed -E 's/<\/?title>//g')
+      description=$(grep -oE '<meta name="description" content="[^"]*"' "$page" | sed -E 's/.*content="//; s/"$//')
+      test -n "$title" && test -n "$description" || {
+        echo "$page is missing its <title> or meta description" >&2
         exit 1
       }
+      for tag in 'property="og:title"' 'name="twitter:title"'; do
+        grep -Fq "<meta $tag content=\"$title\">" "$page" || {
+          echo "$page: $tag does not equal the <title>" >&2
+          exit 1
+        }
+      done
+      for tag in 'property="og:description"' 'name="twitter:description"'; do
+        grep -Fq "<meta $tag content=\"$description\">" "$page" || {
+          echo "$page: $tag does not equal the meta description" >&2
+          exit 1
+        }
+      done
+      titles+="$title"$'\n'
     done
-    for tag in 'property="og:description"' 'name="twitter:description"'; do
-      grep -Fq "<meta $tag content=\"$description\">" site/index.html || {
-        echo "site/index.html: $tag does not equal the meta description" >&2
-        exit 1
-      }
-    done
+    [ -z "$(printf '%s' "$titles" | sort | uniq -d)" ] || { echo "two website pages share a <title>" >&2; exit 1; }
+    description=$(grep -oE '<meta name="description" content="[^"]*"' site/index.html | sed -E 's/.*content="//; s/"$//')
     grep -Fq "\"description\": \"$description\"" site/index.html || {
       echo "site/index.html: the JSON-LD description does not equal the meta description" >&2
       exit 1
@@ -389,12 +424,14 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         }
     done
 
-    # Both pages show the same header destinations, in the same order.
+    # Every page shows the same header destinations, in the same order.
     nav_labels() { sed -n '/<nav aria-label="Page sections">/,/<\/nav>/p' "$1" | grep -oE '>[^<]+</a>'; }
-    [ "$(nav_labels site/index.html)" = "$(nav_labels site/404.html)" ] || {
-        echo "site/404.html header navigation differs from site/index.html" >&2
-        exit 1
-    }
+    for page in "${pages[@]}"; do
+      [ "$(nav_labels site/index.html)" = "$(nav_labels "$page")" ] || {
+          echo "$page header navigation differs from site/index.html" >&2
+          exit 1
+      }
+    done
 
     # Every link that leaves the site carries the external-link arrow and
     # rel="noopener"; a link to another page of this site carries neither.
@@ -405,28 +442,46 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         case "$line" in *'class="external-icon"'*) ;; *)
             echo "external link without the external-link icon: $line" >&2; exit 1 ;;
         esac
-    done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' \
-        site/index.html site/404.html || true)
+    done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' "${pages[@]}" || true)
 
-    # Every local path the page names: src and href values, plus each candidate of a
-    # srcset or imagesrcset list with its width descriptor dropped.
+    # Every local path a page names: src and href values, plus each candidate of a
+    # srcset or imagesrcset list with its width descriptor dropped. A path that starts
+    # with / is from the site root; any other is relative to the page; a directory
+    # path means its index.html; a #fragment is ignored.
     local_references() {
-      grep -oE '(src|href)="[^"]+"' site/index.html | sed -E 's/^(src|href)="//; s/"$//'
-      grep -oE '(srcset|imagesrcset)="[^"]+"' site/index.html \
+      grep -oE '(src|href)="[^"]+"' "$1" | sed -E 's/^(src|href)="//; s/"$//'
+      grep -oE '(srcset|imagesrcset)="[^"]+"' "$1" \
         | sed -E 's/^(srcset|imagesrcset)="//; s/"$//' | tr ',' '\n' | awk '{print $1}'
     }
+    for page in "${pages[@]}"; do
+      while IFS= read -r reference; do
+        reference=${reference%%#*}
+        case "$reference" in
+          http:*|https:*|'') continue ;;
+          /*) file="site$reference" ;;
+          *) file="$(dirname "$page")/$reference" ;;
+        esac
+        case "$file" in */) file="${file}index.html" ;; esac
+        test -f "$file" || {
+          echo "$page references missing local file: $file" >&2
+          exit 1
+        }
+      done < <(local_references "$page")
+    done
 
-    while IFS= read -r reference; do
-      case "$reference" in
-        http:*|https:*|'#'*|'') continue ;;
+    # Every published screenshot is used, and each one exists in a light and a dark
+    # version: the pages show the one that matches the visitor's appearance.
+    for shot in site/screenshots/*.webp; do
+      name=$(basename "$shot")
+      case "$name" in
+        *-light*) twin=${name/-light/-dark} ;;
+        *-dark*) twin=${name/-dark/-light} ;;
+        *) echo "screenshot without a light or dark twin: $shot" >&2; exit 1 ;;
       esac
-      test -f "site/$reference" || {
-        echo "website references missing local file: site/$reference" >&2
-        exit 1
-      }
-    done < <(local_references | grep -vE '^styles/main\.css$|^scripts/main\.js$' || true)
+      test -f "site/screenshots/$twin" || { echo "$shot has no $twin" >&2; exit 1; }
+    done
 
-    if grep -RinE 'codex-clipboard|annotation|red arrow|private repository' site/index.html site/styles site/scripts; then
+    if grep -RinE 'codex-clipboard|annotation|red arrow|private repository' "${pages[@]}" site/styles site/scripts; then
       echo "website contains development-only or sensitive wording" >&2
       exit 1
     fi

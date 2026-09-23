@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>WindowHop Help · Install and use the Mac window switcher</title>
+  <meta name="description" content="Install WindowHop on your Mac, learn the keys, turn on Window Previews, fix ⌘Tab when it still shows Apple’s switcher, and uninstall. Answers to common questions.">
+  <link rel="canonical" href="https://windowhop.martonpaulo.com/help/">
+  <meta name="theme-color" content="#08090b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" href="/favicon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="WindowHop">
+  <meta property="og:title" content="WindowHop Help · Install and use the Mac window switcher">
+  <meta property="og:description" content="Install WindowHop on your Mac, learn the keys, turn on Window Previews, fix ⌘Tab when it still shows Apple’s switcher, and uninstall. Answers to common questions.">
+  <meta property="og:url" content="https://windowhop.martonpaulo.com/help/">
+  <meta property="og:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="The words Free for Mac, open source, WindowHop, Switch between windows, not just apps, beside a drawing of the switcher panel with eight window previews.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="WindowHop Help · Install and use the Mac window switcher">
+  <meta name="twitter:description" content="Install WindowHop on your Mac, learn the keys, turn on Window Previews, fix ⌘Tab when it still shows Apple’s switcher, and uninstall. Answers to common questions.">
+  <meta name="twitter:image" content="https://windowhop.martonpaulo.com/social-card.jpg">
+  <link rel="stylesheet" href="/styles/main.css">
+  <script>document.documentElement.classList.add("js");</script>
+  <script src="/scripts/main.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "WindowHop", "item": "https://windowhop.martonpaulo.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Help", "item": "https://windowhop.martonpaulo.com/help/" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is WindowHop free?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. WindowHop is free and open source under GPL-3.0. There is no paid version, no account and no advertising."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which Macs does WindowHop run on?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Macs with Apple silicon (M1 or later) running macOS 26 or later. It does not run on Intel Macs."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Why does WindowHop need Accessibility permission?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "macOS lets an app see and switch windows only with Accessibility permission. WindowHop uses it to list your windows and to bring the one you choose to the front."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does WindowHop record my screen?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Only if you choose Window Previews. Then it takes a small picture of each window while the switcher is open, keeps it in memory, and never saves or sends it. App Icons, the default, needs no Screen Recording permission."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does WindowHop replace Apple’s ⌘Tab?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It answers ⌘Tab while it runs, but it never turns off Apple’s switcher. If WindowHop quits, is turned off or cannot answer, ⌘Tab works as it always did."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How does WindowHop update?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "It checks for new versions and asks before it installs one. The update check is the only network activity it has. You can turn automatic checks off in Settings › About."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I search windows by title?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. WindowHop keeps one simple gesture: hold ⌘ and press Tab. If you want to type to find a window, AltTab Pro or Raycast are better choices."
+        }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header" aria-label="Primary navigation">
+    <div class="site-header-inner">
+      <a class="brand" href="/" aria-label="WindowHop home">
+        <img src="/assets/app-icon.png" width="36" height="36" alt="">
+        <span>WindowHop</span>
+      </a>
+      <nav aria-label="Page sections">
+        <a href="/#features">Features</a>
+        <a href="/help/" aria-current="page">Help</a>
+        <a href="/alttab-alternative/">Compare</a>
+        <a href="/#download">Download</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-hero" aria-labelledby="help-title">
+      <p class="breadcrumb"><a href="/">WindowHop</a> › Help</p>
+      <p class="eyebrow">Help</p>
+      <h1 id="help-title">Install WindowHop and make your first switch.</h1>
+      <p class="hero-summary">No account and no Terminal. WindowHop needs one permission, Accessibility, to see your windows and switch to them. This takes about two minutes.</p>
+    </section>
+
+    <section class="install section" id="install" aria-labelledby="install-title">
+      <p class="eyebrow">Install</p>
+      <h2 id="install-title">From download to your first switch.</h2>
+      <!-- role="list": WebKit drops list semantics from a list styled without markers. -->
+      <ol class="steps grid grid-3" role="list">
+        <li class="card reveal">
+          <h3>Download</h3>
+          <p>Choose <a href="https://github.com/martonpaulo/windowhop/releases/latest/download/WindowHop-2.1.0.dmg" rel="noopener">Download WindowHop <span data-site-version>2.1.0</span><svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>. Your browser saves a file ending in <strong>.dmg</strong> to your Downloads folder.</p>
+        </li>
+        <li class="card reveal">
+          <h3>Open the disk image</h3>
+          <p>Double-click the file. A window opens showing WindowHop next to your Applications folder.</p>
+        </li>
+        <li class="card reveal">
+          <h3>Drag it to Applications</h3>
+          <p>Drag WindowHop onto the Applications folder, then eject the disk image. Always open WindowHop from Applications.</p>
+        </li>
+        <li class="card reveal">
+          <h3>Open WindowHop</h3>
+          <p>Open it from Applications. If macOS asks whether to open an app from the internet, choose <strong>Open</strong>. WindowHop is signed and notarized by Apple.</p>
+        </li>
+        <li class="card reveal">
+          <h3>Allow Accessibility</h3>
+          <p>WindowHop shows a setup window. Choose <strong>Open System Settings</strong>, then turn on WindowHop under <strong>Privacy &amp; Security → Accessibility</strong>.</p>
+        </li>
+        <li class="card reveal">
+          <h3>Press ⌘Tab</h3>
+          <p>Hold <kbd>⌘</kbd> and press <kbd>Tab</kbd> to see your windows. Press <kbd>Tab</kbd> again to move, and release <kbd>⌘</kbd> to switch.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section class="section reveal" id="keys" aria-labelledby="keys-title">
+      <p class="eyebrow">Keys</p>
+      <h2 id="keys-title">Everything the switcher understands.</h2>
+      <p>Press <kbd>⌥</kbd><kbd>Tab</kbd> instead of <kbd>⌘</kbd><kbd>Tab</kbd> if you do not want to hold a key: the switcher then stays open until you choose. You can change both shortcuts in Settings → Shortcuts.</p>
+      <table class="keys-table">
+        <thead><tr><th scope="col">Keys</th><th scope="col">What they do</th></tr></thead>
+        <tbody>
+          <tr><td><kbd>⌘</kbd> <kbd>Tab</kbd></td><td>Open the switcher, with the previous window selected</td></tr>
+          <tr><td><kbd>Tab</kbd> or <kbd>→</kbd></td><td>Next window</td></tr>
+          <tr><td><kbd>⇧</kbd> <kbd>Tab</kbd> or <kbd>←</kbd></td><td>Previous window</td></tr>
+          <tr><td>Release <kbd>⌘</kbd>, or <kbd>Return</kbd></td><td>Switch to the selected window</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Close the switcher and stay where you are</td></tr>
+          <tr><td><kbd>Delete</kbd></td><td>Close the selected window (WindowHop asks first)</td></tr>
+          <tr><td><kbd>⌘</kbd> <kbd>,</kbd></td><td>Open Settings</td></tr>
+          <tr><td>Click a tile</td><td>Switch to that window</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section reveal" id="previews" aria-labelledby="previews-title">
+      <p class="eyebrow">Window Previews</p>
+      <h2 id="previews-title">See a picture of each window.</h2>
+      <p>App Icons, the default, needs nothing else. To see previews, choose <strong>Window Previews</strong> in Settings → Switcher. macOS then asks for <strong>Screen Recording</strong> permission. WindowHop takes the pictures only while the switcher is open, keeps them in memory, and never saves or sends them. Stay on one window for a moment (3 seconds by default) to see a larger picture of it.</p>
+    </section>
+
+    <section class="help section" id="help" aria-labelledby="troubleshooting-title">
+      <p class="eyebrow">Troubleshooting</p>
+      <h2 id="troubleshooting-title">When something does not work.</h2>
+      <div class="grid grid-2">
+        <article class="card reveal" aria-labelledby="help-native-title">
+          <h3 id="help-native-title">⌘Tab still shows Apple’s switcher</h3>
+          <p>That is WindowHop’s fail-safe: when WindowHop cannot answer, the Mac’s own switcher does. Check these in order:</p>
+          <ul>
+            <li><strong>WindowHop is not open.</strong> Open it from Applications.</li>
+            <li><strong>WindowHop is turned off.</strong> Open WindowHop again to show Settings, then turn it on in General.</li>
+            <li><strong>Accessibility is off.</strong> Turn on WindowHop in System Settings → Privacy &amp; Security → Accessibility.</li>
+            <li><strong>A password field is active.</strong> macOS keeps other apps from reading keys while you type a password, so ⌘Tab goes to Apple’s switcher until you leave that field.</li>
+          </ul>
+        </article>
+        <article class="card reveal" aria-labelledby="help-missing-title">
+          <h3 id="help-missing-title">A window is missing</h3>
+          <p>Minimized windows, windows of hidden apps and Picture in Picture windows are not listed by default. Turn them on in Settings → Switcher.</p>
+          <p>A window on another Space appears after you visit that Space once while WindowHop is running. WindowHop uses only public Apple interfaces, and they show a Space’s windows only after a visit.</p>
+        </article>
+        <article class="card reveal" aria-labelledby="help-grey-title">
+          <h3 id="help-grey-title">Previews stay grey</h3>
+          <p>Screen Recording is not allowed. Use the button in the switcher or in Settings → Switcher, turn on WindowHop in System Settings, then come back. App Icons works without it.</p>
+        </article>
+        <article class="card reveal" aria-labelledby="help-uninstall-title">
+          <h3 id="help-uninstall-title">Uninstall WindowHop</h3>
+          <p>Choose <strong>Quit WindowHop…</strong> in Settings → General, then move WindowHop from Applications to the Trash.</p>
+          <p>To remove its permissions too, select WindowHop in System Settings → Privacy &amp; Security → Accessibility, and in Screen Recording if you used Window Previews, and remove it with the minus button.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section reveal" id="faq" aria-labelledby="faq-title">
+      <p class="eyebrow">Questions</p>
+      <h2 id="faq-title">Frequently asked questions.</h2>
+      <div class="faq stack">
+        <details class="card"><summary>Is WindowHop free?</summary><p>Yes. WindowHop is free and open source under GPL-3.0. There is no paid version, no account and no advertising.</p></details>
+        <details class="card"><summary>Which Macs does WindowHop run on?</summary><p>Macs with Apple silicon (M1 or later) running macOS 26 or later. It does not run on Intel Macs.</p></details>
+        <details class="card"><summary>Why does WindowHop need Accessibility permission?</summary><p>macOS lets an app see and switch windows only with Accessibility permission. WindowHop uses it to list your windows and to bring the one you choose to the front.</p></details>
+        <details class="card"><summary>Does WindowHop record my screen?</summary><p>Only if you choose Window Previews. Then it takes a small picture of each window while the switcher is open, keeps it in memory, and never saves or sends it. App Icons, the default, needs no Screen Recording permission.</p></details>
+        <details class="card"><summary>Does WindowHop replace Apple’s ⌘Tab?</summary><p>It answers ⌘Tab while it runs, but it never turns off Apple’s switcher. If WindowHop quits, is turned off or cannot answer, ⌘Tab works as it always did.</p></details>
+        <details class="card"><summary>How does WindowHop update?</summary><p>It checks for new versions and asks before it installs one. The update check is the only network activity it has. You can turn automatic checks off in Settings › About.</p></details>
+        <details class="card"><summary>Can I search windows by title?</summary><p>No. WindowHop keeps one simple gesture: hold ⌘ and press Tab. If you want to type to find a window, AltTab Pro or Raycast are better choices.</p></details>
+      </div>
+      <p>Still stuck? <a href="https://github.com/martonpaulo/windowhop/issues" rel="noopener">Report an issue on GitHub<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>, or use <strong>Report an Issue…</strong> in Settings → About, which fills in your versions for you.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-footer-inner">
+      <p>Developed by Marton Paulo · GPL-3.0 licensed · © <span data-site-year>2026</span> WindowHop contributors.</p>
+      <nav aria-label="Site links">
+        <a href="https://github.com/martonpaulo/windowhop" rel="noopener">Source<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/martonpaulo/windowhop/issues" rel="noopener">Issues<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="https://github.com/martonpaulo/windowhop/releases" rel="noopener">Releases<svg class="external-icon" viewBox="0 0 12 12" width="12" height="12" fill="none" aria-hidden="true" focusable="false"><path d="M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
