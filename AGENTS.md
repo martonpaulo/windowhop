@@ -88,8 +88,8 @@ effects.
 ## Build and validate
 
 ```sh
-swift build && swift test        # must pass, zero warnings
-make build && make test          # same, with warnings as errors (what CI runs)
+swift build && swift test        # must pass, zero warnings (Package.swift makes warnings errors)
+make build && make test          # the same commands, as CI runs them
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
@@ -163,7 +163,8 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 - `App/` — lifecycle and `UpdateManager` (Sparkle; only starts from a real bundle).
 
 Threading: AX reads/actions on `BackgroundWork` queues, never the main thread; state
-mutation and UI on main only.
+mutation and UI on main only. The Swift 6 language mode checks this: main-thread owners
+are `@MainActor` (see docs/architecture.md › Concurrency).
 
 ## Sessions
 

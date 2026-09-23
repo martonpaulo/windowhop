@@ -8,7 +8,7 @@ Switch between windows, not just apps. Fast, native macOS window switcher with l
 
 [![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Deploy](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
 
-[![Swift 5.10](https://img.shields.io/badge/Swift-5.10-F05138)](https://swift.org/) [![Xcode 26](https://img.shields.io/badge/Xcode-26-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/)
+[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138)](https://swift.org/) [![Xcode 26](https://img.shields.io/badge/Xcode-26-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/)
 
 </div>
 

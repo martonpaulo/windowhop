@@ -26,7 +26,8 @@ make validate          # repository invariants (must pass)
 scripts/package-app.sh # assemble build/WindowHop.app
 ```
 
-Requires macOS 26+ and Xcode 26+ command line tools. No paid Apple account is needed.
+Requires macOS 26+ and Xcode 26+ command line tools (Swift 6.2; the package builds in the
+Swift 6 language mode). No paid Apple account is needed.
 
 ## Official releases
 

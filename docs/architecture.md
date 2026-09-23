@@ -22,8 +22,9 @@ about AppKit or AX.
 1. `WindowStore.start()` KVO-observes `NSWorkspace.runningApplications`; each app gets a
    `TrackedApp` with one `AXObserver` (run-loop source on the dedicated AX events thread).
    Subscription retries handle apps that are still launching (ported from AltTab).
-   The AX reads queue is the single owner of each app's observer state: main reads
-   eligibility and hands `start`/`stop` to that queue, where the pure `ObserverLifecycle`
+   The AX reads queue is the single owner of each app's observer state, held by an
+   `AppObserver` actor whose executor is that queue: main reads eligibility and queues
+   `start`/`stop` on it in FIFO order, where the pure `ObserverLifecycle`
    turns them and each subscription result into commands. Every attempt carries a
    generation; a retry, late result, or window subscription whose generation is no longer
    current does nothing, and `stop` is terminal, so pending work cannot revive a removed
@@ -105,7 +106,7 @@ through plain AppKit.
 ## Input
 
 1. `EventTap` owns a consuming CGEvent tap (keyDown/keyUp/flagsChanged) on its own
-   thread. The callback reads a lock-protected mode — `off`, `watching`, `sessionHeld`,
+   thread. The callback reads a mutex-protected mode — `off`, `watching`, `sessionHeld`,
    `sessionSticky`, `passthrough` — and decides synchronously whether to consume;
    semantic events are posted to the main thread. `flagsChanged` is never consumed.
 2. In `watching` it matches two chords: the switcher shortcut (modifier+Tab, Shift
@@ -472,6 +473,30 @@ no menu bar item to carry the pending state instead.
   session-switch notifications re-arm it from the app delegate.
 - Modifier release is detected from event flags (covers left/right and both-held cases);
   the held-modifier guard covers missed events.
+
+## Concurrency
+
+Every target builds in the Swift 6 language mode, so the compiler checks the threading
+rules above.
+
+- **Main actor.** `WindowStore`, `TrackedApp`, `TrackedWindow`, `SwitcherController`,
+  `Preferences`, `PreviewProvider`, `UpdateManager`, `EventTap`'s main-side API and the UI
+  controllers are `@MainActor`. Callbacks that AppKit delivers on the main thread
+  (notification observers on `.main`, main-run-loop timers, global event monitors) enter
+  it with `MainActor.assumeIsolated`; AX results reach it with `DispatchQueue.main.async`,
+  which keeps FIFO order with other main-queue work where a `Task` would not.
+- **AX reads queue.** `BackgroundWork.axReadsQueue` is a serial queue and the executor of
+  every `AppObserver` actor, so observer state is actor-isolated while AX reads keep their
+  order. Values handed to main are plain `Sendable` values.
+- **Event tap.** `EventTap.handle` stays a synchronous `nonisolated` function: the C
+  callback captures nothing and reaches the tap through `userInfo`; everything the tap
+  thread touches sits in one `Mutex`.
+- **Window previews.** The capture pipeline runs on the main actor between its awaits;
+  the screenshots themselves run inside ScreenCaptureKit.
+- **Audited `@unchecked Sendable`.** Exactly three, each with its invariant beside it:
+  `AXUIElement` (a retroactive conformance for the immutable, thread-safe CF reference),
+  `RunLoopThread` (its run loop is written once before `init` returns) and `EventTap`'s
+  `TapPort` (the tap's mach port, guarded by the tap mutex).
 
 ## Performance principles (inherited from AltTab)
 
