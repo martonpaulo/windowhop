@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-23
+
 ### Changed
 
 - **About names the developer**: Settings › About now says "Made by Marton Paulo". The
@@ -630,7 +632,8 @@ apps exposing native tab groups; English-only interface.
   app's only network activity. No telemetry, no accounts.
 - Derived from AltTab v10.12.0 (GPL-3.0), rebuilt on public Apple APIs only.
 
-[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/martonpaulo/windowhop/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.2.0
 [2.1.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.1.0
 [2.0.0]: https://github.com/martonpaulo/windowhop/releases/tag/v2.0.0
 [1.6.2]: https://github.com/martonpaulo/windowhop/releases/tag/v1.6.2
