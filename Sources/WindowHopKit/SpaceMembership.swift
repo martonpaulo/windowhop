@@ -50,4 +50,31 @@ public enum SpaceMembership {
             return Reconciliation(currentSpace: [:], suspects: tracked)
         }
     }
+
+    /// The same reconciliation, for a read that started at `readEpoch`. A read taken
+    /// while the session could not report windows (locked, switched away, asleep), or
+    /// across such a period, is treated as `.unavailable`: it keeps every flag and
+    /// suspects nothing (#38). The recovery re-enumeration supplies the truth.
+    public static func reconcile<ID: Hashable>(tracked: [ID],
+                                               enumeration: WindowEnumeration<ID>,
+                                               session: SessionAvailability,
+                                               readEpoch: UInt64) -> Reconciliation<ID> {
+        let trusted = session.trusts(readStartedAt: readEpoch) ? enumeration : .unavailable
+        return reconcile(tracked: tracked, enumeration: trusted)
+    }
+
+    /// The elements a liveness probe found dead that may really be removed. A probe
+    /// taken while the session could not report windows proves nothing, so none are.
+    public static func confirmedDead<ID>(_ dead: [ID],
+                                         session: SessionAvailability,
+                                         readEpoch: UInt64) -> [ID] {
+        session.trusts(readStartedAt: readEpoch) ? dead : []
+    }
+
+    /// Whether a destroy notification may remove its window now. While the session
+    /// cannot report windows it is ignored; the recovery re-enumeration and the liveness
+    /// probe it triggers remove the window if it really is gone.
+    public static func acceptsDestroyNotification(session: SessionAvailability) -> Bool {
+        session.isUsable
+    }
 }

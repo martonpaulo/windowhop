@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   every setting you chose to its new name and keeps its value. An older WindowHop version
   started afterwards shows its default settings.
 
+### Fixed
+
+- **Windows no longer disappear after the screen locks**: after a lock, a Screen Sharing
+  reconnect, a user switch or a sleep, the switcher could list only the current window
+  until you changed Space or restarted WindowHop. WindowHop now ignores what apps report
+  while the screen is locked, and checks every window again as soon as you are back.
+
 ## [2.0.0] - 2026-09-23
 
 ### Added

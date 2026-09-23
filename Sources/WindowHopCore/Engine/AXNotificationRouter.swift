@@ -62,7 +62,7 @@ final class AXNotificationRouter: Sendable {
             }
         case kAXUIElementDestroyedNotification:
             DispatchQueue.main.async {
-                self.store?.removeWindow(element)
+                self.store?.windowDestroyed(element)
             }
         default:
             routeWindowEvent(notification, element, pid)

@@ -131,6 +131,19 @@ final class WindowEligibilityTests: XCTestCase {
             state, policy: .init(includeOtherDisplays: false)))
     }
 
+    /// The #38 snapshot trace counts exclusions by the first rule that applies.
+    func testExclusionReasonNamesTheFirstRuleThatApplies() {
+        let strict = WindowInclusionPolicy(includeOtherSpaces: false, includeOtherDisplays: false)
+        let offSpaceAndDisplay = WindowDisplayState(isMinimized: false, isAppHidden: false, isOwnWindow: false,
+                                                    isOnCurrentSpace: false, isOnActiveDisplay: false)
+        XCTAssertEqual(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: strict), .otherSpace)
+        XCTAssertNil(WindowEligibility.exclusionReason(offSpaceAndDisplay, policy: .init()),
+                     "the default policy shows other Spaces and displays")
+        let minimizedTab = WindowDisplayState(isMinimized: true, isAppHidden: false, isOwnWindow: false,
+                                              isTabbed: true, isOnCurrentSpace: true, isOnActiveDisplay: true)
+        XCTAssertEqual(WindowEligibility.exclusionReason(minimizedTab, policy: .init()), .minimized)
+    }
+
     func testEveryUserFacingPolicyCombination() {
         for stateBits in 0..<32 {
             let state = WindowDisplayState(

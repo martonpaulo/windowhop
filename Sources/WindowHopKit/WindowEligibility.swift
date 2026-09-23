@@ -103,16 +103,28 @@ public enum WindowEligibility {
         return true
     }
 
+    /// The first rule that keeps an actual window out of the switcher, in the order the
+    /// rules are checked.
+    public enum ExclusionReason: String, CaseIterable, Sendable {
+        case ownWindow, minimized, appHidden, tabbed, pictureInPicture, otherSpace, otherDisplay
+    }
+
     public static func shouldDisplay(_ state: WindowDisplayState,
                                      policy: WindowInclusionPolicy) -> Bool {
-        if state.isOwnWindow && !state.isOwnSettingsWindow { return false }
-        if state.isMinimized && !policy.includeMinimizedWindows { return false }
-        if state.isAppHidden && !policy.includeHiddenApplicationWindows { return false }
-        if state.isTabbed { return false }
-        if state.isPictureInPicture && !policy.includePictureInPictureWindows { return false }
-        if !policy.includeOtherSpaces && !state.isOnCurrentSpace { return false }
-        if !policy.includeOtherDisplays && !state.isOnActiveDisplay { return false }
-        return true
+        exclusionReason(state, policy: policy) == nil
+    }
+
+    /// Why `shouldDisplay` rejects the window, or nil when it is shown.
+    public static func exclusionReason(_ state: WindowDisplayState,
+                                       policy: WindowInclusionPolicy) -> ExclusionReason? {
+        if state.isOwnWindow && !state.isOwnSettingsWindow { return .ownWindow }
+        if state.isMinimized && !policy.includeMinimizedWindows { return .minimized }
+        if state.isAppHidden && !policy.includeHiddenApplicationWindows { return .appHidden }
+        if state.isTabbed { return .tabbed }
+        if state.isPictureInPicture && !policy.includePictureInPictureWindows { return .pictureInPicture }
+        if !policy.includeOtherSpaces && !state.isOnCurrentSpace { return .otherSpace }
+        if !policy.includeOtherDisplays && !state.isOnActiveDisplay { return .otherDisplay }
+        return nil
     }
 
     private static func hasTitle(_ facts: WindowFacts) -> Bool {

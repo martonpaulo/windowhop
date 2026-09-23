@@ -51,6 +51,9 @@ public final class WindowStore {
     private(set) lazy var router = AXNotificationRouter(store: self)
     private var runningAppsObserver: NSKeyValueObservation?
     private var started = false
+    /// Lock, session and sleep state (#38): whether AX answers can be trusted right now.
+    private var sessionMonitor: SessionMonitor?
+    private var session: SessionAvailability { sessionMonitor?.availability ?? SessionAvailability() }
 
     /// Owned by `AppDelegate`; tests and the debug harness build their own.
     public init(preferences: Preferences, previews: PreviewProvider) {
@@ -72,6 +75,13 @@ public final class WindowStore {
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeSpaceChanged),
             name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+        // trace only: display changes are correlated with inventory changes (#38)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(screenParametersChanged),
+            name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        sessionMonitor = SessionMonitor { [weak self] event, needsRecovery in
+            self?.sessionEvent(event, needsRecovery: needsRecovery)
+        }
         NSWorkspace.shared.runningApplications.forEach { addApp($0) }
     }
 
@@ -80,6 +90,10 @@ public final class WindowStore {
         started = false
         runningAppsObserver = nil
         NSWorkspace.shared.notificationCenter.removeObserver(self)
+        NotificationCenter.default.removeObserver(
+            self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        sessionMonitor?.stop()
+        sessionMonitor = nil
         apps.values.forEach { $0.stopObserving() }
         apps = [:]
         discardPreviews(of: windows)
@@ -103,6 +117,7 @@ public final class WindowStore {
         apps[pid] = nil
         let removed = windows.filter { $0.app === app }
         removed.forEach(forget)
+        Log.windows.debug("remove: app \(pid, privacy: .public) quit, \(removed.count, privacy: .public) window(s)")
         if !removed.isEmpty {
             discardPreviews(of: removed)
             onChange?()
@@ -201,8 +216,22 @@ public final class WindowStore {
         windowsById[window.stableId] = nil
     }
 
-    func removeWindow(_ element: AXUIElement) {
+    /// A `kAXUIElementDestroyed` notification. While the session cannot report windows
+    /// it proves nothing (#38): the recovery re-enumeration and its liveness probe remove
+    /// the window later if it really is gone.
+    func windowDestroyed(_ element: AXUIElement) {
+        guard SpaceMembership.acceptsDestroyNotification(session: session) else {
+            if let window = windows.first(where: { $0.ax == element }) {
+                Log.windows.debug("remove: destroyed \(Self.traceId(window), privacy: .public) ignored, session unavailable")
+            }
+            return
+        }
+        removeWindow(element, reason: "destroyed")
+    }
+
+    private func removeWindow(_ element: AXUIElement, reason: StaticString) {
         guard let removed = windows.first(where: { $0.ax == element }) else { return }
+        Log.windows.debug("remove: \(reason, privacy: .public) \(Self.traceId(removed), privacy: .public)")
         forget(removed)
         discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
@@ -375,12 +404,42 @@ public final class WindowStore {
         String(window.stableId.uuidString.prefix(8))
     }
 
-    /// Re-enumerate every app on Space change: discovers windows we could not see
-    /// before (other-Space windows enter kAXWindows once their Space is visited) and
-    /// updates each window's current-Space flag.
     @objc private func activeSpaceChanged() {
+        refreshInventory(reason: "space changed")
+    }
+
+    @objc private func screenParametersChanged() {
+        Log.windows.debug("lifecycle: screen parameters changed, \(NSScreen.screens.count, privacy: .public) screen(s)")
+    }
+
+    private func sessionEvent(_ event: SessionAvailability.Event, needsRecovery: Bool) {
+        Log.windows.debug("""
+            lifecycle: \(event.rawValue, privacy: .public), \
+            session \(self.session.isUsable ? "usable" : "unavailable", privacy: .public)
+            """)
+        // one event-driven pass: what was read in the dark was never applied
+        if needsRecovery { refreshInventory(reason: "recovery after \(event.rawValue)") }
+    }
+
+    /// Re-enumerates every app: discovers windows we could not see before (other-Space
+    /// windows enter kAXWindows once their Space is visited) and updates each window's
+    /// current-Space flag. Runs on Space changes and once when the session becomes usable
+    /// again after a lock, a session switch or a sleep (#38). Asks nothing while the
+    /// session cannot report windows: the recovery pass follows.
+    func refreshInventory(reason: String) {
+        guard started else { return }
+        let session = self.session
+        guard session.isUsable else {
+            Log.windows.debug("inventory: \(reason, privacy: .public) skipped, session unavailable")
+            return
+        }
+        let readEpoch = session.epoch
         let appsSnapshot = Array(apps.values)
         let router = router
+        Log.windows.debug("""
+            inventory: \(reason, privacy: .public), \(appsSnapshot.count, privacy: .public) app(s), \
+            \(self.windows.count, privacy: .public) tracked window(s)
+            """)
         BackgroundWork.axReadsQueue.async { [weak self] in
             for app in appsSnapshot {
                 let enumeration = app.axElement.windowElements()
@@ -388,36 +447,71 @@ public final class WindowStore {
                     router.routeWindowEvent(kAXWindowCreatedNotification, windowElement, app.pid)
                 }
                 DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    let appWindows = self.windows.filter { $0.app === app }
-                    // a failed read keeps each window's last known Space flag; see
-                    // SpaceMembership for why an empty success still updates it
-                    let reconciliation = SpaceMembership.reconcile(
-                        tracked: appWindows.compactMap(\.ax), enumeration: enumeration)
-                    for window in appWindows {
-                        guard let ax = window.ax, let isCurrent = reconciliation.currentSpace[ax] else { continue }
-                        window.isOnCurrentSpace = isCurrent
-                    }
-                    self.onChange?()
-                    // a window absent from kAXWindows is either on another Space
-                    // (keep it) or silently dead — a missed destroy notification
-                    // once produced duplicate entries. Validate and prune.
-                    self.pruneIfDead(reconciliation.suspects)
+                    self?.applyEnumeration(enumeration, of: app, readEpoch: readEpoch)
                 }
             }
         }
     }
 
+    private func applyEnumeration(_ enumeration: WindowEnumeration<AXUIElement>, of app: TrackedApp,
+                                  readEpoch: UInt64) {
+        let appWindows = windows.filter { $0.app === app }
+        // a failed read, or one taken while the session could not report windows, keeps
+        // each window's last known Space flag; see SpaceMembership for why an empty
+        // success still updates it
+        let reconciliation = SpaceMembership.reconcile(
+            tracked: appWindows.compactMap(\.ax), enumeration: enumeration,
+            session: session, readEpoch: readEpoch)
+        var flippedOff = 0
+        for window in appWindows {
+            guard let ax = window.ax, let isCurrent = reconciliation.currentSpace[ax] else { continue }
+            if window.isOnCurrentSpace && !isCurrent { flippedOff += 1 }
+            window.isOnCurrentSpace = isCurrent
+        }
+        if !appWindows.isEmpty {
+            Log.windows.debug("""
+                inventory: app \(app.pid, privacy: .public) \(Self.traceKind(enumeration), privacy: .public) \
+                trusted \(self.session.trusts(readStartedAt: readEpoch), privacy: .public) \
+                tracked \(appWindows.count, privacy: .public) \
+                offSpace+\(flippedOff, privacy: .public) suspects \(reconciliation.suspects.count, privacy: .public)
+                """)
+        }
+        onChange?()
+        // a window absent from kAXWindows is either on another Space (keep it) or
+        // silently dead — a missed destroy notification once produced duplicate
+        // entries. Validate and prune.
+        pruneIfDead(reconciliation.suspects)
+    }
+
+    private static func traceKind(_ enumeration: WindowEnumeration<AXUIElement>) -> String {
+        switch enumeration {
+        case .listed(let windows): "listed(\(windows.count))"
+        case .unavailable: "unavailable"
+        case .applicationInvalid: "applicationInvalid"
+        }
+    }
+
     /// Validates possibly-stale AX elements off the main thread and removes the
     /// dead ones. Cheap (one attribute read per suspect) and strictly event-driven.
+    /// A probe taken while the session cannot report windows proves nothing (#38).
     func pruneIfDead(_ elements: [AXUIElement]) {
         guard !elements.isEmpty else { return }
+        guard session.isUsable else {
+            Log.windows.debug("prune: \(elements.count, privacy: .public) suspect(s) skipped, session unavailable")
+            return
+        }
+        let readEpoch = session.epoch
         BackgroundWork.axReadsQueue.async { [weak self] in
             let dead = elements.filter { !$0.isStillValid() }
             guard !dead.isEmpty else { return }
             DispatchQueue.main.async { [weak self] in
-                Log.windows.debug("pruning \(dead.count, privacy: .public) dead window element(s)")
-                dead.forEach { self?.removeWindow($0) }
+                guard let self else { return }
+                let confirmed = SpaceMembership.confirmedDead(dead, session: self.session, readEpoch: readEpoch)
+                Log.windows.debug("""
+                    prune: \(elements.count, privacy: .public) suspect(s), \(dead.count, privacy: .public) dead, \
+                    \(confirmed.count, privacy: .public) removed
+                    """)
+                confirmed.forEach { self.removeWindow($0, reason: "pruned") }
             }
         }
     }
@@ -469,7 +563,9 @@ public final class WindowStore {
         let policy = preferences.windowInclusionPolicy
         let showTabCounts = preferences.showTabCounts
         let activeScreen = NSScreen.main
-        let visible = windows.filter { window in
+        let tracked = windows
+        var excluded = [WindowEligibility.ExclusionReason: Int]()
+        let visible = tracked.filter { window in
             guard window.isActual else { return false }
             let state = WindowDisplayState(
                 isMinimized: window.isMinimized,
@@ -482,8 +578,11 @@ public final class WindowStore {
                 isPictureInPicture: window.isPictureInPicture ?? false,
                 isOnCurrentSpace: window.isOnCurrentSpace,
                 isOnActiveDisplay: activeScreen.map { window.isOn(screen: $0) } ?? true)
-            return WindowEligibility.shouldDisplay(state, policy: policy)
+            guard let reason = WindowEligibility.exclusionReason(state, policy: policy) else { return true }
+            excluded[reason, default: 0] += 1
+            return false
         }
+        traceSnapshot(tracked: tracked.count, eligible: visible.count, excluded: excluded)
         // collisions are judged among the entries actually shown
         let labels = CollisionLabel.labels(for: visible.map { window in
             CollisionLabel.Entry(appId: window.app.map(ObjectIdentifier.init),
@@ -499,6 +598,20 @@ public final class WindowStore {
                          icon: window.appIcon,
                          tabCount: showTabCounts ? window.tabCount : nil)
         }
+    }
+
+    /// Title-free snapshot trace (#38): how many windows are tracked, shown, and kept
+    /// out by each eligibility rule.
+    private func traceSnapshot(tracked: Int, eligible: Int,
+                               excluded: [WindowEligibility.ExclusionReason: Int]) {
+        guard Log.isWindowsDebugEnabled else { return }
+        let reasons = WindowEligibility.ExclusionReason.allCases
+            .compactMap { reason in excluded[reason].map { "\(reason.rawValue) \($0)" } }
+            .joined(separator: ", ")
+        Log.windows.debug("""
+            snapshot: tracked \(tracked, privacy: .public), eligible \(eligible, privacy: .public), \
+            excluded [\(reasons, privacy: .public)]
+            """)
     }
 
     /// Re-evaluates the shared inclusion policy immediately after a user-facing
