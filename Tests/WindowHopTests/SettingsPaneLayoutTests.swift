@@ -29,19 +29,21 @@ extension SharedAppState {
             pane.makeViewController(isolated.settingsDependencies).sizeThatFits(in: Self.unbounded)
         }
 
+        /// The tallest a pane may be on this machine's main display.
+        private func heightCap() throws -> CGFloat {
+            let usable = try #require(NSScreen.main).visibleFrame.height
+            return max(
+                usable - DesignTokens.settingsWindowChromeAllowance, DesignTokens.settingsPaneMinimumHeight)
+        }
+
         @Test func everyPaneHasThePaneWidthAndFitsTheDisplay() throws {
             _ = NSApplication.shared
-            let usable = try #require(NSScreen.main).visibleFrame.height
+            let cap = try heightCap()
             for pane in SettingsPane.allCases {
                 let size = size(of: pane)
                 #expect(size.width == DesignTokens.settingsPaneWidth, "the \(pane.rawValue) pane width")
                 #expect(size.height > 0)
-                #expect(
-                    size.height
-                        <= max(
-                            usable - DesignTokens.settingsWindowChromeAllowance,
-                            DesignTokens.settingsPaneMinimumHeight),
-                    "the \(pane.rawValue) pane runs off the display")
+                #expect(size.height <= cap, "the \(pane.rawValue) pane runs off the display")
             }
         }
 
@@ -53,14 +55,21 @@ extension SharedAppState {
             #expect(heights.count > 1)
         }
 
-        /// The preview-only rows appear in Window Previews and nowhere else.
-        @Test func switcherPaneGrowsForWindowPreviews() {
+        /// The preview-only rows appear in Window Previews and nowhere else. On
+        /// a display too short for the App Icons layout (a CI runner), both
+        /// layouts stop at the cap and scroll instead.
+        @Test func switcherPaneGrowsForWindowPreviews() throws {
             _ = NSApplication.shared
+            let cap = try heightCap()
             isolated.preferences.appearanceMode = .appIcons
             let icons = size(of: .switcher).height
             isolated.preferences.appearanceMode = .windowPreviews
             let previews = size(of: .switcher).height
-            #expect(previews > icons)
+            if icons < cap {
+                #expect(previews > icons)
+            } else {
+                #expect(previews == cap)
+            }
         }
 
         @Test func paneIdentifiersAreUnique() {
