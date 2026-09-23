@@ -6,6 +6,17 @@
     <description>Most recent updates to WindowHop</description>
     <language>en</language>
     <item>
+      <title>2.3.0</title>
+      <pubDate>Wed, 23 Sep 2026 14:35:51 +0000</pubDate>
+      <sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/2.3.0/</sparkle:releaseNotesLink>
+      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>
+      <sparkle:version>20300</sparkle:version>
+      <sparkle:shortVersionString>2.3.0</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>26.0</sparkle:minimumSystemVersion>
+      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+      <enclosure url="https://github.com/martonpaulo/windowhop/releases/download/v2.3.0/WindowHop-2.3.0.zip" sparkle:edSignature="TWEfE3Pi6jRlgLq6oK6IE9YyFgYv4cwU7H6EcO4bVF/kMgsvmJEp8RRSav2WRwHEz07CG5eZ3VZjvheyQyTZCw==" length="2162801" type="application/octet-stream"/>
+    </item>
+    <item>
       <title>2.2.0</title>
       <pubDate>Wed, 23 Sep 2026 13:48:08 +0000</pubDate>
       <sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/2.2.0/</sparkle:releaseNotesLink>
