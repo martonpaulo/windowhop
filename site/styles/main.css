@@ -224,6 +224,19 @@ strong {
   font-weight: var(--weight-strong);
 }
 
+/* Inline code in running text (a bundle identifier, a command) may break inside a
+   long word on a narrow screen instead of pushing the page wider. */
+p code,
+li code,
+td code {
+  overflow-wrap: anywhere;
+}
+
+/* A command-line option such as --cask never wraps at its own hyphens. */
+code .flag {
+  white-space: nowrap;
+}
+
 /* Headings balance their lines; running text only avoids a short last line,
    because evening out every line of a long paragraph reads worse. */
 h1,
@@ -511,10 +524,14 @@ main {
   transition: var(--transition-interactive);
 }
 
+/* min-width: 0 lets the command shrink inside the flex line and scroll on its
+   own; without it a phone scrolled the whole page sideways. */
 .command code {
+  min-width: 0;
   overflow-x: auto;
   font: inherit;
   white-space: nowrap;
+  scrollbar-width: none;
 }
 
 .command-prompt {
@@ -577,8 +594,14 @@ main {
   font-size: var(--text-sm);
 }
 
-.section > .command {
+/* The command is a <p>, so the section's paragraph rule (80ch, larger text)
+   would otherwise win and let it grow past a phone's width. */
+.section > p.command {
+  max-width: 100%;
   margin-top: var(--space-2xs);
+  color: #e6e6e6;
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
 }
 
 .download > .command {
@@ -2282,6 +2305,23 @@ h1 {
 }
 
 @media (max-width: 520px) {
+  /* on a phone the whole command stays visible, wrapped, instead of scrolling
+     inside its box */
+  .command code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  /* the keys column may wrap on a phone, or the table is wider than the page */
+  .keys-table th,
+  .keys-table td {
+    padding: var(--space-xs) var(--space-s);
+  }
+
+  .keys-table td:first-child {
+    white-space: normal;
+  }
+
   .actions {
     flex-direction: column;
     align-items: stretch;

@@ -123,8 +123,8 @@
       <p class="eyebrow">Install</p>
       <h2 id="install-title">From download to your first switch.</h2>
       <p>Prefer <a target="_blank" href="https://github.com/martonpaulo/homebrew-tap" rel="noopener">Homebrew</a>? Run this in Terminal, then continue at step 4.</p>
-      <p class="command" data-copy><span class="command-prompt" aria-hidden="true">$</span><code>brew install --cask martonpaulo/tap/windowhop</code><span class="command-action" aria-hidden="true"><span class="command-icon"></span><span class="command-done">Copied!</span></span><span class="visually-hidden" aria-live="polite"></span></p>
-      <p>Already installed WindowHop from the disk image? Run <code>brew install --cask --adopt martonpaulo/tap/windowhop</code> instead: Homebrew then manages the app you have and keeps its settings. Its version must match the cask’s, so update WindowHop first if it is older.</p>
+      <p class="command" data-copy><span class="command-prompt" aria-hidden="true">$</span><code>brew install <span class="flag">--cask</span> martonpaulo/tap/windowhop</code><span class="command-action" aria-hidden="true"><span class="command-icon"></span><span class="command-done">Copied!</span></span><span class="visually-hidden" aria-live="polite"></span></p>
+      <p>Already installed WindowHop from the disk image? Run <code>brew install <span class="flag">--cask</span> <span class="flag">--adopt</span> martonpaulo/tap/windowhop</code> instead: Homebrew then manages the app you have and keeps its settings. Its version must match the cask’s, so update WindowHop first if it is older.</p>
       <!-- role="list": WebKit drops list semantics from a list styled without markers. -->
       <ol class="steps grid grid-3" role="list">
         <li class="card step reveal">
@@ -210,7 +210,7 @@
         </article>
         <article class="card reveal" aria-labelledby="help-uninstall-title">
           <h3 id="help-uninstall-title">Uninstall WindowHop</h3>
-          <p>Choose <strong>Quit WindowHop…</strong> in Settings → General, then move WindowHop from Applications to the Trash. If you installed it with Homebrew, run <code>brew uninstall --zap --cask windowhop</code> instead: it also removes its settings.</p>
+          <p>Choose <strong>Quit WindowHop…</strong> in Settings → General, then move WindowHop from Applications to the Trash. If you installed it with Homebrew, run <code>brew uninstall <span class="flag">--zap</span> <span class="flag">--cask</span> windowhop</code> instead: it also removes its settings.</p>
           <p>To remove its permissions too, select WindowHop in System Settings → Privacy &amp; Security → Accessibility, and in Screen Recording if you used Window Previews, and remove it with the minus button.</p>
         </article>
       </div>

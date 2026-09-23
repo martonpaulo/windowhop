@@ -31,7 +31,12 @@ ENTRY = re.compile(r"^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})\s*$")
 def inline(text):
     """Escapes text, then turns the changelog's inline Markdown into HTML."""
     text = html.escape(text, quote=False)
-    text = re.sub(r"`([^`]+)`", r"<code>\1</code>", text)
+    # an option such as --cask is kept whole (styles: code .flag), not split at its hyphens
+    text = re.sub(
+        r"`([^`]+)`",
+        lambda m: "<code>" + re.sub(r"(?<![\w-])(--[a-z]+)", r'<span class="flag">\1</span>', m.group(1)) + "</code>",
+        text,
+    )
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     return re.sub(
         r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
