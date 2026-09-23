@@ -34,8 +34,11 @@ public struct AXAttributes: Sendable {
     public var children: [AXUIElement]?
     public var focusedWindow: AXUIElement?
     public var closeButton: AXUIElement?
-    /// The close button's kAXEnabled, read separately (see AXNotificationRouter).
-    public var closeButtonEnabled: Bool?
+    public var minimizeButton: AXUIElement?
+    public var zoomButton: AXUIElement?
+    /// The title-bar buttons' kAXEnabled, read separately on window creation
+    /// (see AXNotificationRouter); nil when this read did not include them.
+    public var titleBarButtons: PictureInPictureDetector.TitleBarButtons?
     public var windows: [AXUIElement]?
     public var position: CGPoint?
     public var size: CGSize?
@@ -110,6 +113,8 @@ extension AXUIElement {
             case kAXChildrenAttribute: result.children = castSafely(value)
             case kAXFocusedWindowAttribute: result.focusedWindow = castSafely(value)
             case kAXCloseButtonAttribute: result.closeButton = castSafely(value)
+            case kAXMinimizeButtonAttribute: result.minimizeButton = castSafely(value)
+            case kAXZoomButtonAttribute: result.zoomButton = castSafely(value)
             case kAXWindowsAttribute: result.windows = castSafely(value)
             case kAXPositionAttribute: result.position = castSafely(value)
             case kAXSizeAttribute: result.size = castSafely(value)

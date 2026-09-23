@@ -62,24 +62,59 @@ final class PictureInPictureDetectorTests: XCTestCase {
 
     func testFloatingDocumentWithStandardButtonsIsNotPictureInPicture() {
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: floatingDocument, closeButtonEnabled: true,
+            pid: 100, frame: floatingDocument, buttons: .init(close: true, minimize: true, zoom: true),
             onScreenWindows: [onScreen(3, frame: floatingDocument)], screenFrames: [screen]))
         // a closable-only floating window at modal-panel level is ordinary too
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: floatingDocument, closeButtonEnabled: true,
+            pid: 100, frame: floatingDocument, buttons: .init(close: true),
             onScreenWindows: [onScreen(8, frame: floatingDocument)], screenFrames: [screen]))
     }
 
     func testChromiumPiPWithDisabledButtonsIsPictureInPicture() {
         XCTAssertTrue(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: chromiumPiP, closeButtonEnabled: false,
+            pid: 100, frame: chromiumPiP, buttons: .init(close: false, minimize: false, zoom: false),
             onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
+    }
+
+    // Firefox and Zen PiP (AeroSpace corpus, #117): layer 3, close and zoom
+    // (full screen) enabled, minimize disabled.
+    private let firefoxPiPButtons = PictureInPictureDetector.TitleBarButtons(
+        close: true, minimize: false, zoom: true)
+
+    func testFirefoxPiPWithOnlyMinimizeDisabledIsPictureInPicture() {
+        XCTAssertTrue(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: chromiumPiP, buttons: firefoxPiPButtons,
+            onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
+    }
+
+    func testFirefoxButtonPatternAtTheNormalLayerIsNotPictureInPicture() {
+        XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+            pid: 100, frame: floatingDocument, buttons: firefoxPiPButtons,
+            onScreenWindows: [onScreen(0, frame: floatingDocument)], screenFrames: [screen]))
+    }
+
+    func testOtherClosableFloatingWindowsAreNotPictureInPicture() {
+        // #90's closable-only windows disable zoom too (macOS Join Network: close
+        // enabled, minimize and zoom disabled); a missing minimize or zoom button,
+        // or an enabled minimize button, never matches the Firefox pattern
+        let patterns: [PictureInPictureDetector.TitleBarButtons] = [
+            .init(close: true, minimize: false, zoom: false),
+            .init(close: true, minimize: false),
+            .init(close: true, zoom: true),
+            .init(close: true, minimize: true, zoom: false),
+        ]
+        for buttons in patterns {
+            XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
+                pid: 100, frame: floatingDocument, buttons: buttons,
+                onScreenWindows: [onScreen(3, frame: floatingDocument)], screenFrames: [screen]),
+                "\(buttons)")
+        }
     }
 
     func testButtonlessOrUnreadFloatingWindowKeepsTheLayerRule() {
         // no close button, or its state never read: the floating layer alone decides
         XCTAssertTrue(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: chromiumPiP, closeButtonEnabled: nil,
+            pid: 100, frame: chromiumPiP, buttons: .init(),
             onScreenWindows: [onScreen(3, frame: chromiumPiP)], screenFrames: [screen]))
     }
 
@@ -88,20 +123,20 @@ final class PictureInPictureDetectorTests: XCTestCase {
         // and has no close button, like Ghostty's update alert in AeroSpace's corpus
         let alert = CGRect(x: 590, y: 205, width: 260, height: 176)
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: alert, closeButtonEnabled: nil,
+            pid: 100, frame: alert, buttons: .init(),
             onScreenWindows: [onScreen(8, frame: alert)], screenFrames: [screen]))
     }
 
     func testFullscreenFloatingSurfaceStaysEligible() {
         // the fullscreen exception holds whatever the title bar reports
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: screen, closeButtonEnabled: false,
+            pid: 100, frame: screen, buttons: .init(close: false),
             onScreenWindows: [onScreen(20, frame: screen)], screenFrames: [screen]))
     }
 
     func testDisabledButtonsAloneNeverMakeANormalWindowPiP() {
         XCTAssertFalse(PictureInPictureDetector.isPictureInPicture(
-            pid: 100, frame: floatingDocument, closeButtonEnabled: false,
+            pid: 100, frame: floatingDocument, buttons: .init(close: false),
             onScreenWindows: [onScreen(0, frame: floatingDocument)], screenFrames: [screen]))
     }
 

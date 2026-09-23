@@ -509,7 +509,7 @@ public final class WindowStore {
             window.isPictureInPicture = PictureInPictureDetector.isPictureInPicture(
                 pid: window.app?.pid ?? -1,
                 frame: window.frame,
-                closeButtonEnabled: window.closeButtonEnabled,
+                buttons: window.titleBarButtons,
                 onScreenWindows: onScreen,
                 screenFrames: screens)
         }

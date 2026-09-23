@@ -53,18 +53,19 @@ enum AXNotificationRouter {
     static func routeWindowEvent(_ notification: String, _ element: AXUIElement, _ pid: pid_t) {
         // reading our own AX children would call AppKit layout from this thread
         let isOwnProcess = pid == ProcessInfo.processInfo.processIdentifier
-        // The close button's enabled state separates Chromium PiP from ordinary floating
-        // windows (PictureInPictureDetector). It is fixed for a window's lifetime, so it
-        // costs one extra read per window creation, never one per move or resize.
+        // The title-bar buttons' enabled states separate browser PiP from ordinary floating
+        // windows (PictureInPictureDetector). They are fixed for a window's lifetime, so they
+        // cost a few extra reads per window creation, never any per move or resize.
         let isCreation = notification == kAXWindowCreatedNotification
+        let buttonKeys = [kAXCloseButtonAttribute, kAXMinimizeButtonAttribute, kAXZoomButtonAttribute]
         let keys = windowAttributeKeys + (isOwnProcess ? [] : [kAXChildrenAttribute])
-            + (isCreation ? [kAXCloseButtonAttribute] : [])
+            + (isCreation ? buttonKeys : [])
         guard var read = try? element.attributes(keys) else { return }
-        if isCreation, let closeButton = read.closeButton {
-            var enabled: CFTypeRef?
-            if AXUIElementCopyAttributeValue(closeButton, kAXEnabledAttribute as CFString, &enabled) == .success {
-                read.closeButtonEnabled = enabled as? Bool
-            }
+        if isCreation {
+            read.titleBarButtons = PictureInPictureDetector.TitleBarButtons(
+                close: isEnabled(read.closeButton),
+                minimize: isEnabled(read.minimizeButton),
+                zoom: isEnabled(read.zoomButton))
         }
         let attributes = read
         let tabs = AXUIElement.tabObservation(fromWindow: attributes)
@@ -72,5 +73,14 @@ enum AXNotificationRouter {
             WindowStore.shared.windowEvent(notification, element: element, pid: pid,
                                            attributes: attributes, tabs: tabs)
         }
+    }
+
+    /// A title-bar button's kAXEnabled; nil when the window has no such button.
+    private static func isEnabled(_ button: AXUIElement?) -> Bool? {
+        guard let button else { return nil }
+        var enabled: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(button, kAXEnabledAttribute as CFString, &enabled) == .success
+        else { return nil }
+        return enabled as? Bool
     }
 }

@@ -38,10 +38,11 @@ public final class TrackedWindow {
     /// Picture); nil until resolved once at snapshot time. PiP-ness is
     /// intrinsic to a window, so one resolution is enough.
     public internal(set) var isPictureInPicture: Bool?
-    /// The AX close button's enabled state, read once per window creation (nil
-    /// when the window has none or it was never read). Evidence for
-    /// PictureInPictureDetector; a floating window keeps it for its lifetime.
-    public private(set) var closeButtonEnabled: Bool?
+    /// The AX close, minimize and zoom buttons' enabled states, read once per
+    /// window creation (each nil when the window has none or it was never
+    /// read). Evidence for PictureInPictureDetector; a floating window keeps
+    /// them for its lifetime.
+    public private(set) var titleBarButtons = PictureInPictureDetector.TitleBarButtons()
     /// Identities of this window's tab group members (including itself), when known.
     public internal(set) var tabGroupIds: [UUID]?
 
@@ -61,7 +62,7 @@ public final class TrackedWindow {
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)
         isActual = WindowEligibility.isActualWindow(app.windowFacts(from: attributes))
-        closeButtonEnabled = attributes.closeButtonEnabled
+        titleBarButtons = attributes.titleBarButtons ?? PictureInPictureDetector.TitleBarButtons()
     }
 
     /// The own-Settings-window exception: a native entry with the WindowHop icon.
@@ -94,9 +95,9 @@ public final class TrackedWindow {
         isFullscreen = attributes.isFullscreen ?? false
         frame = TrackedWindow.frame(from: attributes)
         isActual = WindowEligibility.isActualWindow(app.windowFacts(from: attributes))
-        // only creation events carry the close button; a new answer re-opens the PiP verdict
-        if let enabled = attributes.closeButtonEnabled, enabled != closeButtonEnabled {
-            closeButtonEnabled = enabled
+        // only creation events carry the title-bar buttons; a new answer re-opens the PiP verdict
+        if let buttons = attributes.titleBarButtons, buttons != titleBarButtons {
+            titleBarButtons = buttons
             isPictureInPicture = nil
         }
     }

@@ -34,10 +34,6 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
         "spotify_miniplayer": (.pictureInPicture,
             "floats at layer 3 with every title-bar button disabled, the Chromium PiP signature"),
         // labeled popup, listed
-        "firefox_pip": (.listed,
-            "Firefox PiP enables its close button, which #90 takes as proof of an ordinary floating window"),
-        "zen_browser_pip": (.listed,
-            "Zen is Firefox-based: same enabled close button as firefox_pip"),
         "outlook_reminder": (.listed,
             "an always-on-top window with enabled close and minimize buttons: ordinary by the #90 rule"),
         "slack_huddle_share_screen_floating_popup": (.listed,
@@ -77,7 +73,7 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
         let facts: WindowFacts
         let frame: CGRect?
         let layer: Int?
-        let closeButtonEnabled: Bool?
+        let buttons: PictureInPictureDetector.TitleBarButtons
         let isMinimized: Bool
     }
 
@@ -112,12 +108,15 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
 
     func testBrowserPictureInPictureWindows() throws {
         let dumps = Dictionary(uniqueKeysWithValues: try Self.loadCorpus().map { ($0.name, $0) })
-        // Chromium PiP: buttonless (Chrome) or all buttons disabled (Brave, Edge)
-        for name in ["chrome_pip", "brave_pip", "microsoft_edge_pip"] {
+        // Chromium PiP: buttonless (Chrome) or all buttons disabled (Brave, Edge);
+        // Firefox PiP (and Zen): close and zoom enabled, minimize disabled (#117)
+        for name in ["chrome_pip", "brave_pip", "microsoft_edge_pip", "firefox_pip", "zen_browser_pip"] {
             XCTAssertEqual(dumps[name].map(Self.decide), .pictureInPicture, name)
         }
-        // app-modal alerts and open panels at the modal-panel layer are windows
-        for name in ["ghostty_check_for_updates_2_alert", "intellij_native_open_window"] {
+        // app-modal alerts and open panels at the modal-panel layer are windows,
+        // and so are #90's closable-only dialogs and floating documents
+        for name in ["ghostty_check_for_updates_2_alert", "intellij_native_open_window",
+                     "macos_join_network", "1password_mini_window", "ghostty_config_error"] {
             XCTAssertEqual(dumps[name].map(Self.decide), .listed, name)
         }
     }
@@ -131,7 +130,7 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
             dump.frame.map { [PictureInPictureDetector.OnScreenWindow(pid: pid, frame: $0, layer: layer)] }
         } ?? []
         let isPiP = PictureInPictureDetector.isPictureInPicture(
-            pid: pid, frame: dump.frame, closeButtonEnabled: dump.closeButtonEnabled,
+            pid: pid, frame: dump.frame, buttons: dump.buttons,
             onScreenWindows: onScreen, screenFrames: corpusDisplays)
         let state = WindowDisplayState(isMinimized: dump.isMinimized, isAppHidden: false,
                                        isOwnWindow: false, isPictureInPicture: isPiP,
@@ -154,7 +153,9 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
         let app = json["Aero.AXApp"] as? [String: Any]
         let frame = (json["AXFrame"] as? String).flatMap(rect)
         let size = (json["AXSize"] as? String).flatMap(rect)?.size
-        let closeButton = json["AXCloseButton"] as? [String: Any]
+        func enabled(_ button: String) -> Bool? {
+            (json[button] as? [String: Any])?["AXEnabled"] as? Bool
+        }
         let name = file.deletingPathExtension().lastPathComponent
         return Dump(
             name: file.deletingLastPathComponent().lastPathComponent == "AeroSpaceAXDumps"
@@ -170,7 +171,8 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
                                    .flatMap(URL.init(string:))?.path),
             frame: frame,
             layer: layer(json["Aero.windowLevel"]),
-            closeButtonEnabled: closeButton?["AXEnabled"] as? Bool,
+            buttons: .init(close: enabled("AXCloseButton"), minimize: enabled("AXMinimizeButton"),
+                           zoom: enabled("AXZoomButton")),
             isMinimized: json["AXMinimized"] as? Bool ?? false)
     }
 

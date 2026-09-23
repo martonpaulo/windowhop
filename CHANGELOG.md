@@ -90,8 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   listing every former window until something else changed.
 - **Floating windows stay in the switcher**: an app's ordinary window that floats above
   the others, such as a pinned document or an always-on-top dialog, is no longer mistaken
-  for Picture in Picture and hidden. Browser Picture in Picture is still left out unless
-  you include it in Settings.
+  for Picture in Picture and hidden. Browser Picture in Picture, in Chrome, Brave, Edge,
+  Firefox and Zen, is still left out unless you include it in Settings.
 - **A tab moved to its own window shows up again**: after Window ▸ Move Tab to New Window
   splits a two-tab group, both windows now appear in the switcher. The window left behind
   used to stay hidden as if it were still a tab.

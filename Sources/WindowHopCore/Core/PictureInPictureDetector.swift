@@ -17,9 +17,37 @@ import Foundation
 /// title bar: Chromium PiP (Chrome and Brave, measured for #90) keeps its
 /// close, minimize and zoom buttons but disables all three, while AppKit
 /// floating document, closable-only and modal-level windows keep an enabled
-/// close button. System PiP (PIPAgent, measured through AVKit) never gets
-/// here: it is an AXSystemFloatingWindow, rejected by WindowEligibility.
+/// close button. Firefox PiP (and Zen, which is Firefox-based) is the one
+/// closable exception: it keeps close and zoom (full screen) enabled and
+/// disables only minimize, a combination AeroSpace's AX dump corpus (#115,
+/// #117) shows for no ordinary floating window. System PiP (PIPAgent,
+/// measured through AVKit) never gets here: it is an AXSystemFloatingWindow, rejected by WindowEligibility.
 public enum PictureInPictureDetector {
+    /// The enabled state of a window's AX close, minimize and zoom buttons;
+    /// `nil` when the window has no such button or it was never read.
+    public struct TitleBarButtons: Equatable, Sendable {
+        public var close: Bool?
+        public var minimize: Bool?
+        public var zoom: Bool?
+
+        public init(close: Bool? = nil, minimize: Bool? = nil, zoom: Bool? = nil) {
+            self.close = close
+            self.minimize = minimize
+            self.zoom = zoom
+        }
+
+        /// Firefox PiP's title bar: closable and zoomable, but not minimizable.
+        var isFirefoxPictureInPicture: Bool {
+            close == true && minimize == false && zoom == true
+        }
+
+        /// An enabled close button marks an ordinary floating window, except
+        /// for the Firefox PiP combination.
+        var provesOrdinaryWindow: Bool {
+            close == true && !isFirefoxPictureInPicture
+        }
+    }
+
     /// One on-screen window as the window server reports it (Quartz
     /// coordinates, same space AX frames use).
     public struct OnScreenWindow: Sendable {
@@ -45,14 +73,15 @@ public enum PictureInPictureDetector {
     /// `NSAlert` and `NSOpenPanel` under `runModal()` both sit at layer 8.
     static let modalPanelLayer = Int(CGWindowLevelForKey(.modalPanelWindow))
 
-    /// `closeButtonEnabled` is the window's AX close button state: `true`
-    /// marks an ordinary floating window, `false` or `nil` (no button, or not
-    /// read) leaves the layer rule alone in charge.
+    /// `buttons` is the window's AX title-bar button state: an enabled close
+    /// button marks an ordinary floating window unless minimize is disabled
+    /// while zoom stays enabled (Firefox PiP); a disabled or missing close
+    /// button, or an unread one, leaves the layer rule alone in charge.
     public static func isPictureInPicture(pid: pid_t, frame: CGRect?,
-                                          closeButtonEnabled: Bool? = nil,
+                                          buttons: TitleBarButtons = TitleBarButtons(),
                                           onScreenWindows: [OnScreenWindow],
                                           screenFrames: [CGRect]) -> Bool {
-        guard closeButtonEnabled != true, let frame,
+        guard !buttons.provesOrdinaryWindow, let frame,
               let match = onScreenWindows.first(where: { $0.pid == pid && frameClose($0.frame, frame) }),
               match.layer != 0, match.layer != modalPanelLayer else { return false }
         let coversAScreen = screenFrames.contains { screen in
