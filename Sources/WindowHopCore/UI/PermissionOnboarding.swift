@@ -7,11 +7,12 @@ import SwiftUI
 /// Polls only while this window is visible; closes itself once access is granted.
 @MainActor
 public final class PermissionOnboardingController {
-    public static let shared = PermissionOnboardingController()
-
     private var window: NSWindow?
     private var pollTimer: Timer?
     public var onGranted: (() -> Void)?
+
+    /// Owned by `AppDelegate`.
+    public init() {}
 
     public func show() {
         if window == nil {

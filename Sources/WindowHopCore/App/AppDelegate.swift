@@ -11,30 +11,41 @@ import WindowHopKit
 @MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions {
     private let preferences: Preferences
+    private let updateManager: UpdateManager
+    private let settingsWindow: SettingsWindowController
+    private let onboarding: PermissionOnboardingController
     private let statusItem: StatusItemController
     private var engineRunning = false
     private var menuIsRegular: Bool?
 
     override public init() {
         let preferences = Preferences()
-        self.preferences = preferences
-        // the singletons that remain until #107 and #108 hold this instance
-        WindowStore.shared.preferences = preferences
-        PreviewProvider.shared.preferences = preferences
-        SwitcherController.shared.preferences = preferences
-        UpdateManager.shared.preferences = preferences
-        SettingsWindowController.shared.dependencies = SettingsDependencies(
+        let updateManager = UpdateManager(preferences: preferences)
+        let settingsWindow = SettingsWindowController(dependencies: SettingsDependencies(
             preferences: preferences,
             restorer: SettingsDefaultsRestorer(
                 preferences: preferences,
-                applyAutomaticUpdateChecks: {
-                    UpdateManager.shared.automaticallyChecksForUpdates = $0
-                }))
+                applyAutomaticUpdateChecks: { updateManager.automaticallyChecksForUpdates = $0 }),
+            updateManager: updateManager))
+        let onboarding = PermissionOnboardingController()
+        self.preferences = preferences
+        self.updateManager = updateManager
+        self.settingsWindow = settingsWindow
+        self.onboarding = onboarding
         statusItem = StatusItemController(
             preferences: preferences,
             accessibilityGranted: { AccessibilityPermission.isGranted },
-            updaterAvailable: { UpdateManager.shared.isAvailable },
-            canCheckForUpdates: { UpdateManager.shared.canCheckForUpdates })
+            updaterAvailable: { updateManager.isAvailable },
+            canCheckForUpdates: { updateManager.canCheckForUpdates },
+            actions: StatusItemController.Actions(
+                openAccessibilitySetup: { onboarding.show() },
+                openSettings: { settingsWindow.show() },
+                checkForUpdates: { updateManager.checkForUpdates() }))
+        // the singletons that remain until #108 hold these instances
+        WindowStore.shared.preferences = preferences
+        PreviewProvider.shared.preferences = preferences
+        SwitcherController.shared.preferences = preferences
+        SwitcherController.shared.showSettings = { settingsWindow.show() }
         super.init()
     }
 
@@ -60,11 +71,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     }
 
     @objc public func openAboutFromMenu(_ sender: Any?) {
-        SettingsWindowController.shared.showAbout()
+        settingsWindow.showAbout()
     }
 
     @objc public func openSettingsFromMenu(_ sender: Any?) {
-        SettingsWindowController.shared.show()
+        settingsWindow.show()
     }
 
     @objc public func reportIssue(_ sender: Any?) {
@@ -81,7 +92,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         BackgroundWork.start()
         SwitcherController.shared.wire()
         statusItem.apply()
-        UpdateManager.shared.startIfBundled()
+        updateManager.startIfBundled()
         observeSystemEvents()
 
         let granted = AccessibilityPermission.isGranted
@@ -111,7 +122,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         case .none:
             break
         case .settings:
-            SettingsWindowController.shared.show()
+            settingsWindow.show()
         case .onboarding:
             showOnboarding()
         }
@@ -167,7 +178,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         AccessibilityPermission.observeChanges { [weak self] granted in
             guard let self else { return }
             if granted {
-                PermissionOnboardingController.shared.close()
+                onboarding.close()
                 self.startEngine()
                 self.completeFirstLaunchIfNeeded()
             } else {
@@ -195,13 +206,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
     }
 
     private func showOnboarding() {
-        PermissionOnboardingController.shared.onGranted = { [weak self] in
+        onboarding.onGranted = { [weak self] in
             guard let self else { return }
             self.startEngine()
             self.completeFirstLaunchIfNeeded()
-            SettingsWindowController.shared.show()
+            settingsWindow.show()
         }
-        PermissionOnboardingController.shared.show()
+        onboarding.show()
     }
 
     /// Registers the login item only when the launch-at-login intent is on

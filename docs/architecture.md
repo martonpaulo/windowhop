@@ -38,9 +38,15 @@ clears on each run, and tests build one over a throwaway suite (`IsolatedPrefere
 neither reads the person's real settings. Runtime reactions to a settings change still come
 from `UserDefaults.didChangeNotification` and `Preferences.windowFiltersDidChange`.
 
-Until #107 and #108 remove them, `WindowStore`, `PreviewProvider`, `SwitcherController`,
-`UpdateManager` and `SettingsWindowController` are still singletons; `AppDelegate` gives each
-one its `Preferences` (or the Settings dependencies) before first use.
+`AppDelegate` also owns `UpdateManager`, the Settings window, the onboarding window and the
+menu bar item. `UpdateManager`, `ConnectedDisplaysModel` and `LaunchAtLoginModel` are
+`@Observable` too; the Settings panes receive what they use through `SettingsDependencies`
+and their initializers. The menu bar item and the switcher reach the windows through
+closures, not by naming a global.
+
+Until #108 removes them, `WindowStore`, `PreviewProvider`, `EventTap` and
+`SwitcherController` are still singletons; `AppDelegate` gives each one its `Preferences`
+before first use.
 
 ## Window model (event-driven, no polling)
 

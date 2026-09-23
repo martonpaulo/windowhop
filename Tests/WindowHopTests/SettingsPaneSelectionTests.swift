@@ -36,9 +36,8 @@ final class SettingsPaneSelectionTests: XCTestCase {
     }
 
     private func makeController() -> SettingsWindowController {
-        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
-        controller.dependencies = isolated.settingsDependencies
-        return controller
+        SettingsWindowController(dependencies: isolated.settingsDependencies,
+                                 frameAutosaveName: autosaveName)
     }
 
     private func prepare(_ controller: SettingsWindowController,

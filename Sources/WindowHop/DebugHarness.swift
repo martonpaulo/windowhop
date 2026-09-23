@@ -28,13 +28,14 @@ enum DebugHarness {
         return Preferences(defaults: UserDefaults(suiteName: suite) ?? .standard)
     }
 
-    /// The Settings content over the harness's own settings. Restore Defaults
-    /// has no updater to reach here.
+    /// The Settings content over the harness's own settings, with an updater
+    /// that is never started, as in any development build.
     private static func makeSettingsDependencies(_ preferences: Preferences) -> SettingsDependencies {
         SettingsDependencies(
             preferences: preferences,
             restorer: SettingsDefaultsRestorer(preferences: preferences,
-                                               applyAutomaticUpdateChecks: { _ in }))
+                                               applyAutomaticUpdateChecks: { _ in }),
+            updateManager: UpdateManager(preferences: preferences))
     }
 
     static func runIfRequested(_ arguments: [String]) -> Bool {

@@ -12,6 +12,8 @@ public final class SwitcherController {
     /// harness) before first use. It moves to the initializer when this type
     /// stops being a singleton (#108).
     public var preferences: Preferences!
+    /// Opens the Settings window; set once by `AppDelegate`, which owns it.
+    public var showSettings: () -> Void = {}
 
     private var state = SwitcherState()
     /// The session list: seeded at session start and kept in that order while the
@@ -148,11 +150,11 @@ public final class SwitcherController {
         let hadActiveSession = state.isActive
         perform(state.teardown())
         if hadActiveSession {
-            WindowActions.afterPendingActions {
-                SettingsWindowController.shared.show()
+            WindowActions.afterPendingActions { [weak self] in
+                self?.showSettings()
             }
         } else {
-            SettingsWindowController.shared.show()
+            showSettings()
         }
     }
 

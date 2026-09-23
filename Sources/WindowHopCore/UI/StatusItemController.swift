@@ -26,16 +26,35 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
     private let accessibilityGranted: () -> Bool
     private let updaterAvailable: () -> Bool
     private let canCheckForUpdates: () -> Bool
+    private let actions: Actions
     private var statusItem: NSStatusItem?
 
-    init(preferences: Preferences,
-         accessibilityGranted: @escaping () -> Bool,
-         updaterAvailable: @escaping () -> Bool,
-         canCheckForUpdates: @escaping () -> Bool) {
+    /// What the menu's commands open or start; `AppDelegate` supplies the
+    /// objects it owns.
+    public struct Actions {
+        let openAccessibilitySetup: () -> Void
+        let openSettings: () -> Void
+        let checkForUpdates: () -> Void
+
+        public init(openAccessibilitySetup: @escaping () -> Void,
+                    openSettings: @escaping () -> Void,
+                    checkForUpdates: @escaping () -> Void) {
+            self.openAccessibilitySetup = openAccessibilitySetup
+            self.openSettings = openSettings
+            self.checkForUpdates = checkForUpdates
+        }
+    }
+
+    public init(preferences: Preferences,
+                accessibilityGranted: @escaping () -> Bool,
+                updaterAvailable: @escaping () -> Bool,
+                canCheckForUpdates: @escaping () -> Bool,
+                actions: Actions) {
         self.preferences = preferences
         self.accessibilityGranted = accessibilityGranted
         self.updaterAvailable = updaterAvailable
         self.canCheckForUpdates = canCheckForUpdates
+        self.actions = actions
         super.init()
     }
 
@@ -162,15 +181,15 @@ public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemVal
     @objc private func openAccessibilitySetup() {
         // the existing recovery surface; AppDelegate sets its onGranted
         // whenever permission is missing
-        PermissionOnboardingController.shared.show()
+        actions.openAccessibilitySetup()
     }
 
     @objc private func openSettings() {
-        SettingsWindowController.shared.show()
+        actions.openSettings()
     }
 
     @objc private func checkForUpdates() {
-        UpdateManager.shared.checkForUpdates()
+        actions.checkForUpdates()
     }
 
     @objc private func quit() {

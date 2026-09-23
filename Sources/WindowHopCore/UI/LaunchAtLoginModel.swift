@@ -11,14 +11,15 @@ import WindowHopKit
 /// person's intent in `Preferences.launchAtLogin` only when the change did not
 /// fail.
 @MainActor
-final class LaunchAtLoginModel: ObservableObject {
-    @Published private(set) var status: LoginItemStatus
-    @Published private(set) var failed = false
+@Observable
+final class LaunchAtLoginModel {
+    private(set) var status: LoginItemStatus
+    private(set) var failed = false
 
-    private let preferences: Preferences
-    private let readStatus: () -> LoginItemStatus
-    private let change: (Bool) -> LoginItemChange
-    private let openLoginItemsSettingsAction: () -> Void
+    @ObservationIgnored private let preferences: Preferences
+    @ObservationIgnored private let readStatus: () -> LoginItemStatus
+    @ObservationIgnored private let change: (Bool) -> LoginItemChange
+    @ObservationIgnored private let openLoginItemsSettingsAction: () -> Void
 
     init(preferences: Preferences,
          readStatus: @escaping () -> LoginItemStatus = { LoginItem.status },

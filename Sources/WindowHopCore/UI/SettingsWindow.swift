@@ -12,22 +12,21 @@ import WindowHopKit
 /// Restore Defaults leaves it alone. First use is centered.
 @MainActor
 public final class SettingsWindowController {
-    public static let shared = SettingsWindowController()
-
-    /// What the panes read and act on, set once by `AppDelegate` before the
-    /// first `show()`. It moves to the initializer when this type stops being a
-    /// singleton (#107).
-    public var dependencies: SettingsDependencies!
+    /// What the panes read and act on.
+    private let dependencies: SettingsDependencies
 
     /// The switcher-entry title; the window's visible title follows the pane name.
     public static let switcherEntryTitle = String(localized: "WindowHop Settings")
 
-    static let defaultFrameAutosaveName = "WindowHopSettings"
+    public static let defaultFrameAutosaveName = "WindowHopSettings"
 
     private let frameAutosaveName: String
     private var window: NSWindow?
 
-    init(frameAutosaveName: String = SettingsWindowController.defaultFrameAutosaveName) {
+    /// Owned by `AppDelegate`; tests pass their own autosave name.
+    public init(dependencies: SettingsDependencies,
+                frameAutosaveName: String = SettingsWindowController.defaultFrameAutosaveName) {
+        self.dependencies = dependencies
         self.frameAutosaveName = frameAutosaveName
     }
 
@@ -117,10 +116,14 @@ public final class SettingsWindowController {
 public struct SettingsDependencies {
     public let preferences: Preferences
     public let restorer: SettingsDefaultsRestorer
+    public let updateManager: UpdateManager
 
-    public init(preferences: Preferences, restorer: SettingsDefaultsRestorer) {
+    public init(preferences: Preferences,
+                restorer: SettingsDefaultsRestorer,
+                updateManager: UpdateManager) {
         self.preferences = preferences
         self.restorer = restorer
+        self.updateManager = updateManager
     }
 }
 
@@ -165,7 +168,8 @@ enum SettingsPane: String, CaseIterable {
         case .shortcuts: ShortcutsPane(preferences: preferences)
         case .windows: WindowsPane(preferences: preferences)
         case .appearance: AppearancePane(preferences: preferences)
-        case .updates: UpdatesPane(preferences: preferences)
+        case .updates:
+            UpdatesPane(preferences: preferences, updateManager: dependencies.updateManager)
         case .about: AboutPane()
         }
     }
@@ -240,14 +244,14 @@ private extension View {
 struct GeneralPane: View {
     @Bindable private var preferences: Preferences
     private let restorer: SettingsDefaultsRestorer
-    @StateObject private var launchAtLogin: LaunchAtLoginModel
+    @State private var launchAtLogin: LaunchAtLoginModel
     @State private var restoreConfirmationShown = false
     @State private var quitConfirmationShown = false
 
     init(preferences: Preferences, restorer: SettingsDefaultsRestorer) {
         self.preferences = preferences
         self.restorer = restorer
-        _launchAtLogin = StateObject(wrappedValue: LaunchAtLoginModel(preferences: preferences))
+        _launchAtLogin = State(initialValue: LaunchAtLoginModel(preferences: preferences))
     }
 
     private var switchingGuide: SwitchingGuide {
@@ -406,7 +410,7 @@ struct ShortcutsPane: View {
 
 struct WindowsPane: View {
     @Bindable var preferences: Preferences
-    @StateObject private var connectedDisplays = ConnectedDisplaysModel()
+    @State private var connectedDisplays = ConnectedDisplaysModel()
 
     /// One entry per selectable display. A chosen display that is currently
     /// disconnected stays in the list, named as such: dropping it would destroy
@@ -608,7 +612,7 @@ struct AppearancePane: View {
 
 struct UpdatesPane: View {
     @Bindable var preferences: Preferences
-    @ObservedObject private var updateManager = UpdateManager.shared
+    let updateManager: UpdateManager
     private let appVersion = AppVersion.main
 
     var body: some View {
@@ -619,7 +623,7 @@ struct UpdatesPane: View {
                     // skipping) continues in the standard Sparkle dialog
                     LabeledContent {
                         Button("Install Update…") {
-                            UpdateManager.shared.checkForUpdates()
+                            updateManager.checkForUpdates()
                         }
                     } label: {
                         Label("WindowHop \(availableVersion) is available",
@@ -632,21 +636,21 @@ struct UpdatesPane: View {
                 Toggle("Automatically check for updates",
                        isOn: $preferences.automaticUpdateChecks)
                     .onChange(of: preferences.automaticUpdateChecks) { _, newValue in
-                        UpdateManager.shared.automaticallyChecksForUpdates = newValue
+                        updateManager.automaticallyChecksForUpdates = newValue
                     }
-                    .disabled(!UpdateManager.shared.isAvailable)
+                    .disabled(!updateManager.isAvailable)
                 LabeledContent {
                     Button("Check for Updates…") {
-                        UpdateManager.shared.checkForUpdates()
+                        updateManager.checkForUpdates()
                     }
-                    .disabled(!UpdateManager.shared.isAvailable)
+                    .disabled(!updateManager.isAvailable)
                 } label: {
                     Text(appVersion.versionLabel)
                     if let released = appVersion.releaseDateText() {
                         Text("Released \(released)")
                     }
                 }
-                if !UpdateManager.shared.isAvailable {
+                if !updateManager.isAvailable {
                     Text("Updates are available in the installed app (WindowHop.app), not in development builds.")
                         .font(.callout)
                         .foregroundStyle(.secondary)

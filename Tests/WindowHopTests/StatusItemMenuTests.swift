@@ -28,7 +28,10 @@ final class StatusItemMenuTests: XCTestCase {
             preferences: preferences,
             accessibilityGranted: { [unowned self] in self.accessibilityGranted },
             updaterAvailable: { [unowned self] in self.updaterAvailable },
-            canCheckForUpdates: { [unowned self] in self.canCheck })
+            canCheckForUpdates: { [unowned self] in self.canCheck },
+            actions: StatusItemController.Actions(openAccessibilitySetup: {},
+                                                  openSettings: {},
+                                                  checkForUpdates: {}))
     }
 
     override func tearDown() async throws {

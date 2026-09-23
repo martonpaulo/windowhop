@@ -15,12 +15,14 @@ final class IsolatedPreferences {
         preferences = Preferences(defaults: defaults)
     }
 
-    /// Settings content over these preferences; Restore Defaults reaches no updater.
+    /// Settings content over these preferences, with an updater that is never
+    /// started, as in any development build.
     var settingsDependencies: SettingsDependencies {
         SettingsDependencies(
             preferences: preferences,
             restorer: SettingsDefaultsRestorer(preferences: preferences,
-                                               applyAutomaticUpdateChecks: { _ in }))
+                                               applyAutomaticUpdateChecks: { _ in }),
+            updateManager: UpdateManager(preferences: preferences))
     }
 
     func remove() {

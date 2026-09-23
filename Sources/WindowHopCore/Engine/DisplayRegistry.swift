@@ -1,5 +1,4 @@
 import AppKit
-import Combine
 import CoreGraphics
 import WindowHopKit
 
@@ -76,10 +75,11 @@ public enum DisplayRegistry {
 /// happening once it closes. Event-driven by
 /// `didChangeScreenParametersNotification`; nothing is polled.
 @MainActor
-public final class ConnectedDisplaysModel: ObservableObject {
-    @Published public private(set) var displays: [DisplayDescriptor]
+@Observable
+public final class ConnectedDisplaysModel {
+    public private(set) var displays: [DisplayDescriptor]
 
-    private var observer: NSObjectProtocol?
+    @ObservationIgnored private var observer: NSObjectProtocol?
 
     public init() {
         displays = DisplayRegistry.availableDisplays()

@@ -10,23 +10,23 @@ import WindowHopKit
 /// without it). The Settings Updates pane additionally mirrors the latest
 /// known available version, observed through the updater delegate.
 @MainActor
-public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
-    public static let shared = UpdateManager()
-
+@Observable
+public final class UpdateManager: NSObject, SPUUpdaterDelegate {
+    @ObservationIgnored private let preferences: Preferences
     private var controller: SPUStandardUpdaterController?
-
-    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
-    /// harness) before first use. It moves to the initializer when this type
-    /// stops being a singleton (#107).
-    public var preferences: Preferences!
 
     /// The newest version the appcast offered, when newer than the running
     /// one; nil while up to date. Set from Sparkle's scheduled background
     /// checks and manual ones alike — check failures just leave it unchanged
     /// and never block anything.
-    @Published public private(set) var availableVersion: String?
+    public private(set) var availableVersion: String?
 
-    override private init() {}
+    /// Owned by `AppDelegate`; the debug harness and tests build one that is
+    /// never started, which is exactly a development build's updater.
+    public init(preferences: Preferences) {
+        self.preferences = preferences
+        super.init()
+    }
 
     public var isAvailable: Bool { controller != nil }
 
