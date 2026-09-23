@@ -69,6 +69,16 @@ jobs:
           # Manual dispatch is the explicit recovery path: always publish.
           [ "$EVENT" = workflow_dispatch ] && publish true "manual dispatch"
 
+          # A version bump is pushed before release.yml builds the DMG, and the pages
+          # link WindowHop-<version>.dmg. Wait for that file: release.yml dispatches
+          # this workflow once the release is published. Skipping (not cancelling)
+          # keeps the run green.
+          VERSION=$(git show "$HEAD_SHA:Support/Info.plist" \
+            | sed -n '/CFBundleShortVersionString/{n;s/.*<string>\(.*\)<\/string>.*/\1/p;}')
+          DMG="https://github.com/$REPO/releases/download/v$VERSION/WindowHop-$VERSION.dmg"
+          curl -sfIL -o /dev/null "$DMG" \
+            || publish false "WindowHop-$VERSION.dmg is not published yet; release.yml deploys after the release"
+
           # Newest first. Superseded deployments later turn `inactive`, so look
           # for any `success` status rather than the latest one; failed and
           # cancelled deployments never reach `success`.

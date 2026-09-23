@@ -8,11 +8,17 @@ Switch between windows, not just apps. Fast, native macOS window switcher with l
 
 **[Download WindowHop](https://github.com/martonpaulo/windowhop/releases/latest)** · [Website](https://windowhop.martonpaulo.com/) · [Help](https://windowhop.martonpaulo.com/help/)
 
-[![Downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fwindowhop.martonpaulo.com%2Fstats.json&query=%24.downloads&label=downloads&color=0a66c8)](https://github.com/martonpaulo/windowhop/releases) [![GitHub stars](https://img.shields.io/github/stars/martonpaulo/windowhop?label=stars&color=0a66c8)](https://github.com/martonpaulo/windowhop/stargazers) [![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop?label=release&color=0a66c8)](https://github.com/martonpaulo/windowhop/releases/latest) [![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-0a66c8)](LICENSE)
+[![Downloads](https://img.shields.io/badge/dynamic/json?style=flat&labelColor=30363d&color=0a66c8&label=downloads&url=https%3A%2F%2Fwindowhop.martonpaulo.com%2Fstats.json&query=%24.downloads)](https://github.com/martonpaulo/windowhop/releases)
+[![Stars](https://img.shields.io/github/stars/martonpaulo/windowhop?style=flat&labelColor=30363d&color=0a66c8&label=stars)](https://github.com/martonpaulo/windowhop/stargazers)
+[![Latest release](https://img.shields.io/github/v/release/martonpaulo/windowhop?style=flat&labelColor=30363d&color=0a66c8&label=version)](https://github.com/martonpaulo/windowhop/releases/latest)
+[![License](https://img.shields.io/badge/license-GPL--3.0-0a66c8?style=flat&labelColor=30363d)](LICENSE)
 
-[![Validate](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml) [![Deploy](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml) [![Release](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml/badge.svg)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
-
-[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-F05138)](https://swift.org/) [![Xcode 26](https://img.shields.io/badge/Xcode-26-147EFB)](https://developer.apple.com/xcode/) [![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-1a1a1a)](https://sparkle-project.org/) [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-555555)](https://www.apple.com/macos/)
+[![Validate](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/validate.yml?branch=main&style=flat&labelColor=30363d&label=validate)](https://github.com/martonpaulo/windowhop/actions/workflows/validate.yml)
+[![Deploy](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/deploy.yml?branch=main&style=flat&labelColor=30363d&label=deploy)](https://github.com/martonpaulo/windowhop/actions/workflows/deploy.yml)
+[![Release](https://img.shields.io/github/actions/workflow/status/martonpaulo/windowhop/release.yml?style=flat&labelColor=30363d&label=release)](https://github.com/martonpaulo/windowhop/actions/workflows/release.yml)
+[![macOS 26+](https://img.shields.io/badge/macOS-26%2B-0a66c8?style=flat&labelColor=30363d)](https://www.apple.com/macos/)
+[![Swift 6.2](https://img.shields.io/badge/Swift-6.2-0a66c8?style=flat&labelColor=30363d)](https://swift.org/)
+[![Sparkle 2.10](https://img.shields.io/badge/Sparkle-2.10-0a66c8?style=flat&labelColor=30363d)](https://sparkle-project.org/)
 
 </div>
 
