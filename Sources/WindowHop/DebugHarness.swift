@@ -41,6 +41,15 @@ enum DebugHarness {
             evictPreviews: {})
     }
 
+    /// A `swift build` binary has no bundle, so AppKit would hand Settings the
+    /// generic executable icon. Renders and published captures show the real one.
+    private static func useRepositoryAppIcon() {
+        guard Bundle.main.bundleIdentifier == nil,
+            let icon = NSImage(contentsOfFile: "Support/AppIcon.icns")
+        else { return }
+        NSApplication.shared.applicationIconImage = icon
+    }
+
     static func runIfRequested(_ arguments: [String]) -> Bool {
         if arguments.contains("--demo-switcher") {
             runPanelDemo(dark: arguments.contains("--dark"))
@@ -82,6 +91,7 @@ enum DebugHarness {
     private static func renderUI(to directory: String) {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+        useRepositoryAppIcon()
         let outputURL = URL(fileURLWithPath: directory)
         try? FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
 
@@ -504,6 +514,7 @@ enum DebugHarness {
     private static func runSettingsDemo(pane: String?, appearance: NSAppearance.Name?) {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+        useRepositoryAppIcon()
         if let appearance { app.appearance = NSAppearance(named: appearance) }
         let controller = SettingsWindowController.makeContentViewController(
             makeSettingsDependencies(makePreferences()), selecting: pane)
