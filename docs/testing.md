@@ -189,8 +189,15 @@ published images.
 
 Requirements and constraints:
 
-- **Run it on a Retina (2x) display.** The capture inherits the backing scale, so a 1x
-  screen silently halves the resolution of every published image.
+- **The capture is 2x on any Mac.** A capture inherits the backing scale of the display the
+  window is on, so a 1x screen would halve every published image. When the main display is
+  1x, the script builds and starts `scripts/capture-display.m`: a temporary HiDPI virtual
+  display, extended to the right of the main display with `kCGConfigureForAppOnly`, so the
+  arrangement reverts and the display disappears when the script exits. The demos move their
+  window to the display with the highest backing scale before they announce `SCALE`, so the
+  window server composites them at 2x with their real material and shadow. The tool uses the
+  private `CGVirtualDisplay` class, a recorded exception limited to capture tooling
+  (AGENTS.md › Public Apple APIs only, #116); it needs clang from the command line tools.
 - Screen Recording permission for the process running the script.
 - `-l<windowid>` captures exactly the demo's own window, so no personal window can appear;
   `-o` is deliberately not passed, because it would drop the shadow.
@@ -198,9 +205,10 @@ Requirements and constraints:
   operator happens to use.
 - The Settings demo re-activates its window before announcing readiness; a capture taken
   while it is not key documents a greyed-out title bar and inactive controls.
-- The Settings captures pass `--light`, which pins the window's appearance. Without it the
-  window follows the operator's system setting, so the published images would change with
-  whoever ran the script. Light matches the site's default appearance. For the same reason
+- The Settings captures pass `--light` or `--dark`, which pins the window's appearance.
+  Without it the window follows the operator's system setting, so the published images would
+  change with whoever ran the script. Every published image exists in both appearances, and
+  the site shows the one that matches the visitor's. For the same reason
   they pass `-AppleShowScrollBars WhenScrolling`, an argument-domain override for that one
   process, so an operator's "Show scroll bars: Always" does not draw a scroller track.
 - The Settings demo hides the window title (`titleVisibility = .hidden`): published images keep the

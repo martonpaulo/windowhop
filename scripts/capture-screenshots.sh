@@ -15,8 +15,12 @@
 # captured, the published widths and the srcset variants stay here.
 #
 # Requirements:
-#   * a Retina (2x) display; the library refuses anything less;
+#   * a 2x display for the demo windows; the library refuses anything less. When the
+#     main display is 1x, this script creates a temporary 2x display
+#     (scripts/capture-display.m) and the demos draw there, so the images are Retina
+#     on any Mac. The display disappears when the script exits;
 #   * Screen Recording permission for the terminal running this;
+#   * the Xcode command line tools (clang) to build that display tool;
 #   * `swift build` already done;
 #   * `cwebp` and `dwebp` (brew install webp) for the WebP the site publishes.
 #
@@ -24,7 +28,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 . scripts/lib/capture.sh
-trap capture_cleanup EXIT
+
+DISPLAY_PID=
+cleanup() {
+    capture_cleanup
+    [ -z "$DISPLAY_PID" ] || kill "$DISPLAY_PID" 2>/dev/null || true
+}
+trap cleanup EXIT
 
 OUTPUT=${1:-site/screenshots}
 BINARY=.build/debug/WindowHop
@@ -32,6 +42,29 @@ BINARY=.build/debug/WindowHop
 [ -x "$BINARY" ] || { echo "$BINARY missing; run swift build first" >&2; exit 1; }
 capture_preflight
 command -v dwebp >/dev/null 2>&1 || { echo "dwebp is required (brew install webp)" >&2; exit 1; }
+
+# Adds the temporary 2x display when the main display is 1x (see capture-display.m).
+main_scale=$(swift -e 'import AppKit; print(Int(NSScreen.main?.backingScaleFactor ?? 1))' 2>/dev/null || echo 1)
+if [ "$main_scale" -lt 2 ]; then
+    mkdir -p artifacts
+    clang -fobjc-arc -framework Foundation -framework CoreGraphics \
+        scripts/capture-display.m -o artifacts/capture-display
+    artifacts/capture-display > artifacts/capture-display.log 2>&1 &
+    DISPLAY_PID=$!
+    for _ in $(seq 1 50); do
+        grep -q '^DISPLAY ' artifacts/capture-display.log && break
+        kill -0 "$DISPLAY_PID" 2>/dev/null || break
+        sleep 0.2
+    done
+    grep -q '^DISPLAY ' artifacts/capture-display.log || {
+        cat artifacts/capture-display.log >&2
+        echo "the temporary 2x display did not start" >&2
+        exit 1
+    }
+    # let the window server settle the new arrangement before the first demo opens
+    sleep 1
+    echo "capturing on a temporary 2x display ($(cat artifacts/capture-display.log))"
+fi
 
 # Captures one demo window through the library, then caps its published width.
 #
@@ -99,7 +132,10 @@ capture switcher-previews-light   native --demo-switcher --previews --columns 4
 capture switcher-previews-dark    native --demo-switcher --previews --dark --columns 4
 # The argument domain pins overlay scroll bars for this one process, so the operator's
 # "Show scroll bars: Always" setting does not draw a scroller track into the image.
-capture settings-windows          native --demo-settings switcher --light \
+# The site shows the capture that matches the visitor's appearance, so both are taken.
+capture settings-switcher-light   native --demo-settings switcher --light \
+    -AppleShowScrollBars WhenScrolling
+capture settings-switcher-dark    native --demo-settings switcher --dark \
     -AppleShowScrollBars WhenScrolling
 
 # The hero's srcset and imagesrcset in site/index.html list exactly these widths.

@@ -107,7 +107,7 @@ make lint                        # SwiftLint + swift-format lint, strict (shared
 make format                      # rewrite Sources/ and Tests/ with swift-format; run before committing
 make check                       # build, lint, test, validate, strings-check: the gate before a commit
 make help                        # every target: also app, dmg, icon, screenshots, keys, appcast, clean
-make screenshots                 # published screenshots (Retina display required)
+make screenshots                 # published screenshots (2x; adds a temporary 2x display on a 1x Mac)
 make app FORCE=1                 # .app with Sparkle + zip (scripts/package-app.sh; ad-hoc unless DEVELOPER_ID_IDENTITY)
 make dmg FORCE=1                 # app, then the DMG (scripts/make-dmg.sh)
 scripts/sign-update.sh --archive <zip>  # Sparkle EdDSA attributes (login Keychain key)
@@ -134,7 +134,9 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
 ## Hard rules
 
 - **Public Apple APIs only.** No private frameworks, no `_`-prefixed SPI, no
-  `@_silgen_name`. AX attribute *strings* not in headers (e.g. `AXFullScreen`) are fine.
+  `@_silgen_name`. One recorded exception outside the app: `scripts/capture-display.m`, local
+  screenshot tooling that is never compiled into WindowHop, uses the private
+  `CGVirtualDisplay` class to create a temporary 2x display (Decided on #116). AX attribute *strings* not in headers (e.g. `AXFullScreen`) are fine.
   For the same reason, so are the undeclared `com.apple.screenIsLocked` /
   `com.apple.screenIsUnlocked` names observed through the public
   `DistributedNotificationCenter` (`Engine/SessionMonitor.swift`); if they stop firing,
@@ -363,9 +365,10 @@ notes. A missing configurability decision is a review failure.
 - Published screenshots come from `scripts/capture-screenshots.sh` and must never show the
   user's personal windows. It drives `--demo-switcher` / `--demo-settings` on screen and
   captures each window with `screencapture -l<windowid>`, which is what gives the published
-  images their rounded corners, real glass material, drop shadow, and elevation. Run it on a
-  Retina display: the capture is taken at the display's backing scale, so a 1x screen halves
-  the resolution. `--render-ui` stays the offscreen layout/regression harness — it has no
+  images their rounded corners, real glass material, drop shadow, and elevation. The capture
+  is taken at the backing scale of the display the window is on, so it must be 2x: when the
+  main display is 1x, the script creates a temporary 2x virtual display
+  (`scripts/capture-display.m`) and the demos draw there. `--render-ui` stays the offscreen layout/regression harness — it has no
   shadow and no rounded corners, so it is not a source of published images.
 
 ## Code, comments, and documentation

@@ -466,11 +466,34 @@ enum DebugHarness {
     /// itself as ready to capture.
     private static let captureSettleDelay: TimeInterval = 1.2
 
+    /// The display with a higher backing scale than the main one, when there is one:
+    /// on a Mac whose only monitor is 1x, `scripts/capture-screenshots.sh` adds a
+    /// temporary 2x display (`scripts/capture-display.m`) and the demo draws there, so
+    /// the capture is taken at Retina resolution with the window's real material and
+    /// shadow. Without such a display the window stays where it is.
+    private static var captureScreen: NSScreen? {
+        let mainScale = NSScreen.main?.backingScaleFactor ?? 1
+        return NSScreen.screens
+            .filter { $0.backingScaleFactor > mainScale }
+            .max { $0.backingScaleFactor < $1.backingScaleFactor }
+    }
+
+    /// Centers the window on the capture screen, if there is one.
+    private static func moveToCaptureScreen(_ window: NSWindow) {
+        guard let screen = captureScreen else { return }
+        let visible = screen.visibleFrame
+        window.setFrameOrigin(
+            NSPoint(
+                x: (visible.midX - window.frame.width / 2).rounded(),
+                y: (visible.midY - window.frame.height / 2).rounded()))
+    }
+
     /// Prints the handshake `scripts/lib/capture.sh` waits for (skill-deck's canonical
     /// capture protocol): the backing scale, which must be Retina, the window number for
     /// `screencapture -l`, optionally whether the window is key, then `READY`. The process
     /// stays alive for the capture, so stdout is flushed rather than left in its buffer.
     private static func announceCaptureReady(_ window: NSWindow, reportsKey: Bool) {
+        moveToCaptureScreen(window)
         writeLine("SCALE \(window.backingScaleFactor)")
         writeLine("WINDOW_ID \(window.windowNumber)")
         if reportsKey { writeLine("KEY \(window.isKeyWindow)") }
@@ -524,6 +547,7 @@ enum DebugHarness {
         // is already beside every image, and the pane is named by its selected toolbar item.
         window.titleVisibility = .hidden
         window.center()
+        moveToCaptureScreen(window)
         app.activate()
         window.makeKeyAndOrderFront(nil)
         // A capture taken while the window is not key documents a greyed-out

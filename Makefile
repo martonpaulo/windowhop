@@ -71,7 +71,7 @@ icon: ## Regenerate the app icon, favicons, installer icon and DMG background
 		-out Support/WindowHopInstallerBackground.tiff
 
 # capture-screenshots.sh drives the debug binary, so it builds that first.
-screenshots: ## Capture site/screenshots/ (Retina display and Screen Recording permission)
+screenshots: ## Capture site/screenshots/ at 2x (Screen Recording permission; a 1x Mac gets a temporary 2x display)
 	$(MAKE) build CONFIGURATION=debug
 	scripts/capture-screenshots.sh
 
