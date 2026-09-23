@@ -131,6 +131,7 @@ def chrome(site):
     """The site's header and footer, taken from the 404 page so they have one source."""
     text = (site / "404.html").read_text()
     header = re.search(r'  <header class="site-header".*?</header>\n', text, re.S).group(0)
+    header = header.replace('<a href="/release-notes/">', '<a href="/release-notes/" aria-current="page">')
     footer = re.search(r'  <footer class="site-footer">.*?</footer>\n', text, re.S).group(0)
     return header, footer
 

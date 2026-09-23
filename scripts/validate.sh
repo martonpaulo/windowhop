@@ -306,12 +306,13 @@ windowhop_site_checks() (
       echo "website is missing the empty, hidden download-count element" >&2
       exit 1
     }
-    notes=$(grep -hoE 'href="[^"]*/releases/tag/[^"]*"' "${pages[@]}" || true)
+    # The release-notes button opens the site's own notes page for this version
+    # (#128), which the deploy renders from CHANGELOG.md.
+    notes=$(grep -hoE 'href="/release-notes/[0-9][^"]*"' "${pages[@]}" || true)
     test -n "$notes" || { echo "website has no release-notes link" >&2; exit 1; }
     while IFS= read -r href; do
-      case "$href" in *"/tag/v$VERSION\"") ;; *)
-        echo "website release-notes link does not match version $VERSION: $href" >&2; exit 1 ;;
-      esac
+      test "$href" = "href=\"/release-notes/$VERSION/\"" || {
+        echo "website release-notes link does not match version $VERSION: $href" >&2; exit 1; }
     done <<< "$notes"
     while IFS= read -r span; do
       test "$span" = "<span data-site-version>$VERSION</span>" || {
@@ -478,6 +479,8 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         reference=${reference%%#*}
         reference=${reference%%\?*}
         case "$reference" in
+          # rendered at deploy time from CHANGELOG.md (scripts/render-release-notes.py)
+          /release-notes/*) continue ;;
           http:*|https:*|'') continue ;;
           /*) file="site$reference" ;;
           *) file="$(dirname "$page")/$reference" ;;
