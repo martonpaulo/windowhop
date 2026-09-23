@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **About names the developer**: Settings › About now says "Made by Marton Paulo". The
   AltTab credit stays as text, and the link to the AltTab repository is gone, because it
   looked like WindowHop's own repository.
+- **The style choice is easier to read**: in Settings › Switcher, App Icons shows three
+  small app icons and Window Previews shows three small windows with an app badge, each
+  inside a small switcher panel.
 
 ### Fixed
 

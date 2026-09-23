@@ -50,15 +50,32 @@ enum DesignTokens {
     static let settingsStyleOptionSpacing: CGFloat = 24
     static let settingsStyleLabelSpacing: CGFloat = 6
     static let settingsStylePickerPadding: CGFloat = 6
-    static let settingsStyleThumbnailWidth: CGFloat = 120
-    static let settingsStyleThumbnailHeight: CGFloat = 64
+    static let settingsStyleThumbnailWidth: CGFloat = 140
+    static let settingsStyleThumbnailHeight: CGFloat = 80
     static let settingsStyleThumbnailCornerRadius: CGFloat = 8
-    static let settingsStyleThumbnailItemSpacing: CGFloat = 5
-    static let settingsStyleThumbnailIconSize: CGFloat = 22
-    static let settingsStyleThumbnailIconCornerRadius: CGFloat = 5
-    static let settingsStyleThumbnailPreviewWidth: CGFloat = 30
-    static let settingsStyleThumbnailPreviewHeight: CGFloat = 22
-    static let settingsStyleThumbnailPreviewCornerRadius: CGFloat = 3
+    static let settingsStyleThumbnailItemSpacing: CGFloat = 6
+    /// The selected miniature tile's plate, as in the real panel.
+    static let settingsStyleThumbnailSelectionPadding: CGFloat = 3
+    static let settingsStyleThumbnailSelectionCornerRadius: CGFloat = 8
+    /// App Icons miniature: three coloured icons with a white glyph.
+    static let settingsStyleThumbnailIconSize: CGFloat = 28
+    static let settingsStyleThumbnailIconCornerRadius: CGFloat = 7
+    static let settingsStyleThumbnailGlyphSize: CGFloat = 13
+    /// Window Previews miniature: three small windows (title bar with the
+    /// window buttons, lines of content) with an app badge in the corner.
+    static let settingsStyleThumbnailPreviewWidth: CGFloat = 32
+    static let settingsStyleThumbnailPreviewHeight: CGFloat = 24
+    static let settingsStyleThumbnailPreviewCornerRadius: CGFloat = 4
+    static let settingsStyleThumbnailTitleBarHeight: CGFloat = 7
+    static let settingsStyleThumbnailWindowButtonSize: CGFloat = 3
+    static let settingsStyleThumbnailWindowButtonSpacing: CGFloat = 2
+    static let settingsStyleThumbnailContentInset: CGFloat = 4
+    static let settingsStyleThumbnailLineHeight: CGFloat = 2
+    static let settingsStyleThumbnailLineSpacing: CGFloat = 3
+    static let settingsStyleThumbnailLineFractions: [CGFloat] = [0.8, 0.55, 0.7]
+    static let settingsStyleThumbnailBadgeSize: CGFloat = 12
+    static let settingsStyleThumbnailBadgeCornerRadius: CGFloat = 3
+    static let settingsStyleThumbnailBadgeOverlap: CGFloat = 3
     static let settingsStyleSelectionInset: CGFloat = 3
     static let settingsStyleSelectionWidth: CGFloat = 2.5
 

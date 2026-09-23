@@ -758,45 +758,6 @@ private struct AppearanceModePicker: View {
     }
 }
 
-/// A miniature switcher: three app icons, or three window snapshots.
-private struct StyleThumbnail: View {
-    let mode: AppearanceMode
-
-    var body: some View {
-        HStack(spacing: DesignTokens.settingsStyleThumbnailItemSpacing) {
-            ForEach(0..<3, id: \.self) { _ in
-                switch mode {
-                case .appIcons:
-                    RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailIconCornerRadius)
-                        .fill(Color.accentColor.opacity(0.75))
-                        .frame(
-                            width: DesignTokens.settingsStyleThumbnailIconSize,
-                            height: DesignTokens.settingsStyleThumbnailIconSize)
-                case .windowPreviews:
-                    RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailPreviewCornerRadius)
-                        .fill(.tertiary)
-                        .frame(
-                            width: DesignTokens.settingsStyleThumbnailPreviewWidth,
-                            height: DesignTokens.settingsStyleThumbnailPreviewHeight)
-                }
-            }
-        }
-        .frame(
-            width: DesignTokens.settingsStyleThumbnailWidth,
-            height: DesignTokens.settingsStyleThumbnailHeight
-        )
-        .background(
-            RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailCornerRadius)
-                .fill(.background.secondary)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DesignTokens.settingsStyleThumbnailCornerRadius)
-                .strokeBorder(.separator)
-        )
-        .accessibilityHidden(true)
-    }
-}
-
 // MARK: - About
 
 struct AboutPane: View {
