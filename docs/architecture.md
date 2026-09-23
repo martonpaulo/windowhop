@@ -324,6 +324,11 @@ After the configured dwell, `SwitcherController` asks the provider for a current
 of the selected id and presents it in `ExpandedPreviewView`. Both the dwell request and
 asynchronous result carry session/target generations; navigating or closing invalidates
 them. This path is snapshot-only and has no reference to `WindowActions.activate`.
+The expanded snapshot is session-only: it never enters the preview cache and never
+replaces the tile's image. The provider keeps just the latest one, until the session ends
+or its window disappears, so returning to that window shows it sharp at once. Keeping one
+per visited window used to grow the cache by 132 MB of raster after dwelling on 60
+windows ([#87](https://github.com/martonpaulo/windowhop/issues/87)).
 
 Matching AX windows to `SCWindow`s is a **unique assignment** (pid + frame first,
 title as tiebreak, then exact title), so two windows of the same app can never

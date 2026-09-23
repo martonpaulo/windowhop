@@ -98,6 +98,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Alerts and open panels stay in the switcher**: an app's alert or Open/Save panel shown
   in its own window, such as an update prompt, is no longer mistaken for Picture in
   Picture and hidden.
+- **Window Previews use far less memory after dwelling**: each expanded preview used to
+  stay in memory, about nine times the size of a card's snapshot, for every window you
+  had dwelled on, until the window closed. Now only the latest one is kept, and only
+  while the switcher is open; cards keep their own snapshot as before.
 - **Launch at login shows what macOS actually holds**: the toggle in Settings → General
   now reads the real login-item status instead of remembering what you last clicked.
   When macOS waits for your approval, it says so and offers Open Login Items Settings….

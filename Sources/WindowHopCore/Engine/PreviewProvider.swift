@@ -38,6 +38,11 @@ public final class PreviewProvider {
     /// Decides what late, out-of-order capture results may do (pure, tested).
     private var ledger = PreviewLedger<AnyHashable>()
     private var cache: [AnyHashable: NSImage] = [:]
+    /// The one dwell-sized snapshot of this session, for its latest target. It
+    /// never enters `cache`: an expanded image is roughly nine times a tile's
+    /// raster, and keeping one per visited window grew the app-lifetime cache
+    /// by 132 MB after dwelling on 60 windows (measured in #87).
+    private var expandedSnapshot: (id: AnyHashable, image: NSImage)?
     private var activeSessionGeneration: Int?
     private var expandedGeneration = 0
 
@@ -57,8 +62,16 @@ public final class PreviewProvider {
         cache[id]
     }
 
+    /// The sharpest snapshot available right now for the dwell presentation:
+    /// this session's expanded capture of the target, else its tile snapshot.
+    public func expandedPreview(for id: AnyHashable) -> NSImage? {
+        if let expandedSnapshot, expandedSnapshot.id == id { return expandedSnapshot.image }
+        return cache[id]
+    }
+
     public func evict(_ id: AnyHashable) {
         cache[id] = nil
+        if expandedSnapshot?.id == id { expandedSnapshot = nil }
         ledger.evict(id)
     }
 
@@ -76,6 +89,7 @@ public final class PreviewProvider {
     /// Used when the user switches back to App Icons: nothing to retain.
     public func evictAll() {
         cache.removeAll()
+        expandedSnapshot = nil
         ledger.evictAll()
     }
 
@@ -125,6 +139,7 @@ public final class PreviewProvider {
     public func endSession() {
         activeSessionGeneration = nil
         cancelExpandedPreview()
+        expandedSnapshot = nil
         ledger.endSession()
     }
 
@@ -153,6 +168,15 @@ public final class PreviewProvider {
 
     public func cancelExpandedPreview() {
         expandedGeneration += 1
+    }
+
+    /// Hands a finished dwell capture to the presentation. The tile keeps the
+    /// tile-sized image of its session capture; the expanded image replaces the
+    /// previous one and lives at most until the session ends, so returning to
+    /// the last expanded window is still sharp at once.
+    func deliverExpandedSnapshot(_ image: NSImage, for id: AnyHashable) {
+        expandedSnapshot = (id, image)
+        onExpandedPreview?(id, image)
     }
 
     // MARK: - Capture
@@ -232,9 +256,7 @@ public final class PreviewProvider {
             },
             capture: { await self.captureImage($0, pixelTarget: pixelTarget) },
             deliver: { image in
-                self.cache[id] = image
-                self.onPreview?(id, image)
-                self.onExpandedPreview?(id, image)
+                self.deliverExpandedSnapshot(image, for: id)
             })
     }
 

@@ -538,7 +538,7 @@ public final class SwitcherController {
                 request, availableWindowIDs: Set(items.map(\.id))),
               let item = items.first(where: { $0.id == id }),
               item.window != nil else { return }
-        if let image = PreviewProvider.shared.cachedPreview(for: id) {
+        if let image = PreviewProvider.shared.expandedPreview(for: id) {
             panels.showExpandedPreview(id: id, image: image)
         }
         PreviewProvider.shared.requestExpandedPreview(
