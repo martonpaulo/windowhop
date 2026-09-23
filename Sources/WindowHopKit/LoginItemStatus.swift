@@ -31,15 +31,15 @@ public enum LoginItemStatus: Equatable, CaseIterable, Sendable {
         case .enabled, .disabled:
             return nil
         case .requiresApproval:
-            return "WindowHop is waiting for your approval in System Settings › General › Login Items."
+            return String(localized: "WindowHop is waiting for your approval in System Settings › General › Login Items.")
         case .unavailable:
-            return "Launch at login is available when WindowHop runs from the Applications folder."
+            return String(localized: "Launch at login is available when WindowHop runs from the Applications folder.")
         }
     }
 
     /// Shown when a requested change did not take effect.
     public static let changeFailedExplanation =
-        "Launch at login could not be configured. Run WindowHop from the Applications folder and try again."
+        String(localized: "Launch at login could not be configured. Run WindowHop from the Applications folder and try again.")
 }
 
 /// The outcome of a requested launch-at-login change: the status read back

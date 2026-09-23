@@ -27,22 +27,22 @@ public enum ShortcutConflicts {
     /// The macOS standard app commands (Apple HIG, "Keyboard shortcuts":
     /// https://developer.apple.com/design/human-interface-guidelines/keyboard).
     public static let standardCommands: [StandardCommand] = [
-        StandardCommand("Quit", "q"),
-        StandardCommand("Hide", "h"),
-        StandardCommand("Settings", ","),
-        StandardCommand("Close", "w"),
-        StandardCommand("Minimize", "m"),
-        StandardCommand("New", "n"),
-        StandardCommand("Open", "o"),
-        StandardCommand("Save", "s"),
-        StandardCommand("Print", "p"),
-        StandardCommand("Find", "f"),
-        StandardCommand("Undo", "z"),
-        StandardCommand("Redo", "z", [.maskShift, .maskCommand]),
-        StandardCommand("Cut", "x"),
-        StandardCommand("Copy", "c"),
-        StandardCommand("Paste", "v"),
-        StandardCommand("Select All", "a"),
+        StandardCommand(String(localized: "Quit"), "q"),
+        StandardCommand(String(localized: "Hide"), "h"),
+        StandardCommand(String(localized: "Settings"), ","),
+        StandardCommand(String(localized: "Close"), "w"),
+        StandardCommand(String(localized: "Minimize"), "m"),
+        StandardCommand(String(localized: "New"), "n"),
+        StandardCommand(String(localized: "Open"), "o"),
+        StandardCommand(String(localized: "Save"), "s"),
+        StandardCommand(String(localized: "Print"), "p"),
+        StandardCommand(String(localized: "Find"), "f"),
+        StandardCommand(String(localized: "Undo"), "z"),
+        StandardCommand(String(localized: "Redo"), "z", [.maskShift, .maskCommand]),
+        StandardCommand(String(localized: "Cut"), "x"),
+        StandardCommand(String(localized: "Copy"), "c"),
+        StandardCommand(String(localized: "Paste"), "v"),
+        StandardCommand(String(localized: "Select All"), "a"),
     ]
 
     /// Chords macOS hard-sets and users cannot turn off: Force Quit Applications
@@ -117,8 +117,11 @@ extension PersistentShortcut {
 
     /// Copy for the confirmation shown before taking over a macOS shortcut.
     public var systemShortcutConfirmation: (title: String, message: String) {
-        ("\(displayString) is also a macOS shortcut",
-         "While WindowHop is running, it takes over \(displayString) and macOS won't respond to it. "
-            + "You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.")
+        (String(localized: "\(displayString) is also a macOS shortcut",
+                comment: "The placeholder is a shortcut such as ⌘Space."),
+         String(localized: """
+            While WindowHop is running, it takes over \(displayString) and macOS won't respond to it. \
+            You can change the macOS shortcut in System Settings → Keyboard → Keyboard Shortcuts.
+            """, comment: "The placeholder is a shortcut such as ⌘Space."))
     }
 }

@@ -29,8 +29,8 @@ public enum StatusItemState: Equatable, CaseIterable, Sendable {
     public var accessibilityLabel: String {
         switch self {
         case .active: return "WindowHop"
-        case .paused: return "WindowHop, paused"
-        case .accessibilityRequired: return "WindowHop, Accessibility access needed"
+        case .paused: return String(localized: "WindowHop, paused")
+        case .accessibilityRequired: return String(localized: "WindowHop, Accessibility access needed")
         }
     }
 
@@ -38,8 +38,8 @@ public enum StatusItemState: Equatable, CaseIterable, Sendable {
     public var statusText: String? {
         switch self {
         case .active: return nil
-        case .paused: return "Paused"
-        case .accessibilityRequired: return "Accessibility access needed"
+        case .paused: return String(localized: "Paused")
+        case .accessibilityRequired: return String(localized: "Accessibility access needed")
         }
     }
 

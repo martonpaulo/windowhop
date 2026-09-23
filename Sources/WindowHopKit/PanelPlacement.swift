@@ -21,9 +21,9 @@ public enum SwitcherDisplayPlacement: String, CaseIterable, Identifiable, Sendab
 
     public var displayName: String {
         switch self {
-        case .allDisplays: return "All displays"
-        case .pointerDisplay: return "The display with the pointer"
-        case .specificDisplay: return "A specific display"
+        case .allDisplays: return String(localized: "All displays")
+        case .pointerDisplay: return String(localized: "The display with the pointer")
+        case .specificDisplay: return String(localized: "A specific display")
         }
     }
 }

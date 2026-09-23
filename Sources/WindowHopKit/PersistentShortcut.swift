@@ -53,14 +53,16 @@ public struct PersistentShortcut: Equatable, Sendable {
                 let glyphs = ValidationError.qualifyingModifiers
                     .map(ShortcutFormatter.modifierSymbols)
                     .joined(separator: ", ")
-                return "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop."
+                return String(localized: "Add at least one modifier key (\(glyphs)) so normal typing can't open WindowHop.")
             case .conflictsWithSwitcherShortcut:
-                return "This is already the switcher shortcut. Choose a different combination."
+                return String(localized: "This is already the switcher shortcut. Choose a different combination.")
             case let .reservedByMacOS(chord):
-                return "\(chord) is reserved by macOS. Choose a different combination."
+                return String(localized: "\(chord) is reserved by macOS. Choose a different combination.")
             case let .standardApplicationCommand(chord, command):
-                return "\(chord) is the \(command) command in apps. "
-                    + "Choose a combination that isn't a standard app command."
+                return String(localized: """
+                    \(chord) is the \(command) command in apps. \
+                    Choose a combination that isn't a standard app command.
+                    """, comment: "The first placeholder is a shortcut such as ⌘Q; the second is a command name such as Quit.")
             }
         }
     }
@@ -115,7 +117,7 @@ public enum KeyCodeNames {
     ]
 
     private static let specialNames: [Int64: String] = [
-        36: "↩", 48: "⇥", 49: "Space", 51: "⌫", 53: "⎋", 117: "⌦",
+        36: "↩", 48: "⇥", 49: String(localized: "Space"), 51: "⌫", 53: "⎋", 117: "⌦",
         123: "←", 124: "→", 125: "↓", 126: "↑",
         115: "↖", 119: "↘", 116: "⇞", 121: "⇟",
         122: "F1", 120: "F2", 99: "F3", 118: "F4", 96: "F5", 97: "F6", 98: "F7",
@@ -123,7 +125,10 @@ public enum KeyCodeNames {
     ]
 
     public static func name(for keyCode: Int64) -> String {
-        specialNames[keyCode] ?? printableNames[keyCode] ?? "Key \(keyCode)"
+        // String(keyCode): an integer interpolated into String(localized:) is formatted
+        // for the user's locale ("Key 70 000"); a key code is an identifier, not a quantity
+        specialNames[keyCode] ?? printableNames[keyCode]
+            ?? String(localized: "Key \(String(keyCode))", comment: "The placeholder is a virtual key code.")
     }
 
     /// The US ANSI character of a printable key; nil for any other key.

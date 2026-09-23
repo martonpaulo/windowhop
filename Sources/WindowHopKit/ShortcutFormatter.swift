@@ -99,10 +99,10 @@ public enum ShortcutFormatter {
     /// Spoken modifier names in the same canonical order as `modifierSymbols`.
     public static func spokenModifiers(_ modifiers: CGEventFlags) -> String {
         var parts = [String]()
-        if modifiers.contains(.maskControl) { parts.append("Control") }
-        if modifiers.contains(.maskAlternate) { parts.append("Option") }
-        if modifiers.contains(.maskShift) { parts.append("Shift") }
-        if modifiers.contains(.maskCommand) { parts.append("Command") }
+        if modifiers.contains(.maskControl) { parts.append(String(localized: "Control")) }
+        if modifiers.contains(.maskAlternate) { parts.append(String(localized: "Option")) }
+        if modifiers.contains(.maskShift) { parts.append(String(localized: "Shift")) }
+        if modifiers.contains(.maskCommand) { parts.append(String(localized: "Command")) }
         return parts.joined(separator: " ")
     }
 
@@ -113,16 +113,16 @@ public enum ShortcutFormatter {
     }
 
     private static let spokenKeyNames: [Int64: String] = [
-        KeyCode.tab: "Tab",
-        KeyCode.returnKey: "Return",
-        KeyCode.keypadEnter: "Enter",
-        KeyCode.escape: "Escape",
-        KeyCode.space: "Space",
-        KeyCode.delete: "Delete",
-        KeyCode.forwardDelete: "Forward Delete",
-        KeyCode.leftArrow: "Left Arrow",
-        KeyCode.rightArrow: "Right Arrow",
-        KeyCode.downArrow: "Down Arrow",
-        KeyCode.upArrow: "Up Arrow",
+        KeyCode.tab: String(localized: "Tab"),
+        KeyCode.returnKey: String(localized: "Return"),
+        KeyCode.keypadEnter: String(localized: "Enter"),
+        KeyCode.escape: String(localized: "Escape"),
+        KeyCode.space: String(localized: "Space"),
+        KeyCode.delete: String(localized: "Delete"),
+        KeyCode.forwardDelete: String(localized: "Forward Delete"),
+        KeyCode.leftArrow: String(localized: "Left Arrow"),
+        KeyCode.rightArrow: String(localized: "Right Arrow"),
+        KeyCode.downArrow: String(localized: "Down Arrow"),
+        KeyCode.upArrow: String(localized: "Up Arrow"),
     ]
 }

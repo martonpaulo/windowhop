@@ -12,8 +12,8 @@ public enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .appIcons: return "App Icons"
-        case .windowPreviews: return "Window Previews"
+        case .appIcons: return String(localized: "App Icons")
+        case .windowPreviews: return String(localized: "Window Previews")
         }
     }
 
@@ -36,11 +36,11 @@ public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .off: return "Off"
-        case .oneSecond: return "1 second"
-        case .twoSeconds: return "2 seconds"
-        case .threeSeconds: return "3 seconds"
-        case .fiveSeconds: return "5 seconds"
+        case .off: return String(localized: "Off")
+        case .oneSecond: return String(localized: "1 second")
+        case .twoSeconds: return String(localized: "2 seconds")
+        case .threeSeconds: return String(localized: "3 seconds")
+        case .fiveSeconds: return String(localized: "5 seconds")
         }
     }
 
@@ -69,11 +69,11 @@ public enum SwitcherRevealDelay: String, CaseIterable, Identifiable, Sendable {
 
     public var displayName: String {
         switch self {
-        case .off: return "Off"
-        case .milliseconds100: return "100 ms"
-        case .milliseconds200: return "200 ms"
-        case .milliseconds300: return "300 ms"
-        case .milliseconds500: return "500 ms"
+        case .off: return String(localized: "Off")
+        case .milliseconds100: return String(localized: "100 ms")
+        case .milliseconds200: return String(localized: "200 ms")
+        case .milliseconds300: return String(localized: "300 ms")
+        case .milliseconds500: return String(localized: "500 ms")
         }
     }
 

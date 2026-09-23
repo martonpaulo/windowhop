@@ -45,42 +45,59 @@ public struct SwitchingGuide: Equatable, Sendable {
         let modifier = key(modifiers: spec.holdModifier)
         let tab = key(KeyCode.tab)
         let shift = key(modifiers: .maskShift)
-        return Phrase(
-            display: "Hold \(modifier.display) and press \(tab.display) to cycle through windows "
-                + "(add \(shift.display) to go back). Release \(modifier.display) to switch.",
-            spoken: "Hold \(modifier.spoken) and press \(tab.spoken) to cycle through windows "
-                + "(add \(shift.spoken) to go back). Release \(modifier.spoken) to switch.")
+        func sentence(_ modifier: String, _ tab: String, _ shift: String) -> String {
+            String(localized: """
+                Hold \(modifier) and press \(tab) to cycle through windows \
+                (add \(shift) to go back). Release \(modifier) to switch.
+                """, comment: "Placeholders are key names or symbols: the held modifier, Tab, Shift.")
+        }
+        return Phrase(display: sentence(modifier.display, tab.display, shift.display),
+                      spoken: sentence(modifier.spoken, tab.spoken, shift.spoken))
     }
 
     private static func persistentSession(_ shortcut: PersistentShortcut?) -> Phrase {
         guard let shortcut else {
-            let text = "Open WindowHop has no shortcut. Record one in Shortcuts to keep the "
-                + "switcher open without holding a key."
+            let text = String(localized: """
+                Open WindowHop has no shortcut. Record one in Shortcuts to keep the \
+                switcher open without holding a key.
+                """)
             return Phrase(display: text, spoken: text)
         }
         let tab = key(KeyCode.tab)
         let returnKey = key(KeyCode.returnKey)
         let space = key(KeyCode.space)
         let escape = key(KeyCode.escape)
+        func sentence(_ chord: String, _ tab: String, _ returnKey: String, _ space: String,
+                      _ escape: String) -> String {
+            String(localized: """
+                Press \(chord) to open WindowHop without holding a key. \
+                \(tab) or the arrow keys move, \(returnKey) or \(space) switches, \(escape) cancels.
+                """, comment: "Placeholders are key names or symbols: the Open WindowHop shortcut, Tab, Return, Space, Escape.")
+        }
         return Phrase(
-            display: "Press \(shortcut.displayString) to open WindowHop without holding a key. "
-                + "\(tab.display) or the arrow keys move, \(returnKey.display) or "
-                + "\(space.display) switches, \(escape.display) cancels.",
-            spoken: "Press \(shortcut.spokenString) to open WindowHop without holding a key. "
-                + "\(tab.spoken) or the arrow keys move, \(returnKey.spoken) or "
-                + "\(space.spoken) switches, \(escape.spoken) cancels.")
+            display: sentence(shortcut.displayString, tab.display, returnKey.display, space.display,
+                              escape.display),
+            spoken: sentence(shortcut.spokenString, tab.spoken, returnKey.spoken, space.spoken,
+                             escape.spoken))
     }
 
     private static let closeWindow: Phrase = {
         let delete = key(KeyCode.delete)
-        return Phrase(
-            display: "In either session, \(delete.display) closes the selected window after you confirm.",
-            spoken: "In either session, \(delete.spoken) closes the selected window after you confirm.")
+        func sentence(_ delete: String) -> String {
+            String(localized: "In either session, \(delete) closes the selected window after you confirm.",
+                   comment: "The placeholder is the Delete key's name or symbol.")
+        }
+        return Phrase(display: sentence(delete.display), spoken: sentence(delete.spoken))
     }()
 
-    private static let disabled = Phrase(
-        display: "WindowHop is off. \(nativeSwitcherChord.display) opens the native app switcher.",
-        spoken: "WindowHop is off. \(nativeSwitcherChord.spoken) opens the native app switcher.")
+    private static let disabled: Phrase = {
+        func sentence(_ chord: String) -> String {
+            String(localized: "WindowHop is off. \(chord) opens the native app switcher.",
+                   comment: "The placeholder is the native app switcher shortcut, ⌘Tab.")
+        }
+        return Phrase(display: sentence(nativeSwitcherChord.display),
+                      spoken: sentence(nativeSwitcherChord.spoken))
+    }()
 
     private static func key(_ keyCode: Int64) -> Phrase {
         Phrase(display: ShortcutFormatter.keySymbol(for: keyCode),

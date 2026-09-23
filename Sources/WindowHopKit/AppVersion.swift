@@ -41,14 +41,14 @@ public struct AppVersion: Equatable, Sendable {
     /// A build without a version is a development build, said honestly rather
     /// than with an invented number.
     public var displayVersion: String {
-        guard let version else { return "Development build" }
+        guard let version else { return String(localized: "Development build") }
         guard let build, build != version else { return version }
         return "\(version) (\(build))"
     }
 
     /// A standalone label: "Version 1.6.2 (10602)", or "Development build".
     public var versionLabel: String {
-        version == nil ? displayVersion : "Version \(displayVersion)"
+        version == nil ? displayVersion : String(localized: "Version \(displayVersion)")
     }
 
     /// The release date as a long localized date, e.g. "September 15, 2026".
