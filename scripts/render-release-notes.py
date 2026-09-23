@@ -59,39 +59,30 @@ def entries(changelog):
         yield current
 
 
-def body_html(lines, level):
-    """Renders one entry's sections: headings at `level`, bullet lists and paragraphs."""
-    out, items, paragraph = [], [], []
-
-    def flush_paragraph():
-        if paragraph:
-            out.append(f"<p>{inline(' '.join(paragraph))}</p>")
-            paragraph.clear()
-
-    def flush_items():
-        if items:
-            out.append("<ul>" + "".join(f"<li>{inline(i)}</li>" for i in items) + "</ul>")
-            items.clear()
-
+def groups(lines):
+    """[(type, [item markdown])] in changelog order: Added, Changed, Fixed…"""
+    out = []
     for line in lines:
         if line.startswith("### "):
-            flush_paragraph()
-            flush_items()
-            out.append(f"<h{level}>{inline(line[4:].strip())}</h{level}>")
-        elif line.startswith("- "):
-            flush_paragraph()
-            items.append(line[2:].strip())
-        elif line.startswith("  ") and items and line.strip():
-            items[-1] += " " + line.strip()
-        elif line.strip():
-            flush_items()
-            paragraph.append(line.strip())
-        else:
-            flush_paragraph()
-            flush_items()
-    flush_paragraph()
-    flush_items()
-    return "\n".join(out)
+            out.append((line[4:].strip(), []))
+        elif line.startswith("- ") and out:
+            out[-1][1].append(line[2:].strip())
+        elif line.startswith("  ") and out and out[-1][1] and line.strip():
+            out[-1][1][-1] += " " + line.strip()
+    return out
+
+
+def cards_html(lines):
+    """One site card per change type, in the site's grid (one, two or three wide)."""
+    found = groups(lines)
+    layout = {1: "stack", 2: "grid grid-2"}.get(len(found), "grid grid-3 stack-on-tablet")
+    cards = "\n".join(
+        f"""        <article class="card">
+          <h3>{html.escape(kind)}</h3>
+          <ul>{"".join(f"<li>{inline(item)}</li>" for item in items)}</ul>
+        </article>"""
+        for kind, items in found)
+    return f'      <div class="{layout}">\n{cards}\n      </div>'
 
 
 def headlines(lines):
@@ -147,10 +138,11 @@ def page(title, description, content, header="", footer="", body_class="notes-pa
   <meta name="description" content="{html.escape(description)}">
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="stylesheet" href="/styles/main.css">
+  <script>document.documentElement.classList.add("js");</script>
   <script src="/scripts/main.js" defer></script>
 </head>
 <body class="{body_class}">
-{header}  <main class="notes">
+{'  <a class="skip-link" href="#main">Skip to content</a>' + chr(10) if header else ''}{header}  <main id="main"{' class="notes"' if "is-compact" in body_class else ""}>
 {content}
   </main>
 {footer}</body>
@@ -158,21 +150,22 @@ def page(title, description, content, header="", footer="", body_class="notes-pa
 """
 
 
-ICON = "/assets/app-icon.png"
-
-
-def entry_html(version, date, lines, heading="h1", link=False):
+def version_section(version, date, lines, link):
+    """One release as a site section: the date as eyebrow, the version as heading."""
     title = f'<a href="/release-notes/{version}/">WindowHop {version}</a>' if link else f"WindowHop {version}"
-    return f"""    <article class="notes-entry">
-      <header class="notes-header">
-        <img src="{ICON}" width="56" height="56" alt="">
-        <div>
-          <{heading}>{title}</{heading}>
-          <p class="notes-date"><time datetime="{date}">{long_date(date)}</time></p>
-        </div>
-      </header>
-{body_html(lines, 3 if heading == "h2" else 2)}
-    </article>"""
+    return f"""    <section class="section" id="v{version}" aria-labelledby="title-{version}">
+      <p class="eyebrow"><time datetime="{date}">{long_date(date)}</time></p>
+      <h2 id="title-{version}">{title}</h2>
+{cards_html(lines)}
+    </section>"""
+
+
+def page_hero(eyebrow, title, lead):
+    return f"""    <section class="page-hero" aria-labelledby="notes-title">
+      <p class="eyebrow">{eyebrow}</p>
+      <h1 id="notes-title">{title}</h1>
+      <p class="hero-summary">{lead}</p>
+    </section>"""
 
 
 def main():
@@ -188,14 +181,15 @@ def main():
     for version, date, lines in released:
         target = site / "release-notes" / version
         target.mkdir(parents=True, exist_ok=True)
-        links = """    <p class="notes-footer">
-      <a class="text-link" href="/release-notes/">All release notes</a>
-    </p>"""
+
         (target / "index.html").write_text(page(
             f"WindowHop {version} release notes",
             f"What changed in WindowHop {version}, released on {long_date(date)}.",
-            entry_html(version, date, lines) + "\n" + links,
-            header, footer,
+            page_hero(
+                "Release notes", f"WindowHop {version}",
+                f'Released on {long_date(date)}. <a href="/release-notes/">All release notes</a>.')
+            + "\n" + version_section(version, date, lines, link=False),
+            header, footer, body_class="notes-page",
         ))
         (target / "update").mkdir(exist_ok=True)
         (target / "update" / "index.html").write_text(page(
@@ -205,11 +199,14 @@ def main():
             body_class="notes-page is-compact",
         ))
 
-    listing = "\n".join(entry_html(v, d, l, heading="h2", link=True) for v, d, l in released)
+    listing = "\n".join(version_section(v, d, l, link=True) for v, d, l in released)
     (site / "release-notes" / "index.html").write_text(page(
         "WindowHop release notes",
         "What changed in every WindowHop release.",
-        f'    <h1 class="notes-title">Release notes</h1>\n{listing}',
+        page_hero(
+            "Releases", "Release notes.",
+            "What changed in each version of WindowHop. The app shows the same notes, in short, when it updates.")
+        + "\n" + listing,
         header, footer,
     ))
     print(f"release notes: {len(released)} versions, newest {released[0][0]}")
