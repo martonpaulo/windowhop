@@ -22,7 +22,7 @@ import Foundation
 public enum PictureInPictureDetector {
     /// One on-screen window as the window server reports it (Quartz
     /// coordinates, same space AX frames use).
-    public struct OnScreenWindow {
+    public struct OnScreenWindow: Sendable {
         public let pid: pid_t
         public let frame: CGRect
         public let layer: Int

@@ -19,6 +19,7 @@ import ScreenCaptureKit
 ///   request receives a DISTINCT window — two windows of the same app can never
 ///   share a preview. When no unambiguous match exists the tile keeps its
 ///   placeholder and corner badge; a wrong preview is worse than none.
+@MainActor
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
@@ -47,12 +48,6 @@ public final class PreviewProvider {
         let frame: CGRect?
     }
 
-    /// Stable IDs are immutable value identities in WindowHop, but
-    /// `AnyHashable` predates Sendable conformance. This wrapper limits the
-    /// unchecked boundary to transport into the main-actor delivery closure.
-    private struct SendableIdentity: @unchecked Sendable {
-        let value: AnyHashable
-    }
 
     private init() {}
 
@@ -167,7 +162,7 @@ public final class PreviewProvider {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
             for request in requests {
-                await markUnavailable(request.id, generation: sessionGeneration)
+                markUnavailable(request.id, generation: sessionGeneration)
             }
             return
         }
@@ -180,27 +175,22 @@ public final class PreviewProvider {
         }
         let assignedIDs = Set(assigned.map { $0.0.id })
         for request in requests where !assignedIDs.contains(request.id) {
-            await markUnavailable(request.id, generation: sessionGeneration)
+            markUnavailable(request.id, generation: sessionGeneration)
         }
         for wave in stride(from: 0, to: assigned.count, by: 4).map({ Array(assigned[$0..<min($0 + 4, assigned.count)]) }) {
-            let staleBeforeWave = await MainActor.run {
-                self.ledger.generation != sessionGeneration
-            }
-            if staleBeforeWave { return }
-            await withTaskGroup(of: Void.self) { group in
-                for (request, scWindow) in wave {
-                    group.addTask { [weak self] in
-                        await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                               pixelTarget: pixelTarget)
-                    }
+            if ledger.generation != sessionGeneration { return }
+            // the tasks run on main between their awaits; the screenshots themselves
+            // proceed in parallel inside ScreenCaptureKit
+            let captures = wave.map { request, scWindow in
+                Task { [weak self] in
+                    await self?.captureOne(request, scWindow, generation: sessionGeneration,
+                                           pixelTarget: pixelTarget)
                 }
             }
+            for capture in captures { await capture.value }
             // once the session ended, finish the current wave into the cache but
             // start no further capture work
-            let staleAfterWave = await MainActor.run {
-                self.ledger.generation != sessionGeneration
-            }
-            if staleAfterWave { return }
+            if ledger.generation != sessionGeneration { return }
         }
     }
 
@@ -208,17 +198,15 @@ public final class PreviewProvider {
                             generation sessionGeneration: Int,
                             pixelTarget: CGSize) async {
         guard let image = await captureImage(scWindow, pixelTarget: pixelTarget) else {
-            await markUnavailable(request.id, generation: sessionGeneration)
+            markUnavailable(request.id, generation: sessionGeneration)
             return
         }
-        await MainActor.run {
-            // the ledger is the single authority on what a late result may do:
-            // nothing for vanished windows, cache-only for ended sessions
-            guard self.ledger.shouldStore(request.id) else { return }
-            self.cache[request.id] = image
-            if self.ledger.shouldDeliver(request.id, capturedIn: sessionGeneration) {
-                self.onPreview?(request.id, image)
-            }
+        // the ledger is the single authority on what a late result may do:
+        // nothing for vanished windows, cache-only for ended sessions
+        guard ledger.shouldStore(request.id) else { return }
+        cache[request.id] = image
+        if ledger.shouldDeliver(request.id, capturedIn: sessionGeneration) {
+            onPreview?(request.id, image)
         }
     }
 
@@ -226,7 +214,7 @@ public final class PreviewProvider {
                                  sessionGeneration: Int,
                                  requestGeneration: Int,
                                  pixelTarget: CGSize) async {
-        let identity = SendableIdentity(value: request.id)
+        let id = request.id
         await ExpandedCaptureFlow.run(
             lookup: { () -> SCWindow? in
                 guard let content = try? await SCShareableContent
@@ -238,21 +226,20 @@ public final class PreviewProvider {
                 return content.windows[candidateIndex]
             },
             isCurrent: {
-                self.isExpandedRequestCurrent(identity.value,
+                self.isExpandedRequestCurrent(id,
                                               sessionGeneration: sessionGeneration,
                                               requestGeneration: requestGeneration)
             },
             capture: { await self.captureImage($0, pixelTarget: pixelTarget) },
             deliver: { image in
-                self.cache[identity.value] = image
-                self.onPreview?(identity.value, image)
-                self.onExpandedPreview?(identity.value, image)
+                self.cache[id] = image
+                self.onPreview?(id, image)
+                self.onExpandedPreview?(id, image)
             })
     }
 
     /// True while this expanded request may still spend capture work and
     /// deliver: same session, same request, and a target the ledger still owns.
-    @MainActor
     private func isExpandedRequestCurrent(_ id: AnyHashable,
                                           sessionGeneration: Int,
                                           requestGeneration: Int) -> Bool {
@@ -297,19 +284,15 @@ public final class PreviewProvider {
                               title: item.title, frame: window.frame)
     }
 
-    private func markUnavailable(_ id: AnyHashable, generation sessionGeneration: Int) async {
-        let identity = SendableIdentity(value: id)
-        await MainActor.run {
-            let status = ScreenRecordingPermission.status
-            if !status.isAuthorized {
-                self.onPermissionRequired?(status)
-                return
-            }
-            guard self.cache[identity.value] == nil,
-                  self.ledger.shouldDeliver(identity.value,
-                                            capturedIn: sessionGeneration) else { return }
-            self.onPreviewUnavailable?(identity.value)
+    private func markUnavailable(_ id: AnyHashable, generation sessionGeneration: Int) {
+        let status = ScreenRecordingPermission.status
+        if !status.isAuthorized {
+            onPermissionRequired?(status)
+            return
         }
+        guard cache[id] == nil,
+              ledger.shouldDeliver(id, capturedIn: sessionGeneration) else { return }
+        onPreviewUnavailable?(id)
     }
 
     // MARK: - Diagnostics
@@ -323,7 +306,7 @@ public final class PreviewProvider {
         Task {
             guard let content = try? await SCShareableContent
                 .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
-                await MainActor.run { completion(["dump-previews: no shareable content"]) }
+                completion(["dump-previews: no shareable content"])
                 return
             }
             let candidates = Self.matchCandidates(in: content.windows)
@@ -336,7 +319,7 @@ public final class PreviewProvider {
                 let window = content.windows[index]
                 return "✓ \(request.title) [pid \(request.pid)] → \"\(window.title ?? "")\" \(window.frame)"
             }
-            await MainActor.run { completion(lines) }
+            completion(lines)
         }
     }
 

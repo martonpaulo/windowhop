@@ -9,10 +9,10 @@ import Foundation
 ///
 /// Intentionally non-configurable: it is explanatory copy derived from
 /// existing preferences, with no state of its own.
-public struct SwitchingGuide: Equatable {
+public struct SwitchingGuide: Equatable, Sendable {
     /// One phrase, visible and spoken. The spoken form names keys in words
     /// ("Command", "Escape") because VoiceOver reads glyphs inconsistently.
-    public struct Phrase: Equatable {
+    public struct Phrase: Equatable, Sendable {
         public let display: String
         public let spoken: String
     }

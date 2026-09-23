@@ -5,6 +5,7 @@ import XCTest
 /// The menu bar item's menu, exercised without creating an `NSStatusItem`:
 /// its contents must not depend on whether the updater started before or
 /// after the menu was built, and refreshing it must never duplicate items.
+@MainActor
 final class StatusItemMenuTests: XCTestCase {
     private var suiteName: String!
     private var defaults: UserDefaults!
@@ -14,8 +15,8 @@ final class StatusItemMenuTests: XCTestCase {
     private var canCheck = false
     private var controller: StatusItemController!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         suiteName = "windowhop-tests-\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         preferences = Preferences(defaults: defaults)
@@ -29,10 +30,10 @@ final class StatusItemMenuTests: XCTestCase {
             canCheckForUpdates: { [unowned self] in self.canCheck })
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         controller = nil
         defaults.removePersistentDomain(forName: suiteName)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func updateItem(in menu: NSMenu) -> NSMenuItem? {

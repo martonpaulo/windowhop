@@ -5,13 +5,14 @@ import XCTest
 /// A removed window's stable id must never outlive it in the preview cache.
 /// Every removal path in the store goes through one eviction handoff; these
 /// drive the real entry points and observe the provider's cache.
+@MainActor
 final class PreviewEvictionTests: XCTestCase {
     private var store: WindowStore!
     private var window: NSWindow!
     private var seeded: [AnyHashable] = []
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         store = WindowStore()
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
@@ -19,13 +20,13 @@ final class PreviewEvictionTests: XCTestCase {
         window.isReleasedWhenClosed = false
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         // the provider is a singleton: leave no test ids behind
         seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
         window = nil
         store = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     /// Seeds the cache for every current entry, as a finished capture would.
@@ -111,21 +112,22 @@ final class PreviewEvictionTests: XCTestCase {
 /// the provider cache is the only warm owner (#54). Each image is created in
 /// an autorelease pool and observed through a weak reference, so these fail
 /// if any hidden, collapsed, or ended view still retains it.
+@MainActor
 final class PreviewViewReleaseTests: XCTestCase {
     private var savedAppearanceMode: AppearanceMode!
     private var seeded: [AnyHashable] = []
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         savedAppearanceMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
         Preferences.shared.appearanceMode = savedAppearanceMode
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func item(_ id: String) -> SwitcherItem {

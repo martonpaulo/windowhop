@@ -12,15 +12,15 @@ final class SettingsPaneSelectionTests: XCTestCase {
     private var savedSelection: Any?
     private var windows: [NSWindow] = []
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         _ = NSApplication.shared
         autosaveName = "WindowHopSettingsPaneTest-\(UUID().uuidString)"
         savedSelection = UserDefaults.standard.object(forKey: Self.selectedPaneKey)
         UserDefaults.standard.set(SettingsPane.general.rawValue, forKey: Self.selectedPaneKey)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         for window in windows {
             window.setFrameAutosaveName("")
             window.close()
@@ -28,7 +28,7 @@ final class SettingsPaneSelectionTests: XCTestCase {
         windows = []
         UserDefaults.standard.removeObject(forKey: "NSWindow Frame \(autosaveName!)")
         UserDefaults.standard.set(savedSelection, forKey: Self.selectedPaneKey)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func prepare(_ controller: SettingsWindowController,

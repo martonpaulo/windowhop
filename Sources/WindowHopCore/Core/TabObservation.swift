@@ -16,9 +16,11 @@ public enum AttributeRead<Value> {
     }
 }
 
+extension AttributeRead: Sendable where Value: Sendable {}
+
 /// What one read of a window's tab bar established (see TabGroupResolver). Only a
 /// complete, successful read may change group membership.
-public enum TabObservation: Equatable {
+public enum TabObservation: Equatable, Sendable {
     /// Some read failed: nothing is known, so nothing may change.
     case unknown
     /// The window's children were read and show no tab bar with 2 or more tabs.
@@ -27,7 +29,7 @@ public enum TabObservation: Equatable {
     case group([String])
 
     /// One tab-bar child as read from AX.
-    public struct TabButtonFacts {
+    public struct TabButtonFacts: Sendable {
         public let subrole: AttributeRead<String>
         public let title: AttributeRead<String>
 
@@ -38,7 +40,7 @@ public enum TabObservation: Equatable {
     }
 
     /// One child of the window as read from AX; `tabs` matters only for AXTabGroup.
-    public struct ChildFacts {
+    public struct ChildFacts: Sendable {
         public let role: AttributeRead<String>
         public let tabs: AttributeRead<[TabButtonFacts]>
 

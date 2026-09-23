@@ -11,6 +11,7 @@ import AppKit
 /// `refresh(_:)` — on `apply()` (every settings write and every Accessibility
 /// grant change) and each time the menu opens — so its contents never depend
 /// on whether the updater started before or after the item was created.
+@MainActor
 public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     public static let shared = StatusItemController(
         preferences: .shared,

@@ -12,7 +12,7 @@ import Foundation
 /// exists to answer. The keyboard-focus display (`NSScreen.main`) keeps its own
 /// separate role in `WindowInclusionPolicy.includeOtherDisplays`, which decides
 /// which *windows* are listed and is unaffected by this setting.
-public enum SwitcherDisplayPlacement: String, CaseIterable, Identifiable {
+public enum SwitcherDisplayPlacement: String, CaseIterable, Identifiable, Sendable {
     case allDisplays
     case pointerDisplay
     case specificDisplay
@@ -32,7 +32,7 @@ public enum SwitcherDisplayPlacement: String, CaseIterable, Identifiable {
 ///
 /// Keeping this a value type is what lets `PanelDisplayResolver` stay pure and
 /// unit-tested with no window server, no AppKit, and no connected hardware.
-public struct DisplayDescriptor: Equatable, Identifiable {
+public struct DisplayDescriptor: Equatable, Identifiable, Sendable {
     /// Stable across reconnect and reboot, unlike a `CGDirectDisplayID`.
     public let id: String
     public let name: String

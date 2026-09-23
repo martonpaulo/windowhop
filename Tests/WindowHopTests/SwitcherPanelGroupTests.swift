@@ -5,23 +5,24 @@ import XCTest
 /// Mirrored panels must stay indistinguishable from each other. These drive the
 /// group against one real screen repeated under different display ids, which
 /// exercises the fan-out without needing multiple monitors attached to CI.
+@MainActor
 final class SwitcherPanelGroupTests: XCTestCase {
     private var group: SwitcherPanelGroup!
     /// Every selection announcement posted, as (window id, spoken text).
     private var announcements: [(id: AnyHashable, text: String)] = []
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         announcements = []
         group = SwitcherPanelGroup(announcer: SelectionAnnouncer { [unowned self] id, text in
             announcements.append((id, text))
         })
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         group.hide()
         group = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func targets(_ count: Int,

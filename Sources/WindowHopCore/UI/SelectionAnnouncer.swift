@@ -6,9 +6,10 @@ import AppKit
 /// Selection is one shared state across mirrored panels, so it has one poster:
 /// `SwitcherPanelGroup` owns a single announcer and one semantic change speaks
 /// once, whatever the number of target displays.
+@MainActor
 final class SelectionAnnouncer {
     /// Receives the announced window's identity and the text to speak.
-    typealias Post = (_ id: AnyHashable, _ text: String) -> Void
+    typealias Post = @MainActor (_ id: AnyHashable, _ text: String) -> Void
 
     private let post: Post
 

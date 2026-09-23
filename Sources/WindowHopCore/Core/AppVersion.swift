@@ -11,7 +11,7 @@ import Foundation
 /// same value. It is never typed into `Support/Info.plist`, never computed at
 /// launch and never derived from install or modification times. A build
 /// without it (every `swift build` run) simply has no release date.
-public struct AppVersion: Equatable {
+public struct AppVersion: Equatable, Sendable {
     public static let releaseDateKey = "AppReleaseDate"
 
     /// `CFBundleShortVersionString`; nil in an unbundled development build.

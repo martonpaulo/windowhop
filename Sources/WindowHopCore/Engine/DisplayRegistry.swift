@@ -74,6 +74,7 @@ public enum DisplayRegistry {
 /// plugging a monitor updates the picker while Settings is open without any work
 /// happening once it closes. Event-driven by
 /// `didChangeScreenParametersNotification`; nothing is polled.
+@MainActor
 public final class ConnectedDisplaysModel: ObservableObject {
     @Published public private(set) var displays: [DisplayDescriptor]
 
@@ -83,7 +84,7 @@ public final class ConnectedDisplaysModel: ObservableObject {
         displays = DisplayRegistry.availableDisplays()
     }
 
-    deinit { stopObserving() }
+    isolated deinit { stopObserving() }
 
     public func startObserving() {
         guard observer == nil else { return }
@@ -92,7 +93,9 @@ public final class ConnectedDisplaysModel: ObservableObject {
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil,
             queue: .main) { [weak self] _ in
-                self?.displays = DisplayRegistry.availableDisplays()
+                MainActor.assumeIsolated {
+                    self?.displays = DisplayRegistry.availableDisplays()
+                }
             }
     }
 

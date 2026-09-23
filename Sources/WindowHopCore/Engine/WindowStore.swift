@@ -32,6 +32,7 @@ public struct SwitcherItem {
 /// Main-thread source of truth: every tracked app and window, in window-level MRU order
 /// (index 0 = currently focused window). Event-driven only — AX notifications,
 /// NSWorkspace notifications, and KVO; nothing polls.
+@MainActor
 public final class WindowStore {
     public static let shared = WindowStore()
 

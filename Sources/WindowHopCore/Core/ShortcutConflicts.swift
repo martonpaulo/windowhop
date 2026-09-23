@@ -12,7 +12,7 @@ import Foundation
 public enum ShortcutConflicts {
     /// A standard menu command, matched by character because menu key
     /// equivalents are characters, not physical keys.
-    public struct StandardCommand: Equatable {
+    public struct StandardCommand: Equatable, Sendable {
         public let name: String
         public let character: String
         public let modifiers: CGEventFlags
@@ -74,7 +74,7 @@ public enum ShortcutConflicts {
 
 extension PersistentShortcut {
     /// What Settings does with a freshly recorded chord.
-    public enum CaptureAssessment: Equatable {
+    public enum CaptureAssessment: Equatable, Sendable {
         case accept
         case reject(ValidationError)
         /// An enabled macOS keyboard shortcut: usable, but only after the user

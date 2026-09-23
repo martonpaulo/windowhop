@@ -6,17 +6,19 @@ import ApplicationServices
 /// window main, raise it, and make the app frontmost via the settable
 /// kAXFrontmostAttribute, which is honored regardless of cooperative-activation
 /// rules because the caller holds Accessibility permission.
+@MainActor
 public enum WindowActions {
     /// Schedules main-thread UI only after every previously requested AX action
     /// has finished. This prevents a committed activation already in flight from
     /// stealing focus back from Settings or a confirmation dialog.
-    public static func afterPendingActions(_ action: @escaping () -> Void) {
+    public static func afterPendingActions(_ action: @escaping @MainActor @Sendable () -> Void) {
         BackgroundWork.axActionsQueue.async {
             DispatchQueue.main.async(execute: action)
         }
     }
 
-    public static func activate(_ window: TrackedWindow, completion: (() -> Void)? = nil) {
+    public static func activate(_ window: TrackedWindow,
+                                completion: (@MainActor @Sendable () -> Void)? = nil) {
         // own Settings window: cooperative NSApp.activate() is sometimes DENIED
         // (macOS 14+ never saw "real" user input reach WindowHop — the tap
         // consumed it), leaving the window ordered but behind. The AX frontmost
@@ -85,7 +87,7 @@ public enum WindowActions {
         app.runningApplication.forceTerminate()
     }
 
-    private static func pressCloseButton(_ element: AXUIElement) {
+    private nonisolated static func pressCloseButton(_ element: AXUIElement) {
         if let closeButton = (try? element.attributes([kAXCloseButtonAttribute]))?.closeButton {
             try? closeButton.performAction(kAXPressAction)
         } else {

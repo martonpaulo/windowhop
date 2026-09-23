@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 /// Everything eligibility needs to know about a window, as plain values.
-public struct WindowFacts {
+public struct WindowFacts: Sendable {
     public var role: String?
     public var subrole: String?
     public var size: CGSize?
@@ -25,7 +25,7 @@ public struct WindowFacts {
 }
 
 /// Per-window display state evaluated at snapshot time, as plain values.
-public struct WindowDisplayState {
+public struct WindowDisplayState: Sendable {
     public var isMinimized: Bool
     public var isAppHidden: Bool
     public var isOwnWindow: Bool
@@ -57,7 +57,7 @@ public struct WindowDisplayState {
 /// The complete user-facing display policy. Discovery, snapshots, navigation,
 /// and tests all pass this one value instead of reimplementing individual
 /// preference checks.
-public struct WindowInclusionPolicy: Equatable {
+public struct WindowInclusionPolicy: Equatable, Sendable {
     public var includeMinimizedWindows: Bool
     public var includeHiddenApplicationWindows: Bool
     public var includePictureInPictureWindows: Bool

@@ -23,7 +23,12 @@ public enum BackgroundWork {
 }
 
 /// A thread that runs a CFRunLoop forever, so CFMachPort/AXObserver sources can live off-main.
-public final class RunLoopThread {
+///
+/// `@unchecked Sendable` invariant: `_runLoop` is written exactly once, on the new
+/// thread, before `readySemaphore` signals; `init` waits for that signal, so every
+/// read (which can only happen after `init` returns) sees the final value. CFRunLoop
+/// itself is thread-safe for adding and removing sources from other threads.
+public final class RunLoopThread: @unchecked Sendable {
     private let readySemaphore = DispatchSemaphore(value: 0)
     private var _runLoop: CFRunLoop!
 

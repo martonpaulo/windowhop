@@ -12,20 +12,20 @@ final class SettingsWindowFrameTests: XCTestCase {
 
     private var defaultsKey: String { "NSWindow Frame \(autosaveName!)" }
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         _ = NSApplication.shared
         autosaveName = "WindowHopSettingsTest-\(UUID().uuidString)"
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         for window in windows {
             window.setFrameAutosaveName("")
             window.close()
         }
         windows = []
         UserDefaults.standard.removeObject(forKey: defaultsKey)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     /// A new controller stands in for a new process: nothing retained.

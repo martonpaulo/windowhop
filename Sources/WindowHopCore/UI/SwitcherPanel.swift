@@ -226,11 +226,13 @@ public final class SwitcherPanel: NSPanel {
             forName: NSWorkspace.accessibilityDisplayOptionsDidChangeNotification,
             object: nil,
             queue: .main) { [weak self] _ in
-                guard let self else { return }
-                for tile in self.tilePool.prefix(self.visibleTileCount) {
-                    tile.refreshMotionPreference()
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    for tile in self.tilePool.prefix(self.visibleTileCount) {
+                        tile.refreshMotionPreference()
+                    }
+                    self.updateSettingsButtonVisibility(animated: false)
                 }
-                self.updateSettingsButtonVisibility(animated: false)
             }
 
         // pre-warm the tile pool off the first-trigger latency path; tiles beyond
@@ -246,7 +248,7 @@ public final class SwitcherPanel: NSPanel {
         }
     }
 
-    deinit {
+    isolated deinit {
         if let accessibilityDisplayObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(accessibilityDisplayObserver)
         }

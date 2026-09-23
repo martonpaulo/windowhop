@@ -1,6 +1,7 @@
 import XCTest
 @testable import WindowHopCore
 
+@MainActor
 final class PersistentShortcutTests: XCTestCase {
     func testExactModifierMatching() {
         let shortcut = PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskAlternate])

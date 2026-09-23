@@ -1,5 +1,5 @@
 /// What a window-preview canvas shows while it has no snapshot, or that it has one.
-public enum PreviewPresentationState: Equatable {
+public enum PreviewPresentationState: Equatable, Sendable {
     case loading
     case permissionUnavailable
     case captureUnavailable

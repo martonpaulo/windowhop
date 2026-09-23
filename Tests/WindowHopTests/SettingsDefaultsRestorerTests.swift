@@ -1,6 +1,7 @@
 import XCTest
 @testable import WindowHopCore
 
+@MainActor
 final class SettingsDefaultsRestorerTests: XCTestCase {
     func testRestoreAppliesPersistedDefaultsAndUpdateChecksButLeavesLaunchAtLogin() {
         let suite = "windowhop-tests-\(UUID().uuidString)"

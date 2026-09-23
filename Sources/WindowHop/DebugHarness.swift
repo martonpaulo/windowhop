@@ -15,6 +15,7 @@ import WindowHopCore
 ///   offscreen) and prints the `scripts/lib/capture.sh` handshake. The
 ///   appearance flag pins Light or Dark; without it the window follows the
 ///   system, so a published capture would depend on the operator's setting.
+@MainActor
 enum DebugHarness {
     static func runIfRequested(_ arguments: [String]) -> Bool {
         if arguments.contains("--demo-switcher") {

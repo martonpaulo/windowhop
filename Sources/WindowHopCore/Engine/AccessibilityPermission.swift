@@ -10,7 +10,9 @@ public enum AccessibilityPermission {
 
     /// Shows the system prompt directing the user to System Settings.
     public static func prompt() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+        // the value of kAXTrustedCheckOptionPrompt, which the SDK imports as a
+        // mutable global and Swift 6 therefore refuses to read
+        let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
         AXUIElementSetMessagingTimeout(AXUIElementCreateSystemWide(), 1)
         _ = AXIsProcessTrustedWithOptions(options)
     }
@@ -43,7 +45,7 @@ public enum AccessibilityPermission {
     /// Calls the handler on the main thread whenever the system's accessibility trust
     /// table changes (grant or revocation), plus once shortly after subscription.
     /// Event-driven: no polling while the app idles.
-    public static func observeChanges(_ handler: @escaping (Bool) -> Void) {
+    public static func observeChanges(_ handler: @escaping @MainActor @Sendable (Bool) -> Void) {
         DistributedNotificationCenter.default().addObserver(
             forName: NSNotification.Name("com.apple.accessibility.api"),
             object: nil, queue: .main) { _ in

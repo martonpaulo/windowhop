@@ -6,18 +6,19 @@ import XCTest
 /// window's stable id, pooled tiles reset stale image state when they start
 /// representing another window, and rapid list changes can never move a
 /// snapshot onto a different card.
+@MainActor
 final class PreviewAssociationTests: XCTestCase {
     private var savedAppearanceMode: AppearanceMode!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         savedAppearanceMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         Preferences.shared.appearanceMode = savedAppearanceMode
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func item(_ id: String) -> SwitcherItem {

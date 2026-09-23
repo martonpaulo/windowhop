@@ -6,12 +6,13 @@ import XCTest
 /// participates in MRU, hides while minimized, and disappears on close.
 /// Uses a fresh WindowStore instance (not .shared) and drives NSWindow
 /// lifecycle via the notifications the store observes.
+@MainActor
 final class SettingsWindowEntryTests: XCTestCase {
     private var store: WindowStore!
     private var window: NSWindow!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         store = WindowStore()
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
@@ -20,10 +21,10 @@ final class SettingsWindowEntryTests: XCTestCase {
         window.title = "WindowHop Settings"
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         window = nil
         store = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     func testRegisteredSettingsWindowAppearsExactlyOnce() {

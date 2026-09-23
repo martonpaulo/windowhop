@@ -5,6 +5,7 @@ import XCTest
 /// The main menu for both activation policies: accessory mode keeps exactly
 /// the Settings-window key equivalents, regular mode (Dock icon on) adds the
 /// standard regular-app commands. Built without touching `NSApp`.
+@MainActor
 final class MainMenuBuilderTests: XCTestCase {
     private struct Entry: Equatable {
         let title: String

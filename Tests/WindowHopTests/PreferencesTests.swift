@@ -2,21 +2,22 @@ import XCTest
 import Combine
 @testable import WindowHopCore
 
+@MainActor
 final class PreferencesTests: XCTestCase {
     private var suiteName: String!
     private var defaults: UserDefaults!
     private var preferences: Preferences!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         suiteName = "windowhop-tests-\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         preferences = Preferences(defaults: defaults)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         defaults.removePersistentDomain(forName: suiteName)
-        super.tearDown()
+        try await super.tearDown()
     }
 
     func testDefaults() {
@@ -490,7 +491,8 @@ final class PreferencesTests: XCTestCase {
         preferences.includeMinimizedWindows = true
         preferences.includeHiddenApplicationWindows = true
         preferences.includePictureInPictureWindows = true
-        var refreshCount = 0
+        // queue: nil delivers synchronously on the posting thread, this test's own
+        nonisolated(unsafe) var refreshCount = 0
         let observer = NotificationCenter.default.addObserver(
             forName: Preferences.windowFiltersDidChange,
             object: preferences,

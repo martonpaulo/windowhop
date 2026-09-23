@@ -6,6 +6,7 @@ import ApplicationServices
 /// duplicate titles can never collide. WindowHop's own Settings window is the one
 /// deliberate exception to the own-process exclusion: it is backed directly by its
 /// NSWindow instead of AX, keeping every other internal surface out by construction.
+@MainActor
 public final class TrackedWindow {
     /// Stable identity for snapshots, tab groups, and the preview cache.
     /// ObjectIdentifier is deliberately NOT used: the runtime reuses object

@@ -182,6 +182,7 @@ struct EventTapInterceptionState: Sendable {
 /// consumes the chord in the tap. That is inherently fail-safe: if WindowHop is
 /// disabled, quits, crashes, loses permission, or the tap is silenced by Secure Input,
 /// events flow again and the native macOS switcher is untouched.
+@MainActor
 public final class EventTap {
     public static let shared = EventTap()
 
@@ -203,7 +204,7 @@ public final class EventTap {
         let port: CFMachPort
     }
 
-    private let tapThreadState = Mutex(TapThreadState())
+    private nonisolated let tapThreadState = Mutex(TapThreadState())
     /// The run-loop source only main touches (start/stop).
     private var runLoopSource: CFRunLoopSource?
 
@@ -296,7 +297,7 @@ public final class EventTap {
 
     // MARK: - Callback (runs on the tap thread; must stay small and non-blocking)
 
-    private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+    private nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         if type == .tapDisabledByUserInput || type == .tapDisabledByTimeout {
             if let eventTap = tapThreadState.withLock({ $0.eventTap?.port }) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
@@ -317,7 +318,7 @@ public final class EventTap {
             : Unmanaged.passUnretained(event)
     }
 
-    private func post(_ inputEvent: SwitcherInputEvent) {
+    private nonisolated func post(_ inputEvent: SwitcherInputEvent) {
         let postedAt = CFAbsoluteTimeGetCurrent()
         DispatchQueue.main.async { [weak self] in
             DebugLog.log("input \(inputEvent) (+\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - postedAt) * 1000))ms hop)")

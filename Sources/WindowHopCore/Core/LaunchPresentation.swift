@@ -4,12 +4,12 @@
 /// Dock icon are both hidden by default. Missing Accessibility opens onboarding on every
 /// launch, login included: native ⌘Tab keeps working silently, so nothing else would
 /// reveal that WindowHop is inert. docs/architecture.md "Launch and reopen" holds the table.
-public enum LaunchPresentation: Equatable {
+public enum LaunchPresentation: Equatable, Sendable {
     case none
     case settings
     case onboarding
 
-    public enum Trigger: Equatable {
+    public enum Trigger: Equatable, Sendable {
         /// Started from the Finder, Spotlight, the Dock or the command line.
         case normalLaunch
         /// Started by the system as a login item.

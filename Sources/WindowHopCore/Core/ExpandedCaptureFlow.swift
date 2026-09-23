@@ -12,7 +12,7 @@ import Foundation
 /// provable without touching the screen. `Engine/PreviewProvider` supplies the
 /// real lookup, capture and delivery stages.
 public enum ExpandedCaptureFlow {
-    public enum Outcome: Equatable {
+    public enum Outcome: Equatable, Sendable {
         case delivered
         case noCandidate
         /// The session, target or request became obsolete during lookup, so no
@@ -23,8 +23,11 @@ public enum ExpandedCaptureFlow {
         case cancelledAfterCapture
     }
 
+    /// Runs on the caller's actor (`isolation`), so the stages may capture its
+    /// state without crossing an isolation boundary.
     @discardableResult
     public static func run<Candidate, Image>(
+        isolation: isolated (any Actor)? = #isolation,
         lookup: () async -> Candidate?,
         isCurrent: @MainActor @Sendable () -> Bool,
         capture: (Candidate) async -> Image?,

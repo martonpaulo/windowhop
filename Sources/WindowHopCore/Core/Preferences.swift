@@ -4,7 +4,7 @@ import Combine
 /// The two switcher presentations. App Icons is the default and never needs
 /// Screen Recording permission; Window Previews shows live window snapshots.
 /// There are deliberately no further themes, styles, or size options.
-public enum AppearanceMode: String, CaseIterable, Identifiable {
+public enum AppearanceMode: String, CaseIterable, Identifiable, Sendable {
     case appIcons
     case windowPreviews
 
@@ -25,7 +25,7 @@ public enum AppearanceMode: String, CaseIterable, Identifiable {
 
 /// User-facing dwell presets for expanding the targeted window inside
 /// WindowHop. The external window is never activated by this preview.
-public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable {
+public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable, Sendable {
     case off
     case oneSecond
     case twoSeconds
@@ -58,7 +58,7 @@ public enum ExpandedPreviewDelay: String, CaseIterable, Identifiable {
 /// How long a held switcher session waits before drawing its panel, so a quick
 /// press-and-release switches windows without flashing the switcher. Ported
 /// from AltTab's `windowDisplayDelay` (see UPSTREAM.md), as presets.
-public enum SwitcherRevealDelay: String, CaseIterable, Identifiable {
+public enum SwitcherRevealDelay: String, CaseIterable, Identifiable, Sendable {
     case off
     case milliseconds100
     case milliseconds200
@@ -98,12 +98,13 @@ public enum SwitcherRevealDelay: String, CaseIterable, Identifiable {
 /// All WindowHop settings with their defaults. This observable model is the
 /// single runtime source of truth; UserDefaults is only its persistence layer.
 /// The store is injectable for deterministic migration and persistence tests.
+@MainActor
 public final class Preferences: ObservableObject {
     public static let shared = Preferences()
     public static let windowFiltersDidChange = Notification.Name(
         "com.perso.windowhop.windowFiltersDidChange")
 
-    public enum Key: String, CaseIterable {
+    public enum Key: String, CaseIterable, Sendable {
         case switcherEnabled
         case launchAtLogin
         case shortcut

@@ -9,6 +9,7 @@ import Foundation
 /// is the only path that changes the registration, and it records the
 /// person's intent in `Preferences.launchAtLogin` only when the change did not
 /// fail.
+@MainActor
 final class LaunchAtLoginModel: ObservableObject {
     @Published private(set) var status: LoginItemStatus
     @Published private(set) var failed = false

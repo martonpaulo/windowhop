@@ -4,15 +4,16 @@ import ApplicationServices
 /// One running application we observe, ported from AltTab v10.12.0's Application.
 /// A single AXObserver per app carries both app-level and window-level notifications;
 /// it lives in `observer`, an actor isolated to the AX reads queue.
+@MainActor
 public final class TrackedApp {
-    public let runningApplication: NSRunningApplication
-    public let pid: pid_t
-    public let axElement: AXUIElement
-    public let name: String?
-    public let bundleIdentifier: String?
-    let executablePath: String?
+    public nonisolated let runningApplication: NSRunningApplication
+    public nonisolated let pid: pid_t
+    public nonisolated let axElement: AXUIElement
+    public nonisolated let name: String?
+    public nonisolated let bundleIdentifier: String?
+    nonisolated let executablePath: String?
     /// Owns the AXObserver and its subscription lifecycle, off main.
-    let observer: AppObserver
+    nonisolated let observer: AppObserver
     public internal(set) var isHidden: Bool
     /// A graceful Quit was already requested from the close dialog; the next quit
     /// offer escalates to a confirmed Force Quit (ported from AltTab's
@@ -50,7 +51,7 @@ public final class TrackedApp {
         return cachedIcon
     }
 
-    func windowFacts(from attributes: AXAttributes) -> WindowFacts {
+    nonisolated func windowFacts(from attributes: AXAttributes) -> WindowFacts {
         WindowFacts(role: attributes.role,
                     subrole: attributes.subrole,
                     size: attributes.size,

@@ -33,8 +33,8 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
     private var window: NSWindow!
     private var control: ShortcutRecorderControl!
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    override func setUp() async throws {
+        try await super.setUp()
         model = Model()
         hosting = NSHostingView(rootView: Host(model: model))
         hosting.frame = NSRect(x: 0, y: 0, width: 320, height: 40)
@@ -46,13 +46,13 @@ final class ShortcutRecorderAccessibilityTests: XCTestCase {
         control = try XCTUnwrap(Self.recorder(in: hosting))
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         window.close()
         control = nil
         window = nil
         hosting = nil
         model = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private static func recorder(in view: NSView) -> ShortcutRecorderControl? {

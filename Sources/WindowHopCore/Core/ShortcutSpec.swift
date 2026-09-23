@@ -5,7 +5,7 @@ import Foundation
 /// The session stays alive while the hold-modifier is down; adding Shift reverses direction.
 /// Only modifier+Tab chords are offered because the hold-to-cycle, release-to-activate
 /// interaction requires a held modifier distinct from Shift.
-public enum ShortcutSpec: String, CaseIterable, Identifiable {
+public enum ShortcutSpec: String, CaseIterable, Identifiable, Sendable {
     case commandTab
     case optionTab
     case controlTab

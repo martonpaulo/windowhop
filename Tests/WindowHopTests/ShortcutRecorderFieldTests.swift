@@ -52,8 +52,8 @@ final class ShortcutRecorderFieldTests: XCTestCase {
     private var hosting: NSHostingView<Host>!
     private var window: NSWindow!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         model = Model()
         hosting = NSHostingView(rootView: Host(model: model))
         hosting.frame = NSRect(x: 0, y: 0, width: 320, height: 40)
@@ -64,12 +64,12 @@ final class ShortcutRecorderFieldTests: XCTestCase {
         flushUpdates()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         window.close()
         window = nil
         hosting = nil
         model = nil
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func makeRetainedWindow(frame: NSRect) -> NSWindow {

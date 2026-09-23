@@ -61,7 +61,7 @@ final class ShortcutRecorderControl: NSButton {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
-    deinit {
+    isolated deinit {
         // A dealloc without a detach must not leak the app-wide monitor.
         if let keyMonitor {
             NSEvent.removeMonitor(keyMonitor)
@@ -205,10 +205,10 @@ struct ShortcutRecorderField: NSViewRepresentable {
     var onRecordingChanged: ((Bool) -> Void)?
     /// The enabled macOS shortcuts, read when a chord is captured. Tests inject
     /// a fixture so they never depend on the machine's configuration.
-    var systemShortcuts: () -> [PersistentShortcut] = SystemShortcuts.enabled
+    var systemShortcuts: @MainActor () -> [PersistentShortcut] = SystemShortcuts.enabled
     /// Asks whether to take over a macOS shortcut and reports `true` only for
     /// Use Anyway. Tests inject an answer so no modal ever runs.
-    var confirmSystemShortcut: (PersistentShortcut, NSWindow?, @escaping (Bool) -> Void) -> Void =
+    var confirmSystemShortcut: @MainActor (PersistentShortcut, NSWindow?, @escaping (Bool) -> Void) -> Void =
         ShortcutRecorderField.presentSystemShortcutAlert
 
     /// A warning sheet on the Settings window; Cancel is the default button and

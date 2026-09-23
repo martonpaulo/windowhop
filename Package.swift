@@ -2,7 +2,7 @@
 import PackageDescription
 
 let swiftSettings: [SwiftSetting] = [
-    .swiftLanguageMode(.v5),
+    .swiftLanguageMode(.v6),
     // any compiler warning fails the build, locally and in CI (SE-0480; remote packages are exempt)
     .treatAllWarnings(as: .error),
 ]

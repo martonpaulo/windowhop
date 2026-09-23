@@ -4,22 +4,23 @@ import XCTest
 
 /// The expanded preview must survive refreshes that change nothing about its
 /// target, and must appear when its first image arrives after dwell settled.
+@MainActor
 final class ExpandedPreviewPresentationTests: XCTestCase {
     private var group: SwitcherPanelGroup!
     private var originalMode: AppearanceMode!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         originalMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
         group = SwitcherPanelGroup()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         group.hide()
         group = nil
         Preferences.shared.appearanceMode = originalMode
-        super.tearDown()
+        try await super.tearDown()
     }
 
     private func targets(_ count: Int) -> [(descriptor: DisplayDescriptor, screen: NSScreen)] {

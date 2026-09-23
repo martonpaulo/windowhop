@@ -1,3 +1,4 @@
+import Synchronization
 import XCTest
 @testable import WindowHopCore
 
@@ -9,9 +10,9 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
     /// A layout reduced to the keys a test needs; every other key has no character.
     private struct FixtureLayout: KeyLabelSource {
         let characters: [UInt16: String]
-        let onQuery: ((UInt16) -> Void)?
+        let onQuery: (@Sendable (UInt16) -> Void)?
 
-        init(_ characters: [UInt16: String], onQuery: ((UInt16) -> Void)? = nil) {
+        init(_ characters: [UInt16: String], onQuery: (@Sendable (UInt16) -> Void)? = nil) {
             self.characters = characters
             self.onQuery = onQuery
         }
@@ -20,6 +21,13 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
             onQuery?(keyCode)
             return characters[keyCode]
         }
+    }
+
+    /// Key codes a fixture layout was asked about, recorded from any thread.
+    private final class QueryLog: Sendable {
+        private let keys = Mutex<[UInt16]>([])
+        var recorded: [UInt16] { keys.withLock { $0 } }
+        func record(_ keyCode: UInt16) { keys.withLock { $0.append(keyCode) } }
     }
 
     private static let us = FixtureLayout([0: "a", 6: "z", 12: "q", 16: "y", 33: "["])
@@ -66,8 +74,8 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
     }
 
     func testSpecialKeysKeepCanonicalNamesUnderEveryLayout() {
-        var queried = [UInt16]()
-        let recording = FixtureLayout([48: "x", 49: "y", 36: "z"]) { queried.append($0) }
+        let queried = QueryLog()
+        let recording = FixtureLayout([48: "x", 49: "y", 36: "z"]) { queried.record($0) }
         let canonical = Self.specialKeys.map(KeyCodeNames.name(for:))
         XCTAssertEqual(canonical, ["⇥", "Space", "↩", "⎋", "⌫", "⌦", "←", "→", "↑", "↓", "F5"])
 
@@ -77,7 +85,7 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
                            ["Tab", "Space", "Return", "Escape", "Delete", "Forward Delete",
                             "Left Arrow", "Right Arrow", "Up Arrow", "Down Arrow", "F5"])
         }
-        XCTAssertEqual(queried, [], "special keys never reach the layout")
+        XCTAssertEqual(queried.recorded, [], "special keys never reach the layout")
     }
 
     func testUntranslatableKeysFallBackToTheANSITable() {
@@ -87,11 +95,11 @@ final class ShortcutFormatterLayoutTests: XCTestCase {
     }
 
     func testOutOfRangeKeyCodesNeverReachTheLayout() {
-        var queried = [UInt16]()
-        let layout = FixtureLayout([:]) { queried.append($0) }
+        let queried = QueryLog()
+        let layout = FixtureLayout([:]) { queried.record($0) }
 
         XCTAssertEqual(labels([300, -1, 70_000], under: layout), ["Key 300", "Key -1", "Key 70000"])
-        XCTAssertEqual(queried, [300], "only a key code that fits UInt16 is translated")
+        XCTAssertEqual(queried.recorded, [300], "only a key code that fits UInt16 is translated")
     }
 
     func testMultiScalarCharactersStayWhole() {

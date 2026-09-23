@@ -3,6 +3,7 @@ import AppKit
 /// Orchestrates one switcher session: semantic input events feed the pure
 /// SwitcherState; resulting commands drive the panel, window actions, and the
 /// close-confirmation dialog. Main thread only.
+@MainActor
 public final class SwitcherController {
     public static let shared = SwitcherController()
 
@@ -16,6 +17,8 @@ public final class SwitcherController {
     private var heldModifierGuard: Timer?
     private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
     private var expandedPreviewTimer: Timer?
+    /// The dwell request `expandedPreviewTimer` settles when it fires.
+    private var pendingExpandedPreview: ExpandedPreviewSession<AnyHashable>.Request?
     /// Pending reveal of a held session that is still inside its reveal delay.
     private var revealTimer: Timer?
     /// False from session start until the panels are drawn. Before that, panel
@@ -371,8 +374,11 @@ public final class SwitcherController {
         if mouseMonitor == nil {
             mouseMonitor = NSEvent.addGlobalMonitorForEvents(
                 matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] _ in
-                guard let self else { return }
-                self.perform(self.state.outsideClick())
+                // global monitors deliver on the main thread
+                MainActor.assumeIsolated {
+                    guard let self else { return }
+                    self.perform(self.state.outsideClick())
+                }
             }
         }
         // fail-safe for missed flagsChanged events (unusual event order, sleep, secure
@@ -380,10 +386,12 @@ public final class SwitcherController {
         // never runs while idle, and not at all for persistent sessions.
         guard state.phase == .held, heldModifierGuard == nil else { return }
         heldModifierGuard = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            guard let self, self.state.phase == .held else { return }
-            let flags = NSEvent.modifierFlags
-            if !flags.contains(self.nsModifier(of: EventTap.shared.holdModifier)) {
-                self.perform(self.state.modifierReleased())
+            MainActor.assumeIsolated {
+                guard let self, self.state.phase == .held else { return }
+                let flags = NSEvent.modifierFlags
+                if !flags.contains(self.nsModifier(of: EventTap.shared.holdModifier)) {
+                    self.perform(self.state.modifierReleased())
+                }
             }
         }
     }
@@ -425,7 +433,7 @@ public final class SwitcherController {
             return
         }
         let timer = Timer(timeInterval: delay, repeats: false) { [weak self] _ in
-            self?.revealPanels()
+            MainActor.assumeIsolated { self?.revealPanels() }
         }
         revealTimer = timer
         RunLoop.main.add(timer, forMode: .common)
@@ -512,18 +520,19 @@ public final class SwitcherController {
         guard Preferences.shared.appearanceMode.supportsExpandedPreview,
               let request,
               let delay = Preferences.shared.expandedPreviewDelay.duration else { return }
+        pendingExpandedPreview = request
         let timer = Timer(timeInterval: delay,
                           repeats: false) { [weak self] _ in
-            self?.presentExpandedPreview(request)
+            MainActor.assumeIsolated { self?.presentExpandedPreview() }
         }
         expandedPreviewTimer = timer
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func presentExpandedPreview(
-        _ request: ExpandedPreviewSession<AnyHashable>.Request
-    ) {
+    private func presentExpandedPreview() {
         expandedPreviewTimer = nil
+        guard let request = pendingExpandedPreview else { return }
+        pendingExpandedPreview = nil
         guard state.isActive,
               let id = expandedPreview.settle(
                 request, availableWindowIDs: Set(items.map(\.id))),
@@ -541,6 +550,7 @@ public final class SwitcherController {
     private func cancelExpandedPreviewTimer() {
         expandedPreviewTimer?.invalidate()
         expandedPreviewTimer = nil
+        pendingExpandedPreview = nil
     }
 
     private func nsModifier(of flags: CGEventFlags) -> NSEvent.ModifierFlags {

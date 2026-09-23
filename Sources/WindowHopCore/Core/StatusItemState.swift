@@ -4,7 +4,7 @@ import Foundation
 /// from existing owners (`Preferences.switcherEnabled` and the Accessibility
 /// grant) — never stored. Each state has its own symbol shape, so it reads
 /// without color, and its own accessibility label.
-public enum StatusItemState: Equatable, CaseIterable {
+public enum StatusItemState: Equatable, CaseIterable, Sendable {
     case active
     case paused
     case accessibilityRequired

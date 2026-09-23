@@ -5,6 +5,7 @@ import SwiftUI
 /// honest account of the two things that are optional: Screen Recording for
 /// Window Previews, and network access for software updates.
 /// Polls only while this window is visible; closes itself once access is granted.
+@MainActor
 public final class PermissionOnboardingController {
     public static let shared = PermissionOnboardingController()
 
@@ -39,15 +40,17 @@ public final class PermissionOnboardingController {
     private func startPolling() {
         pollTimer?.invalidate()
         pollTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            if self.window?.isVisible != true {
-                self.pollTimer?.invalidate()
-                self.pollTimer = nil
-                return
-            }
-            if AccessibilityPermission.isGranted {
-                self.close()
-                self.onGranted?()
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.window?.isVisible != true {
+                    self.pollTimer?.invalidate()
+                    self.pollTimer = nil
+                    return
+                }
+                if AccessibilityPermission.isGranted {
+                    self.close()
+                    self.onGranted?()
+                }
             }
         }
     }

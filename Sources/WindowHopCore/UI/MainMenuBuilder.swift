@@ -3,7 +3,7 @@ import AppKit
 /// App-specific main-menu actions, delivered through the responder chain to
 /// the application delegate (which `NSApplication` consults after the key
 /// window), so the builder needs no reference to it.
-@objc public protocol MainMenuActions {
+@MainActor @objc public protocol MainMenuActions {
     /// Opens Settings › About, WindowHop's one About surface.
     func openAboutFromMenu(_ sender: Any?)
     func openSettingsFromMenu(_ sender: Any?)

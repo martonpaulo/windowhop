@@ -1,6 +1,7 @@
 import XCTest
 @testable import WindowHopCore
 
+@MainActor
 final class SwitcherStateTests: XCTestCase {
     // MARK: - Opening
 

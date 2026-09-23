@@ -2,18 +2,19 @@ import AppKit
 import XCTest
 @testable import WindowHopCore
 
+@MainActor
 final class SwitcherLayoutTests: XCTestCase {
     private var savedAppearanceMode: AppearanceMode!
 
-    override func setUp() {
-        super.setUp()
+    override func setUp() async throws {
+        try await super.setUp()
         savedAppearanceMode = Preferences.shared.appearanceMode
         Preferences.shared.appearanceMode = .windowPreviews
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         Preferences.shared.appearanceMode = savedAppearanceMode
-        super.tearDown()
+        try await super.tearDown()
     }
 
     // MARK: - Preview canvas geometry (issue #13)

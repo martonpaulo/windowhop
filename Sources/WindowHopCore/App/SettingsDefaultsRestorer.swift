@@ -3,6 +3,7 @@ import Foundation
 /// Coordinates Restore Defaults with the one reset preference that is also
 /// applied outside UserDefaults (Sparkle's automatic update checks). Launch at
 /// login is not reset: it mirrors a macOS login-item registration.
+@MainActor
 public struct SettingsDefaultsRestorer {
     private let preferences: Preferences
     private let applyAutomaticUpdateChecks: (Bool) -> Void

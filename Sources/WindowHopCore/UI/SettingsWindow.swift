@@ -9,6 +9,7 @@ import SwiftUI
 /// Its position survives relaunch through AppKit's frame autosave — OS/UI
 /// restoration state under AppKit's own key, not a `Preferences` value, so
 /// Restore Defaults leaves it alone. First use is centered.
+@MainActor
 public final class SettingsWindowController {
     public static let shared = SettingsWindowController()
 
@@ -132,7 +133,7 @@ enum SettingsPane: String, CaseIterable {
         }
     }
 
-    @ViewBuilder private var content: some View {
+    @MainActor @ViewBuilder private var content: some View {
         switch self {
         case .general: GeneralPane()
         case .shortcuts: ShortcutsPane()
@@ -143,6 +144,7 @@ enum SettingsPane: String, CaseIterable {
         }
     }
 
+    @MainActor
     func makeViewController() -> NSHostingController<AnyView> {
         let hosting = NSHostingController(rootView: AnyView(content))
         hosting.title = title

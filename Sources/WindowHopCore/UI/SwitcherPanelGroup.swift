@@ -14,6 +14,7 @@ import AppKit
 ///
 /// The selection announcement is posted here, once, rather than by each panel:
 /// every mirrored panel posting it would speak one change once per display.
+@MainActor
 public final class SwitcherPanelGroup {
     public var onItemClicked: ((Int) -> Void)?
     public var onItemCloseRequested: ((Int) -> Void)?

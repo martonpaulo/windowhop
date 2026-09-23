@@ -1,10 +1,11 @@
 import CoreGraphics
 import Foundation
+import Synchronization
 
 /// Translates a physical key into the character it types on a keyboard layout,
 /// without modifiers. The Engine supplies the live layout (`KeyboardLayout`);
 /// the Core never reads it, so tests use fixture layouts.
-public protocol KeyLabelSource {
+public protocol KeyLabelSource: Sendable {
     /// The character the key produces, or nil when the layout cannot say.
     func character(forKeyCode keyCode: UInt16) -> String?
 }
@@ -31,9 +32,15 @@ public struct ANSIKeyLabels: KeyLabelSource {
 /// Delete, arrows, Home/End/Page keys, F1–F12) keep their canonical glyphs and
 /// spoken names on every layout.
 public enum ShortcutFormatter {
-    /// Where printable key names come from. Main-thread state: the app installs
-    /// the live layout at launch; until then, and in tests, the ANSI table.
-    public static var keyLabels: KeyLabelSource = ANSIKeyLabels()
+    /// Where printable key names come from: the app installs the live layout at
+    /// launch; until then, and in tests, the ANSI table. Formatting is callable
+    /// from any thread, so the installed source sits behind a mutex.
+    public static var keyLabels: any KeyLabelSource {
+        get { installedKeyLabels.withLock { $0 } }
+        set { installedKeyLabels.withLock { $0 = newValue } }
+    }
+
+    private static let installedKeyLabels = Mutex<any KeyLabelSource>(ANSIKeyLabels())
 
     public static func modifierSymbols(_ modifiers: CGEventFlags) -> String {
         var symbols = ""

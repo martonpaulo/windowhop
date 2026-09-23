@@ -8,6 +8,7 @@ import Sparkle
 /// the updater only starts from a real app bundle (development builds run
 /// without it). The Settings Updates pane additionally mirrors the latest
 /// known available version, observed through the updater delegate.
+@MainActor
 public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate {
     public static let shared = UpdateManager()
 

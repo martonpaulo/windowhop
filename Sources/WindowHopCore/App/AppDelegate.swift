@@ -4,6 +4,7 @@ import Carbon.HIToolbox
 /// Application lifecycle: permission gating, engine start/stop, settings reactions,
 /// and the launch/reopen surface decided by `LaunchPresentation` (reopening always
 /// reaches Settings or onboarding, so hidden icons are never a dead end).
+@MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions {
     private let preferences = Preferences.shared
     private var engineRunning = false
@@ -121,16 +122,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         // settings changes (from the Settings window or the menu bar item)
         NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification, object: nil, queue: .main) { [weak self] _ in
-            guard let self else { return }
-            self.applyActivationPolicy()
-            StatusItemController.shared.apply()
-            self.applyConfiguration()
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.applyActivationPolicy()
+                StatusItemController.shared.apply()
+                self.applyConfiguration()
+            }
         }
         NotificationCenter.default.addObserver(
             forName: Preferences.windowFiltersDidChange,
             object: preferences,
             queue: .main) { _ in
-                WindowStore.shared.windowFiltersChanged()
+                MainActor.assumeIsolated { WindowStore.shared.windowFiltersChanged() }
             }
         // permission granted or revoked while running
         AccessibilityPermission.observeChanges { [weak self] granted in
@@ -150,16 +153,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         // macOS can silently disable event taps across sleep/wake and session switches
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { _ in
-            EventTap.shared.reEnableIfNeeded()
+            MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.screensDidWakeNotification,
             object: nil, queue: .main) { _ in
-                EventTap.shared.reEnableIfNeeded()
+                MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
             }
         NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.sessionDidBecomeActiveNotification, object: nil, queue: .main) { _ in
-            EventTap.shared.reEnableIfNeeded()
+            MainActor.assumeIsolated { EventTap.shared.reEnableIfNeeded() }
         }
     }
 

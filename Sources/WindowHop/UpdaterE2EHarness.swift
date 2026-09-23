@@ -8,6 +8,7 @@ import Sparkle
 ///
 /// Exit codes: Sparkle terminates the process itself on successful install;
 /// 2 = updater error (e.g. invalid signature), 3 = no update found.
+@MainActor
 enum UpdaterE2EHarness {
     private static var updater: SPUUpdater?
     private static var driver: AutoAcceptDriver?

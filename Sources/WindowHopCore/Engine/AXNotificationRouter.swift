@@ -20,8 +20,9 @@ enum AXNotificationRouter {
 
     /// Runs on the AX reads queue.
     private static func route(_ notification: String, _ element: AXUIElement) {
-        var pid = pid_t(0)
-        guard AXUIElementGetPid(element, &pid) == .success, pid != 0 else { return }
+        var elementPid = pid_t(0)
+        guard AXUIElementGetPid(element, &elementPid) == .success, elementPid != 0 else { return }
+        let pid = elementPid
         switch notification {
         case kAXApplicationActivatedNotification:
             // some apps focus a window without emitting focusedWindowChanged; treat the
