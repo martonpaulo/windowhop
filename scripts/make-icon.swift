@@ -1,8 +1,9 @@
+#!/usr/bin/env swift
 // Renders the WindowHop app icon and writes an .iconset directory.
-// Usage: swift scripts/make-icon.swift <output-dir>
+// Usage: scripts/make-icon.swift <output-dir>  (or `make icon`, which runs every art generator)
 // Then: iconutil -c icns <output-dir>/AppIcon.iconset -o Support/AppIcon.icns
 //
-// Favicon: swift scripts/make-icon.swift --favicon site
+// Favicon: scripts/make-icon.swift --favicon site
 // writes <dir>/favicon.ico (16, 32 and 48 px PNG entries) and <dir>/favicon-192.png
 // from drawFavicon, a small-size rendition of the same mark (issue #93).
 import AppKit

@@ -2,8 +2,8 @@
 // Renders the DMG installer background (Support/WindowHopInstallerBackground.tiff,
 // 1x+2x). The distinctive basename prevents Finder from reusing cached artwork
 // from an older mounted WindowHop volume.
-// Run from the repository root after changing the artwork:
-//   swift scripts/render-dmg-background.swift && tiffutil -cathidpicheck \
+// `make icon` runs this with every other art generator; by hand, from the repository root:
+//   scripts/render-dmg-background.swift && tiffutil -cathidpicheck \
 //     artifacts/dmg-bg.png artifacts/dmg-bg@2x.png \
 //     -out Support/WindowHopInstallerBackground.tiff
 // The coordinates must stay in sync with the icon positions in make-dmg.sh:

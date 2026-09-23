@@ -103,9 +103,10 @@ make strings-check               # fail when the catalog is out of date (CI buil
 make lint                        # SwiftLint + swift-format lint, strict (shared .swiftlint.yml/.swift-format)
 make format                      # rewrite Sources/ and Tests/ with swift-format; run before committing
 make check                       # build, lint, test, validate, strings-check: the gate before a commit
-scripts/capture-screenshots.sh   # published screenshots (Retina display required)
-scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
-scripts/make-dmg.sh [--version X.Y.Z] [--force]  # DMG (expects build/WindowHop.app)
+make help                        # every target: also app, dmg, icon, screenshots, keys, appcast, clean
+make screenshots                 # published screenshots (Retina display required)
+make app FORCE=1                 # .app with Sparkle + zip (scripts/package-app.sh; ad-hoc unless DEVELOPER_ID_IDENTITY)
+make dmg FORCE=1                 # app, then the DMG (scripts/make-dmg.sh)
 scripts/sign-update.sh --archive <zip>  # Sparkle EdDSA attributes (login Keychain key)
 ```
 

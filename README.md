@@ -52,13 +52,16 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | `make format` | Rewrite `Sources/` and `Tests/` with swift-format |
 | `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
 | `make strings` | Regenerate the English String Catalog (`Support/Localizable.xcstrings`) and its compiled `Support/en.lproj` after a copy change; `make strings-check` fails when they are out of date |
-| `swift build` | Build the debug binary; add `-c release` for the release build |
-| `scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip (`--help` lists every option) |
-| `scripts/make-dmg.sh [--version X.Y.Z] [--force]` | Build the branded DMG from `build/WindowHop.app` |
+| `make help` | List every target (the default goal) |
+| `make build` | Build the debug binary; `CONFIGURATION=release` for the release build |
+| `make app [FORCE=1]` | Assemble `build/WindowHop.app` with Sparkle embedded, plus its zip, through `scripts/package-app.sh` (`--help` lists every option, such as `--version X.Y.Z --build-number N`) |
+| `make dmg [FORCE=1]` | `make app`, then the branded DMG from `build/WindowHop.app` through `scripts/make-dmg.sh` |
+| `make icon` | Regenerate the committed art: app icon, favicons, installer icon and DMG background |
+| `make screenshots` | Capture the published screenshots, which needs a Retina display and Screen Recording permission |
+| `make keys` | One-time: make sure the login Keychain holds the Sparkle key and `SUPublicEDKey` matches it |
+| `make appcast VERSION=… BUILD_NUMBER=… ARCHIVE=… SIGNATURE=…` | Add one release entry to `appcast.xml` for Sparkle (a rehearsal or a recovery; the release workflow does it) |
+| `make clean` | Remove `.build`, `build` and `artifacts` |
 | `scripts/sign-update.sh --archive <zip>` | Sign an update archive with the resolved Sparkle `sign_update` and print its appcast attributes |
-| `scripts/make-appcast.sh --version … --build-number … --archive … --signature …` | Add one release entry to `appcast.xml` for Sparkle |
-| `scripts/make-keys.sh` | One-time: make sure the login Keychain holds the Sparkle key and `SUPublicEDKey` matches it |
-| `scripts/capture-screenshots.sh` | Capture the published screenshots, which needs a Retina display |
 | `scripts/validate-site.sh` | Check the site's host, canonical URL, `robots.txt` and sitemap (skill-deck's canonical copy; `make validate` adds WindowHop's own site checks) |
 | `scripts/social-card.sh` | Render `design/social-card/social-card.html` to `site/social-card.jpg` (needs Node and ImageMagick) |
 | `scripts/verify-release-identity.sh [--app <App.app>]` | Check the signed app against the recorded release identity |
