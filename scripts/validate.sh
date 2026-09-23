@@ -41,6 +41,22 @@ if grep -rln "ScreenCaptureKit\|SCShareableContent\|SCScreenshotManager" Sources
 else
     pass "ScreenCaptureKit confined to the preview provider"
 fi
+# WindowHopKit holds the pure rules: value-type frameworks only (AGENTS.md, Kit import
+# contract), and no AX, workspace or capture reference even through a transitive import
+KIT_IMPORTS='^(Foundation|CoreGraphics|Combine|Observation|Synchronization)$'
+if grep -rhE "^[[:space:]]*(@[A-Za-z_]+[[:space:]]+)*import[[:space:]]" Sources/WindowHopKit/ 2>/dev/null \
+    | sed -E 's/^.*import[[:space:]]+(class |struct |enum |protocol |func |var |let |typealias )?//; s/[.[:space:]].*$//' \
+    | sort -u | grep -vE "$KIT_IMPORTS"; then
+    fail "WindowHopKit imports a framework outside its allowlist"
+else
+    pass "WindowHopKit imports only its allowlisted frameworks"
+fi
+if grep -rn "AXUIElement\|AXObserver\|NSWorkspace\|ScreenCaptureKit" Sources/WindowHopKit/ 2>/dev/null \
+    | grep -v "^\S*:[0-9]*: *//"; then
+    fail "WindowHopKit references AX, NSWorkspace or ScreenCaptureKit"
+else
+    pass "WindowHopKit has no AX, workspace or capture references"
+fi
 if grep -rn "AppCenter\|analytics\|telemetry" Sources/ --include="*.swift" 2>/dev/null | grep -iv "no telemetry\|telemetry, no\|no analytics"; then
     fail "telemetry reference found in Sources/"
 else
