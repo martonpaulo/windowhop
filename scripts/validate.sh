@@ -178,6 +178,16 @@ fi
 
 # --- documentation/release synchronization ----------------------------------
 VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist || true)
+# CFBundleVersion is derived as MAJOR*10000 + MINOR*100 + PATCH; release.yml refuses a
+# tag whose plist disagrees, which is too late to find out (the v2.3.1 tag, #130).
+BUILD=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' Support/Info.plist || true)
+IFS=. read -r V_MAJOR V_MINOR V_PATCH <<<"$VERSION"
+DERIVED_BUILD=$((10#${V_MAJOR:-0} * 10000 + 10#${V_MINOR:-0} * 100 + 10#${V_PATCH:-0}))
+if [ "$BUILD" = "$DERIVED_BUILD" ]; then
+    pass "CFBundleVersion $BUILD is derived from version $VERSION"
+else
+    fail "CFBundleVersion ($BUILD) is not $DERIVED_BUILD, the build derived from version $VERSION"
+fi
 # The README no longer advertises a download (the GitHub About carries the site), so the
 # document that must track the shipped version is the changelog: its newest entry is the
 # release being described. The file follows Keep a Changelog: `## [X.Y.Z] - date`
