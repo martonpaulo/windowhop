@@ -1,0 +1,93 @@
+# The shared SwiftLint configuration for the owner's Swift apps. Copy it unchanged to the
+# repository root and run `swiftlint lint` there without --config, so an app's own extra rules in a
+# nested .swiftlint.yml inside its source folder are merged in. No included: list, so one file
+# serves the SwiftPM layout (Sources, Tests) and the Xcode layout alike.
+
+excluded:
+  - .build
+  - build
+  - artifacts
+  - DerivedData
+
+strict: true
+reporter: xcode
+
+disabled_rules:
+  # swift-format owns formatting, wrapping, braces, and trailing comma style.
+  - closure_parameter_position
+  - line_length
+  - multiple_closures_with_trailing_closure
+  - opening_brace
+  - trailing_comma
+
+  # These generic style and metric rules are noisier than they are useful across the fleet:
+  # compact names and deliberate API seams read more clearly than their defaults allow.
+  - identifier_name
+  - implicit_optional_initialization
+  - static_over_final_class
+  - type_name
+
+opt_in_rules:
+  - force_unwrapping
+
+force_cast:
+  severity: error
+
+force_try:
+  severity: error
+
+force_unwrapping:
+  severity: error
+
+todo:
+  severity: warning
+
+cyclomatic_complexity:
+  warning: 18
+  error: 28
+  ignores_case_statements: true
+
+file_length:
+  warning: 800
+  error: 1000
+  ignore_comment_only_lines: true
+
+function_body_length:
+  warning: 200
+  error: 280
+
+function_parameter_count:
+  warning: 9
+  error: 11
+
+large_tuple:
+  warning: 4
+  error: 5
+
+nesting:
+  type_level:
+    warning: 3
+    error: 4
+  function_level:
+    warning: 4
+    error: 5
+
+type_body_length:
+  warning: 600
+  error: 800
+
+custom_rules:
+  no_production_print:
+    # A Swift script under scripts/ writes its product to stdout, so it may print.
+    excluded:
+      - "/scripts/"
+    name: "No Production Print"
+    regex: "\\bprint\\s*\\("
+    message: "Use os.Logger for production diagnostics."
+    severity: error
+
+  no_combine:
+    name: "No Combine"
+    regex: "^import Combine$"
+    message: "Use Observation and Swift Concurrency; do not introduce Combine."
+    severity: error

@@ -47,6 +47,9 @@ Local packages are ad-hoc signed unless `DEVELOPER_ID_IDENTITY` names the approv
 | Command | What it does |
 | --- | --- |
 | `swift test` | Run the unit suite, which must pass with zero warnings |
+| `make check` | Build, lint, test and validate: the gate before a commit, and what CI runs |
+| `make lint` | SwiftLint and swift-format lint with the shared `.swiftlint.yml` and `.swift-format`; any finding fails |
+| `make format` | Rewrite `Sources/` and `Tests/` with swift-format |
 | `make validate` | Check the repository invariants (runs `scripts/validate.sh`): layering, ScreenCaptureKit confinement, docs, site |
 | `make strings` | Regenerate the English String Catalog (`Support/Localizable.xcstrings`) and its compiled `Support/en.lproj` after a copy change; `make strings-check` fails when they are out of date |
 | `swift build` | Build the debug binary; add `-c release` for the release build |

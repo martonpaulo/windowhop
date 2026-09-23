@@ -6,6 +6,7 @@
 swift build && swift test   # 164+ unit and integration tests, zero warnings
 make validate               # repository and documentation invariants
 make strings-check          # the String Catalog matches the sources (CI build job)
+make lint                   # SwiftLint and swift-format lint, warnings as errors (CI build job)
 ```
 
 The suite covers both held and sticky session state machines; tab grouping; Settings

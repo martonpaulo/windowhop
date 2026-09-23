@@ -2,13 +2,14 @@
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test validate strings strings-check check
+.PHONY: help build test lint format validate strings strings-check check
 
 # Any compiler warning fails `build` and `test`, locally and in CI. Package.swift turns
 # warnings into errors (`.treatAllWarnings(as: .error)`), but some Swift 6 diagnostics stay
 # warnings anyway, so scripts/fail-on-warnings.sh also fails on any `warning:` line that
 # points into Sources/ or Tests/. Plain `swift build` does not run that second check.
 CONFIGURATION ?= debug
+SWIFT_SOURCES ?= Sources Tests
 
 help: ## List the targets
 	@awk 'BEGIN {FS = ":.*## "} /^[a-z-]+:.*## / {printf "  make %-10s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -19,6 +20,15 @@ build: ## Build (CONFIGURATION=debug|release); fails on any warning
 test: ## Unit and integration tests; fails on any warning
 	scripts/fail-on-warnings.sh swift test
 
+# Both tools read the repository-root .swiftlint.yml and .swift-format, which are unchanged
+# copies of the shared skill-deck files; --strict turns every warning into a failure.
+lint: ## SwiftLint, then swift-format lint; read-only, fails on any finding
+	swiftlint lint --strict --quiet
+	swift format lint --strict --recursive $(SWIFT_SOURCES)
+
+format: ## Rewrite the sources with swift-format (the only target that edits sources)
+	swift format format --in-place --recursive $(SWIFT_SOURCES)
+
 validate: ## Repository invariants, the static site and the release-script fixtures
 	scripts/validate.sh
 
@@ -28,4 +38,4 @@ strings: ## Regenerate Support/Localizable.xcstrings and Support/en.lproj from t
 strings-check: ## Fail when the String Catalog is out of date with the sources
 	scripts/strings.sh --check
 
-check: build test validate strings-check ## Everything a commit needs
+check: build lint test validate strings-check ## Everything a commit needs, stopping at the first failure

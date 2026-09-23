@@ -23,6 +23,8 @@ git clone https://github.com/martonpaulo/windowhop && cd windowhop
 swift build            # debug build
 swift test             # unit tests (must pass)
 make validate          # repository invariants (must pass)
+make format            # format Sources/ and Tests/ with swift-format before committing
+make check             # build, lint, test and validate: run it before committing
 scripts/package-app.sh # assemble build/WindowHop.app
 ```
 
@@ -70,7 +72,9 @@ to test credentials; use the local packaging commands and Apple tooling directly
 1. The owner commits validated work directly to `main`; outside contributors work on a branch and
    open a pull request.
 2. Keep changes focused; unrelated refactors make review slow.
-3. `swift test` and `make validate` must pass, with zero warnings.
+3. Run `make format`, then `make check`: the build, SwiftLint and swift-format lint, the tests and
+   `make validate` must pass, with zero warnings. Install SwiftLint with `brew install swiftlint`;
+   swift-format comes with Xcode.
 4. Use [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `docs:`, …),
    one concern per commit, and end a commit made for an issue with `(#<issue number>)`.
 5. Update documentation when behavior changes, and never bump the version or edit `appcast.xml` as

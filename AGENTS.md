@@ -52,8 +52,8 @@
 - Default-branch approving review: not required under the direct-to-`main` policy.
   Do not add a pull-request-only protection rule without reopening that policy.
 - Default-branch required status check: none. `main` has no branch protection and no
-  ruleset, because commits land on it directly; the gate is running `make build`,
-  `make test`, and `make validate` before each push, and `Validate` on `main` right after it.
+  ruleset, because commits land on it directly; the gate is running `make check` (build,
+  lint, test, validate, strings-check) before each push, and `Validate` on `main` right after it.
 - Secret protection: GitHub secret scanning and push protection enabled. These are
   backstops, not substitutes for inspecting the exact publication payload.
 - Release, signing, and secret-storage policy: direct download, outside the Mac App Store.
@@ -100,6 +100,9 @@ make build && make test          # as CI runs them; also fail on any Sources/ or
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
 make strings                     # regenerate the String Catalog and en.lproj after a copy change
 make strings-check               # fail when the catalog is out of date (CI build job)
+make lint                        # SwiftLint + swift-format lint, strict (shared .swiftlint.yml/.swift-format)
+make format                      # rewrite Sources/ and Tests/ with swift-format; run before committing
+make check                       # build, lint, test, validate, strings-check: the gate before a commit
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
 scripts/make-dmg.sh [--version X.Y.Z] [--force]  # DMG (expects build/WindowHop.app)

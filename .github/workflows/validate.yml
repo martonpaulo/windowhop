@@ -14,6 +14,11 @@ permissions:
 env:
   XCODE_VERSION: "26.6"
   DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+  # The SwiftLint pin: a release binary with a verified checksum, so CI lints with the same
+  # version as a local `brew install swiftlint` of that release. swift-format comes from the
+  # pinned Xcode above.
+  SWIFTLINT_VERSION: "0.65.1"
+  SWIFTLINT_SHA256: c1e429b0599cf1b516f369a2d9ec04eaf0e436f3c12b637df8851fa52ff694d0
 
 jobs:
   # Repository invariants cover markdown, the site and screenshots too, so this
@@ -50,7 +55,7 @@ jobs:
           fi
           CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
           echo "changed files:"; echo "$CHANGED"
-          if echo "$CHANGED" | grep -qE '^(Sources/|Tests/|Support/|scripts/|Package\.swift|Package\.resolved|\.github/workflows/validate\.yml)'; then
+          if echo "$CHANGED" | grep -qE '^(Sources/|Tests/|Support/|scripts/|Makefile|Package\.swift|Package\.resolved|\.swift-format|\.swiftlint\.yml|\.github/workflows/validate\.yml)'; then
             echo "swift=true" >> "$GITHUB_OUTPUT"
           else
             echo "swift=false" >> "$GITHUB_OUTPUT"
@@ -73,11 +78,21 @@ jobs:
         with:
           path: .build
           key: swiftpm-${{ runner.os }}-${{ runner.arch }}-xcode-${{ env.XCODE_VERSION }}-${{ hashFiles('Package.resolved') }}
-      - name: Build (release)
-        run: make build CONFIGURATION=release
-      - name: Tests
-        run: make test
-      # The catalog's keys come from a compiler build, so this check lives here and
-      # not in `validate` (#99).
-      - name: String Catalog matches the sources
-        run: make strings-check
+      - name: Install the pinned SwiftLint
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" \
+            "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/portable_swiftlint.zip"
+          echo "$SWIFTLINT_SHA256  $RUNNER_TEMP/swiftlint.zip" | shasum -a 256 -c -
+          mkdir -p "$RUNNER_TEMP/swiftlint"
+          unzip -q "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+      - name: Report the lint tool versions
+        run: |
+          swiftlint version
+          swiftlint version | grep -qx "$SWIFTLINT_VERSION"
+          swift format --version
+      # build, lint (SwiftLint and swift-format, warnings as errors), test, validate and
+      # strings-check, stopping at the first failure. The catalog's keys come from a
+      # compiler build, so strings-check lives here and not in the `validate` job (#99).
+      - name: Check (release build, lint, tests, invariants, String Catalog)
+        run: make check CONFIGURATION=release
