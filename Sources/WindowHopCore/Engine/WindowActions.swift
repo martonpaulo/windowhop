@@ -58,8 +58,10 @@ public enum WindowActions {
             return
         }
         guard let ax = window.ax else { return }
+        // main owns TrackedWindow; the AX actions queue gets the value, not the window
+        let isFullscreen = window.isFullscreen
         BackgroundWork.axActionsQueue.async {
-            if window.isFullscreen {
+            if isFullscreen {
                 try? ax.setAttribute(kAXFullscreenAttribute, false)
                 BackgroundWork.axActionsQueue.asyncAfter(deadline: .now() + 1) {
                     pressCloseButton(ax)
