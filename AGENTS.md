@@ -90,7 +90,7 @@ effects.
 
 ```sh
 swift build && swift test        # must pass, zero warnings (Package.swift makes warnings errors)
-make build && make test          # the same commands, as CI runs them
+make build && make test          # as CI runs them; also fail on any Sources/ or Tests/ `warning:` line
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
