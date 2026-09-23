@@ -1,7 +1,8 @@
-// The live demo in the home page hero: a small desktop with seven windows and
-// WindowHop's switcher over it. It plays the ⌘Tab gesture on its own, and the
-// visitor can take over with the arrow keys, Return or a click, and switch
-// between App Icons and Window Previews.
+// The live demo in the home page hero: a small desktop with five windows and
+// WindowHop's switcher over it. It plays the ⌘Tab gesture on its own and
+// alternates between the two styles, App Icons and Window Previews, naming the
+// current one in a caption above the screen. A click, a tap or the arrow keys
+// switch windows by hand; the demo then resumes on its own after a short pause.
 //
 // Everything here is drawn by the page: neutral windows and generic app icons,
 // never a real product's brand. Without JavaScript the <noscript> screenshot in
@@ -19,15 +20,17 @@
   };
   // Most recently used first, as the switcher lists them. Three browser windows
   // and two terminals: the case WindowHop is for.
+  // Placed as a tidy cascade, so the desktop reads at a glance.
   const WINDOWS = [
-    { app: "browser", title: "Trip to Lisbon", kind: "page", x: 6, y: 12, w: 50, h: 58 },
-    { app: "terminal", title: "api — zsh", kind: "shell", x: 44, y: 30, w: 44, h: 50 },
-    { app: "browser", title: "Pull request #42", kind: "code", x: 30, y: 8, w: 52, h: 60 },
-    { app: "notes", title: "Groceries", kind: "notes", x: 62, y: 16, w: 30, h: 46 },
-    { app: "terminal", title: "server logs", kind: "logs", x: 12, y: 40, w: 42, h: 48 },
-    { app: "browser", title: "Recipe: pastel de nata", kind: "article", x: 38, y: 22, w: 48, h: 56 },
-    { app: "mail", title: "Inbox", kind: "mail", x: 20, y: 18, w: 50, h: 56 },
+    { app: "browser", title: "Trip to Lisbon", kind: "page", x: 10, y: 8, w: 46, h: 62 },
+    { app: "terminal", title: "api — zsh", kind: "shell", x: 20, y: 14, w: 46, h: 62 },
+    { app: "browser", title: "Pull request #42", kind: "code", x: 30, y: 20, w: 46, h: 62 },
+    { app: "notes", title: "Groceries", kind: "notes", x: 40, y: 26, w: 46, h: 62 },
+    { app: "browser", title: "Recipe: pastel de nata", kind: "article", x: 50, y: 32, w: 46, h: 62 },
   ];
+  const MODES = { icons: "App Icons", previews: "Window Previews" };
+  // after the visitor switches by hand, the demo waits this long, then resumes
+  const RESUME_AFTER_MS = 6000;
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const svg = (name) => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#demo-glyph-${name}"></use></svg>`;
@@ -70,12 +73,8 @@
       <symbol id="demo-glyph-lines" viewBox="0 0 24 24"><path d="M6 8h12M6 12h12M6 16h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></symbol>
       <symbol id="demo-glyph-envelope" viewBox="0 0 24 24"><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="6.5" width="16" height="11" rx="2"/><path d="m4.5 7.5 7.5 6 7.5-6"/></g></symbol>
     </svg>
-    <div class="demo-controls">
-      <div class="segmented" role="radiogroup" aria-label="Switcher style">
-        <button type="button" role="radio" aria-checked="true" data-mode="icons">App Icons</button>
-        <button type="button" role="radio" aria-checked="false" data-mode="previews">Window Previews</button>
-      </div>
-    </div>
+    <p class="demo-caption" aria-hidden="true">${Object.entries(MODES)
+      .map(([mode, name]) => `<span data-caption="${mode}">${name}</span>`).join("")}</p>
     <div class="demo-screen" data-mode="icons">
       <div class="demo-menubar" aria-hidden="true"><b></b><span></span><span></span><span></span><time>9:41</time></div>
       <div class="demo-desktop" aria-hidden="true">${WINDOWS.map(windowMarkup).join("")}</div>
@@ -86,7 +85,6 @@
       <div class="demo-panel" role="listbox" tabindex="0" aria-label="Open windows. Use the arrow keys to choose one and Return to switch to it."></div>
     </div>
     <div class="demo-keys keycap-row" aria-hidden="true"><kbd class="keycap key-cmd">⌘</kbd><kbd class="keycap key-tab">Tab</kbd></div>
-    <p class="demo-hint">Try it: tap or click a window, or select the switcher and use <kbd>←</kbd> <kbd>→</kbd> and <kbd>Return</kbd>.</p>
     <p class="visually-hidden" aria-live="polite"></p>`;
 
   const screen = mount.querySelector(".demo-screen");
@@ -102,7 +100,9 @@
   let order = WINDOWS.map((_, index) => index); // MRU, front window first
   let selected = 1;
   let playing = !reduceMotion.matches;
+  let pausedByButton = reduceMotion.matches;
   let timer = null;
+  let resumeTimer = null;
 
   const label = (index) => `${WINDOWS[index].title} — ${APPS[WINDOWS[index].app].name}`;
 
@@ -142,6 +142,13 @@
 
   const showPanel = (on) => screen.classList.toggle("is-open", on);
 
+  const setMode = (mode) => {
+    screen.dataset.mode = mode;
+    mount.querySelectorAll("[data-caption]").forEach((caption) =>
+      caption.classList.toggle("is-current", caption.dataset.caption === mode));
+    renderPanel();
+  };
+
   const switchToSelected = () => {
     const windowIndex = order[selected];
     order = [windowIndex, ...order.filter((index) => index !== windowIndex)];
@@ -179,7 +186,9 @@
       press(keyCmd, false);
       showPanel(false);
       switchToSelected();
-      await wait(1500);
+      await wait(1500); if (!alive()) return;
+      // the next gesture shows the other style
+      setMode(screen.dataset.mode === "icons" ? "previews" : "icons");
     }
   };
 
@@ -203,7 +212,13 @@
   };
 
   // --- visitor input -------------------------------------------------------------
-  const takeOver = () => { if (playing) setPlaying(false); };
+  // The visitor switches by hand: stop the loop, then resume it after a pause,
+  // unless the pause button stopped the demo on purpose.
+  const takeOver = () => {
+    if (playing) setPlaying(false);
+    clearTimeout(resumeTimer);
+    if (!pausedByButton) resumeTimer = setTimeout(() => setPlaying(true), RESUME_AFTER_MS);
+  };
 
   panel.addEventListener("focus", takeOver);
   panel.addEventListener("keydown", (event) => {
@@ -233,26 +248,16 @@
     renderPanel();
   });
 
-  mount.querySelectorAll("[data-mode]").forEach((button) => {
-    button.addEventListener("click", () => {
-      screen.dataset.mode = button.dataset.mode;
-      mount.querySelectorAll("[role=radio]").forEach((radio) =>
-        radio.setAttribute("aria-checked", String(radio === button)));
-      renderPanel();
-    });
+  playButton.addEventListener("click", () => {
+    clearTimeout(resumeTimer);
+    pausedByButton = playing;
+    setPlaying(!playing);
   });
-  // arrow keys move between the two style buttons, as in a native radio group
-  mount.querySelector(".segmented").addEventListener("keydown", (event) => {
-    if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
-    event.preventDefault();
-    const radios = [...mount.querySelectorAll("[role=radio]")];
-    const next = radios[(radios.indexOf(document.activeElement) + 1) % radios.length];
-    next.focus();
-    next.click();
+  reduceMotion.addEventListener("change", () => {
+    if (!reduceMotion.matches) return;
+    pausedByButton = true;
+    setPlaying(false);
   });
-
-  playButton.addEventListener("click", () => setPlaying(!playing));
-  reduceMotion.addEventListener("change", () => { if (reduceMotion.matches) setPlaying(false); });
 
   // pause while the demo is off screen, so it costs nothing there
   new IntersectionObserver(([entry]) => {
@@ -261,7 +266,7 @@
   }).observe(screen);
 
   stackDesktop();
-  renderPanel();
+  setMode("icons");
   mount.classList.add("is-ready");
   setPlaying(playing);
 })();

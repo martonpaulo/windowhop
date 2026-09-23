@@ -20,12 +20,13 @@ share one header whose labels are identical on every page (the 404 included), an
 styles and scripts from root paths (`/styles/main.css`), so any page works at any depth.
 
 **The live demo.** `site/scripts/demo.js` draws an interactive switcher in the home page
-hero: a small desktop with seven neutral windows (no third-party brand) and WindowHop's
-panel over it, in App Icons or Window Previews. It plays the ⌘Tab gesture on its own, and the
-visitor takes over with a click, a tap, or the arrow keys and Return on the focused listbox.
-The round button in the screen's corner pauses and plays it (WCAG 2.2.2). With Reduce Motion
-it starts paused, with the switcher open; without JavaScript the `<noscript>` screenshot
-stands in. It stops working while it is off screen.
+hero: a small desktop with five neutral windows in a cascade (no third-party brand) and
+WindowHop's panel over it. It plays the ⌘Tab gesture on its own and alternates between App
+Icons and Window Previews, naming the current style in a caption above the screen. A click, a
+tap, or the arrow keys and Return on the focused listbox switch by hand, and the demo resumes
+on its own six seconds later. The round button in the screen's corner pauses and plays it
+(WCAG 2.2.2); with Reduce Motion it starts paused, with the switcher open. Without JavaScript
+the `<noscript>` screenshot stands in, and the loop stops while the demo is off screen.
 
 **Motion.** Sections with `.reveal` fade up once as they scroll into view
 (`site/scripts/main.js`). The hidden start exists only when the inline head script set

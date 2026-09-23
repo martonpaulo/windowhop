@@ -34,7 +34,7 @@
    1. Tokens       palette, spacing scale, radii, sizes, motion
    2. Base         element defaults, focus, skip link
    3. Layout       page width, section rhythm, grids, showcase
-   4. Components   button, card, keycap, pill, segmented control, figure
+   4. Components   button, card, keycap, pill, figure
    5. Site chrome  header, footer
    6. Sections     hero, hero stats, download, open source, inner pages
    7. Live demo    the interactive switcher in the home page hero
@@ -99,6 +99,10 @@
   --page-width: min(73.75rem, 100% - 2.5rem);   /* 1180px, 20px gutters */
   --width-hero-copy: 51.25rem;                  /* 820px */
   --width-demo: 65rem;                          /* 1040px */
+  /* Running text stops at 80 characters, the upper end of a comfortable line;
+     the full 1180px page would carry about 140. Headings have no cap: they are
+     short, and balanced wrapping already evens their lines. */
+  --measure-prose: 80ch;
   --control-height: 3rem;
   --control-height-s: 2.25rem;
   --keycap-height: 3rem;
@@ -264,7 +268,6 @@ main {
 }
 
 .section h2 {
-  max-width: var(--measure-title);
   margin: 0;
   font-size: var(--text-2xl);
   font-weight: var(--weight-display);
@@ -279,7 +282,7 @@ main {
 .section > p:not(.eyebrow),
 .showcase-copy > p:not(.eyebrow),
 .lead {
-  max-width: var(--measure);
+  max-width: var(--measure-prose);
   margin: var(--space-m) 0 0;
   color: var(--secondary);
   font-size: var(--text-md);
@@ -546,40 +549,6 @@ kbd {
   color: var(--secondary);
   font-weight: var(--weight-strong);
   text-decoration: none;
-}
-
-/* Segmented control: a row of mutually exclusive buttons (role="radio"). */
-.segmented {
-  display: inline-flex;
-  padding: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--surface-strong);
-  box-shadow: inset 0 0 0 1px var(--line);
-}
-
-.segmented button {
-  min-height: var(--control-height-s);
-  padding: 0 var(--space-s);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--secondary);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--weight-strong);
-  transition:
-    background-color var(--duration-fast) ease,
-    color var(--duration-fast) ease;
-}
-
-.segmented button:hover:not([aria-checked="true"]) {
-  color: var(--accent);
-}
-
-.segmented [aria-checked="true"] {
-  background: var(--button-primary-bg);
-  color: var(--button-primary-fg);
 }
 
 /* Figure: a screenshot on a card. Captures come from `screencapture -l`, so each
@@ -950,14 +919,13 @@ h1 {
 }
 
 .page-hero h1 {
-  max-width: 18ch;
   margin: 0;
   font-size: var(--text-2xl);
   text-align: left;
 }
 
 .page-hero .hero-summary {
-  max-width: var(--measure);
+  max-width: var(--measure-prose);
   margin: var(--space-m) 0 0;
 }
 
@@ -1113,12 +1081,29 @@ h1 {
   overflow: hidden;
 }
 
-.demo-controls {
+/* The caption above the screen names the style on show; the demo alternates
+   between the two, and the current one is highlighted. */
+.demo-caption {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-xs);
-  margin-bottom: var(--space-m);
+  gap: var(--space-2xs);
+  margin: 0 0 var(--space-m);
+}
+
+.demo-caption span {
+  padding: var(--space-3xs) var(--space-s);
+  border-radius: var(--radius-pill);
+  color: var(--secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  transition:
+    background-color var(--duration-medium) ease,
+    color var(--duration-medium) ease;
+}
+
+.demo-caption .is-current {
+  background: var(--button-primary-bg);
+  color: var(--button-primary-fg);
 }
 
 .demo-screen {
@@ -1143,7 +1128,7 @@ h1 {
   --demo-panel-padding: 1.8cqi;
   --demo-panel-radius: 2.6cqi;
   --demo-tile: 10.4cqi;
-  --demo-tile-preview: 18cqi;
+  --demo-tile-preview: 16cqi;
   --demo-tile-radius: 1.6cqi;
   --demo-icon: 7.6cqi;
   --demo-badge: 4.4cqi;
@@ -1566,17 +1551,7 @@ h1 {
   margin-top: var(--space-m);
 }
 
-.demo-hint {
-  margin: var(--space-s) 0 0;
-  color: var(--secondary);
-  font-size: var(--text-sm);
-}
-
-.demo:not(.is-ready) .demo-hint {
-  display: none;
-}
-
-/* --- 8. Motion ---------------------------------------------------------------------
+.demo:not(.is-ready) /* --- 8. Motion ---------------------------------------------------------------------
    Sections fade up once as they scroll into view (scripts/main.js adds
    .is-visible). The hidden start exists only with JavaScript (html.js, set in each
    page's head) and with motion allowed, so nothing is ever hidden from a visitor
