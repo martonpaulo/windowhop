@@ -75,4 +75,48 @@ final class PreviewLedgerTests: XCTestCase {
         XCTAssertFalse(ledger.shouldStore("a"))
         XCTAssertFalse(ledger.shouldDeliver("b", capturedIn: generation))
     }
+
+    // MARK: - Retry allowance (#91)
+
+    func testAFailedCaptureGetsOneRetryPerSession() {
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a", "b"])
+        XCTAssertTrue(ledger.claimRetry("a", capturedIn: generation))
+        XCTAssertFalse(ledger.claimRetry("a", capturedIn: generation), "a second retry")
+        XCTAssertTrue(ledger.claimRetry("b", capturedIn: generation), "allowances are per window")
+    }
+
+    func testANewSessionRestoresTheRetryAllowance() {
+        var ledger = PreviewLedger<String>()
+        let first = ledger.beginSession(ids: ["a"])
+        XCTAssertTrue(ledger.claimRetry("a", capturedIn: first))
+        ledger.endSession()
+        let second = ledger.beginSession(ids: ["a"])
+        XCTAssertTrue(ledger.claimRetry("a", capturedIn: second))
+    }
+
+    func testNoRetryAfterEviction() {
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a"])
+        ledger.evict("a")
+        XCTAssertFalse(ledger.claimRetry("a", capturedIn: generation))
+    }
+
+    func testNoRetryForAnEndedOrReplacedSession() {
+        var ledger = PreviewLedger<String>()
+        let first = ledger.beginSession(ids: ["a"])
+        ledger.endSession()
+        XCTAssertFalse(ledger.claimRetry("a", capturedIn: first))
+        let second = ledger.beginSession(ids: ["a"])
+        XCTAssertFalse(ledger.claimRetry("a", capturedIn: first), "a superseded session")
+        XCTAssertTrue(ledger.claimRetry("a", capturedIn: second))
+    }
+
+    func testAWindowThatJoinedTheSessionGetsItsOwnRetry() {
+        var ledger = PreviewLedger<String>()
+        let generation = ledger.beginSession(ids: ["a"])
+        XCTAssertFalse(ledger.claimRetry("late", capturedIn: generation), "not in the session yet")
+        ledger.extendSession(ids: ["late"])
+        XCTAssertTrue(ledger.claimRetry("late", capturedIn: generation))
+    }
 }

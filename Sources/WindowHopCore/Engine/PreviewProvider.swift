@@ -201,56 +201,79 @@ public final class PreviewProvider {
 
     // MARK: - Capture
 
+    /// One batch of tile captures. `TileCaptureFlow` owns the order: one
+    /// shared lookup, captures in list order within the provider-wide budget,
+    /// and one delayed retry per window per session for failures that can
+    /// pass on their own (#91). Once the session ends, captures already
+    /// running finish into the cache, but no further capture work starts.
     private func capture(_ requests: [CaptureRequest], generation sessionGeneration: Int,
                          pixelTarget: CGSize) async {
-        guard let content = try? await SCShareableContent
-            .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
-            markUnavailable(requests.map(\.id), generation: sessionGeneration)
-            return
-        }
-        let assignments = PreviewMatcher.assign(
-            requests: requests.map(Self.matchRequest),
-            candidates: Self.matchCandidates(in: content.windows))
-        let assigned = requests.compactMap { request in
-            assignments[request.id].map { (request, content.windows[$0]) }
-        }
-        let assignedIDs = Set(assigned.map { $0.0.id })
-        let unmatched = requests.map(\.id).filter { !assignedIDs.contains($0) }
-        if !unmatched.isEmpty {
-            markUnavailable(unmatched, generation: sessionGeneration)
-        }
-        // parallel, in list order, within the provider-wide budget: fast without
-        // saturating WindowServer. The tasks run on main between their awaits;
-        // the screenshots themselves proceed in parallel inside ScreenCaptureKit.
-        // Once the session ends, captures already running finish into the
-        // cache, but no further capture work starts.
-        let budget = captureBudget
-        var captures: [Task<Void, Never>] = []
-        for (request, scWindow) in assigned {
-            guard await budget.acquire(generation: sessionGeneration) else { break }
-            captures.append(Task { [weak self] in
-                defer { budget.release() }
-                await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                       pixelTarget: pixelTarget)
+        let requestsByID = Dictionary(requests.map { ($0.id, $0) },
+                                      uniquingKeysWith: { first, _ in first })
+        await TileCaptureFlow.run(
+            ids: requests.map(\.id),
+            budget: captureBudget,
+            generation: sessionGeneration,
+            lookup: { ids -> [AnyHashable: SCWindow]? in
+                guard let content = try? await SCShareableContent
+                    .excludingDesktopWindows(false, onScreenWindowsOnly: false) else { return nil }
+                let assignments = PreviewMatcher.assign(
+                    requests: ids.compactMap { requestsByID[$0] }.map(Self.matchRequest),
+                    candidates: Self.matchCandidates(in: content.windows))
+                return assignments.mapValues { content.windows[$0] }
+            },
+            capture: { scWindow in
+                await self.captureImage(scWindow, pixelTarget: pixelTarget)
+            },
+            isCurrent: { self.isTileSessionCurrent(sessionGeneration) },
+            claimRetries: { ids in
+                self.claimRetries(ids, generation: sessionGeneration)
+            },
+            sleep: { duration in try? await Task.sleep(for: duration) },
+            deliver: { id, image in
+                self.storeTileSnapshot(image, for: id, generation: sessionGeneration)
+            },
+            unavailable: { ids in
+                self.markUnavailable(ids, generation: sessionGeneration)
             })
-        }
-        for capture in captures { await capture.value }
     }
 
-    private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
-                            generation sessionGeneration: Int,
-                            pixelTarget: CGSize) async {
-        guard let image = await captureImage(scWindow, pixelTarget: pixelTarget) else {
-            markUnavailable([request.id], generation: sessionGeneration)
-            return
-        }
+    private func storeTileSnapshot(_ image: NSImage, for id: AnyHashable,
+                                   generation sessionGeneration: Int) {
         // the ledger is the single authority on what a late result may do:
         // nothing for vanished windows, cache-only for ended sessions
-        guard ledger.shouldStore(request.id) else { return }
-        cache[request.id] = image
-        if ledger.shouldDeliver(request.id, capturedIn: sessionGeneration) {
-            onPreview?(request.id, image)
+        guard ledger.shouldStore(id) else { return }
+        cache[id] = image
+        if ledger.shouldDeliver(id, capturedIn: sessionGeneration) {
+            onPreview?(id, image)
         }
+    }
+
+    /// True while tile capture work for this session may still start: the same
+    /// session, still in Window Previews, with the grant it opened with.
+    private func isTileSessionCurrent(_ sessionGeneration: Int) -> Bool {
+        activeSessionGeneration == sessionGeneration
+            && Preferences.shared.appearanceMode == .windowPreviews
+            && sessionPermission?.isAuthorized == true
+    }
+
+    /// Hands out the one retry each window gets per session. A failure is the
+    /// signal that the grant may have changed, so the status is confirmed once
+    /// for the whole batch first: a revoked grant blocks the panel instead of
+    /// spending a retry.
+    func claimRetries(_ ids: [AnyHashable], generation sessionGeneration: Int)
+        -> [AnyHashable] {
+        let status = readPermissionStatus()
+        guard status.isAuthorized else {
+            sessionPermission = status
+            onPermissionRequired?(status)
+            return []
+        }
+        let claimed = ids.filter { ledger.claimRetry($0, capturedIn: sessionGeneration) }
+        if !claimed.isEmpty {
+            Log.previews.debug("retrying \(claimed.count, privacy: .public) failed tile captures")
+        }
+        return claimed
     }
 
     private func captureExpanded(_ request: CaptureRequest,
@@ -283,9 +306,11 @@ public final class PreviewProvider {
                 defer { self.captureBudget.release() }
                 guard self.isExpandedRequestCurrent(id,
                                                     sessionGeneration: sessionGeneration,
-                                                    requestGeneration: requestGeneration)
+                                                    requestGeneration: requestGeneration),
+                    case .captured(let image) = await self.captureImage(
+                        scWindow, pixelTarget: pixelTarget)
                 else { return nil }
-                return await self.captureImage(scWindow, pixelTarget: pixelTarget)
+                return image
             },
             deliver: { image in
                 self.deliverExpandedSnapshot(image, for: id)
@@ -303,9 +328,9 @@ public final class PreviewProvider {
     }
 
     private func captureImage(_ scWindow: SCWindow,
-                              pixelTarget: CGSize) async -> NSImage? {
+                              pixelTarget: CGSize) async -> TileCaptureResult<NSImage> {
         let windowSize = scWindow.frame.size
-        guard windowSize.width > 1, windowSize.height > 1 else { return nil }
+        guard windowSize.width > 1, windowSize.height > 1 else { return .failed(.invalidTarget) }
         let configuration = SCStreamConfiguration()
         let fit = min(pixelTarget.width / windowSize.width,
                       pixelTarget.height / windowSize.height, 2)
@@ -314,11 +339,39 @@ public final class PreviewProvider {
         configuration.showsCursor = false
         configuration.ignoreShadowsSingleWindow = true
         let filter = SCContentFilter(desktopIndependentWindow: scWindow)
-        guard let cgImage = try? await SCScreenshotManager.captureImage(
-            contentFilter: filter, configuration: configuration) else { return nil }
-        return NSImage(cgImage: cgImage,
-                       size: NSSize(width: CGFloat(cgImage.width) / 2,
-                                    height: CGFloat(cgImage.height) / 2))
+        let cgImage: CGImage
+        do {
+            cgImage = try await SCScreenshotManager.captureImage(
+                contentFilter: filter, configuration: configuration)
+        } catch {
+            let failure = Self.failure(for: error)
+            let code = (error as NSError).code
+            Log.previews.debug(
+                "tile capture failed: \(String(describing: failure), privacy: .public) (\(code, privacy: .public))")
+            return .failed(failure)
+        }
+        return .captured(NSImage(cgImage: cgImage,
+                                 size: NSSize(width: CGFloat(cgImage.width) / 2,
+                                              height: CGFloat(cgImage.height) / 2)))
+    }
+
+    /// Keeps the capture error's meaning instead of discarding it. Only errors
+    /// that describe a broken connection or a system hiccup are transient;
+    /// anything unknown is treated as stable, so it never starts a retry.
+    /// Codes: ScreenCaptureKit `SCError.h` (macOS 27 SDK).
+    static func failure(for error: any Error) -> PreviewFailure {
+        guard let streamError = error as? SCStreamError else {
+            return .captureFailed(transient: false)
+        }
+        switch streamError.code {
+        case .userDeclined:
+            return .permissionDenied
+        case .internalError, .failedApplicationConnectionInterrupted,
+             .failedApplicationConnectionInvalid, .noWindowList, .systemStoppedStream:
+            return .captureFailed(transient: true)
+        default:
+            return .captureFailed(transient: false)
+        }
     }
 
     private func makeCaptureRequest(_ item: SwitcherItem) -> CaptureRequest? {

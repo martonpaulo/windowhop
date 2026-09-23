@@ -8,9 +8,12 @@
 /// - A result from a previous session may still enter the cache (free
 ///   freshness for the next open) but is never delivered live, so a reopened
 ///   switcher can't receive images ordered for an earlier list.
+/// - A failed tile capture may be retried at most once per window per session
+///   (`claimRetry`), and only while its result could still be delivered live.
 public struct PreviewLedger<ID: Hashable> {
     public private(set) var generation = 0
     private var validIds: Set<ID> = []
+    private var retriedIds: Set<ID> = []
 
     public init() {}
 
@@ -19,6 +22,7 @@ public struct PreviewLedger<ID: Hashable> {
     public mutating func beginSession(ids: some Sequence<ID>) -> Int {
         generation += 1
         validIds.formUnion(ids)
+        retriedIds = []
         return generation
     }
 
@@ -33,6 +37,7 @@ public struct PreviewLedger<ID: Hashable> {
     /// The session ended: any not-yet-delivered result loses live delivery.
     public mutating func endSession() {
         generation += 1
+        retriedIds = []
     }
 
     /// The window disappeared: in-flight results for it must be discarded.
@@ -53,5 +58,15 @@ public struct PreviewLedger<ID: Hashable> {
     /// the current one.
     public func shouldDeliver(_ id: ID, capturedIn captureGeneration: Int) -> Bool {
         shouldStore(id) && captureGeneration == generation
+    }
+
+    /// Grants the one automatic retry a failed capture gets in its session.
+    /// False once the id has used it, and whenever a result of the retry could
+    /// no longer be delivered live (window gone, session ended or replaced).
+    public mutating func claimRetry(_ id: ID, capturedIn captureGeneration: Int) -> Bool {
+        guard shouldDeliver(id, capturedIn: captureGeneration),
+              !retriedIds.contains(id) else { return false }
+        retriedIds.insert(id)
+        return true
     }
 }

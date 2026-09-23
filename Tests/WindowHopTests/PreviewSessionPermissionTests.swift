@@ -119,4 +119,29 @@ final class PreviewSessionPermissionTests: XCTestCase {
         XCTAssertEqual(reads, 0)
         XCTAssertTrue(permissionReports.isEmpty)
     }
+
+    // MARK: - Retry allowance (#91)
+
+    /// A retry is failure-driven work, so it confirms the grant once for the
+    /// batch: a revoked grant blocks the panel and spends no retry.
+    func testARevokedGrantRefusesTheRetryAndBlocksThePanel() throws {
+        begin(.authorized)
+        let generation = try XCTUnwrap(provider.sessionGenerationForTesting)
+        readStatus = .denied
+
+        XCTAssertEqual(provider.claimRetries(["a"], generation: generation), [])
+        XCTAssertEqual(reads, 1)
+        XCTAssertEqual(permissionReports, [.denied])
+    }
+
+    func testAWindowOutsideTheSessionGetsNoRetry() throws {
+        begin(.authorized)
+        let generation = try XCTUnwrap(provider.sessionGenerationForTesting)
+
+        // "a" is not a capture request (no live window), so the ledger never
+        // registered it; only registered windows may retry
+        XCTAssertEqual(provider.claimRetries(["a"], generation: generation), [])
+        XCTAssertEqual(reads, 1)
+        XCTAssertTrue(permissionReports.isEmpty)
+    }
 }

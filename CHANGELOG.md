@@ -85,6 +85,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Window previews recover from a short capture failure**: when macOS fails to capture a
+  window for a moment, WindowHop now tries that window once more during the same switcher
+  session, so its preview can appear without closing and reopening the switcher. A window
+  that cannot be captured still shows its placeholder at once.
 - **No pause when windows open during a Window Previews session**: WindowHop now checks
   the Screen Recording permission once when the switcher opens, instead of once for each
   window that appears while it is open. Each check took about 15 ms, so several new

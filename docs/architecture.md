@@ -303,6 +303,22 @@ and captures still waiting when the session ends never start. Before, each batch
 only itself, and ten windows opening during a session put up to 10 captures in flight at
 once ([#86](https://github.com/martonpaulo/windowhop/issues/86)).
 
+A tile capture that fails for a reason that can pass on its own gets one retry per window
+per session ([#91](https://github.com/martonpaulo/windowhop/issues/91)). `TileCaptureFlow`
+(pure, in `WindowHopKit`) owns the order: one shared lookup, captures in list order through
+the same `CaptureBudget`, then, only for retryable failures, one 500 ms wait and one
+coalesced lookup and capture. `PreviewRetryPolicy` retries only a failed inventory read and
+the capture errors that describe a broken connection or a system hiccup (internal error,
+interrupted or invalid application connection, no window list, stream stopped by the
+system); `PreviewProvider` keeps the `SCStreamError` code to make that distinction, and an
+unknown error is stable. No match, a window without a drawable area, a declined grant and
+every other error are final at once, so an ambiguous match never becomes a retry loop or a
+guess. `PreviewLedger.claimRetry` grants the allowance once per window per session and only
+while a result could still be delivered live; before the retry the provider confirms the
+grant once, and an ended session, a mode change, a revoked grant or an evicted window stops
+the retry before its lookup. While a retry waits the tile keeps its loading state; after
+the retry fails it shows the unavailable state, and a cached snapshot stays in place.
+
 Captures finish asynchronously and out of order, so the pure, unit-tested
 `PreviewLedger` decides what a late result may do: results for evicted windows
 are discarded entirely, and results from an ended or superseded session may
