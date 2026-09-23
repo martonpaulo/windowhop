@@ -500,6 +500,27 @@ else
     fail "GitHub Pages site failed the WindowHop checks"
 fi
 
+# --- release notes pages (#128) ------------------------------------------------
+# Sparkle's update window shows the site's notes page for each version, written at
+# deploy time from CHANGELOG.md. The script must render the current changelog, and
+# every appcast item with a changelog entry must link its page, not GitHub's.
+notes_dir=$(mktemp -d)
+if python3 scripts/render-release-notes.py "$notes_dir" >/dev/null \
+    && [ -f "$notes_dir/release-notes/$CHANGELOG_VERSION/index.html" ] \
+    && [ -f "$notes_dir/release-notes/index.html" ]; then
+    pass "release notes render from CHANGELOG ($CHANGELOG_VERSION included)"
+else
+    fail "scripts/render-release-notes.py did not render the notes for $CHANGELOG_VERSION"
+fi
+rm -rf "$notes_dir"
+if grep -q "releaseNotesLink>https://github.com/" appcast.xml; then
+    fail "appcast.xml links a GitHub release page; link https://windowhop.martonpaulo.com/release-notes/X.Y.Z/"
+else
+    pass "appcast release notes link the site's pages"
+fi
+grep -q "render-release-notes.py" .github/workflows/deploy.yml \
+    || fail "deploy.yml does not render the release notes"
+
 # --- canonical release scripts ------------------------------------------------
 # These are byte-identical copies of skill-deck's project-release assets, whose
 # own suites own their behavior (the conventions check reports a drifted copy).

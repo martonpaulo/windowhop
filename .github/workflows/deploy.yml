@@ -101,14 +101,16 @@ jobs:
         with:
           ref: ${{ needs.scope.outputs.sha }}
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      # The count is written into a staged copy, never into site/ itself, and the
-      # script exits 0 without it when GitHub's API is unavailable.
-      - name: Stage the site with the download count
+      # The count and the release notes are written into a staged copy, never into
+      # site/ itself. The count script exits 0 without it when GitHub's API is
+      # unavailable; the notes come from CHANGELOG.md, one page per release (#128).
+      - name: Stage the site with the download count and release notes
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp -R site "$RUNNER_TEMP/site"
           scripts/render-download-count.sh "$RUNNER_TEMP/site"
+          python3 scripts/render-release-notes.py "$RUNNER_TEMP/site"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/site

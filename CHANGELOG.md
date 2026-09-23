@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Previews fill the whole card**: a window snapshot now covers its card, and only
   the card has rounded corners. When a window's shape differs from the card's, a thin
   strip at its edges is trimmed instead of leaving empty bands.
+- **Readable update notes**: the update window now shows the release notes on their own,
+  in WindowHop's look, instead of the whole GitHub release page.
 
 ## [2.2.0] - 2026-09-23
 

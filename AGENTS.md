@@ -80,7 +80,9 @@
     `main` commit, pushed or dispatched by hand on that tag. It is the only thing that
     publishes; the local `scripts/` rehearse and diagnose, and never publish a release.
   - Update feed: Sparkle, from `appcast.xml` on `raw.githubusercontent.com`, written by
-    `release.yml` only after the update ZIP is downloadable.
+    `release.yml` only after the update ZIP is downloadable. Each item's release notes are
+    the site's `/release-notes/X.Y.Z/` page, rendered from `CHANGELOG.md` at deploy time
+    (`docs/website.md`, #128).
   - Publishing authority: the owner, by pushing the tag; only artifacts that passed
     verification in that run are published.
   - Secrets: `DEVELOPER_ID_CERT_P12`, `DEVELOPER_ID_CERT_PASSWORD`, `NOTARY_API_KEY`,

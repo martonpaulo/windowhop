@@ -114,6 +114,17 @@ The count refreshes on every deploy and at least weekly: `deploy.yml` has a Mond
 scheduled workflows in a public repository after 60 days without activity; re-enable it from
 the Actions tab if the count stops moving.
 
+## Release notes pages
+
+`scripts/render-release-notes.py` turns every released `CHANGELOG.md` entry into
+`/release-notes/X.Y.Z/` and all of them into `/release-notes/`, in the site's styles, with
+`noindex` and no site chrome, because Sparkle's update window shows the version's page in a
+small web view (#128). Like the download count, it runs on the deploy's staged copy, so no
+generated page is committed. `appcast.xml` links these pages: the canonical
+`make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new
+item, then dispatches Deploy once the release is published, so the page exists when clients
+see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
+
 ## GitHub Pages
 
 `.github/workflows/deploy.yml` waits for Validate to pass on `main`, copies `site/` to a
