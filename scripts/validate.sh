@@ -1,7 +1,12 @@
 #!/bin/bash
 # Repository validation: invariants that must hold for every commit and release.
 # Run from the repository root. Exits non-zero with an explanation on violation.
-set -uo pipefail
+#
+# Strict mode, but every check reports instead of aborting: a check runs as an `if`
+# condition, and a substitution that may legitimately find nothing (a missing plist key,
+# a grep with no match, `head` closing a pipe early) ends in `|| true`, so the empty value
+# reaches the check that explains it and the remaining checks still run.
+set -euo pipefail
 cd "$(dirname "$0")/.."
 
 failures=0
@@ -23,7 +28,7 @@ else
 fi
 # Code reads the identifier at runtime (Bundle.main.bundleIdentifier, #98); only
 # Support/ and the identity checks in scripts/ carry the value.
-BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plist)
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plist || true)
 if grep -rnF "$BUNDLE_ID" Sources/ Tests/ 2>/dev/null; then
     fail "bundle identifier literal found in Sources/ or Tests/; read Bundle.main.bundleIdentifier"
 else
@@ -75,7 +80,7 @@ fi
 # English only: one catalog, one compiled table. Whether the catalog matches the
 # sources needs a compiler build, so `make strings-check` owns that check (CI runs it
 # in the build job); here the committed table must be the catalog's compiled form.
-LPROJS=$(find Support -maxdepth 1 -name '*.lproj' | sort | tr '\n' ' ')
+LPROJS=$(find Support -maxdepth 1 -name '*.lproj' | sort | tr '\n' ' ' || true)
 if [ "$LPROJS" = "Support/en.lproj " ] \
     && [ "$(ls Support/en.lproj)" = "Localizable.strings" ] \
     && [ "$(find Support -name '*.xcstrings' | tr '\n' ' ')" = "Support/Localizable.xcstrings " ]; then
@@ -100,7 +105,7 @@ for key in SUFeedURL SUPublicEDKey SUEnableAutomaticChecks; do
         fail "Info.plist missing $key"
     fi
 done
-FEED=$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' Support/Info.plist)
+FEED=$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' Support/Info.plist 2>/dev/null || true)
 case "$FEED" in
     https://*) pass "appcast feed is HTTPS" ;;
     *) fail "appcast feed is not HTTPS: $FEED" ;;
@@ -136,8 +141,8 @@ if [ -f appcast.xml ]; then
     # advertise a floor above it. It may sit below it between raising the floor
     # and the next release, because that entry describes the previous build;
     # older entries keep their own floor so older systems keep their last release.
-    BUNDLE_FLOOR=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' Support/Info.plist)
-    NEWEST_FLOOR=$(grep -o '<sparkle:minimumSystemVersion>[^<]*' appcast.xml | head -1 | cut -d'>' -f2)
+    BUNDLE_FLOOR=$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' Support/Info.plist || true)
+    NEWEST_FLOOR=$(grep -o '<sparkle:minimumSystemVersion>[^<]*' appcast.xml | head -1 | cut -d'>' -f2 || true)
     # prints -1, 0 or 1 comparing dotted versions numerically
     FLOOR_ORDER=$(awk -v a="$NEWEST_FLOOR" -v b="$BUNDLE_FLOOR" 'BEGIN {
         n = split(a, x, "."); m = split(b, y, ".")
@@ -156,20 +161,20 @@ if [ -f appcast.xml ]; then
 fi
 
 # --- documentation/release synchronization ----------------------------------
-VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist || true)
 # The README no longer advertises a download (the GitHub About carries the site), so the
 # document that must track the shipped version is the changelog: its newest entry is the
 # release being described. The file follows Keep a Changelog: `## [X.Y.Z] - date`
 # headings, with one `## [Unreleased]` section above every version.
-CHANGELOG_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | tr -d '#[] ')
+CHANGELOG_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | tr -d '#[] ' || true)
 if [ "$CHANGELOG_VERSION" = "$VERSION" ]; then
     pass "CHANGELOG's newest entry matches version $VERSION"
 else
     fail "CHANGELOG's newest entry ($CHANGELOG_VERSION) does not match version $VERSION"
 fi
 UNRELEASED_COUNT=$(grep -c '^## \[Unreleased\]' CHANGELOG.md || true)
-UNRELEASED_LINE=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1)
-FIRST_VERSION_LINE=$(grep -nE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | cut -d: -f1)
+UNRELEASED_LINE=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1 || true)
+FIRST_VERSION_LINE=$(grep -nE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | cut -d: -f1 || true)
 if [ "$UNRELEASED_COUNT" = "1" ] && [ "${UNRELEASED_LINE:-0}" -lt "${FIRST_VERSION_LINE:-0}" ]; then
     pass "CHANGELOG has one [Unreleased] section above every version"
 else
@@ -202,7 +207,7 @@ while IFS= read -r screenshot; do
     else
         fail "unreferenced screenshot is tracked: $screenshot"
     fi
-done < <(find site/screenshots -type f -print | sort)
+done < <(find site/screenshots -type f -print 2>/dev/null | sort || true)
 
 if [ "$failures" -eq 0 ]; then
     pass "Markdown local links and tracked screenshots are synchronized"
@@ -326,7 +331,7 @@ windowhop_site_checks() (
 
     # Favicons (issue #93): every declared `sizes` describes the file it names, and the home
     # page declares one larger than 48 px, which Google Search asks for. The files come
-    # from `swift scripts/make-icon.swift --favicon site`.
+    # from `scripts/make-icon.swift --favicon site` (part of `make icon`).
     icon_sizes() {
       case "$1" in
         *.ico) python3 -c '

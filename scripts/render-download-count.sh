@@ -15,7 +15,7 @@
 #
 # Any failure to get a number (no gh, no token, API error, a total of zero) leaves
 # the element hidden and exits 0: a missing count must never block a deploy.
-set -uo pipefail
+set -euo pipefail
 
 site_dir=${1:?usage: render-download-count.sh <staged-site-dir>}
 page="$site_dir/index.html"

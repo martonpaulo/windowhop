@@ -1,7 +1,9 @@
 #!/bin/bash
 # Executable fixtures for scripts/stamp-app-metadata.sh, run against a
 # throwaway copy of Support/Info.plist: no build, no signing, no release.
-set -uo pipefail
+# Strict mode: a helper that expects a failing exit status captures it with `|| status=$?`,
+# so one failing check is counted and reported instead of ending the run.
+set -euo pipefail
 cd "$(dirname "$0")/../.."
 REPO_ROOT=$PWD
 
@@ -23,8 +25,12 @@ trap 'rm -rf "$SANDBOX"' EXIT
 PLIST="$SANDBOX/Info.plist"
 cp "$REPO_ROOT/Support/Info.plist" "$PLIST"
 
-stamp() { "$REPO_ROOT/scripts/stamp-app-metadata.sh" "$@" >/dev/null 2>&1; echo $?; }
-read_key() { /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" 2>/dev/null; }
+stamp() {
+    local status=0
+    "$REPO_ROOT/scripts/stamp-app-metadata.sh" "$@" >/dev/null 2>&1 || status=$?
+    echo "$status"
+}
+read_key() { /usr/libexec/PlistBuddy -c "Print :$1" "$PLIST" 2>/dev/null || true; }
 
 # --- a valid stamp writes all three keys ---------------------------------------
 check "valid stamp exits 0" "$(stamp "$PLIST" 9.8.7 90807 2026-09-15)" "0"
@@ -49,7 +55,7 @@ check "missing plist exits 1" "$(stamp "$SANDBOX/none.plist" 1.0.0 10000 2026-09
 
 # --- the committer date is a valid stamp ------------------------------------------
 check "git committer date is YYYY-MM-DD" \
-    "$(git log -1 --format=%cs | grep -cE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$')" "1"
+    "$(git log -1 --format=%cs | grep -cE '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || true)" "1"
 
 if [ "$FAILED" -gt 0 ]; then
     echo "stamp-app-metadata: $FAILED failed, $PASSED passed" >&2

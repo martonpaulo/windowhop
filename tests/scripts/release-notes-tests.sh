@@ -1,7 +1,9 @@
 #!/bin/bash
 # Executable fixtures for scripts/release-notes.sh, run against a throwaway
 # Keep a Changelog file so the real CHANGELOG.md never shapes the result.
-set -uo pipefail
+# Strict mode: a helper that expects a failing exit status captures it with `|| status=$?`,
+# so one failing check is counted and reported instead of ending the run.
+set -euo pipefail
 cd "$(dirname "$0")/../.."
 REPO_ROOT=$PWD
 
@@ -62,8 +64,9 @@ MD
 
 # Prints the exit status; the notes land in $SANDBOX/out and stderr in $SANDBOX/err.
 notes() {
-    "$REPO_ROOT/scripts/release-notes.sh" "$@" > "$SANDBOX/out" 2> "$SANDBOX/err"
-    echo $?
+    local status=0
+    "$REPO_ROOT/scripts/release-notes.sh" "$@" > "$SANDBOX/out" 2> "$SANDBOX/err" || status=$?
+    echo "$status"
 }
 
 # --- the newest version ------------------------------------------------------
@@ -102,7 +105,7 @@ check "unknown option exits 2" "$(notes --version 1.0.0 --bogus)" "2"
 check "positional argument exits 2" "$(notes 1.0.0)" "2"
 
 # --- the real changelog carries the shipped version --------------------------
-SHIPPED=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)
+SHIPPED=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist || true)
 check "the default changelog has notes for $SHIPPED" "$(notes --version "$SHIPPED")" "0"
 
 if [ "$FAILED" -gt 0 ]; then
