@@ -305,4 +305,88 @@ final class EventTapInterceptionTests: XCTestCase {
                            expected, "sticky ⌥Tab, comma with \(flags.rawValue)")
         }
     }
+
+    // MARK: - Key-up ownership after a tap interruption (#84)
+    //
+    // While the tap is disabled (timeout, user input, or sleep before the wake re-arm),
+    // events bypass it. A missed delivery is modelled by not feeding that event.
+
+    /// Opens a session with Tab plus `flags` and loses the owned Tab key-up.
+    private func missedOwnedTabKeyUp(openedWith flags: CGEventFlags) -> EventTapInterceptionState {
+        var state = watchingState(recording: false)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: flags)
+        XCTAssertEqual(state.suppressedKeyUps, [KeyCode.tab])
+        return state
+    }
+
+    func testMissedHeldKeyUpHealsAtTheNextPlainPress() {
+        var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
+        XCTAssertEqual(state.mode, .sessionHeld)
+        state.mode = .watching // the held session ended
+
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: []), .pass)
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: []), .pass,
+                       "a plain Tab release belongs to the app that got its key-down")
+        XCTAssertTrue(state.suppressedKeyUps.isEmpty)
+    }
+
+    func testMissedStickyKeyUpHealsAtTheNextPlainPress() {
+        var state = missedOwnedTabKeyUp(openedWith: .maskAlternate)
+        XCTAssertEqual(state.mode, .sessionSticky)
+        state.mode = .watching // the sticky session ended with Return
+
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: []), .pass)
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: []), .pass)
+        XCTAssertTrue(state.suppressedKeyUps.isEmpty)
+    }
+
+    func testMissedKeyUpDoesNotSwallowTheNativeCommandTabRelease() {
+        var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
+        state.mode = .off // switcher disabled or permission lost
+
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+                       .pass)
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
+                       .pass, "the native switcher gets both halves of ⌘Tab")
+    }
+
+    func testMissedKeyUpInsideAHeldSessionStillOwnsTheNextPair() {
+        var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
+
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand),
+                       EventTapDecision(disposition: .consume, input: .step(backward: false)))
+        state.mode = .watching // modifier released between the halves
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand),
+                       .consume, "no orphaned Tab release reaches the native switcher")
+        XCTAssertTrue(state.suppressedKeyUps.isEmpty)
+    }
+
+    func testReleaseOfARepeatThatPassedAfterTheSessionEndedPasses() {
+        var state = EventTapInterceptionState(mode: .sessionHeld, holdModifier: .maskCommand,
+                                              persistentShortcut: .optionTab)
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.rightArrow, flags: .maskCommand),
+                       EventTapDecision(disposition: .consume, input: .arrow(.right)))
+        state.mode = .watching
+        // autorepeat continues after the session ended, and the app receives it
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.rightArrow, flags: []), .pass)
+        XCTAssertEqual(state.decide(type: .keyUp, keyCode: KeyCode.rightArrow, flags: []), .pass,
+                       "the app that received the repeats also receives the release")
+    }
+
+    func testAnotherKeysPressLeavesOwnershipAlone() {
+        var state = missedOwnedTabKeyUp(openedWith: .maskCommand)
+        state.mode = .watching
+
+        XCTAssertEqual(state.decide(type: .keyDown, keyCode: KeyCode.escape, flags: []), .pass)
+        XCTAssertEqual(state.suppressedKeyUps, [KeyCode.tab])
+    }
+
+    /// Loop re-enables only after a timeout (#36 survey); WindowHop recovers from both.
+    func testBothTapDisableReasonsReEnableTheTap() {
+        XCTAssertTrue(EventTap.reEnablesTap(after: .tapDisabledByTimeout))
+        XCTAssertTrue(EventTap.reEnablesTap(after: .tapDisabledByUserInput))
+        for type: CGEventType in [.keyDown, .keyUp, .flagsChanged] {
+            XCTAssertFalse(EventTap.reEnablesTap(after: type))
+        }
+    }
 }

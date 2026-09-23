@@ -80,6 +80,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A key release is no longer swallowed after macOS pauses WindowHop's keyboard
+  monitor**: if macOS paused it (after a slow moment or sleep) while you
+  still held Tab from a switch, the next release of Tab could be hidden from the app you
+  were typing in, or from the native ⌘Tab switcher. The next press of that key now
+  corrects it.
 - **Merged windows become one entry right away**: after Window › Merge All Windows, the
   next switcher session shows the merged window once, with its tab count, instead of
   listing every former window until something else changed.

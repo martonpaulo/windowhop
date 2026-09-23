@@ -76,6 +76,16 @@ struct EventTapInterceptionState: Sendable {
             return EventTapDecision(disposition: .pass, input: .modifierReleased)
         }
 
+        // A key-up is consumed only when the latest key-down of that key was. Each
+        // key-down drops the key's ownership here and the branches below take it again
+        // only when they consume this key-down. So a key-up missed while the tap was
+        // disabled (timeout, user input, sleep) heals at the next press of that key,
+        // without a timer and without a reset that would leak a held session's Tab
+        // release after the re-enable.
+        if type == .keyDown {
+            suppressedKeyUps.remove(keyCode)
+        }
+
         // Consume the matching release even when the controller moved back to
         // watching between the down/up halves of a rapid chord.
         if type == .keyUp, suppressedKeyUps.remove(keyCode) != nil {
@@ -293,8 +303,15 @@ public final class EventTap {
 
     // MARK: - Callback (runs on the tap thread; must stay small and non-blocking)
 
+    /// Both disable notices re-enable the tap. The interception state is kept on
+    /// purpose: a held session stays owned, and a key-up missed while the tap was
+    /// off heals at the next key-down of that key (`EventTapInterceptionState.decide`).
+    nonisolated static func reEnablesTap(after type: CGEventType) -> Bool {
+        type == .tapDisabledByTimeout || type == .tapDisabledByUserInput
+    }
+
     fileprivate nonisolated func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        if type == .tapDisabledByUserInput || type == .tapDisabledByTimeout {
+        if Self.reEnablesTap(after: type) {
             if let eventTap = tapThreadState.withLock({ $0.eventTap?.port }) {
                 CGEvent.tapEnable(tap: eventTap, enable: true)
             }
