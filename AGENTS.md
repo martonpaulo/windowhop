@@ -19,8 +19,14 @@
 - Copyright: GPL-3.0. Derived from AltTab, © lwouis and contributors
   (`NSHumanReadableCopyright` in `Support/Info.plist` is the canonical string).
 - Development language: English.
-- Product copy: English only, authored inline. There is no localization layer, no `.lproj`
-  bundle, and no fallback locale; adding one is a migration, not an incidental change.
+- Product copy: English only, in `Support/Localizable.xcstrings`, read through
+  `String(localized:)` (SwiftUI literals resolve through the same table). The compiled
+  `Support/en.lproj/Localizable.strings` is committed and kept in sync by `make strings`,
+  because the canonical `package-app.sh` copies `Support/*.lproj` and compiles no catalog
+  (martonpaulo/skill-deck#333). Both files are generated from the sources: never edit them
+  by hand. There is no second language; adding one is a migration, not an incidental
+  change. This supersedes the earlier "authored inline, no localization layer" rule by the
+  owner's 2026-09-17 decision in #39 (Decided on #39).
 - Browser engine families: Chromium and WebKit for the website. `docs/website.md` owns
   the validation procedure and the distinction between static CI and browser checks.
 - Agent guidance: two entrypoints. `AGENTS.md` is the one real file, which Codex reads
@@ -92,6 +98,8 @@ effects.
 swift build && swift test        # must pass, zero warnings (Package.swift makes warnings errors)
 make build && make test          # as CI runs them; also fail on any Sources/ or Tests/ `warning:` line
 make validate                    # repository invariants (must pass); runs scripts/validate.sh
+make strings                     # regenerate the String Catalog and en.lproj after a copy change
+make strings-check               # fail when the catalog is out of date (CI build job)
 scripts/capture-screenshots.sh   # published screenshots (Retina display required)
 scripts/package-app.sh [--version X.Y.Z --build-number N] [--force]  # .app with Sparkle + zip
 scripts/make-dmg.sh [--version X.Y.Z] [--force]  # DMG (expects build/WindowHop.app)
@@ -328,7 +336,11 @@ notes. A missing configurability decision is a review failure.
   not run; the owner accepts that gap, recorded once in `docs/product.md` under
   `## Accepted evidence gaps`. A missing screen-reader pass never blocks completion, and an
   old criterion that asks for one is struck with a link to that line.
-- Keep visible copy centralized and consistent with the English-only copy strategy.
+- Keep visible copy in the String Catalog: every user-visible string goes through
+  `String(localized:)` or a SwiftUI localizable literal, never a plain `String` literal.
+  Log messages, harness output, defaults keys, identifiers, URLs, key glyphs and the bare
+  product name stay plain. Interpolate an integer as `String(n)`, since `String(localized:)`
+  formats numbers for the user's locale.
 - Keep expensive work out of render paths and latency-sensitive paths. Prefer event-driven,
   on-demand, bounded, incremental, and cancelable work.
 - Measure before claiming a performance problem, and optimize measured user-visible

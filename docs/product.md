@@ -65,8 +65,9 @@ to reopen the non-goal — an inconvenient feature request is not.
 - **Use private APIs.** Public Apple APIs only. This costs real capability — windows on a Space
   the user has never visited stay undiscoverable — and the cost is accepted, because a switcher
   that breaks on a macOS update is worse than one that misses a window.
-- **Localize.** English only, authored inline, with no localization layer. A single maintainer
-  cannot keep translations honest, and stale translations are worse than none.
+- **Localize.** English only. The copy lives in one English String Catalog (#39), which holds no
+  translation. A single maintainer cannot keep translations honest, and stale translations are
+  worse than none.
 - **Disable the native switcher.** The Cmd-Tab symbolic hotkey is never taken away and
   `flagsChanged` events are never consumed. If WindowHop dies mid-keystroke, the user still has
   a working switcher. This is the fail-safe the whole design is arranged around.
@@ -108,6 +109,7 @@ restate it.
 | Decision | Outcome | Canonical document | Deciding issue |
 | --- | --- | --- | --- |
 | What opens at launch and reopen | Settings opens at a normal launch only on first run or when both icons are hidden; missing Accessibility opens onboarding on any launch, login included | [architecture.md](architecture.md), "Launch and reopen" | [#80](https://github.com/martonpaulo/windowhop/issues/80) |
+| Where UI text lives | One English-only String Catalog, `Support/Localizable.xcstrings`, compiled into a committed `Support/en.lproj`; no translations | [AGENTS.md](../AGENTS.md), "Product copy" | [#39](https://github.com/martonpaulo/windowhop/issues/39) |
 
 ## Accepted evidence gaps
 

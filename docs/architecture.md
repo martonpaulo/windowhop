@@ -166,7 +166,7 @@ The shortcut recorder in Settings (`UI/ShortcutRecorderControl`) stays custom ra
 adopting a library such as KeyboardShortcuts
 ([#74](https://github.com/martonpaulo/windowhop/issues/74)). Adopting one would override
 three recorded rules: Sparkle is the only runtime dependency, `WindowHopKit/ShortcutFormatter` is the
-only owner of key names, and product copy is English-only with no `.lproj` bundle. It would
+only owner of key names, and product copy is English-only in one String Catalog. It would
 also not remove the hardest part of the job: a library recorder cannot see `EventTap`, so
 coordination with the tap would stay custom either way. Matching stays in `EventTap`, and
 persistence stays in `PersistentShortcut` and `Preferences`. Known recorder gaps are fixed in
