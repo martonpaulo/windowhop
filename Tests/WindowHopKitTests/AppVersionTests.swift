@@ -67,7 +67,7 @@ struct AppVersionTests {
     }
 
     @Test func copyrightComesFromTheBundle() {
-        let line = "GPL-3.0. Derived from AltTab, © lwouis and contributors."
+        let line = "© 2026 Marton Paulo. GPL-3.0. Derived from AltTab, © lwouis and contributors."
         #expect(AppVersion(infoDictionary: ["NSHumanReadableCopyright": line]).copyright == line)
         #expect(packaged().copyright == nil)
     }

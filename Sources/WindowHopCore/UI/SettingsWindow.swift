@@ -834,6 +834,8 @@ struct AboutPane: View {
                         .font(.title2.weight(.semibold))
                     Text("Switch between windows, not just apps.")
                         .foregroundStyle(.secondary)
+                    Text("Made by Marton Paulo")
+                        .settingsNote()
                     Text(versionLine)
                         .settingsNote()
                         .textSelection(.enabled)
@@ -892,15 +894,13 @@ struct AboutPane: View {
                             destination: ProjectLinks.issueReport(
                                 for: appVersion, macOS: ProcessInfo.processInfo.operatingSystemVersion))
                     }
-                    HStack(spacing: DesignTokens.settingsAboutLinkSpacing / 2) {
-                        // the bundle's canonical line; omitted rather than invented
-                        // when no Info.plist is embedded (swift build runs)
-                        if let copyright = appVersion.copyright {
-                            Text(copyright)
-                                .settingsNote()
-                        }
-                        Link("AltTab on GitHub", destination: ProjectLinks.altTabRepository)
-                            .font(.callout)
+                    // the bundle's canonical line, with the AltTab credit as text
+                    // (#123); omitted rather than invented when no Info.plist is
+                    // embedded (swift build runs)
+                    if let copyright = appVersion.copyright {
+                        Text(copyright)
+                            .settingsNote()
+                            .multilineTextAlignment(.center)
                     }
                 }
                 .frame(maxWidth: .infinity)

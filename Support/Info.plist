@@ -33,7 +33,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>NSHumanReadableCopyright</key>
-	<string>GPL-3.0. Derived from AltTab, © lwouis and contributors.</string>
+	<string>© 2026 Marton Paulo. GPL-3.0. Derived from AltTab, © lwouis and contributors.</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSScreenCaptureUsageDescription</key>

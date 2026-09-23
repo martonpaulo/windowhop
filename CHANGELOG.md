@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **About names the developer**: Settings › About now says "Made by Marton Paulo". The
+  AltTab credit stays as text, and the link to the AltTab repository is gone, because it
+  looked like WindowHop's own repository.
+
 ### Fixed
 
 - **Window previews fill their card**: on a display that is not Retina, a snapshot used

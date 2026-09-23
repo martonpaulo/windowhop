@@ -276,16 +276,6 @@
         }
       }
     },
-    "AltTab on GitHub" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AltTab on GitHub"
-          }
-        }
-      }
-    },
     "App Icons" : {
       "localizations" : {
         "en" : {
@@ -796,6 +786,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Left Arrow"
+          }
+        }
+      }
+    },
+    "Made by Marton Paulo" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Made by Marton Paulo"
           }
         }
       }

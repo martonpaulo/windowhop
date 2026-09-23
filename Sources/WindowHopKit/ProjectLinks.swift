@@ -7,7 +7,6 @@ public enum ProjectLinks {
     public static let website = URL(string: "https://windowhop.martonpaulo.com/")!
     public static let repository = URL(string: "https://github.com/martonpaulo/windowhop")!
     public static let releases = URL(string: "https://github.com/martonpaulo/windowhop/releases")!
-    public static let altTabRepository = URL(string: "https://github.com/lwouis/alt-tab-macos")!
 
     /// The bug-report issue form and the ids of the inputs this link fills in.
     /// `scripts/validate.sh` checks that `.github/ISSUE_TEMPLATE/bug_report.yml`
