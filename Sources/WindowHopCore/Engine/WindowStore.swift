@@ -197,7 +197,10 @@ public final class WindowStore {
         forget(removed)
         discardPreviews(of: [removed])
         if let groupIds = removed.tabGroupIds {
-            DebugLog.log("tabs: removed \(Self.traceId(removed)) group \(groupIds.count)")
+            Log.windows.debug("""
+                tabs: removed \(Self.traceId(removed), privacy: .public) \
+                group \(groupIds.count, privacy: .public)
+                """)
             let remaining = windows.filter { $0.app === removed.app }
             applyTabStates(TabGroupResolver.resolveRemoval(
                 removedId: removed.stableId,
@@ -315,20 +318,24 @@ public final class WindowStore {
         guard !changes.isEmpty else { return }
         for window in windows {
             if let change = changes[window.stableId] {
-                DebugLog.log("tabs: change \(Self.traceId(window)) tabbed \(window.isTabbed)->\(change.isTabbed) "
-                    + "group \(window.tabGroupIds?.count ?? 0)->\(change.groupIds?.count ?? 0)")
+                Log.windows.debug("""
+                    tabs: change \(Self.traceId(window), privacy: .public) \
+                    tabbed \(window.isTabbed, privacy: .public)->\(change.isTabbed, privacy: .public) \
+                    group \(window.tabGroupIds?.count ?? 0, privacy: .public)->\
+                    \(change.groupIds?.count ?? 0, privacy: .public)
+                    """)
                 window.isTabbed = change.isTabbed
                 window.tabGroupIds = change.groupIds
             }
         }
     }
 
-    /// Title-free tab trace for WINDOWHOP_DEBUG (#82): only windows with a tab bar or
+    /// Title-free debug tab trace (#82): only windows with a tab bar or
     /// a recorded group are logged. `frameEqualsGroup` compares the window's frame with
     /// its group's active member, rounded like TabGroupResolver does.
     private func traceTabEvent(_ notification: String, window: TrackedWindow, tabs: TabObservation,
                                before: (isTabbed: Bool, groupCount: Int?)) {
-        guard DebugLog.enabled else { return }
+        guard Log.isWindowsDebugEnabled else { return }
         let observation: String
         switch tabs {
         case .unknown: observation = "unknown"
@@ -345,10 +352,14 @@ public final class WindowStore {
             return a == b ? "yes" : "no"
         } ?? "-"
         let hiddenTabs = windows.filter { $0.app === window.app && $0.isTabbed }.count
-        DebugLog.log("tabs: \(notification) \(Self.traceId(window)) \(observation) "
-            + "tabbed \(before.isTabbed)->\(window.isTabbed) "
-            + "group \(before.groupCount ?? 0)->\(window.tabGroupIds?.count ?? 0) "
-            + "frameEqualsGroup \(frameEqualsGroup) appHiddenTabs \(hiddenTabs)")
+        Log.windows.debug("""
+            tabs: \(notification, privacy: .public) \(Self.traceId(window), privacy: .public) \
+            \(observation, privacy: .public) \
+            tabbed \(before.isTabbed, privacy: .public)->\(window.isTabbed, privacy: .public) \
+            group \(before.groupCount ?? 0, privacy: .public)->\
+            \(window.tabGroupIds?.count ?? 0, privacy: .public) \
+            frameEqualsGroup \(frameEqualsGroup, privacy: .public) appHiddenTabs \(hiddenTabs, privacy: .public)
+            """)
     }
 
     private static func traceId(_ window: TrackedWindow) -> String {
@@ -395,7 +406,7 @@ public final class WindowStore {
             let dead = elements.filter { !$0.isStillValid() }
             guard !dead.isEmpty else { return }
             DispatchQueue.main.async { [weak self] in
-                DebugLog.log("pruning \(dead.count) dead window element(s)")
+                Log.windows.debug("pruning \(dead.count, privacy: .public) dead window element(s)")
                 dead.forEach { self?.removeWindow($0) }
             }
         }
@@ -422,8 +433,11 @@ public final class WindowStore {
                 guard let attributes = try? element.attributes(keys) else { return nil }
                 return (id, element, attributes, AXUIElement.tabObservation(fromWindow: attributes))
             }
-            DebugLog.log("tab re-read: \(reads.count)/\(targets.count) window(s) in "
-                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - start) * 1000))ms")
+            let rereadMs = (CFAbsoluteTimeGetCurrent() - start) * 1000
+            Log.windows.debug("""
+                tab re-read: \(reads.count, privacy: .public)/\(targets.count, privacy: .public) \
+                window(s) in \(rereadMs, format: .fixed(precision: 2), privacy: .public)ms
+                """)
             DispatchQueue.main.async { [weak self] in
                 guard let self, self.started, !reads.isEmpty else { return }
                 for (id, element, attributes, tabs) in reads {
@@ -515,8 +529,8 @@ public final class WindowStore {
                 screenFrames: screens)
         }
         if unresolved.contains(where: { $0.isPictureInPicture == true }) {
-            DebugLog.log("excluding \(unresolved.filter { $0.isPictureInPicture == true }.count) "
-                + "Picture-in-Picture window(s)")
+            let pipCount = unresolved.filter { $0.isPictureInPicture == true }.count
+            Log.windows.debug("excluding \(pipCount, privacy: .public) Picture-in-Picture window(s)")
         }
     }
 

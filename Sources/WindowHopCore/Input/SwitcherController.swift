@@ -92,8 +92,12 @@ public final class SwitcherController {
             let triggerStart = CFAbsoluteTimeGetCurrent()
             items = WindowStore.shared.snapshot()
             perform(state.trigger(backward: backward, itemCount: items.count))
-            DebugLog.log("trigger handled: \(items.count) items, phase \(state.phase), "
-                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000))ms to session start")
+            let triggerMs = (CFAbsoluteTimeGetCurrent() - triggerStart) * 1000
+            Log.session.debug("""
+                trigger handled: \(self.items.count, privacy: .public) items, \
+                phase \(String(describing: self.state.phase), privacy: .public), \
+                \(triggerMs, format: .fixed(precision: 2), privacy: .public)ms to session start
+                """)
             if !state.isActive {
                 // the tap flipped to .session optimistically; nothing to show after all
                 EventTap.shared.mode = configuredEnabled ? .watching : .off
@@ -104,8 +108,12 @@ public final class SwitcherController {
                 items = WindowStore.shared.snapshot()
             }
             perform(state.openPersistent(itemCount: items.count))
-            DebugLog.log("persistent open handled: \(items.count) items, phase \(state.phase), "
-                + "\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - openStart) * 1000))ms")
+            let openMs = (CFAbsoluteTimeGetCurrent() - openStart) * 1000
+            Log.session.debug("""
+                persistent open handled: \(self.items.count, privacy: .public) items, \
+                phase \(String(describing: self.state.phase), privacy: .public), \
+                \(openMs, format: .fixed(precision: 2), privacy: .public)ms
+                """)
             if !state.isActive {
                 EventTap.shared.mode = configuredEnabled ? .watching : .off
             }
@@ -153,7 +161,10 @@ public final class SwitcherController {
     }
 
     private func perform(_ command: SwitcherState.Command) {
-        DebugLog.log("perform \(command), phase \(state.phase)")
+        Log.session.debug("""
+            perform \(String(describing: command), privacy: .public), \
+            phase \(String(describing: self.state.phase), privacy: .public)
+            """)
         switch command {
         case .none:
             break
@@ -326,7 +337,10 @@ public final class SwitcherController {
         // this its tile would stay a placeholder for the rest of the session.
         // Before the reveal no capture session exists; revealing captures them all.
         if isRevealed, !plan.appeared.isEmpty {
-            DebugLog.log("session list grew by \(plan.appeared.count): now \(items.count) items")
+            Log.session.debug("""
+                session list grew by \(plan.appeared.count, privacy: .public): \
+                now \(self.items.count, privacy: .public) items
+                """)
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
                 targetSize: SwitcherPanel.previewContentSize,
@@ -415,8 +429,10 @@ public final class SwitcherController {
             for: Preferences.shared.appearanceMode,
             showTabCounts: Preferences.shared.showTabCounts)
         panels.prepare(for: targets, tileCount: tileCount, tileSize: metrics.tileSize)
-        DebugLog.log("panels prepared: \(targets.count) display(s), "
-            + "placement \(Preferences.shared.switcherDisplayPlacement.rawValue)")
+        Log.panel.debug("""
+            panels prepared: \(targets.count, privacy: .public) display(s), \
+            placement \(Preferences.shared.switcherDisplayPlacement.rawValue, privacy: .public)
+            """)
     }
 
     private func sessionTapMode() -> TapMode {

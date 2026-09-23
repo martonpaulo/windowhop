@@ -634,9 +634,8 @@ struct UpdatesPane: View {
 struct AboutPane: View {
     private let appVersion = AppVersion.main
 
-    private var bundleIdentifier: String {
-        Bundle.main.bundleIdentifier ?? "com.perso.windowhop"
-    }
+    /// Nil for the unbundled development binary, which then hides the row.
+    private let bundleIdentifier = Bundle.main.bundleIdentifier
 
     var body: some View {
         Form {
@@ -663,7 +662,9 @@ struct AboutPane: View {
                 if let released = appVersion.releaseDateText() {
                     LabeledContent("Released", value: released)
                 }
-                LabeledContent("Bundle identifier", value: bundleIdentifier)
+                if let bundleIdentifier {
+                    LabeledContent("Bundle identifier", value: bundleIdentifier)
+                }
             }
             Section {
                 Link("WindowHop Website", destination: ProjectLinks.website)

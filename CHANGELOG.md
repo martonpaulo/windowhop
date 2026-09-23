@@ -36,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Diagnostics go to the macOS unified log**: to investigate a switching or shortcut
+  problem, run `log stream --level debug --process WindowHop` in Terminal while you
+  reproduce it. The `WINDOWHOP_DEBUG` environment variable no longer exists.
 - **The website downloads the disk image directly**: Download on
   windowhop.martonpaulo.com now gets `WindowHop-<version>.dmg` instead of a ZIP you had
   to unzip first, and the download section shows how many times WindowHop was downloaded.

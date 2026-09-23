@@ -11,8 +11,8 @@ mode, and what you did, expected, and got. For a missing window, say whether it 
 hidden, on another Space, or on another display — those are excluded by default and configurable
 under Settings → Windows.
 
-`WINDOWHOP_DEBUG=1 .build/debug/WindowHop` logs input and session behavior, which is the most useful
-attachment for a switching or shortcut bug. Report a vulnerability through the private channel in
+`log stream --level debug --process WindowHop`, run while you reproduce the problem, shows input and session
+behavior, which is the most useful attachment for a switching or shortcut bug. Report a vulnerability through the private channel in
 [SECURITY.md](SECURITY.md) rather than a public issue, and never paste certificate, notarization, or
 Sparkle key material anywhere.
 

@@ -28,17 +28,17 @@ enum UpdaterE2EHarness {
             do {
                 try updater.start()
             } catch {
-                print("E2E: updater failed to start: \(error)")
+                writeLine("E2E: updater failed to start: \(error)")
                 exit(4)
             }
-            print("E2E: checking \(feedURL) from version "
+            writeLine("E2E: checking \(feedURL) from version "
                 + "\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") ?? "?") "
                 + "(build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") ?? "?"))")
             updater.checkForUpdates()
         }
         // safety net: a hung updater must not leave a zombie process around
         DispatchQueue.main.asyncAfter(deadline: .now() + 120) {
-            print("E2E: timed out")
+            writeLine("E2E: timed out")
             exit(5)
         }
         app.run()
@@ -64,12 +64,12 @@ private final class AutoAcceptDriver: NSObject, SPUUserDriver {
     }
 
     func showUserInitiatedUpdateCheck(cancellation: @escaping () -> Void) {
-        print("E2E: user-initiated check started")
+        writeLine("E2E: user-initiated check started")
     }
 
     func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState,
                          reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        print("E2E: update found: version \(appcastItem.displayVersionString) "
+        writeLine("E2E: update found: version \(appcastItem.displayVersionString) "
             + "(build \(appcastItem.versionString)), installing")
         reply(.install)
     }
@@ -79,22 +79,22 @@ private final class AutoAcceptDriver: NSObject, SPUUserDriver {
     func showUpdateReleaseNotesFailedToDownloadWithError(_ error: Error) {}
 
     func showUpdateNotFoundWithError(_ error: Error, acknowledgement: @escaping () -> Void) {
-        print("E2E: no update found")
+        writeLine("E2E: no update found")
         acknowledgement()
         exit(3)
     }
 
     func showUpdaterError(_ error: Error, acknowledgement: @escaping () -> Void) {
-        print("E2E: updater error: \((error as NSError).localizedDescription)")
+        writeLine("E2E: updater error: \((error as NSError).localizedDescription)")
         if let reason = (error as NSError).localizedFailureReason {
-            print("E2E: reason: \(reason)")
+            writeLine("E2E: reason: \(reason)")
         }
         acknowledgement()
         exit(2)
     }
 
     func showDownloadInitiated(cancellation: @escaping () -> Void) {
-        print("E2E: download started")
+        writeLine("E2E: download started")
     }
 
     func showDownloadDidReceiveExpectedContentLength(_ expectedContentLength: UInt64) {}
@@ -102,29 +102,29 @@ private final class AutoAcceptDriver: NSObject, SPUUserDriver {
     func showDownloadDidReceiveData(ofLength length: UInt64) {}
 
     func showDownloadDidStartExtractingUpdate() {
-        print("E2E: extracting (archive accepted)")
+        writeLine("E2E: extracting (archive accepted)")
     }
 
     func showExtractionReceivedProgress(_ progress: Double) {}
 
     func showReady(toInstallAndRelaunch reply: @escaping (SPUUserUpdateChoice) -> Void) {
-        print("E2E: ready to install, relaunching")
+        writeLine("E2E: ready to install, relaunching")
         reply(.install)
     }
 
     func showInstallingUpdate(withApplicationTerminated applicationTerminated: Bool,
                               retryTerminatingApplication: @escaping () -> Void) {
-        print("E2E: installing (terminated=\(applicationTerminated))")
+        writeLine("E2E: installing (terminated=\(applicationTerminated))")
     }
 
     func showUpdateInstalledAndRelaunched(_ relaunched: Bool, acknowledgement: @escaping () -> Void) {
-        print("E2E: installed and relaunched=\(relaunched)")
+        writeLine("E2E: installed and relaunched=\(relaunched)")
         acknowledgement()
     }
 
     func showUpdateInFocus() {}
 
     func dismissUpdateInstallation() {
-        print("E2E: installation UI dismissed")
+        writeLine("E2E: installation UI dismissed")
     }
 }

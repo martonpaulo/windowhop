@@ -44,14 +44,8 @@ public enum LoginItem {
         Service.system.openLoginItemsSettings()
     }
 
-    /// A real application bundle: `…/Something.app` with an identifier. The
-    /// extension alone is not enough — a directory can be named `x.app`.
-    static func isBundledApplication(_ bundle: Bundle) -> Bool {
-        bundle.bundleURL.pathExtension == "app" && bundle.bundleIdentifier != nil
-    }
-
     static func status(bundle: Bundle, service: Service) -> LoginItemStatus {
-        status(service.status(), bundled: isBundledApplication(bundle))
+        status(service.status(), bundled: AppBundle.isApplication(bundle))
     }
 
     /// `notFound` does not prove a bundled app cannot register: on macOS 26 an
@@ -78,7 +72,7 @@ public enum LoginItem {
         let current = status(bundle: bundle, service: service)
         // checked before the no-op shortcut: an unbundled build must report
         // failure rather than silently agreeing that it is already enabled
-        if enabled && !isBundledApplication(bundle) {
+        if enabled && !AppBundle.isApplication(bundle) {
             return LoginItemChange(status: current, failed: true)
         }
         guard current.isOn != enabled else {

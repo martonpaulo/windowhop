@@ -288,7 +288,11 @@ public final class SwitcherPanel: NSPanel {
         orderFrontRegardless()
         hostView.refreshPointerLocation()
         updateSettingsButtonVisibility(animated: false)
-        DebugLog.log("panel shown: \(items.count) tiles (\(mode.rawValue)), frame \(frame)")
+        Log.panel.debug("""
+            panel shown: \(items.count, privacy: .public) tiles \
+            (\(self.mode.rawValue, privacy: .public)), \
+            frame \(String(describing: self.frame), privacy: .public)
+            """)
     }
 
     /// Re-presents the panel after a confirmation dialog hid it.

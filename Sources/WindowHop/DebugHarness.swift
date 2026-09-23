@@ -85,7 +85,7 @@ enum DebugHarness {
             NSGraphicsContext.restoreGraphicsState()
             if let png = rep.representation(using: .png, properties: [:]) {
                 try? png.write(to: outputURL.appendingPathComponent("\(name).png"))
-                print("wrote \(name).png (\(rep.pixelsWide)x\(rep.pixelsHigh) px, "
+                writeLine("wrote \(name).png (\(rep.pixelsWide)x\(rep.pixelsHigh) px, "
                     + "\(Int(size.width))x\(Int(size.height)) pt)")
             }
         }
@@ -114,7 +114,7 @@ enum DebugHarness {
             selectedIndex: 60,
             presentationMode: .persistent)
         pending += 1
-        print("overflow panel: 120 tiles in "
+        writeLine("overflow panel: 120 tiles in "
             + "\(String(format: "%.1f", (CFAbsoluteTimeGetCurrent() - overflowStart) * 1000))ms, "
             + "frame \(overflowPanel.frame)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
@@ -280,21 +280,22 @@ enum DebugHarness {
     /// The duplicate TextEdit pair carries documents in different folders, so the
     /// tiles show the CollisionLabel qualifier the store would produce.
     private static func demoItems() -> [SwitcherItem] {
-        let rows: [(String, String, String, Int?, String?)] = [
-            ("Project Plan", "Notes", "com.apple.Notes", nil, nil),
-            ("Apple Design Resources", "Safari", "com.apple.Safari", 7, nil),
-            ("Window Management Guide", "Safari", "com.apple.Safari", 12, nil),
-            ("Downloads", "Finder", "com.apple.finder", 3, nil),
-            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Work/Notes.txt"),
-            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Personal/Notes.txt"),
-            ("Terminal", "Terminal", "com.apple.Terminal", 2, nil),
-            ("WindowHop Settings", "WindowHop", "com.perso.windowhop", nil, nil),
+        // The last field marks WindowHop's own row, whose tile uses the app icon.
+        let rows: [(String, String, String, Int?, String?, Bool)] = [
+            ("Project Plan", "Notes", "com.apple.Notes", nil, nil, false),
+            ("Apple Design Resources", "Safari", "com.apple.Safari", 7, nil, false),
+            ("Window Management Guide", "Safari", "com.apple.Safari", 12, nil, false),
+            ("Downloads", "Finder", "com.apple.finder", 3, nil, false),
+            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Work/Notes.txt", false),
+            ("Notes.txt", "TextEdit", "com.apple.TextEdit", nil, "file:///Users/demo/Personal/Notes.txt", false),
+            ("Terminal", "Terminal", "com.apple.Terminal", 2, nil, false),
+            ("WindowHop Settings", "WindowHop", "WindowHop", nil, nil, true),
         ]
         let labels = CollisionLabel.labels(for: rows.map {
             CollisionLabel.Entry(appId: $0.2, title: $0.0, documentPath: $0.4)
         })
         return rows.enumerated().map { index, row in
-            let tileIcon = row.2 == "com.perso.windowhop"
+            let tileIcon = row.5
                 ? (NSImage(contentsOfFile: "Support/AppIcon.icns")
                     ?? Bundle.main.image(forResource: "AppIcon") ?? icon(row.2))
                 : icon(row.2)
@@ -343,7 +344,7 @@ enum DebugHarness {
                 selectedIndex: 1,
                 presentationMode: .cycling)
             let showMs = (CFAbsoluteTimeGetCurrent() - showStart) * 1000
-            print("demo panel: \(items.count) tiles in \(String(format: "%.1f", showMs))ms, frame \(panel.frame)")
+            writeLine("demo panel: \(items.count) tiles in \(String(format: "%.1f", showMs))ms, frame \(panel.frame)")
             if previews {
                 for (index, item) in items.enumerated() where index != 4 && index != 5 {
                     let wide = index % 3 != 2
@@ -378,16 +379,15 @@ enum DebugHarness {
     /// `screencapture -l`, optionally whether the window is key, then `READY`. The process
     /// stays alive for the capture, so stdout is flushed rather than left in its buffer.
     private static func announceCaptureReady(_ window: NSWindow, reportsKey: Bool) {
-        print("SCALE \(window.backingScaleFactor)")
-        print("WINDOW_ID \(window.windowNumber)")
-        if reportsKey { print("KEY \(window.isKeyWindow)") }
-        print("READY")
-        fflush(stdout)
+        writeLine("SCALE \(window.backingScaleFactor)")
+        writeLine("WINDOW_ID \(window.windowNumber)")
+        if reportsKey { writeLine("KEY \(window.isKeyWindow)") }
+        writeLine("READY")
     }
 
     private static func runWindowDump() {
         guard AccessibilityPermission.isGranted else {
-            print("dump-windows: Accessibility permission not granted for this process")
+            writeLine("dump-windows: Accessibility permission not granted for this process")
             exit(1)
         }
         let app = NSApplication.shared
@@ -400,12 +400,12 @@ enum DebugHarness {
             let items = WindowStore.shared.snapshot()
             let snapshotMs = Date().timeIntervalSince(snapshotStart) * 1000
             let totalMs = Date().timeIntervalSince(started) * 1000
-            print("discovered \(WindowStore.shared.windows.count) windows "
+            writeLine("discovered \(WindowStore.shared.windows.count) windows "
                 + "(\(items.count) eligible) within \(String(format: "%.0f", totalMs))ms of engine start; "
                 + "snapshot took \(String(format: "%.3f", snapshotMs))ms")
             for (index, item) in items.enumerated() {
                 let tabs = item.tabCount.map { " [\($0) tabs]" } ?? ""
-                print("\(index): \(item.appName) — \(item.title)\(tabs)")
+                writeLine("\(index): \(item.appName) — \(item.title)\(tabs)")
             }
             exit(0)
         }
@@ -438,7 +438,7 @@ enum DebugHarness {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             NSApp.activate(ignoringOtherApps: true)
             window.makeKeyAndOrderFront(nil)
-            print("settings window \(Int(window.frame.width))x\(Int(window.frame.height))")
+            writeLine("settings window \(Int(window.frame.width))x\(Int(window.frame.height))")
             DispatchQueue.main.asyncAfter(deadline: .now() + captureSettleDelay) {
                 announceCaptureReady(window, reportsKey: true)
             }
@@ -450,11 +450,11 @@ enum DebugHarness {
     /// would capture from. No image is captured, kept, or written.
     private static func runPreviewMatchingDump() {
         guard AccessibilityPermission.isGranted else {
-            print("dump-previews: Accessibility permission not granted for this process")
+            writeLine("dump-previews: Accessibility permission not granted for this process")
             exit(1)
         }
         guard ScreenRecordingPermission.status.isAuthorized else {
-            print("dump-previews: Screen Recording permission not granted for this process")
+            writeLine("dump-previews: Screen Recording permission not granted for this process")
             exit(1)
         }
         let app = NSApplication.shared
@@ -464,7 +464,7 @@ enum DebugHarness {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let items = WindowStore.shared.snapshot()
             PreviewProvider.shared.dumpMatching(items: items) { lines in
-                lines.forEach { print($0) }
+                lines.forEach { writeLine($0) }
                 exit(0)
             }
         }
@@ -479,7 +479,7 @@ enum DebugHarness {
         case .denied: screenRecording = "denied"
         case .restricted: screenRecording = "restricted"
         }
-        print("accessibility=\(AccessibilityPermission.isGranted ? "authorized" : "unavailable")")
-        print("screen-recording=\(screenRecording)")
+        writeLine("accessibility=\(AccessibilityPermission.isGranted ? "authorized" : "unavailable")")
+        writeLine("screen-recording=\(screenRecording)")
     }
 }

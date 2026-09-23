@@ -79,7 +79,6 @@ The app itself reads none of these: every secret below belongs to the release pi
 | `NOTARY_PROFILE` | Local shell, `scripts/notarize.sh` | Optional. The Keychain profile for a local rehearsal; defaults to `skd-notary` |
 | `SPARKLE_PRIVATE_KEY` | Actions secret, `release.yml`, mirroring the login Keychain | Required for a release. The EdDSA key that signs the update archive |
 | `DEVELOPER_ID_IDENTITY` | Local shell, `scripts/package-app.sh` | Optional. Names the approved Developer ID identity; without it, packaging is ad-hoc signed |
-| `WINDOWHOP_DEBUG` | Local shell, the debug binary | Optional. Set to `1` to log input and session behavior while diagnosing |
 
 ---
 
@@ -269,6 +268,9 @@ this again.
   the DMG can trigger App Translocation.
 - **Secure input is active** — password fields make WindowHop pass ⌘Tab through to the
   native switcher until secure input ends.
+- **Diagnosing switching or shortcut behavior** — run `log stream --level debug --process WindowHop` in
+  Terminal while you reproduce the problem. WindowHop logs input, session, panel, and window
+  events there; it logs no window titles.
 
 <br />
 

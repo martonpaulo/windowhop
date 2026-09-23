@@ -34,10 +34,13 @@ public enum AccessibilityPermission {
     /// tccutil, so the next grant binds to the current binary. An app may reset
     /// its own bundle id without privileges; this exists because pre-1.0.2
     /// ad-hoc builds left entries that can never match again.
+    /// The unbundled development binary has no identifier and resets nothing: a literal
+    /// fallback would reset the installed app's grant.
     public static func resetStaleGrant() {
+        guard let bundleIdentifier = Bundle.main.bundleIdentifier else { return }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
-        process.arguments = ["reset", "Accessibility", Bundle.main.bundleIdentifier ?? "com.perso.windowhop"]
+        process.arguments = ["reset", "Accessibility", bundleIdentifier]
         try? process.run()
         process.waitUntilExit()
     }

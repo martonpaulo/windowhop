@@ -133,7 +133,11 @@ actor AppObserver {
     /// Feeds one event to the lifecycle and runs its commands.
     private func handle(_ event: ObserverLifecycle.Event) {
         let commands = lifecycle.handle(event)
-        DebugLog.log("observer pid=\(pid) \(event) -> \(lifecycle.phase) \(commands)")
+        Log.windows.debug("""
+            observer pid=\(self.pid, privacy: .public) \(String(describing: event), privacy: .public) \
+            -> \(String(describing: self.lifecycle.phase), privacy: .public) \
+            \(String(describing: commands), privacy: .public)
+            """)
         for command in commands {
             run(command)
         }

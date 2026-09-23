@@ -106,7 +106,8 @@ Runtime checks (Accessibility permission is inherited when run from a trusted te
 .build/debug/WindowHop --render-ui /tmp/shots   # switcher + settings renders, light/dark/overflow
 .build/debug/WindowHop --demo-switcher [--dark] [--many]  # on-screen panel demo
 .build/debug/WindowHop --updater-e2e <feed-url> # headless Sparkle end-to-end (see docs/testing.md)
-WINDOWHOP_DEBUG=1 .build/debug/WindowHop        # diagnose input/session behavior
+.build/debug/WindowHop                          # run it; diagnose input/session behavior with:
+log stream --level debug --process WindowHop   # unified-log debug messages (Logger, subsystem = bundle id)
 ```
 
 The release scripts, `scripts/validate-site.sh`, `scripts/social-card.sh` and
@@ -436,9 +437,9 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 - Keep `.gitignore` covering secrets, local environments, logs, caches, build output, and
   generated artifacts that actually exist.
-- The app has no configuration environment variables, so there is no `.env.example`.
-  `WINDOWHOP_DEBUG` is a diagnostic switch for the debug binary and the release-script
-  variables are shell inputs; the README's secrets and variables table lists them. Add an
+- The app has no runtime environment variables, so there is no `.env.example`. Diagnostics
+  go to the unified log (`App/Log.swift`), and the release-script variables are shell inputs;
+  the README's secrets and variables table lists them. Add an
   `.env.example` only if real configuration variables appear, with every supported name and a
   safe placeholder.
 - Keep secrets in the GitHub secret store or the login Keychain, never in versioned files.
@@ -456,8 +457,8 @@ to publish an issue or change code. Do not ask again for a decision already reco
 - Once stable, run `swift build && swift test` plus `make validate` — both must pass with
   zero warnings before a commit.
 - When a change alters behavior, run the real app with its native diagnostics (the runtime
-  check flags above, `WINDOWHOP_DEBUG=1`) and observe the changed behavior. Green tests are not
-  seeing it run.
+  check flags above, `log stream --level debug --process WindowHop`) and observe the changed
+  behavior. Green tests are not seeing it run.
 - Never claim a check passed unless it ran successfully. Report exact skips, blockers, residual
   risk, what was verified manually, and what remains unverified.
 - A piped check reports the exit code of the last command, not its own: `swift test | tail -3`

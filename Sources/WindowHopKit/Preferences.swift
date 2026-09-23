@@ -101,8 +101,9 @@ public enum SwitcherRevealDelay: String, CaseIterable, Identifiable, Sendable {
 @MainActor
 public final class Preferences: ObservableObject {
     public static let shared = Preferences()
+    /// In-process only, never persisted, so it needs no identifier prefix.
     public static let windowFiltersDidChange = Notification.Name(
-        "com.perso.windowhop.windowFiltersDidChange")
+        "Preferences.windowFiltersDidChange")
 
     public enum Key: String, CaseIterable, Sendable {
         case switcherEnabled

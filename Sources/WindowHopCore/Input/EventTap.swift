@@ -324,7 +324,6 @@ public final class EventTap {
             $0.interception.decide(type: type, keyCode: keyCode, flags: flags)
         }
         if let input = decision.input {
-            DebugLog.log("tap: consumed \(input)")
             post(input)
         }
         return decision.disposition == .consume
@@ -335,20 +334,14 @@ public final class EventTap {
     private nonisolated func post(_ inputEvent: SwitcherInputEvent) {
         let postedAt = CFAbsoluteTimeGetCurrent()
         DispatchQueue.main.async { [weak self] in
-            DebugLog.log("input \(inputEvent) (+\(String(format: "%.2f", (CFAbsoluteTimeGetCurrent() - postedAt) * 1000))ms hop)")
+            // Logged here on main, not in `handle`: the tap callback only decides and posts.
+            let hopMs = (CFAbsoluteTimeGetCurrent() - postedAt) * 1000
+            Log.input.debug("""
+                tap: consumed \(String(describing: inputEvent), privacy: .public) \
+                (+\(hopMs, format: .fixed(precision: 2), privacy: .public)ms hop)
+                """)
             self?.onEvent?(inputEvent)
         }
-    }
-}
-
-/// Prints diagnostics when WINDOWHOP_DEBUG=1; inert otherwise.
-public enum DebugLog {
-    public static let enabled = ProcessInfo.processInfo.environment["WINDOWHOP_DEBUG"] == "1"
-
-    public static func log(_ message: @autoclosure () -> String) {
-        guard enabled else { return }
-        print("[\(String(format: "%.3f", CFAbsoluteTimeGetCurrent()))] \(message())")
-        fflush(stdout)
     }
 }
 

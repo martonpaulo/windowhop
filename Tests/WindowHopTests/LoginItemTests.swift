@@ -52,7 +52,7 @@ final class LoginItemTests: XCTestCase {
         let plainURL = temporaryDirectory.appendingPathComponent("plain")
         try FileManager.default.createDirectory(at: contents, withIntermediateDirectories: true)
         try FileManager.default.createDirectory(at: plainURL, withIntermediateDirectories: true)
-        try (["CFBundleIdentifier": "com.perso.windowhop.fixture",
+        try (["CFBundleIdentifier": "test.windowhop.fixture",
               "CFBundleName": "WindowHopFixture",
               "CFBundlePackageType": "APPL"] as NSDictionary)
             .write(to: contents.appendingPathComponent("Info.plist"))
@@ -69,11 +69,11 @@ final class LoginItemTests: XCTestCase {
     }
 
     func testTheSyntheticAppBundleIsRecognized() {
-        XCTAssertTrue(LoginItem.isBundledApplication(bundledApp))
+        XCTAssertTrue(AppBundle.isApplication(bundledApp))
     }
 
     func testBundleRecognitionRejectsAPlainDirectory() {
-        XCTAssertFalse(LoginItem.isBundledApplication(bareExecutable))
+        XCTAssertFalse(AppBundle.isApplication(bareExecutable))
     }
 
     // MARK: Status

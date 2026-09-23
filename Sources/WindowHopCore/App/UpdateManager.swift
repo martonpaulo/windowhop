@@ -29,11 +29,11 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
     /// false while a check or an update session is already in progress.
     public var canCheckForUpdates: Bool { controller?.updater.canCheckForUpdates ?? false }
 
-    /// Requires the Info.plist SUFeedURL/SUPublicEDKey, so only a bundled,
-    /// properly configured WindowHop.app starts the updater.
+    /// Requires a real application bundle and the Info.plist SUFeedURL/SUPublicEDKey,
+    /// so only a bundled, properly configured WindowHop.app starts the updater.
     public func startIfBundled() {
         guard controller == nil,
-              Bundle.main.bundleIdentifier == "com.perso.windowhop",
+              AppBundle.isApplication(.main),
               Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else { return }
         controller = SPUStandardUpdaterController(startingUpdater: true,
                                                   updaterDelegate: self,

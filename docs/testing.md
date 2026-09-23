@@ -77,7 +77,8 @@ creating a release.
 .build/debug/WindowHop --demo-switcher [--dark] [--many]
 .build/debug/WindowHop --demo-settings [pane]
 .build/debug/WindowHop --render-ui <directory>
-WINDOWHOP_DEBUG=1 .build/debug/WindowHop
+.build/debug/WindowHop
+log stream --level debug --process WindowHop   # in a second terminal
 ```
 
 `--dump-previews` prints the real switcher-entry → window-server-window pairing the next

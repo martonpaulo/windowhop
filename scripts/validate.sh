@@ -21,6 +21,14 @@ if [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plis
 else
     fail "Support/Info.plist bundle identifier is not com.perso.windowhop"
 fi
+# Code reads the identifier at runtime (Bundle.main.bundleIdentifier, #98); only
+# Support/ and the identity checks in scripts/ carry the value.
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' Support/Info.plist)
+if grep -rnF "$BUNDLE_ID" Sources/ Tests/ 2>/dev/null; then
+    fail "bundle identifier literal found in Sources/ or Tests/; read Bundle.main.bundleIdentifier"
+else
+    pass "no bundle identifier literal in Sources/ or Tests/"
+fi
 
 # --- no private API, no capture outside the preview subsystem ----------------
 if grep -rn "_silgen_name\|SLPSPostEvent\|_SLPSSetFront\|CGSSetSymbolicHotKey\|_AXUIElementGetWindow\|_AXUIElementCreateWithRemoteToken" Sources/ 2>/dev/null | grep -v "^\S*:[0-9]*: *///" | grep -v "^\S*:[0-9]*: *//"; then
