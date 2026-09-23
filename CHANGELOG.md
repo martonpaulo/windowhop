@@ -85,6 +85,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **No pause when windows open during a Window Previews session**: WindowHop now checks
+  the Screen Recording permission once when the switcher opens, instead of once for each
+  window that appears while it is open. Each check took about 15 ms, so several new
+  windows could make the switcher stop responding for a moment.
 - **A key release is no longer swallowed after macOS pauses WindowHop's keyboard
   monitor**: if macOS paused it (after a slow moment or sleep) while you
   still held Tab from a switch, the next release of Tab could be hidden from the app you

@@ -470,14 +470,18 @@ public final class SwitcherController {
             selectedIndex: selectedIndex,
             presentationMode: state.phase == .sticky ? .persistent : .cycling)
         state.updateColumns(panels.columnsPerRow)
-        panels.setPreviewPermissionStatus(ScreenRecordingPermission.status)
+        // one preflight per session: it costs 14-18 ms on main (#120), and the
+        // provider reuses this read for every window that joins the session
+        let permissionStatus = ScreenRecordingPermission.status
+        panels.setPreviewPermissionStatus(permissionStatus)
         scheduleExpandedPreview(request)
         // previews (cached ones already showed instantly) refresh live,
         // asynchronously, never gating panel presentation
         PreviewProvider.shared.beginSession(
             items: items,
             targetSize: SwitcherPanel.previewContentSize,
-            scale: panels.captureScale)
+            scale: panels.captureScale,
+            permissionStatus: permissionStatus)
     }
 
     private func cancelRevealTimer() {

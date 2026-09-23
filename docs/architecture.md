@@ -275,8 +275,12 @@ Transparency.
 but only while a session is open, only in Window Previews mode, and only with
 Screen Recording granted. `ScreenRecordingPermission` classifies permission before the
 provider emits a loading state, so unavailable authorization never starts capture or a
-retry loop. One panel-level action requests a not-determined grant or opens the correct
-Privacy & Security pane; cards never duplicate that action. App activation refreshes the
+retry loop. The preflight costs 14–18 ms on the main thread, so a session reads it once when
+it opens; windows that join the session reuse that status, and only a capture failure reads
+it again, which is how a grant revoked during the session still blocks the panel
+([#120](https://github.com/martonpaulo/windowhop/issues/120)). One panel-level action requests
+a not-determined grant or opens the correct Privacy & Security pane; cards never duplicate
+that action. App activation refreshes the
 status after the user returns from System Settings. App Icons never needs this permission.
 The cache is memory-only and app-lifetime: opening
 the switcher shows the last known snapshot of every window instantly. The

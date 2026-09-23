@@ -45,6 +45,15 @@ public final class PreviewProvider {
     /// by 132 MB after dwelling on 60 windows (measured in #87).
     private var expandedSnapshot: (id: AnyHashable, image: NSImage)?
     private var activeSessionGeneration: Int?
+    /// The Screen Recording status of the open session. The preflight costs
+    /// 14–18 ms on the main thread (measured in #120), so it is read once when
+    /// the session opens and again only when a capture fails — the one signal
+    /// that the grant may have changed — never per window that joins.
+    private var sessionPermission: ScreenRecordingPermission.Status?
+    /// The preflight read; replaced only by tests, which count the reads.
+    var readPermissionStatus: () -> ScreenRecordingPermission.Status = {
+        ScreenRecordingPermission.status
+    }
     private var expandedGeneration = 0
     /// Every capture, of every path and session, takes a slot here first.
     private let captureBudget = CaptureBudget(limit: 4)
@@ -99,12 +108,15 @@ public final class PreviewProvider {
     // MARK: - Session lifecycle
 
     /// Starts recapturing previews for the session's items. No-op unless Window
-    /// Previews mode is active and Screen Recording is granted.
-    public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
+    /// Previews mode is active and Screen Recording is granted. The caller
+    /// passes the status it read when the session opened; the provider keeps
+    /// it for the whole session.
+    public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat,
+                             permissionStatus: ScreenRecordingPermission.Status) {
         guard Preferences.shared.appearanceMode == .windowPreviews else { return }
-        let permissionStatus = ScreenRecordingPermission.status
         guard permissionStatus.isAuthorized else {
             activeSessionGeneration = nil
+            sessionPermission = nil
             onPermissionRequired?(permissionStatus)
             return
         }
@@ -112,6 +124,8 @@ public final class PreviewProvider {
         let sessionGeneration = ledger.beginSession(ids: requests.map { $0.id })
         captureBudget.advance(to: sessionGeneration)
         activeSessionGeneration = sessionGeneration
+        sessionPermission = permissionStatus
+        guard !requests.isEmpty else { return }
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
             await self?.capture(requests, generation: sessionGeneration,
@@ -125,7 +139,7 @@ public final class PreviewProvider {
     /// outside an active Window Previews session.
     public func extendSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
         guard Preferences.shared.appearanceMode == .windowPreviews,
-              ScreenRecordingPermission.status.isAuthorized,
+              sessionPermission?.isAuthorized == true,
               let sessionGeneration = activeSessionGeneration else { return }
         let requests = items.compactMap(makeCaptureRequest)
         guard !requests.isEmpty else { return }
@@ -142,6 +156,7 @@ public final class PreviewProvider {
     /// but no further capture work starts while the switcher is closed.
     public func endSession() {
         activeSessionGeneration = nil
+        sessionPermission = nil
         cancelExpandedPreview()
         expandedSnapshot = nil
         ledger.endSession()
@@ -155,7 +170,7 @@ public final class PreviewProvider {
                                        targetSize: CGSize,
                                        scale: CGFloat) {
         guard Preferences.shared.appearanceMode.supportsExpandedPreview,
-              ScreenRecordingPermission.status.isAuthorized,
+              sessionPermission?.isAuthorized == true,
               let sessionGeneration = activeSessionGeneration,
               let request = makeCaptureRequest(item) else { return }
         expandedGeneration += 1
@@ -190,9 +205,7 @@ public final class PreviewProvider {
                          pixelTarget: CGSize) async {
         guard let content = try? await SCShareableContent
             .excludingDesktopWindows(false, onScreenWindowsOnly: false) else {
-            for request in requests {
-                markUnavailable(request.id, generation: sessionGeneration)
-            }
+            markUnavailable(requests.map(\.id), generation: sessionGeneration)
             return
         }
         let assignments = PreviewMatcher.assign(
@@ -202,8 +215,9 @@ public final class PreviewProvider {
             assignments[request.id].map { (request, content.windows[$0]) }
         }
         let assignedIDs = Set(assigned.map { $0.0.id })
-        for request in requests where !assignedIDs.contains(request.id) {
-            markUnavailable(request.id, generation: sessionGeneration)
+        let unmatched = requests.map(\.id).filter { !assignedIDs.contains($0) }
+        if !unmatched.isEmpty {
+            markUnavailable(unmatched, generation: sessionGeneration)
         }
         // parallel, in list order, within the provider-wide budget: fast without
         // saturating WindowServer. The tasks run on main between their awaits;
@@ -227,7 +241,7 @@ public final class PreviewProvider {
                             generation sessionGeneration: Int,
                             pixelTarget: CGSize) async {
         guard let image = await captureImage(scWindow, pixelTarget: pixelTarget) else {
-            markUnavailable(request.id, generation: sessionGeneration)
+            markUnavailable([request.id], generation: sessionGeneration)
             return
         }
         // the ledger is the single authority on what a late result may do:
@@ -324,15 +338,33 @@ public final class PreviewProvider {
                               title: item.title, frame: window.frame)
     }
 
-    private func markUnavailable(_ id: AnyHashable, generation sessionGeneration: Int) {
-        let status = ScreenRecordingPermission.status
-        if !status.isAuthorized {
+    /// Reports one batch of failed ids. A failure is the only event that can
+    /// reveal a changed grant, so the batch re-reads the status once: a revoked
+    /// grant switches the panel to its permission-blocked state (#51) instead
+    /// of marking cards unavailable one by one.
+    func markUnavailable(_ ids: [AnyHashable], generation sessionGeneration: Int) {
+        guard activeSessionGeneration == sessionGeneration,
+              sessionPermission?.isAuthorized == true else { return }
+        let status = readPermissionStatus()
+        guard status.isAuthorized else {
+            sessionPermission = status
             onPermissionRequired?(status)
             return
         }
-        guard cache[id] == nil,
-              ledger.shouldDeliver(id, capturedIn: sessionGeneration) else { return }
-        onPreviewUnavailable?(id)
+        for id in ids where cache[id] == nil
+            && ledger.shouldDeliver(id, capturedIn: sessionGeneration) {
+            onPreviewUnavailable?(id)
+        }
+    }
+
+    /// The status the open session uses, nil outside a Window Previews session.
+    var sessionPermissionForTesting: ScreenRecordingPermission.Status? {
+        sessionPermission
+    }
+
+    /// The generation of the open session, nil when none is open.
+    var sessionGenerationForTesting: Int? {
+        activeSessionGeneration
     }
 
     // MARK: - Diagnostics
