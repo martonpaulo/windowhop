@@ -77,8 +77,8 @@
     `NOTARY_API_KEY_ID`, `NOTARY_API_ISSUER_ID`, and `SPARKLE_PRIVATE_KEY` in the GitHub
     secret store; the Sparkle EdDSA private key also lives in the login Keychain. No key
     material, certificate password, or signing log ever enters the repository.
-- Skills baseline revision: `7cfc324fcded57145c36cc678977c070ed800692`
-- Skills baseline applied: `2026-09-08`
+- Skills baseline revision: `3845d858ebbf3af6e270816462bf3182206c40d9`
+- Skills baseline applied: `2026-09-23`
 
 Treat these values as stable project decisions. Change an established identifier, license,
 visibility, branch policy, versioning model, localization strategy, landing-page contract, or
