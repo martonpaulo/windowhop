@@ -1,11 +1,11 @@
 import Foundation
-import XCTest
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
 
 /// A `Preferences` over its own throwaway `UserDefaults` suite, so a test never
-/// reads or changes the developer's real settings. Call `remove()` in tearDown.
+/// reads or changes the developer's real settings. Call `remove()` in the suite's deinit.
 @MainActor
 final class IsolatedPreferences {
     let suiteName = "windowhop-tests-\(UUID().uuidString)"
@@ -15,7 +15,7 @@ final class IsolatedPreferences {
     let previews: PreviewProvider
 
     init() throws {
-        defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults = try #require(UserDefaults(suiteName: suiteName))
         preferences = Preferences(defaults: defaults)
         previews = PreviewProvider(preferences: preferences)
     }

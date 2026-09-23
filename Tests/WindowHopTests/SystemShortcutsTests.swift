@@ -1,12 +1,15 @@
 import Carbon.HIToolbox
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
 
 /// Mapping of `CopySymbolicHotKeys` entries, tested on hand-built dictionaries.
 /// The live reader is only smoke-called; nothing writes a system shortcut.
-final class SystemShortcutsTests: XCTestCase {
+/// The Carbon call runs on the main thread, where the app and XCTest called it.
+@MainActor
+struct SystemShortcutsTests {
     private func entry(_ keyCode: Int, _ modifiers: Int, enabled: Bool = true) -> [String: Any] {
         [
             kHISymbolicHotKeyCode as String: NSNumber(value: keyCode),
@@ -15,40 +18,41 @@ final class SystemShortcutsTests: XCTestCase {
         ]
     }
 
-    func testCarbonModifiersMapToEventFlags() {
-        XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: cmdKey), .maskCommand)
-        XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: optionKey), .maskAlternate)
-        XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: controlKey), .maskControl)
-        XCTAssertEqual(SystemShortcuts.modifiers(fromCarbon: shiftKey), .maskShift)
-        XCTAssertEqual(
-            SystemShortcuts.modifiers(fromCarbon: cmdKey | optionKey | shiftKey),
-            [.maskCommand, .maskAlternate, .maskShift])
+    @Test func carbonModifiersMapToEventFlags() {
+        #expect(SystemShortcuts.modifiers(fromCarbon: cmdKey) == .maskCommand)
+        #expect(SystemShortcuts.modifiers(fromCarbon: optionKey) == .maskAlternate)
+        #expect(SystemShortcuts.modifiers(fromCarbon: controlKey) == .maskControl)
+        #expect(SystemShortcuts.modifiers(fromCarbon: shiftKey) == .maskShift)
+        #expect(
+            SystemShortcuts.modifiers(fromCarbon: cmdKey | optionKey | shiftKey) == [
+                .maskCommand, .maskAlternate, .maskShift,
+            ])
     }
 
-    func testEnabledEntriesBecomeChords() {
+    @Test func enabledEntriesBecomeChords() {
         let chords = SystemShortcuts.shortcuts(from: [entry(Int(KeyCode.space), cmdKey)])
-        XCTAssertEqual(chords, [PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskCommand])])
+        #expect(chords == [PersistentShortcut(keyCode: KeyCode.space, modifiers: [.maskCommand])])
     }
 
-    func testDisabledAndUnassignedEntriesAreSkipped() {
+    @Test func disabledAndUnassignedEntriesAreSkipped() {
         let chords = SystemShortcuts.shortcuts(from: [
             entry(Int(KeyCode.space), cmdKey, enabled: false),
             entry(0xFFFF, 0),
             [kHISymbolicHotKeyCode as String: NSNumber(value: 1)],  // incomplete
         ])
-        XCTAssertEqual(chords, [])
+        #expect(chords == [])
     }
 
     /// Fn (`kEventKeyModifierFnMask`) is dropped: the tap ignores it when matching.
-    func testFnIsDropped() {
+    @Test func fnIsDropped() {
         let fnMask = 1 << 17
         let leftArrow = 123
         let chords = SystemShortcuts.shortcuts(from: [entry(leftArrow, controlKey | fnMask)])
-        XCTAssertEqual(chords, [PersistentShortcut(keyCode: 123, modifiers: [.maskControl])])
+        #expect(chords == [PersistentShortcut(keyCode: 123, modifiers: [.maskControl])])
     }
 
-    func testLiveReaderReturns() {
+    @Test func liveReaderReturns() {
         let chords = SystemShortcuts.enabled()
-        XCTAssertTrue(chords.allSatisfy { $0.keyCode != 0xFFFF })
+        #expect(chords.allSatisfy { $0.keyCode != 0xFFFF })
     }
 }

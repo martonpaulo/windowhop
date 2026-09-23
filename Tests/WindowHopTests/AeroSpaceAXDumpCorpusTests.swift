@@ -1,5 +1,6 @@
 import CoreGraphics
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -14,7 +15,7 @@ import XCTest
 /// and a few are marked "todo fix" by AeroSpace itself. Every disagreement is
 /// therefore recorded below with WindowHop's decision and the reason, and the
 /// test fails when the rules drift from a recorded decision in either direction.
-final class AeroSpaceAXDumpCorpusTests: XCTestCase {
+struct AeroSpaceAXDumpCorpusTests {
     enum Decision: Equatable {
         /// shown under the default inclusion policy
         case listed
@@ -111,44 +112,44 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
 
     // MARK: - Tests
 
-    func testCorpusLoadsEveryLabeledDump() throws {
+    @Test func corpusLoadsEveryLabeledDump() throws {
         let dumps = try Self.loadCorpus()
-        XCTAssertEqual(dumps.count, 125, "the pinned corpus has 118 dumps plus a 7-dump scenario")
-        XCTAssertEqual(Set(dumps.map(\.label)), ["window", "dialog", "popup"])
+        #expect(dumps.count == 125, "the pinned corpus has 118 dumps plus a 7-dump scenario")
+        #expect(Set(dumps.map(\.label)) == ["window", "dialog", "popup"])
     }
 
-    func testDecisionsMatchLabelsOrRecordedDisagreements() throws {
+    @Test func decisionsMatchLabelsOrRecordedDisagreements() throws {
         for dump in try Self.loadCorpus() {
             let decision = Self.decide(dump)
             if let recorded = Self.disagreements[dump.name] {
-                XCTAssertEqual(decision, recorded.decision, "\(dump.name): \(recorded.reason)")
+                #expect(decision == recorded.decision, "\(dump.name): \(recorded.reason)")
             } else {
-                XCTAssertEqual(
-                    decision == .listed, dump.label != "popup",
+                #expect(
+                    (decision == .listed) == (dump.label != "popup"),
                     "\(dump.name) is labeled \(dump.label) but WindowHop decides \(decision)")
             }
         }
     }
 
-    func testEveryRecordedDisagreementStillDisagrees() throws {
+    @Test func everyRecordedDisagreementStillDisagrees() throws {
         let dumps = Dictionary(uniqueKeysWithValues: try Self.loadCorpus().map { ($0.name, $0) })
         for (name, recorded) in Self.disagreements {
             guard let dump = dumps[name] else {
-                XCTFail("\(name) is not in the corpus")
+                Issue.record("\(name) is not in the corpus")
                 continue
             }
-            XCTAssertNotEqual(
-                recorded.decision == .listed, dump.label != "popup",
+            #expect(
+                (recorded.decision == .listed) != (dump.label != "popup"),
                 "\(name) now agrees with its label; drop it from the list")
         }
     }
 
-    func testBrowserPictureInPictureWindows() throws {
+    @Test func browserPictureInPictureWindows() throws {
         let dumps = Dictionary(uniqueKeysWithValues: try Self.loadCorpus().map { ($0.name, $0) })
         // Chromium PiP: buttonless (Chrome) or all buttons disabled (Brave, Edge);
         // Firefox PiP (and Zen): close and zoom enabled, minimize disabled (#117)
         for name in ["chrome_pip", "brave_pip", "microsoft_edge_pip", "firefox_pip", "zen_browser_pip"] {
-            XCTAssertEqual(dumps[name].map(Self.decide), .pictureInPicture, name)
+            #expect(dumps[name].map(Self.decide) == .pictureInPicture, "\(name)")
         }
         // app-modal alerts and open panels at the modal-panel layer are windows,
         // and so are #90's closable-only dialogs and floating documents
@@ -156,7 +157,7 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
             "ghostty_check_for_updates_2_alert", "intellij_native_open_window",
             "macos_join_network", "1password_mini_window", "ghostty_config_error",
         ] {
-            XCTAssertEqual(dumps[name].map(Self.decide), .listed, name)
+            #expect(dumps[name].map(Self.decide) == .listed, "\(name)")
         }
     }
 
@@ -181,8 +182,8 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
     }
 
     static func loadCorpus() throws -> [Dump] {
-        let root = try XCTUnwrap(Bundle.module.url(forResource: "AeroSpaceAXDumps", withExtension: nil))
-        let files = try XCTUnwrap(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil))
+        let root = try #require(Bundle.module.url(forResource: "AeroSpaceAXDumps", withExtension: nil))
+        let files = try #require(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil))
             .compactMap { $0 as? URL }
             .filter { $0.pathExtension == "json5" }
         return try files.map(dump(from:)).sorted { $0.name < $1.name }
@@ -190,7 +191,7 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
 
     private static func dump(from file: URL) throws -> Dump {
         let object = try JSONSerialization.jsonObject(with: Data(contentsOf: file), options: [.json5Allowed])
-        let json = try XCTUnwrap(object as? [String: Any], file.lastPathComponent)
+        let json = try #require(object as? [String: Any], "\(file.lastPathComponent)")
         let app = json["Aero.AXApp"] as? [String: Any]
         let frame = (json["AXFrame"] as? String).flatMap(rect)
         let size = (json["AXSize"] as? String).flatMap(rect)?.size
@@ -201,7 +202,7 @@ final class AeroSpaceAXDumpCorpusTests: XCTestCase {
         return Dump(
             name: file.deletingLastPathComponent().lastPathComponent == "AeroSpaceAXDumps"
                 ? name : "\(file.deletingLastPathComponent().lastPathComponent)/\(name)",
-            label: try XCTUnwrap(json["Aero.AxUiElementWindowType"] as? String, name),
+            label: try #require(json["Aero.AxUiElementWindowType"] as? String, "\(name)"),
             facts: WindowFacts(
                 role: json["AXRole"] as? String,
                 subrole: json["AXSubrole"] as? String,

@@ -1,31 +1,32 @@
-import XCTest
+import Foundation
+import Testing
 
 @testable import WindowHopCore
 
-final class ScreenRecordingPermissionTests: XCTestCase {
-    func testAuthorizedDeniedRestrictedAndNotDeterminedStates() {
-        XCTAssertEqual(
+struct ScreenRecordingPermissionTests {
+    @Test func authorizedDeniedRestrictedAndNotDeterminedStates() {
+        #expect(
             ScreenRecordingPermission.classify(
-                preflightGranted: true, hasRequested: false, isRestricted: false), .authorized)
-        XCTAssertEqual(
+                preflightGranted: true, hasRequested: false, isRestricted: false) == .authorized)
+        #expect(
             ScreenRecordingPermission.classify(
-                preflightGranted: false, hasRequested: true, isRestricted: false), .denied)
-        XCTAssertEqual(
+                preflightGranted: false, hasRequested: true, isRestricted: false) == .denied)
+        #expect(
             ScreenRecordingPermission.classify(
-                preflightGranted: false, hasRequested: false, isRestricted: true), .restricted)
-        XCTAssertEqual(
+                preflightGranted: false, hasRequested: false, isRestricted: true) == .restricted)
+        #expect(
             ScreenRecordingPermission.classify(
-                preflightGranted: false, hasRequested: false, isRestricted: false), .notDetermined)
+                preflightGranted: false, hasRequested: false, isRestricted: false) == .notDetermined)
     }
 
-    func testPermissionRevocationChangesAuthorizedToBlocked() {
+    @Test func permissionRevocationChangesAuthorizedToBlocked() {
         let before = ScreenRecordingPermission.classify(
             preflightGranted: true, hasRequested: true, isRestricted: false)
         let after = ScreenRecordingPermission.classify(
             preflightGranted: false, hasRequested: true, isRestricted: false)
 
-        XCTAssertTrue(before.isAuthorized)
-        XCTAssertTrue(after.requiresPermission)
-        XCTAssertEqual(after, .denied)
+        #expect(before.isAuthorized)
+        #expect(after.requiresPermission)
+        #expect(after == .denied)
     }
 }

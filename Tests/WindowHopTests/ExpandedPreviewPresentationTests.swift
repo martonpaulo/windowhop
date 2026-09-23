@@ -1,127 +1,127 @@
 import AppKit
-import XCTest
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
 
-/// The expanded preview must survive refreshes that change nothing about its
-/// target, and must appear when its first image arrives after dwell settled.
-@MainActor
-final class ExpandedPreviewPresentationTests: XCTestCase {
-    private var group: SwitcherPanelGroup!
-    private var isolated: IsolatedPreferences!
-    private var preferences: Preferences { isolated.preferences }
+extension SharedAppState {
+    /// The expanded preview must survive refreshes that change nothing about its
+    /// target, and must appear when its first image arrives after dwell settled.
+    @MainActor
+    @Suite(.needsDisplay)
+    final class ExpandedPreviewPresentationTests {
+        private var group: SwitcherPanelGroup!
+        private var isolated: IsolatedPreferences!
+        private var preferences: Preferences { isolated.preferences }
 
-    override func setUp() async throws {
-        try await super.setUp()
-        isolated = try IsolatedPreferences()
-        preferences.appearanceMode = .windowPreviews
-        group = SwitcherPanelGroup(preferences: preferences, previews: isolated.previews)
-    }
-
-    override func tearDown() async throws {
-        group.hide()
-        group = nil
-        isolated.remove()
-        isolated = nil
-        try await super.tearDown()
-    }
-
-    private func targets(_ count: Int) -> [(descriptor: DisplayDescriptor, screen: NSScreen)] {
-        guard let screen = NSScreen.screens.first else { return [] }
-        return (0..<count).map { index in
-            (
-                DisplayDescriptor(
-                    id: "display-\(index)", name: "Display \(index)",
-                    visibleFrame: screen.visibleFrame, backingScale: 2), screen
-            )
+        init() throws {
+            isolated = try IsolatedPreferences()
+            preferences.appearanceMode = .windowPreviews
+            group = SwitcherPanelGroup(preferences: preferences, previews: isolated.previews)
         }
-    }
 
-    private func items(_ count: Int, titleSuffix: String = "") -> [SwitcherItem] {
-        (0..<count).map {
-            SwitcherItem(
-                id: "item-\($0)" as AnyHashable, window: nil,
-                title: "Window \($0)\(titleSuffix)", appName: "App",
-                icon: nil, tabCount: nil)
+        isolated deinit {
+            group.hide()
+            group = nil
+            isolated.remove()
+            isolated = nil
         }
-    }
 
-    private func image() -> NSImage {
-        NSImage(size: NSSize(width: 64, height: 48))
-    }
+        private func targets(_ count: Int) -> [(descriptor: DisplayDescriptor, screen: NSScreen)] {
+            guard let screen = NSScreen.screens.first else { return [] }
+            return (0..<count).map { index in
+                (
+                    DisplayDescriptor(
+                        id: "display-\(index)", name: "Display \(index)",
+                        visibleFrame: screen.visibleFrame, backingScale: 2), screen
+                )
+            }
+        }
 
-    private func openedGroup(panelCount: Int = 1, items list: [SwitcherItem]) throws {
-        try XCTSkipIf(NSScreen.screens.isEmpty, "needs a display")
-        group.prepare(
-            for: targets(panelCount), tileCount: list.count,
-            tileSize: NSSize(width: 200, height: 160))
-        group.update(items: list, selectedIndex: 0)
-    }
+        private func items(_ count: Int, titleSuffix: String = "") -> [SwitcherItem] {
+            (0..<count).map {
+                SwitcherItem(
+                    id: "item-\($0)" as AnyHashable, window: nil,
+                    title: "Window \($0)\(titleSuffix)", appName: "App",
+                    icon: nil, tabCount: nil)
+            }
+        }
 
-    func testMetadataRefreshKeepsAnExpandedPreviewOnScreen() throws {
-        let list = items(3)
-        try openedGroup(items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
-        XCTAssertEqual(group.expandedPreviewID, list[0].id)
+        private func image() -> NSImage {
+            NSImage(size: NSSize(width: 64, height: 48))
+        }
 
-        // an unrelated title change arrives for the same, still selected window
-        group.update(items: items(3, titleSuffix: " — edited"), selectedIndex: 0)
+        private func openedGroup(panelCount: Int = 1, items list: [SwitcherItem]) throws {
+            group.prepare(
+                for: targets(panelCount), tileCount: list.count,
+                tileSize: NSSize(width: 200, height: 160))
+            group.update(items: list, selectedIndex: 0)
+        }
 
-        XCTAssertEqual(group.expandedPreviewID, list[0].id)
-    }
+        @Test func metadataRefreshKeepsAnExpandedPreviewOnScreen() throws {
+            let list = items(3)
+            try openedGroup(items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
+            #expect(group.expandedPreviewID == list[0].id)
 
-    func testSelectingAnotherWindowCollapsesTheExpandedPreview() throws {
-        let list = items(3)
-        try openedGroup(items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
+            // an unrelated title change arrives for the same, still selected window
+            group.update(items: items(3, titleSuffix: " — edited"), selectedIndex: 0)
 
-        group.update(items: list, selectedIndex: 1)
+            #expect(group.expandedPreviewID == list[0].id)
+        }
 
-        XCTAssertNil(group.expandedPreviewID)
-    }
+        @Test func selectingAnotherWindowCollapsesTheExpandedPreview() throws {
+            let list = items(3)
+            try openedGroup(items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
 
-    func testLosingTheExpandedWindowCollapsesThePreview() throws {
-        let list = items(3)
-        try openedGroup(items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
+            group.update(items: list, selectedIndex: 1)
 
-        group.update(items: Array(list.dropFirst()), selectedIndex: 0)
+            #expect(group.expandedPreviewID == nil)
+        }
 
-        XCTAssertNil(group.expandedPreviewID)
-    }
+        @Test func losingTheExpandedWindowCollapsesThePreview() throws {
+            let list = items(3)
+            try openedGroup(items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
 
-    func testAppIconsModeNeverKeepsAnExpandedPreview() throws {
-        let list = items(3)
-        try openedGroup(items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
+            group.update(items: Array(list.dropFirst()), selectedIndex: 0)
 
-        preferences.appearanceMode = .appIcons
-        group.update(items: list, selectedIndex: 0)
+            #expect(group.expandedPreviewID == nil)
+        }
 
-        XCTAssertNil(group.expandedPreviewID)
-    }
+        @Test func appIconsModeNeverKeepsAnExpandedPreview() throws {
+            let list = items(3)
+            try openedGroup(items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
 
-    /// A late image for the currently expanded window repaints it in place
-    /// rather than reopening the presentation.
-    func testRepaintingKeepsTheSameExpandedWindow() throws {
-        let list = items(3)
-        try openedGroup(items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
+            preferences.appearanceMode = .appIcons
+            group.update(items: list, selectedIndex: 0)
 
-        group.showExpandedPreview(id: list[0].id, image: image())
+            #expect(group.expandedPreviewID == nil)
+        }
 
-        XCTAssertEqual(group.expandedPreviewID, list[0].id)
-    }
+        /// A late image for the currently expanded window repaints it in place
+        /// rather than reopening the presentation.
+        @Test func repaintingKeepsTheSameExpandedWindow() throws {
+            let list = items(3)
+            try openedGroup(items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
 
-    func testMirroredPanelsAgreeOnTheExpandedWindow() throws {
-        let list = items(3)
-        try openedGroup(panelCount: 3, items: list)
-        group.showExpandedPreview(id: list[0].id, image: image())
+            group.showExpandedPreview(id: list[0].id, image: image())
 
-        group.update(items: items(3, titleSuffix: " — edited"), selectedIndex: 0)
+            #expect(group.expandedPreviewID == list[0].id)
+        }
 
-        XCTAssertEqual(group.expandedPreviewID, list[0].id)
-        XCTAssertEqual(group.panelCountForTesting, 3)
+        @Test func mirroredPanelsAgreeOnTheExpandedWindow() throws {
+            let list = items(3)
+            try openedGroup(panelCount: 3, items: list)
+            group.showExpandedPreview(id: list[0].id, image: image())
+
+            group.update(items: items(3, titleSuffix: " — edited"), selectedIndex: 0)
+
+            #expect(group.expandedPreviewID == list[0].id)
+            #expect(group.panelCountForTesting == 3)
+        }
     }
 }

@@ -1,5 +1,5 @@
 import AppKit
-import XCTest
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -7,49 +7,47 @@ import XCTest
 /// The menu bar item's state is derived from the switcher preference and the
 /// Accessibility grant, and every state must be distinguishable without color:
 /// by symbol shape and by accessibility label.
-final class StatusItemStateTests: XCTestCase {
-    func testResolutionTable() {
-        XCTAssertEqual(StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: true), .active)
-        XCTAssertEqual(StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: true), .paused)
+struct StatusItemStateTests {
+    @Test func resolutionTable() {
+        #expect(StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: true) == .active)
+        #expect(StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: true) == .paused)
         // enabling cannot help until access is granted, so missing permission wins
-        XCTAssertEqual(
-            StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: false),
-            .accessibilityRequired)
-        XCTAssertEqual(
-            StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: false),
-            .accessibilityRequired)
+        #expect(
+            StatusItemState.resolve(switcherEnabled: true, accessibilityGranted: false) == .accessibilityRequired)
+        #expect(
+            StatusItemState.resolve(switcherEnabled: false, accessibilityGranted: false) == .accessibilityRequired)
     }
 
-    func testStatesHaveDistinctShapesAndLabels() {
+    @Test func statesHaveDistinctShapesAndLabels() {
         let states = StatusItemState.allCases
-        XCTAssertEqual(Set(states.map(\.symbolName)).count, states.count)
-        XCTAssertEqual(Set(states.map(\.accessibilityLabel)).count, states.count)
+        #expect(Set(states.map(\.symbolName)).count == states.count)
+        #expect(Set(states.map(\.accessibilityLabel)).count == states.count)
     }
 
-    func testLabelsNameTheAppAndTheState() {
+    @Test func labelsNameTheAppAndTheState() {
         for state in StatusItemState.allCases {
-            XCTAssertTrue(state.accessibilityLabel.hasPrefix("WindowHop"))
+            #expect(state.accessibilityLabel.hasPrefix("WindowHop"))
         }
-        XCTAssertTrue(StatusItemState.paused.accessibilityLabel.localizedCaseInsensitiveContains("paused"))
-        XCTAssertTrue(
+        #expect(StatusItemState.paused.accessibilityLabel.localizedCaseInsensitiveContains("paused"))
+        #expect(
             StatusItemState.accessibilityRequired.accessibilityLabel
                 .localizedCaseInsensitiveContains("Accessibility"))
     }
 
-    func testOnlyNonActiveStatesExplainThemselves() {
-        XCTAssertNil(StatusItemState.active.statusText)
-        XCTAssertNotNil(StatusItemState.paused.statusText)
-        XCTAssertNotNil(StatusItemState.accessibilityRequired.statusText)
-        XCTAssertEqual(StatusItemState.allCases.filter(\.offersAccessibilitySetup), [.accessibilityRequired])
+    @Test func onlyNonActiveStatesExplainThemselves() {
+        #expect(StatusItemState.active.statusText == nil)
+        #expect(StatusItemState.paused.statusText != nil)
+        #expect(StatusItemState.accessibilityRequired.statusText != nil)
+        #expect(StatusItemState.allCases.filter(\.offersAccessibilitySetup) == [.accessibilityRequired])
     }
 
     /// Guards the deployment floor: a symbol missing on the running macOS
     /// would leave the menu bar item blank.
-    func testEverySymbolResolves() {
+    @Test func everySymbolResolves() {
         for state in StatusItemState.allCases {
-            XCTAssertNotNil(
-                NSImage(systemSymbolName: state.symbolName, accessibilityDescription: nil),
-                state.symbolName)
+            #expect(
+                NSImage(systemSymbolName: state.symbolName, accessibilityDescription: nil) != nil, "\(state.symbolName)"
+            )
         }
     }
 }

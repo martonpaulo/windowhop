@@ -1,5 +1,6 @@
+import Foundation
 import ServiceManagement
-import XCTest
+import Testing
 
 @testable import WindowHopCore
 @testable import WindowHopKit
@@ -8,7 +9,7 @@ import XCTest
 /// terminal window on the next login. These drive the real decision with a
 /// substituted ServiceManagement boundary, so no automated run can touch the
 /// machine's actual login items.
-final class LoginItemTests: XCTestCase {
+final class LoginItemTests {
     private final class Recorder {
         var registers = 0
         var unregisters = 0
@@ -44,8 +45,7 @@ final class LoginItemTests: XCTestCase {
     /// A plain directory: what `swift build` produces and runs from a terminal.
     private var bareExecutable: Bundle!
 
-    override func setUpWithError() throws {
-        try super.setUpWithError()
+    init() throws {
         temporaryDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("LoginItemTests-\(UUID().uuidString)")
         let appURL = temporaryDirectory.appendingPathComponent("WindowHopFixture.app")
@@ -60,162 +60,165 @@ final class LoginItemTests: XCTestCase {
                 "CFBundlePackageType": "APPL",
             ] as NSDictionary)
             .write(to: contents.appendingPathComponent("Info.plist"))
-        bundledApp = try XCTUnwrap(Bundle(url: appURL))
-        bareExecutable = try XCTUnwrap(Bundle(url: plainURL))
+        // unwrapped into locals: assigned straight to the implicitly unwrapped
+        // properties, #require would infer an optional result and never fail
+        let app = try #require(Bundle(url: appURL))
+        let bare = try #require(Bundle(url: plainURL))
+        bundledApp = app
+        bareExecutable = bare
     }
 
-    override func tearDownWithError() throws {
+    deinit {
         if let temporaryDirectory {
             try? FileManager.default.removeItem(at: temporaryDirectory)
         }
         temporaryDirectory = nil
-        try super.tearDownWithError()
     }
 
-    func testTheSyntheticAppBundleIsRecognized() {
-        XCTAssertTrue(AppBundle.isApplication(bundledApp))
+    @Test func theSyntheticAppBundleIsRecognized() {
+        #expect(AppBundle.isApplication(bundledApp))
     }
 
-    func testBundleRecognitionRejectsAPlainDirectory() {
-        XCTAssertFalse(AppBundle.isApplication(bareExecutable))
+    @Test func bundleRecognitionRejectsAPlainDirectory() {
+        #expect(!AppBundle.isApplication(bareExecutable))
     }
 
     // MARK: Status
 
-    func testEveryServiceStatusMapsForABundledApp() {
-        XCTAssertEqual(LoginItem.status(.enabled, bundled: true), .enabled)
-        XCTAssertEqual(LoginItem.status(.notRegistered, bundled: true), .disabled)
-        XCTAssertEqual(LoginItem.status(.requiresApproval, bundled: true), .requiresApproval)
+    @Test func everyServiceStatusMapsForABundledApp() {
+        #expect(LoginItem.status(.enabled, bundled: true) == .enabled)
+        #expect(LoginItem.status(.notRegistered, bundled: true) == .disabled)
+        #expect(LoginItem.status(.requiresApproval, bundled: true) == .requiresApproval)
         // a never-registered bundle reads notFound on macOS 26; it must stay
         // enableable rather than lock the toggle
-        XCTAssertEqual(LoginItem.status(.notFound, bundled: true), .disabled)
+        #expect(LoginItem.status(.notFound, bundled: true) == .disabled)
     }
 
-    func testAnUnregisteredBareExecutableIsUnavailable() {
-        XCTAssertEqual(LoginItem.status(.notRegistered, bundled: false), .unavailable)
-        XCTAssertEqual(LoginItem.status(.notFound, bundled: false), .unavailable)
+    @Test func anUnregisteredBareExecutableIsUnavailable() {
+        #expect(LoginItem.status(.notRegistered, bundled: false) == .unavailable)
+        #expect(LoginItem.status(.notFound, bundled: false) == .unavailable)
     }
 
     /// An old registration of a bare build is shown, so it can be removed.
-    func testARegisteredBareExecutableShowsItsRegistration() {
-        XCTAssertEqual(LoginItem.status(.enabled, bundled: false), .enabled)
-        XCTAssertEqual(LoginItem.status(.requiresApproval, bundled: false), .requiresApproval)
+    @Test func aRegisteredBareExecutableShowsItsRegistration() {
+        #expect(LoginItem.status(.enabled, bundled: false) == .enabled)
+        #expect(LoginItem.status(.requiresApproval, bundled: false) == .requiresApproval)
     }
 
     // MARK: Changes
 
-    func testEnablingReadsTheResultingStatus() {
+    @Test func enablingReadsTheResultingStatus() {
         let recorder = Recorder()
 
         let change = LoginItem.set(true, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .enabled, failed: false))
-        XCTAssertEqual(recorder.registers, 1)
+        #expect(change == LoginItemChange(status: .enabled, failed: false))
+        #expect(recorder.registers == 1)
     }
 
-    func testRegistrationAwaitingApprovalIsNotReportedAsEnabled() {
+    @Test func registrationAwaitingApprovalIsNotReportedAsEnabled() {
         let recorder = Recorder()
         recorder.statusAfterRegister = .requiresApproval
 
         let change = LoginItem.set(true, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .requiresApproval, failed: false))
+        #expect(change == LoginItemChange(status: .requiresApproval, failed: false))
     }
 
     /// `register()` throws while macOS holds the item for approval: the
     /// person must see the approval state, not a generic failure.
-    func testThrowingRegistrationAwaitingApprovalShowsTheApprovalState() {
+    @Test func throwingRegistrationAwaitingApprovalShowsTheApprovalState() {
         let recorder = Recorder()
         recorder.statusAfterRegister = .requiresApproval
         recorder.registerError = Failure()
 
         let change = LoginItem.set(true, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .requiresApproval, failed: false))
+        #expect(change == LoginItemChange(status: .requiresApproval, failed: false))
     }
 
-    func testThrowingRegistrationThatLeavesNothingRegisteredFails() {
+    @Test func throwingRegistrationThatLeavesNothingRegisteredFails() {
         let recorder = Recorder()
         recorder.statusAfterRegister = .notRegistered
         recorder.registerError = Failure()
 
         let change = LoginItem.set(true, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .disabled, failed: true))
+        #expect(change == LoginItemChange(status: .disabled, failed: true))
     }
 
-    func testDisablingReadsTheResultingStatus() {
+    @Test func disablingReadsTheResultingStatus() {
         let recorder = Recorder()
         recorder.status = .enabled
 
         let change = LoginItem.set(false, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .disabled, failed: false))
-        XCTAssertEqual(recorder.unregisters, 1)
+        #expect(change == LoginItemChange(status: .disabled, failed: false))
+        #expect(recorder.unregisters == 1)
     }
 
-    func testDisablingWhileAwaitingApprovalUnregisters() {
+    @Test func disablingWhileAwaitingApprovalUnregisters() {
         let recorder = Recorder()
         recorder.status = .requiresApproval
 
         let change = LoginItem.set(false, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .disabled, failed: false))
-        XCTAssertEqual(recorder.unregisters, 1)
+        #expect(change == LoginItemChange(status: .disabled, failed: false))
+        #expect(recorder.unregisters == 1)
     }
 
-    func testFailedUnregistrationKeepsTheRegistrationVisible() {
+    @Test func failedUnregistrationKeepsTheRegistrationVisible() {
         let recorder = Recorder()
         recorder.status = .enabled
         recorder.unregisterError = Failure()
 
         let change = LoginItem.set(false, bundle: bundledApp, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .enabled, failed: true))
+        #expect(change == LoginItemChange(status: .enabled, failed: true))
     }
 
-    func testAlreadyMatchingStateIsANoOp() {
+    @Test func alreadyMatchingStateIsANoOp() {
         let recorder = Recorder()
 
-        XCTAssertEqual(
-            LoginItem.set(false, bundle: bundledApp, service: service(recorder)),
-            LoginItemChange(status: .disabled, failed: false))
+        #expect(
+            LoginItem.set(false, bundle: bundledApp, service: service(recorder))
+                == LoginItemChange(status: .disabled, failed: false))
         recorder.status = .requiresApproval
-        XCTAssertEqual(
-            LoginItem.set(true, bundle: bundledApp, service: service(recorder)),
-            LoginItemChange(status: .requiresApproval, failed: false))
-        XCTAssertEqual(recorder.registers + recorder.unregisters, 0)
+        #expect(
+            LoginItem.set(true, bundle: bundledApp, service: service(recorder))
+                == LoginItemChange(status: .requiresApproval, failed: false))
+        #expect(recorder.registers + recorder.unregisters == 0)
     }
 
     // MARK: The bundle guard (#14)
 
-    func testEnablingOutsideABundleRegistersNothing() {
+    @Test func enablingOutsideABundleRegistersNothing() {
         let recorder = Recorder()
 
         let change = LoginItem.set(true, bundle: bareExecutable, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .unavailable, failed: true))
-        XCTAssertEqual(recorder.registers, 0)
+        #expect(change == LoginItemChange(status: .unavailable, failed: true))
+        #expect(recorder.registers == 0)
     }
 
     /// Even if the boundary claims it is already enabled, the unbundled build
     /// must not report success — that is how the stale registration hides.
-    func testUnbundledEnableFailsEvenWhenReportedEnabled() {
+    @Test func unbundledEnableFailsEvenWhenReportedEnabled() {
         let recorder = Recorder()
         recorder.status = .enabled
 
-        XCTAssertTrue(LoginItem.set(true, bundle: bareExecutable, service: service(recorder)).failed)
-        XCTAssertEqual(recorder.registers, 0)
+        #expect(LoginItem.set(true, bundle: bareExecutable, service: service(recorder)).failed)
+        #expect(recorder.registers == 0)
     }
 
     /// Removing an earlier registration must keep working outside a bundle.
-    func testDisablingOutsideABundleStillUnregisters() {
+    @Test func disablingOutsideABundleStillUnregisters() {
         let recorder = Recorder()
         recorder.status = .enabled
 
         let change = LoginItem.set(false, bundle: bareExecutable, service: service(recorder))
 
-        XCTAssertEqual(change, LoginItemChange(status: .unavailable, failed: false))
-        XCTAssertEqual(recorder.unregisters, 1)
+        #expect(change == LoginItemChange(status: .unavailable, failed: false))
+        #expect(recorder.unregisters == 1)
     }
 }
