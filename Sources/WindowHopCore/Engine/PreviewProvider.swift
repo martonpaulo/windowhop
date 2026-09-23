@@ -1,5 +1,6 @@
 import AppKit
 import ScreenCaptureKit
+import WindowHopKit
 
 /// Window previews for the optional Window Previews appearance, tuned for an
 /// instant-open feel (public APIs only):

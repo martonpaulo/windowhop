@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WindowHopKit
 
 /// A native shortcut recorder built on NSButton + a local key monitor — no
 /// third-party library. Click to record; press a chord to assign; Escape

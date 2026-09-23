@@ -1,6 +1,7 @@
 import Carbon.HIToolbox
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Mapping of `CopySymbolicHotKeys` entries, tested on hand-built dictionaries.
 /// The live reader is only smoke-called; nothing writes a system shortcut.

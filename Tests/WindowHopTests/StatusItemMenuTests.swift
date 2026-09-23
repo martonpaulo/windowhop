@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The menu bar item's menu, exercised without creating an `NSStatusItem`:
 /// its contents must not depend on whether the updater started before or

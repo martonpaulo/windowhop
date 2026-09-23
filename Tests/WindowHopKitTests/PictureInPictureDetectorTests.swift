@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Behavior-based PiP detection: a floating (nonzero-layer) window server
 /// entry marks a window as Picture in Picture, unless it covers a whole

@@ -15,9 +15,17 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
+        // pure rules: Foundation, CoreGraphics value types, Combine/Observation and
+        // Synchronization only (AGENTS.md "Kit import contract"; scripts/validate.sh)
+        .target(
+            name: "WindowHopKit",
+            path: "Sources/WindowHopKit",
+            swiftSettings: swiftSettings,
+        ),
         .target(
             name: "WindowHopCore",
             dependencies: [
+                "WindowHopKit",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             path: "Sources/WindowHopCore",
@@ -26,6 +34,7 @@ let package = Package(
         .executableTarget(
             name: "WindowHop",
             dependencies: [
+                "WindowHopKit",
                 "WindowHopCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
@@ -37,8 +46,14 @@ let package = Package(
             ]
         ),
         .testTarget(
+            name: "WindowHopKitTests",
+            dependencies: ["WindowHopKit"],
+            path: "Tests/WindowHopKitTests",
+            swiftSettings: swiftSettings,
+        ),
+        .testTarget(
             name: "WindowHopTests",
-            dependencies: ["WindowHopCore"],
+            dependencies: ["WindowHopKit", "WindowHopCore"],
             path: "Tests/WindowHopTests",
             // AeroSpace's MIT-licensed AX dump corpus, imported verbatim (UPSTREAM.md)
             resources: [.copy("Fixtures/AeroSpaceAXDumps")],

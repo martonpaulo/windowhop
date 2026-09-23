@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// A removed window's stable id must never outlive it in the preview cache.
 /// Every removal path in the store goes through one eviction handoff; these

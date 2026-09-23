@@ -1,6 +1,7 @@
 import XCTest
 import Combine
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 @MainActor
 final class PreferencesTests: XCTestCase {

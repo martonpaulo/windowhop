@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// What assistive technology reads from the Open WindowHop recorder: its
 /// purpose (label), the current chord in words or its absence (value), whether

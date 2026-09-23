@@ -1,5 +1,6 @@
 import AppKit
 import Sparkle
+import WindowHopKit
 
 /// Sparkle 2 wrapper. Update checks are WindowHop's only routine network
 /// activity — no telemetry, no analytics, no accounts. The standard Sparkle

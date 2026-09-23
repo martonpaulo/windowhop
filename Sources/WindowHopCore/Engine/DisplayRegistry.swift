@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import CoreGraphics
+import WindowHopKit
 
 /// The only place that turns real displays into the value types `Core` reasons
 /// about. Everything here is read on demand at session start or while Settings

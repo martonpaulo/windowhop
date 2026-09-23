@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Which captured Open WindowHop chords are accepted, rejected, or need
 /// confirmation. Layouts and system shortcut lists are fixtures: nothing reads

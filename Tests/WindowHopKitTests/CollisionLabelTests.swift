@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Same-app windows sharing a displayed title get their document's parent folder,
 /// and only when that folder actually tells them apart (issue #92).

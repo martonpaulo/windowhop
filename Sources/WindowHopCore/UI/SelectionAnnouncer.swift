@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// Posts the switcher's selection announcement — the only accessible output of
 /// a selection change, because nothing moves VoiceOver focus into the panel.

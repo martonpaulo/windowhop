@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import WindowHopKit
 
 /// AXUIElement helpers, ported from AltTab v10.12.0's api-wrappers/AXUIElement.swift
 /// minus the private SPI (_AXUIElementGetWindow, _AXUIElementCreateWithRemoteToken).

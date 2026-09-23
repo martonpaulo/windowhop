@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// "Report an Issue…" opens the public bug-report form with public build
 /// metadata and the macOS version filled in, and nothing else.

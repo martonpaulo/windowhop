@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// A restored Settings frame stays where the person put it while its title bar
 /// is reachable, and returns to the main display when its display is gone.

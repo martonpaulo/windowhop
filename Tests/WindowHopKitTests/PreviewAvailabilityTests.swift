@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Acquisition state is per window for the session, so list refreshes and
 /// reorders cannot erase or move a failure or a permission block.

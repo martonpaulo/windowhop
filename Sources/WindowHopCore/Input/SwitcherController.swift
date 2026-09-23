@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// Orchestrates one switcher session: semantic input events feed the pure
 /// SwitcherState; resulting commands drive the panel, window actions, and the

@@ -1,5 +1,6 @@
 import AppKit
 import WindowHopCore
+import WindowHopKit
 
 /// Development/QA harness, reachable only through explicit flags on the binary.
 /// - `--demo-switcher [--dark]`: renders the switcher panel with sample rows,

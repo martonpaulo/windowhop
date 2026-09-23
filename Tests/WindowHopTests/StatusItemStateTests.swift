@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The menu bar item's state is derived from the switcher preference and the
 /// Accessibility grant, and every state must be distinguishable without color:

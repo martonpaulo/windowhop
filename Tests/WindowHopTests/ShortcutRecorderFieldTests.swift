@@ -2,6 +2,7 @@ import AppKit
 import SwiftUI
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// SwiftUI keeps one native recorder alive across updates, so its validation
 /// must follow the currently selected switcher shortcut rather than the one

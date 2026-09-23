@@ -1,5 +1,6 @@
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The Settings model over a fake login-item boundary: nothing here can touch
 /// the machine's real login items.

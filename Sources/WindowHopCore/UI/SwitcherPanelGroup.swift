@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// One session's panels: exactly one per target display, presenting the command
 /// surface `SwitcherController` already used against a single panel.

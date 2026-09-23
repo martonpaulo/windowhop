@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Preview/window association at the view layer: deliveries are keyed by the
 /// window's stable id, pooled tiles reset stale image state when they start

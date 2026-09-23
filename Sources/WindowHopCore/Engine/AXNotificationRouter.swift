@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import WindowHopKit
 
 /// Routes AXObserver notifications to the WindowStore, ported from AltTab v10.12.0's
 /// AccessibilityEvents. The observer callback fires on the dedicated AX events thread;

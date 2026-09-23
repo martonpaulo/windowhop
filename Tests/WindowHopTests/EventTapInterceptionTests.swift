@@ -1,6 +1,7 @@
 import CoreGraphics
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 final class EventTapInterceptionTests: XCTestCase {
     func testCommandTabSequenceIsFullyConsumedAndReleasesOnModifierChange() {

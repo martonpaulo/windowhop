@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// NSView normally ignores a child's descendants outside that child's bounds.
 /// Close is intentionally centered on the canvas corner, so the document view

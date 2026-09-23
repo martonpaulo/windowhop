@@ -1,6 +1,7 @@
 import CoreGraphics
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Runs WindowHop's eligibility rules over AeroSpace's corpus of real AX
 /// attribute dumps (`Fixtures/AeroSpaceAXDumps`, MIT, pinned in UPSTREAM.md).

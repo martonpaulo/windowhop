@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The launch and reopen contract decided on issue #80 (option C), one row per
 /// condition in docs/architecture.md "Launch and reopen".

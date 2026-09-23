@@ -1,5 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
+import WindowHopKit
 
 /// Application lifecycle: permission gating, engine start/stop, settings reactions,
 /// and the launch/reopen surface decided by `LaunchPresentation` (reopening always

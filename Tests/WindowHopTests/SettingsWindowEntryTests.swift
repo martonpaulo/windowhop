@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The own-Settings-window exception: it appears exactly once while open,
 /// participates in MRU, hides while minimized, and disappears on close.

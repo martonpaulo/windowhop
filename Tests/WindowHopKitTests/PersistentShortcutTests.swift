@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 @MainActor
 final class PersistentShortcutTests: XCTestCase {

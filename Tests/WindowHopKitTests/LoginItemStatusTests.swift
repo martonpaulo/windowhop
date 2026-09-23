@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 final class LoginItemStatusTests: XCTestCase {
     /// The toggle is on whenever WindowHop is registered: a pending approval

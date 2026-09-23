@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import WindowHopKit
 
 /// A window entry as consumed by the switcher UI: plain values plus a reference
 /// for actions (activate/close). `id` is the stable identity used to match entries

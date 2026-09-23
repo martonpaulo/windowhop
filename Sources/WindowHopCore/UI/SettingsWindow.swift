@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WindowHopKit
 
 /// The Settings window: a native multi-pane layout (toolbar-style
 /// NSTabViewController, exactly like classic System Settings panes) hosting

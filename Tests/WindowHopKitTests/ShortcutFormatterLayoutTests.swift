@@ -1,6 +1,6 @@
 import Synchronization
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Printable shortcut keys are labelled by the current keyboard layout; special
 /// keys keep one canonical name; the stored binding stays the physical key

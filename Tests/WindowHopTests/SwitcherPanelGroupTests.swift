@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Mirrored panels must stay indistinguishable from each other. These drive the
 /// group against one real screen repeated under different display ids, which

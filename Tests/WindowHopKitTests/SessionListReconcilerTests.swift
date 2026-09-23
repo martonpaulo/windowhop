@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The session list must stay stable under the user's fingers while still
 /// surfacing windows that appear mid-session. These are the rules that keep

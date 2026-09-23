@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 final class ExpandedPreviewSessionTests: XCTestCase {
     func testSettledTargetBecomesExpandedWithoutCommitOrOriginState() {

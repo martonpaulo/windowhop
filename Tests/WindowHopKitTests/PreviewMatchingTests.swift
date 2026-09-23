@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The preview↔window assignment must be UNIQUE: two windows of the same app can
 /// never receive the same snapshot (the "both WhatsApp windows showed one

@@ -1,4 +1,5 @@
 import Foundation
+import WindowHopKit
 
 /// Coordinates Restore Defaults with the one reset preference that is also
 /// applied outside UserDefaults (Sparkle's automatic update checks). Launch at

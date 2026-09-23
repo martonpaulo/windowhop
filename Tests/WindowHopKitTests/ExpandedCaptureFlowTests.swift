@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Expanded capture must never start after its session, target or request has
 /// been superseded. These drive the real ordering rule with a controlled

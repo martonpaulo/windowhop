@@ -1,6 +1,6 @@
 import CoreGraphics
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The switching guide is the first thing a new user reads after granting
 /// Accessibility. It must follow the shortcuts actually configured, and every

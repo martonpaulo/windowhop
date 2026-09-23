@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// A complete visible circle inside a larger pointer target. Drawing the badge
 /// explicitly avoids SF Symbol optical bounds being cropped at the canvas edge.

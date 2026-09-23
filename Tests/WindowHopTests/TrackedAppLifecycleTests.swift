@@ -2,6 +2,7 @@ import AppKit
 import Synchronization
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Drives real `TrackedApp` observers (against Finder) through overlapping
 /// start/stop requests. Run with `swift test --sanitize=thread` to check that observer

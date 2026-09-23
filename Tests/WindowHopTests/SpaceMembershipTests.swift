@@ -1,6 +1,7 @@
 import ApplicationServices
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// A Space-change re-enumeration may fail. A failed read must keep each window where
 /// it was last seen; only a successful read, even an empty one, may move it.

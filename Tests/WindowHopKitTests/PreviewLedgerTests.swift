@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Captures finish asynchronously and out of order; the ledger decides what a
 /// late result may still do. These are the regression rules that keep a

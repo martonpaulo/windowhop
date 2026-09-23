@@ -1,5 +1,6 @@
 import Foundation
 import ServiceManagement
+import WindowHopKit
 
 /// Launch-at-login via SMAppService (macOS 13+).
 ///

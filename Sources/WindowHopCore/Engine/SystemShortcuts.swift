@@ -1,6 +1,7 @@
 import Carbon.HIToolbox
 import CoreGraphics
 import Foundation
+import WindowHopKit
 
 /// The enabled macOS keyboard shortcuts (System Settings → Keyboard → Keyboard
 /// Shortcuts), read through the public, read-only `CopySymbolicHotKeys`

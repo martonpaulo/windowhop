@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The expanded preview must survive refreshes that change nothing about its
 /// target, and must appear when its first image arrives after dwell settled.

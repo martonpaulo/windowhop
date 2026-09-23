@@ -1,4 +1,5 @@
 import AppKit
+import WindowHopKit
 
 /// Optional menu bar item (hidden by default). Its symbol shape and
 /// accessibility label show `StatusItemState` (active, paused, Accessibility

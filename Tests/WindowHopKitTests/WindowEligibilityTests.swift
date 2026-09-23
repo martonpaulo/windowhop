@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 final class WindowEligibilityTests: XCTestCase {
     private func standardWindow(size: CGSize = CGSize(width: 800, height: 600)) -> WindowFacts {

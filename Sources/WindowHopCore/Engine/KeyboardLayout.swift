@@ -1,5 +1,6 @@
 import Carbon.HIToolbox
 import Foundation
+import WindowHopKit
 
 /// The live keyboard layout as a `KeyLabelSource`: the character a physical key
 /// types on the current input source, read on demand (no cache, no observer).

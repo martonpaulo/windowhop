@@ -1,6 +1,7 @@
 import ServiceManagement
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Registering a bare `swift build` executable at login makes launchd open a
 /// terminal window on the next login. These drive the real decision with a

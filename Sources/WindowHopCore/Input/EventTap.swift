@@ -1,6 +1,7 @@
 import AppKit
 import ApplicationServices
 import Synchronization
+import WindowHopKit
 
 /// Semantic input events the tap produces for the controller (delivered on main).
 public enum SwitcherInputEvent: Equatable, Sendable {

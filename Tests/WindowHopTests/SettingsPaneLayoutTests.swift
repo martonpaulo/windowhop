@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// Selecting a Settings pane must never resize the window: General used to be
 /// tall enough to run off a laptop display while Updates was a third of it.

@@ -1,6 +1,7 @@
 import AppKit
 import XCTest
 @testable import WindowHopCore
+@testable import WindowHopKit
 
 /// The tile advertises the AXButton role, so assistive technology expects the
 /// standard Press action to activate the window exactly like a pointer click,

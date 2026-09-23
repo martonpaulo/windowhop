@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 /// About, Updates and support reports show the version, build and release
 /// date through `AppVersion`. A missing or bad release date must never hide

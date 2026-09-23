@@ -1,4 +1,5 @@
 import Foundation
+import WindowHopKit
 
 /// The General pane's launch-at-login state: the login-item status macOS
 /// reports plus whether the last requested change failed.

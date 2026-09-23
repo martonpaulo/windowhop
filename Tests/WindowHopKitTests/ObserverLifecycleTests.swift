@@ -1,5 +1,5 @@
 import XCTest
-@testable import WindowHopCore
+@testable import WindowHopKit
 
 final class ObserverLifecycleTests: XCTestCase {
     private func makeLifecycle(attempts: Int = 3) -> ObserverLifecycle {

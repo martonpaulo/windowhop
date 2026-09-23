@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import WindowHopKit
 
 /// One real window we track. For other apps' windows the identity is the
 /// AXUIElement itself (CFEqual-stable for the lifetime of the owning process), so

@@ -1,5 +1,6 @@
 import AppKit
 import ApplicationServices
+import WindowHopKit
 
 /// One running application we observe, ported from AltTab v10.12.0's Application.
 /// A single AXObserver per app carries both app-level and window-level notifications;

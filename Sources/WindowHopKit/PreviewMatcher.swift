@@ -20,20 +20,34 @@ import Foundation
 /// candidate's clear winner. Anything ambiguous stays unassigned — the tile then
 /// keeps its placeholder, because a preview of the wrong window is worse than no
 /// preview.
-enum PreviewMatcher {
-    struct Request {
-        let id: AnyHashable
-        let pid: pid_t
-        let title: String
-        let frame: CGRect?
+public enum PreviewMatcher {
+    public struct Request {
+        public let id: AnyHashable
+        public let pid: pid_t
+        public let title: String
+        public let frame: CGRect?
+
+        public init(id: AnyHashable, pid: pid_t, title: String, frame: CGRect?) {
+            self.id = id
+            self.pid = pid
+            self.title = title
+            self.frame = frame
+        }
     }
 
-    struct Candidate {
+    public struct Candidate {
         /// Position in the caller's candidate list; returned as the assignment.
-        let index: Int
-        let pid: pid_t
-        let title: String
-        let frame: CGRect
+        public let index: Int
+        public let pid: pid_t
+        public let title: String
+        public let frame: CGRect
+
+        public init(index: Int, pid: pid_t, title: String, frame: CGRect) {
+            self.index = index
+            self.pid = pid
+            self.title = title
+            self.frame = frame
+        }
     }
 
     /// Per-edge frame agreement between an AX frame and a window-server frame.
@@ -74,7 +88,7 @@ enum PreviewMatcher {
     /// Unique assignment of candidates to requests. Every candidate is consumed
     /// at most once, so two windows of the same app can never share a preview,
     /// and requests without a clear match are simply absent from the result.
-    static func assign(requests: [Request], candidates: [Candidate]) -> [AnyHashable: Int] {
+    public static func assign(requests: [Request], candidates: [Candidate]) -> [AnyHashable: Int] {
         var assigned: [AnyHashable: Int] = [:]
         var openRequests = Set(requests.indices)
         // helper windows too small to capture are not real candidates
