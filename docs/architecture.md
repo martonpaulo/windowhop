@@ -528,7 +528,7 @@ identity validation is explicitly inapplicable.
 | Concern | AltTab (private) | WindowHop (public) |
 |---|---|---|
 | Suppress native Cmd-Tab | `CGSSetSymbolicHotKeyEnabled` | consuming event tap; nothing to restore on quit/crash |
-| Focus a window | `_SLPSSetFrontProcessWithOptions` + `SLPSPostEventRecordTo` | `kAXMainAttribute` + `kAXRaiseAction` + settable `kAXFrontmostAttribute`, then `NSRunningApplication.activate()` |
+| Focus a window | `_SLPSSetFrontProcessWithOptions` + `SLPSPostEventRecordTo` | `kAXMainAttribute` + `kAXRaiseAction`, then `NSRunningApplication.activate()`; the settable `kAXFrontmostAttribute` only as a fall-back when the app is not focused 150 ms later, because it fronts the app's windows on every display (#41) |
 | Window identity | `_AXUIElementGetWindow` (CGWindowID) | the `AXUIElement` itself (CFEqual/CFHash) |
 | Other-Space windows | `_AXUIElementCreateWithRemoteToken` brute force + `CGSCopySpaces*` | persistent store + re-enumeration on Space change (see limitation in README) |
 | Tab-group siblings | CGWindowID matching | object-identity matching in pure `TabGroupResolver` |

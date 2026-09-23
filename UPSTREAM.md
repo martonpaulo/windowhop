@@ -49,6 +49,16 @@ git remote add upstream https://github.com/lwouis/alt-tab-macos
 
 ## Corrected (ported rule intentionally diverges from upstream)
 
+- Window focus. Before `3f5ea251` (2019-12-27) AltTab fronted a window with
+  `app.activate(options: [.activateIgnoringOtherApps])` plus `kAXRaiseAction`; that commit
+  moved to the private `_SLPSSetFrontProcessWithOptions`, which fronts a process *for one
+  window*. WindowHop's public substitute used the settable `kAXFrontmostAttribute` on the
+  application, which a two-display probe (WindowHop issue #41, 2026-09-23, macOS 26) showed
+  fronts every window of the app on every display. `WindowActions.activate` now makes the
+  window main, raises it and calls `NSRunningApplication.activate()`, which fronts only the
+  main and key windows; the AX attribute remains a fall-back, used only when the app is
+  still not focused 150 ms later (`WindowHopKit/ActivationFallback`).
+
 - `src/logic/TabGroup.swift` (`updateState`) clears the group membership of *every*
   same-app window that is not in the refreshed group. When one app owns two native tab
   groups, refreshing either one dissolves the other and its inactive tabs reappear as

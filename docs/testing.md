@@ -327,6 +327,10 @@ Screen Recording permission.
       menus, tooltips, system overlays, or WindowHop helper UI.
 - [ ] Identical-title windows stay distinct; Safari tab counts remain metadata, not entries.
 - [ ] Other-Space and other-display toggles rebuild the list correctly.
+- [ ] Two extended displays, two apps with one window on each display (#41): switching to
+      one app's window on display A leaves display B's front window where it was. Without a
+      second monitor, `scripts/capture-display.m` adds one; the probe that measured this is
+      described in issue #41.
 
 ### Visuals and accessibility
 

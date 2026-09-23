@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Install with Homebrew**: `brew install --cask martonpaulo/tap/windowhop`.
 
+### Fixed
+
+- **Switching no longer brings a window forward on your other display**: when an app has
+  windows on two displays, choosing one of them now fronts only that window. Before, the
+  app's window on the other display jumped in front too.
+
 ### Changed
 
 - **Previews fill the whole card**: a window snapshot now covers its card, and only
