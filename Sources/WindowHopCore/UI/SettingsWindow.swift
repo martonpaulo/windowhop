@@ -303,6 +303,28 @@ private struct PermissionStatus: View {
 }
 
 /// One key drawn as a key cap, like the keys in the macOS keyboard settings.
+/// The application icon at `size` points. AppKit draws it, so it picks the icon
+/// file's representation for that size and the display's scale; SwiftUI's
+/// `resizable()` scaled the 1024 px image down and left jagged edges (#122).
+private struct AppIconImage: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(nsImage: Self.icon(size: size))
+            .frame(width: size, height: size)
+    }
+
+    private static func icon(size: CGFloat) -> NSImage {
+        let source = NSApp.applicationIconImage ?? NSImage()
+        // the handler runs at each drawing's backing scale, so the choice of
+        // representation follows the display the window is on
+        return NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+            source.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
+            return true
+        }
+    }
+}
+
 private struct KeyCap: View {
     let key: String
 
@@ -348,12 +370,7 @@ struct GeneralPane: View {
                 // first, so the pane Settings opens on after the permission
                 // grant says whether and how WindowHop switches
                 HStack(spacing: DesignTokens.settingsStatusSpacing) {
-                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
-                        .resizable()
-                        .frame(
-                            width: DesignTokens.settingsStatusIconSize,
-                            height: DesignTokens.settingsStatusIconSize
-                        )
+                    AppIconImage(size: DesignTokens.settingsStatusIconSize)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: DesignTokens.settingsAboutTitleSpacing) {
                         Text("WindowHop").font(.headline)
@@ -811,12 +828,7 @@ struct AboutPane: View {
         Form {
             Section {
                 VStack(spacing: DesignTokens.settingsAboutTitleSpacing) {
-                    Image(nsImage: NSApp.applicationIconImage ?? NSImage())
-                        .resizable()
-                        .frame(
-                            width: DesignTokens.settingsAboutIconSize,
-                            height: DesignTokens.settingsAboutIconSize
-                        )
+                    AppIconImage(size: DesignTokens.settingsAboutIconSize)
                         .accessibilityLabel("WindowHop application icon")
                     Text("WindowHop")
                         .font(.title2.weight(.semibold))

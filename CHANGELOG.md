@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Window previews fill their card**: on a display that is not Retina, a snapshot used
   only half of its card. Every snapshot now fills the card's width or height, and a small
   window is enlarged to the card too. The card size does not change.
+- **The app icon in Settings has smooth edges**: General and About draw the icon from
+  the image made for its size, instead of shrinking the largest one.
 
 ## [2.1.0] - 2026-09-23
 
