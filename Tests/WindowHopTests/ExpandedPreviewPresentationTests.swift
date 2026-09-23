@@ -8,19 +8,21 @@ import XCTest
 @MainActor
 final class ExpandedPreviewPresentationTests: XCTestCase {
     private var group: SwitcherPanelGroup!
-    private var originalMode: AppearanceMode!
+    private var isolated: IsolatedPreferences!
+    private var preferences: Preferences { isolated.preferences }
 
     override func setUp() async throws {
         try await super.setUp()
-        originalMode = Preferences.shared.appearanceMode
-        Preferences.shared.appearanceMode = .windowPreviews
-        group = SwitcherPanelGroup()
+        isolated = IsolatedPreferences()
+        preferences.appearanceMode = .windowPreviews
+        group = SwitcherPanelGroup(preferences: preferences)
     }
 
     override func tearDown() async throws {
         group.hide()
         group = nil
-        Preferences.shared.appearanceMode = originalMode
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 
@@ -88,7 +90,7 @@ final class ExpandedPreviewPresentationTests: XCTestCase {
         try openedGroup(items: list)
         group.showExpandedPreview(id: list[0].id, image: image())
 
-        Preferences.shared.appearanceMode = .appIcons
+        preferences.appearanceMode = .appIcons
         group.update(items: list, selectedIndex: 0)
 
         XCTAssertNil(group.expandedPreviewID)

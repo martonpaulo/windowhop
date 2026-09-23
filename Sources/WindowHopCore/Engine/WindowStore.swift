@@ -46,7 +46,10 @@ public final class WindowStore {
     /// Fired on any change that can affect the visible list.
     public var onChange: (() -> Void)?
 
-    private var preferences: Preferences { Preferences.shared }
+    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
+    /// harness) before first use. It moves to the initializer when this type
+    /// stops being a singleton (#108).
+    public var preferences: Preferences!
     private var runningAppsObserver: NSKeyValueObservation?
     private var started = false
 

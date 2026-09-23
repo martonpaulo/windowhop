@@ -14,12 +14,6 @@ import WindowHopKit
 /// on whether the updater started before or after the item was created.
 @MainActor
 public final class StatusItemController: NSObject, NSMenuDelegate, NSMenuItemValidation {
-    public static let shared = StatusItemController(
-        preferences: .shared,
-        accessibilityGranted: { AccessibilityPermission.isGranted },
-        updaterAvailable: { UpdateManager.shared.isAvailable },
-        canCheckForUpdates: { UpdateManager.shared.canCheckForUpdates })
-
     enum ItemTag: Int {
         case toggle = 1
         case checkForUpdates

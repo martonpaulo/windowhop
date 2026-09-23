@@ -92,6 +92,7 @@ public final class SwitcherPanel: NSPanel {
     private var tilePool: [SwitcherTileView] = []
     private var visibleTileCount = 0
     private var selectedIndex = 0
+    private let preferences: Preferences
     private var mode = AppearanceMode.appIcons
     private var items: [SwitcherItem] = []
     private var itemIds: [AnyHashable] = []
@@ -121,10 +122,10 @@ public final class SwitcherPanel: NSPanel {
     private var layoutScreen: NSScreen? { placementScreen ?? NSScreen.screens.first }
 
     /// The preview area a tile offers in Window Previews mode, for capture sizing.
-    public static var previewContentSize: NSSize {
+    public static func previewContentSize(showTabCounts: Bool) -> NSSize {
         let metrics = SwitcherTileView.Metrics.metrics(
             for: .windowPreviews,
-            showTabCounts: Preferences.shared.showTabCounts)
+            showTabCounts: showTabCounts)
         return NSSize(width: metrics.tileSize.width - DesignTokens.tileLabelInset * 2,
                       height: metrics.contentHeight)
     }
@@ -140,7 +141,8 @@ public final class SwitcherPanel: NSPanel {
     /// `rasterizableBackground` is for the offscreen render harness only: the
     /// glass background cannot be rasterized with cacheDisplay (it
     /// draws empty), so layout renders use the visual-effect fallback instead.
-    public init(rasterizableBackground: Bool = false) {
+    public init(preferences: Preferences, rasterizableBackground: Bool = false) {
+        self.preferences = preferences
         super.init(contentRect: .zero,
                    styleMask: [.nonactivatingPanel, .borderless],
                    backing: .buffered,
@@ -305,7 +307,7 @@ public final class SwitcherPanel: NSPanel {
     }
 
     public func update(items: [SwitcherItem], selectedIndex index: Int) {
-        mode = Preferences.shared.appearanceMode
+        mode = preferences.appearanceMode
         // An unrelated metadata or list refresh must not collapse an expanded
         // preview: only losing the window, the selection or the mode does.
         let selectedID = index >= 0 && index < items.count ? items[index].id : nil
@@ -446,7 +448,7 @@ public final class SwitcherPanel: NSPanel {
     /// reconfigures only tiles whose content changed. A burst of window events
     /// (a window dragged or resized) then costs no tile redraw at all (#119).
     private func rebuildTiles(items: [SwitcherItem]) {
-        let showTabCounts = Preferences.shared.showTabCounts
+        let showTabCounts = preferences.showTabCounts
         let contents = items.map {
             SwitcherTileView.Content(item: $0, mode: mode, showTabCounts: showTabCounts)
         }
@@ -500,7 +502,7 @@ public final class SwitcherPanel: NSPanel {
         let rowSpacing = DesignTokens.tileRowSpacing
         let tileSize = SwitcherTileView.Metrics.metrics(
             for: mode,
-            showTabCounts: Preferences.shared.showTabCounts).tileSize
+            showTabCounts: preferences.showTabCounts).tileSize
         let visibleFrame = screen.visibleFrame
 
         // tiles wrap into rows instead of scrolling horizontally (the AltTab

@@ -11,10 +11,12 @@ final class SettingsPaneSelectionTests: XCTestCase {
     private var autosaveName: String!
     private var savedSelection: Any?
     private var windows: [NSWindow] = []
+    private var isolated: IsolatedPreferences!
 
     override func setUp() async throws {
         try await super.setUp()
         _ = NSApplication.shared
+        isolated = IsolatedPreferences()
         autosaveName = "WindowHopSettingsPaneTest-\(UUID().uuidString)"
         savedSelection = UserDefaults.standard.object(forKey: Self.selectedPaneKey)
         UserDefaults.standard.set(SettingsPane.general.rawValue, forKey: Self.selectedPaneKey)
@@ -26,9 +28,17 @@ final class SettingsPaneSelectionTests: XCTestCase {
             window.close()
         }
         windows = []
+        isolated.remove()
+        isolated = nil
         UserDefaults.standard.removeObject(forKey: "NSWindow Frame \(autosaveName!)")
         UserDefaults.standard.set(savedSelection, forKey: Self.selectedPaneKey)
         try await super.tearDown()
+    }
+
+    private func makeController() -> SettingsWindowController {
+        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
+        controller.dependencies = isolated.settingsDependencies
+        return controller
     }
 
     private func prepare(_ controller: SettingsWindowController,
@@ -39,20 +49,20 @@ final class SettingsPaneSelectionTests: XCTestCase {
     }
 
     func testAboutEntryPointSelectsAndRemembersTheAboutPane() throws {
-        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
+        let controller = makeController()
         let tabs = try prepare(controller, selecting: .about)
         XCTAssertEqual(tabs.selectedPane, .about)
         XCTAssertEqual(UserDefaults.standard.string(forKey: Self.selectedPaneKey), "about")
     }
 
     func testAboutEntryPointSwitchesAnAlreadyOpenWindow() throws {
-        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
+        let controller = makeController()
         XCTAssertEqual(try prepare(controller, selecting: nil).selectedPane, .general)
         XCTAssertEqual(try prepare(controller, selecting: .about).selectedPane, .about)
     }
 
     func testPlainShowKeepsTheLastSelectedPane() throws {
-        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
+        let controller = makeController()
         _ = try prepare(controller, selecting: .about)
         XCTAssertEqual(try prepare(controller, selecting: nil).selectedPane, .about)
     }

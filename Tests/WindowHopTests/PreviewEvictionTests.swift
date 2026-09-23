@@ -8,13 +8,16 @@ import XCTest
 /// drive the real entry points and observe the provider's cache.
 @MainActor
 final class PreviewEvictionTests: XCTestCase {
+    private var isolated: IsolatedPreferences!
     private var store: WindowStore!
     private var window: NSWindow!
     private var seeded: [AnyHashable] = []
 
     override func setUp() async throws {
         try await super.setUp()
+        isolated = IsolatedPreferences()
         store = WindowStore()
+        store.preferences = isolated.preferences
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
                           backing: .buffered, defer: true)
@@ -27,6 +30,8 @@ final class PreviewEvictionTests: XCTestCase {
         seeded = []
         window = nil
         store = nil
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 
@@ -115,19 +120,21 @@ final class PreviewEvictionTests: XCTestCase {
 /// if any hidden, collapsed, or ended view still retains it.
 @MainActor
 final class PreviewViewReleaseTests: XCTestCase {
-    private var savedAppearanceMode: AppearanceMode!
+    private var isolated: IsolatedPreferences!
+    private var preferences: Preferences { isolated.preferences }
     private var seeded: [AnyHashable] = []
 
     override func setUp() async throws {
         try await super.setUp()
-        savedAppearanceMode = Preferences.shared.appearanceMode
-        Preferences.shared.appearanceMode = .windowPreviews
+        isolated = IsolatedPreferences()
+        preferences.appearanceMode = .windowPreviews
     }
 
     override func tearDown() async throws {
         seeded.forEach { PreviewProvider.shared.evict($0) }
         seeded = []
-        Preferences.shared.appearanceMode = savedAppearanceMode
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 
@@ -154,7 +161,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testASlotHiddenByAnUpdateReleasesItsImage() {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let image = weakImage { panel.updatePreview(id: "b", image: $0) }
         XCTAssertNotNil(image(), "the visible tile presents the image")
@@ -167,7 +174,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     func testReleasedHiddenTilesDoNotPulse() throws {
         try XCTSkipIf(NSWorkspace.shared.accessibilityDisplayShouldReduceMotion,
                       "Reduce Motion is on, so no skeleton ever pulses")
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let hidden = try XCTUnwrap(panel.tileForTesting(at: 1))
         XCTAssertTrue(hidden.skeletonIsAnimatingForTesting, "a loading tile pulses")
@@ -178,7 +185,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testHidingTheExpandedPreviewReleasesItsImage() {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         panel.update(items: [item("a")], selectedIndex: 0)
         let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
         XCTAssertNotNil(image())
@@ -189,7 +196,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testAnUpdateThatCollapsesTheExpandedPreviewReleasesItsImage() {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let image = weakImage { panel.showExpandedPreview(id: "a", image: $0) }
 
@@ -201,7 +208,7 @@ final class PreviewViewReleaseTests: XCTestCase {
     }
 
     func testEndingASessionReleasesViewsButKeepsTheWarmCache() {
-        let panel = SwitcherPanel(rasterizableBackground: true)
+        let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         panel.update(items: [item("a"), item("b")], selectedIndex: 0)
         let delivered = weakImage { panel.updatePreview(id: "a", image: $0) }
         let expanded = weakImage { panel.showExpandedPreview(id: "b", image: $0) }

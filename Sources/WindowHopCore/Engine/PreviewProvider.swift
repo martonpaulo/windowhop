@@ -24,6 +24,11 @@ import WindowHopKit
 public final class PreviewProvider {
     public static let shared = PreviewProvider()
 
+    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
+    /// harness) before first use. It moves to the initializer when this type
+    /// stops being a singleton (#108).
+    public var preferences: Preferences!
+
     /// Delivered on the main thread for windows of the current session, keyed
     /// by the window's stable id (fill-ins and refreshes of cached snapshots).
     public var onPreview: ((AnyHashable, NSImage) -> Void)?
@@ -113,7 +118,7 @@ public final class PreviewProvider {
     /// it for the whole session.
     public func beginSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat,
                              permissionStatus: ScreenRecordingPermission.Status) {
-        guard Preferences.shared.appearanceMode == .windowPreviews else { return }
+        guard preferences.appearanceMode == .windowPreviews else { return }
         guard permissionStatus.isAuthorized else {
             activeSessionGeneration = nil
             sessionPermission = nil
@@ -138,7 +143,7 @@ public final class PreviewProvider {
     /// flight, so the tiles that are still filling in are left alone. No-op
     /// outside an active Window Previews session.
     public func extendSession(items: [SwitcherItem], targetSize: CGSize, scale: CGFloat) {
-        guard Preferences.shared.appearanceMode == .windowPreviews,
+        guard preferences.appearanceMode == .windowPreviews,
               sessionPermission?.isAuthorized == true,
               let sessionGeneration = activeSessionGeneration else { return }
         let requests = items.compactMap(makeCaptureRequest)
@@ -169,7 +174,7 @@ public final class PreviewProvider {
     public func requestExpandedPreview(item: SwitcherItem,
                                        targetSize: CGSize,
                                        scale: CGFloat) {
-        guard Preferences.shared.appearanceMode.supportsExpandedPreview,
+        guard preferences.appearanceMode.supportsExpandedPreview,
               sessionPermission?.isAuthorized == true,
               let sessionGeneration = activeSessionGeneration,
               let request = makeCaptureRequest(item) else { return }
@@ -253,7 +258,7 @@ public final class PreviewProvider {
     /// session, still in Window Previews, with the grant it opened with.
     private func isTileSessionCurrent(_ sessionGeneration: Int) -> Bool {
         activeSessionGeneration == sessionGeneration
-            && Preferences.shared.appearanceMode == .windowPreviews
+            && preferences.appearanceMode == .windowPreviews
             && sessionPermission?.isAuthorized == true
     }
 

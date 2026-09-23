@@ -9,12 +9,14 @@ import XCTest
 final class SettingsWindowFrameTests: XCTestCase {
     private var autosaveName: String!
     private var windows: [NSWindow] = []
+    private var isolated: IsolatedPreferences!
 
     private var defaultsKey: String { "NSWindow Frame \(autosaveName!)" }
 
     override func setUp() async throws {
         try await super.setUp()
         _ = NSApplication.shared
+        isolated = IsolatedPreferences()
         autosaveName = "WindowHopSettingsTest-\(UUID().uuidString)"
     }
 
@@ -24,13 +26,17 @@ final class SettingsWindowFrameTests: XCTestCase {
             window.close()
         }
         windows = []
+        isolated.remove()
+        isolated = nil
         UserDefaults.standard.removeObject(forKey: defaultsKey)
         try await super.tearDown()
     }
 
     /// A new controller stands in for a new process: nothing retained.
     private func launch() -> NSWindow {
-        let window = SettingsWindowController(frameAutosaveName: autosaveName).preparedWindow()
+        let controller = SettingsWindowController(frameAutosaveName: autosaveName)
+        controller.dependencies = isolated.settingsDependencies
+        let window = controller.preparedWindow()
         windows.append(window)
         return window
     }

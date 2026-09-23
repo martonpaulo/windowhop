@@ -1,5 +1,5 @@
+import Observation
 import XCTest
-import Combine
 @testable import WindowHopCore
 @testable import WindowHopKit
 
@@ -169,28 +169,55 @@ final class PreferencesTests: XCTestCase {
         XCTAssertEqual(Preferences(defaults: defaults).expandedPreviewDelay, .fiveSeconds)
     }
 
-    func testExpandedPreviewDelayPublishesRuntimeUpdatesImmediately() {
-        var observed: [ExpandedPreviewDelay] = []
-        let observation = preferences.$expandedPreviewDelay.sink {
-            observed.append($0)
-        }
+    /// Observation notifies once per assignment (at `willSet`, before the value
+    /// changes), and an unrelated assignment does not notify at all. Each
+    /// tracking call observes one change, so the test re-arms it.
+    func testExpandedPreviewDelayNotifiesObserversOncePerAssignment() {
+        let changes = ChangeCounter()
+        observeNextChange(changes) { _ = self.preferences.expandedPreviewDelay }
+        preferences.switcherRevealDelay = .off
+        XCTAssertEqual(changes.count, 0)
 
         preferences.expandedPreviewDelay = .oneSecond
+        XCTAssertEqual(changes.count, 1)
+        observeNextChange(changes) { _ = self.preferences.expandedPreviewDelay }
+        preferences.expandedPreviewDelay = .fiveSeconds
+        XCTAssertEqual(changes.count, 2)
 
-        XCTAssertEqual(observed, [.threeSeconds, .oneSecond])
-        withExtendedLifetime(observation) {}
+        XCTAssertEqual(preferences.expandedPreviewDelay, .fiveSeconds)
+        XCTAssertEqual(Preferences(defaults: defaults).expandedPreviewDelay, .fiveSeconds)
     }
 
-    func testSwitcherRevealDelayPublishesRuntimeUpdatesImmediately() {
-        var observed: [SwitcherRevealDelay] = []
-        let observation = preferences.$switcherRevealDelay.sink {
-            observed.append($0)
-        }
+    func testSwitcherRevealDelayNotifiesObserversOncePerAssignment() {
+        let changes = ChangeCounter()
+        observeNextChange(changes) { _ = self.preferences.switcherRevealDelay }
 
         preferences.switcherRevealDelay = .off
+        XCTAssertEqual(changes.count, 1)
+        observeNextChange(changes) { _ = self.preferences.switcherRevealDelay }
+        preferences.switcherRevealDelay = .milliseconds500
+        XCTAssertEqual(changes.count, 2)
 
-        XCTAssertEqual(observed, [.milliseconds100, .off])
-        withExtendedLifetime(observation) {}
+        XCTAssertEqual(Preferences(defaults: defaults).switcherRevealDelay, .milliseconds500)
+    }
+
+    /// Settings binds every control through `@Bindable`, so every persisted
+    /// property must be observable, not only the two above.
+    func testEveryConfigurablePreferenceIsObservable() {
+        let changes = ChangeCounter()
+        observeNextChange(changes) {
+            _ = self.preferences.switcherEnabled
+            _ = self.preferences.shortcut
+            _ = self.preferences.persistentShortcut
+            _ = self.preferences.appearanceMode
+            _ = self.preferences.showTabCounts
+            _ = self.preferences.includeOtherSpaces
+            _ = self.preferences.showMenuBarItem
+            _ = self.preferences.showDockIcon
+            _ = self.preferences.automaticUpdateChecks
+        }
+        preferences.showDockIcon = true
+        XCTAssertEqual(changes.count, 1)
     }
 
     func testLegacyNavigationDelayMigratesToExpandedPreviewPreset() {
@@ -504,4 +531,16 @@ final class PreferencesTests: XCTestCase {
 
         XCTAssertEqual(refreshCount, 1)
     }
+}
+
+/// Counts Observation `onChange` calls. They arrive synchronously on the main
+/// thread that assigns the property, so the unchecked conformance is safe here.
+private final class ChangeCounter: @unchecked Sendable {
+    private(set) var count = 0
+    func increment() { count += 1 }
+}
+
+@MainActor
+private func observeNextChange(_ changes: ChangeCounter, _ read: () -> Void) {
+    withObservationTracking(read, onChange: { changes.increment() })
 }

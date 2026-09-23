@@ -14,6 +14,11 @@ import WindowHopKit
 public final class SettingsWindowController {
     public static let shared = SettingsWindowController()
 
+    /// What the panes read and act on, set once by `AppDelegate` before the
+    /// first `show()`. It moves to the initializer when this type stops being a
+    /// singleton (#107).
+    public var dependencies: SettingsDependencies!
+
     /// The switcher-entry title; the window's visible title follows the pane name.
     public static let switcherEntryTitle = String(localized: "WindowHop Settings")
 
@@ -27,14 +32,18 @@ public final class SettingsWindowController {
     }
 
     /// The settings UI, also used by the debug render harness.
-    public static func makeContentViewController() -> NSViewController {
-        SettingsTabViewController()
+    public static func makeContentViewController(
+        _ dependencies: SettingsDependencies
+    ) -> NSViewController {
+        SettingsTabViewController(dependencies)
     }
 
     /// Individual panes for the render harness (the toolbar lives on the window
     /// and cannot be rasterized offscreen).
-    public static func makePaneViewControllers() -> [(name: String, viewController: NSViewController)] {
-        SettingsPane.allCases.map { ($0.rawValue, $0.makeViewController()) }
+    public static func makePaneViewControllers(
+        _ dependencies: SettingsDependencies
+    ) -> [(name: String, viewController: NSViewController)] {
+        SettingsPane.allCases.map { ($0.rawValue, $0.makeViewController(dependencies)) }
     }
 
     public func show() {
@@ -77,7 +86,7 @@ public final class SettingsWindowController {
     }
 
     private func makeWindow() -> NSWindow {
-        let newWindow = NSWindow(contentViewController: Self.makeContentViewController())
+        let newWindow = NSWindow(contentViewController: Self.makeContentViewController(dependencies))
         newWindow.styleMask = [.titled, .closable, .miniaturizable]
         newWindow.isReleasedWhenClosed = false
         // the pane canvas decides the size; only the origin comes from the
@@ -98,6 +107,20 @@ public final class SettingsWindowController {
         // AppKit saves every later move under this name
         newWindow.setFrameAutosaveName(frameAutosaveName)
         return newWindow
+    }
+}
+
+/// What the Settings panes read and act on. `AppDelegate` builds it from the
+/// objects it owns; the debug harness and tests build their own. Each pane
+/// receives only the members it uses, through its initializer.
+@MainActor
+public struct SettingsDependencies {
+    public let preferences: Preferences
+    public let restorer: SettingsDefaultsRestorer
+
+    public init(preferences: Preferences, restorer: SettingsDefaultsRestorer) {
+        self.preferences = preferences
+        self.restorer = restorer
     }
 }
 
@@ -134,20 +157,22 @@ enum SettingsPane: String, CaseIterable {
         }
     }
 
-    @MainActor @ViewBuilder private var content: some View {
+    @MainActor @ViewBuilder private func content(_ dependencies: SettingsDependencies) -> some View {
+        let preferences = dependencies.preferences
         switch self {
-        case .general: GeneralPane()
-        case .shortcuts: ShortcutsPane()
-        case .windows: WindowsPane()
-        case .appearance: AppearancePane()
-        case .updates: UpdatesPane()
+        case .general:
+            GeneralPane(preferences: preferences, restorer: dependencies.restorer)
+        case .shortcuts: ShortcutsPane(preferences: preferences)
+        case .windows: WindowsPane(preferences: preferences)
+        case .appearance: AppearancePane(preferences: preferences)
+        case .updates: UpdatesPane(preferences: preferences)
         case .about: AboutPane()
         }
     }
 
     @MainActor
-    func makeViewController() -> NSHostingController<AnyView> {
-        let hosting = NSHostingController(rootView: AnyView(content))
+    func makeViewController(_ dependencies: SettingsDependencies) -> NSHostingController<AnyView> {
+        let hosting = NSHostingController(rootView: AnyView(content(dependencies)))
         hosting.title = title
         hosting.sizingOptions = .preferredContentSize
         return hosting
@@ -160,13 +185,13 @@ final class SettingsTabViewController: NSTabViewController {
     /// reopens Settings on a different one.
     private static let selectedPaneKey = "settingsSelectedPaneIdentifier"
 
-    init() {
+    init(_ dependencies: SettingsDependencies) {
         super.init(nibName: nil, bundle: nil)
         tabStyle = .toolbar
         // no crossfade/slide: pane switches are instant (Reduce Motion friendly)
         transitionOptions = []
         for pane in SettingsPane.allCases {
-            let item = NSTabViewItem(viewController: pane.makeViewController())
+            let item = NSTabViewItem(viewController: pane.makeViewController(dependencies))
             item.identifier = pane.rawValue
             item.label = pane.title
             item.image = NSImage(systemSymbolName: pane.symbol,
@@ -213,10 +238,17 @@ private extension View {
 // MARK: - General
 
 struct GeneralPane: View {
-    @ObservedObject private var preferences = Preferences.shared
-    @StateObject private var launchAtLogin = LaunchAtLoginModel()
+    @Bindable private var preferences: Preferences
+    private let restorer: SettingsDefaultsRestorer
+    @StateObject private var launchAtLogin: LaunchAtLoginModel
     @State private var restoreConfirmationShown = false
     @State private var quitConfirmationShown = false
+
+    init(preferences: Preferences, restorer: SettingsDefaultsRestorer) {
+        self.preferences = preferences
+        self.restorer = restorer
+        _launchAtLogin = StateObject(wrappedValue: LaunchAtLoginModel(preferences: preferences))
+    }
 
     private var switchingGuide: SwitchingGuide {
         SwitchingGuide(switcherShortcut: preferences.shortcut,
@@ -280,7 +312,7 @@ struct GeneralPane: View {
                 .confirmationDialog("Restore all WindowHop settings?",
                                     isPresented: $restoreConfirmationShown) {
                     Button("Restore Defaults") {
-                        SettingsDefaultsRestorer.shared.restore()
+                        restorer.restore()
                     }
                     Button("Cancel", role: .cancel) {}
                 } message: {
@@ -319,7 +351,7 @@ struct GeneralPane: View {
 // MARK: - Shortcuts
 
 struct ShortcutsPane: View {
-    @ObservedObject private var preferences = Preferences.shared
+    @Bindable var preferences: Preferences
     @State private var shortcutValidationMessage: String?
 
     var body: some View {
@@ -373,7 +405,7 @@ struct ShortcutsPane: View {
 // MARK: - Windows
 
 struct WindowsPane: View {
-    @ObservedObject private var preferences = Preferences.shared
+    @Bindable var preferences: Preferences
     @StateObject private var connectedDisplays = ConnectedDisplaysModel()
 
     /// One entry per selectable display. A chosen display that is currently
@@ -474,7 +506,7 @@ struct WindowsPane: View {
 // MARK: - Appearance
 
 struct AppearancePane: View {
-    @ObservedObject private var preferences = Preferences.shared
+    @Bindable var preferences: Preferences
     @State private var screenRecordingStatus = ScreenRecordingPermission.status
 
     private var previewsSelected: Bool { preferences.appearanceMode == .windowPreviews }
@@ -575,7 +607,7 @@ struct AppearancePane: View {
 // MARK: - Updates
 
 struct UpdatesPane: View {
-    @ObservedObject private var preferences = Preferences.shared
+    @Bindable var preferences: Preferences
     @ObservedObject private var updateManager = UpdateManager.shared
     private let appVersion = AppVersion.main
 

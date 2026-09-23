@@ -5,11 +5,38 @@ import WindowHopKit
 /// Application lifecycle: permission gating, engine start/stop, settings reactions,
 /// and the launch/reopen surface decided by `LaunchPresentation` (reopening always
 /// reaches Settings or onboarding, so hidden icons are never a dead end).
+///
+/// The composition root: it creates every long-lived object once and passes
+/// each one to its consumers (docs/architecture.md › Composition root).
 @MainActor
 public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions {
-    private let preferences = Preferences.shared
+    private let preferences: Preferences
+    private let statusItem: StatusItemController
     private var engineRunning = false
     private var menuIsRegular: Bool?
+
+    override public init() {
+        let preferences = Preferences()
+        self.preferences = preferences
+        // the singletons that remain until #107 and #108 hold this instance
+        WindowStore.shared.preferences = preferences
+        PreviewProvider.shared.preferences = preferences
+        SwitcherController.shared.preferences = preferences
+        UpdateManager.shared.preferences = preferences
+        SettingsWindowController.shared.dependencies = SettingsDependencies(
+            preferences: preferences,
+            restorer: SettingsDefaultsRestorer(
+                preferences: preferences,
+                applyAutomaticUpdateChecks: {
+                    UpdateManager.shared.automaticallyChecksForUpdates = $0
+                }))
+        statusItem = StatusItemController(
+            preferences: preferences,
+            accessibilityGranted: { AccessibilityPermission.isGranted },
+            updaterAvailable: { UpdateManager.shared.isAvailable },
+            canCheckForUpdates: { UpdateManager.shared.canCheckForUpdates })
+        super.init()
+    }
 
     public func applicationWillFinishLaunching(_ notification: Notification) {
         applyActivationPolicy()
@@ -53,7 +80,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
         ShortcutFormatter.keyLabels = KeyboardLayout.current
         BackgroundWork.start()
         SwitcherController.shared.wire()
-        StatusItemController.shared.apply()
+        statusItem.apply()
         UpdateManager.shared.startIfBundled()
         observeSystemEvents()
 
@@ -126,7 +153,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
             MainActor.assumeIsolated {
                 guard let self else { return }
                 self.applyActivationPolicy()
-                StatusItemController.shared.apply()
+                self.statusItem.apply()
                 self.applyConfiguration()
             }
         }
@@ -149,7 +176,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate, MainMenuActions
                 self.showOnboarding()
             }
             // the menu bar item shows the permission state
-            StatusItemController.shared.apply()
+            self.statusItem.apply()
         }
         // macOS can silently disable event taps across sleep/wake and session switches
         NSWorkspace.shared.notificationCenter.addObserver(

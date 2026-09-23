@@ -9,7 +9,7 @@ import XCTest
 /// the permission-blocked presentation (#51).
 @MainActor
 final class PreviewSessionPermissionTests: XCTestCase {
-    private var savedAppearanceMode: AppearanceMode!
+    private var isolated: IsolatedPreferences!
     private var savedPermissionRequired: ((ScreenRecordingPermission.Status) -> Void)?
     private var savedUnavailable: ((AnyHashable) -> Void)?
     private var reads = 0
@@ -20,8 +20,9 @@ final class PreviewSessionPermissionTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        savedAppearanceMode = Preferences.shared.appearanceMode
-        Preferences.shared.appearanceMode = .windowPreviews
+        isolated = IsolatedPreferences()
+        isolated.preferences.appearanceMode = .windowPreviews
+        provider.preferences = isolated.preferences
         savedPermissionRequired = provider.onPermissionRequired
         savedUnavailable = provider.onPreviewUnavailable
         provider.readPermissionStatus = { [unowned self] in
@@ -39,7 +40,8 @@ final class PreviewSessionPermissionTests: XCTestCase {
         provider.readPermissionStatus = { ScreenRecordingPermission.status }
         provider.onPermissionRequired = savedPermissionRequired
         provider.onPreviewUnavailable = savedUnavailable
-        Preferences.shared.appearanceMode = savedAppearanceMode
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 

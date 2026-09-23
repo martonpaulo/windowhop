@@ -10,7 +10,7 @@ import XCTest
 /// recorder's window: it must end on close, resign-key and detach.
 @MainActor
 final class ShortcutRecorderFieldTests: XCTestCase {
-    /// Isolated test state: these tests never touch `Preferences.shared`.
+    /// Isolated test state: these tests never touch the app's `Preferences`.
     private final class Model: ObservableObject {
         @Published var switcherShortcut: ShortcutSpec = .commandTab
         @Published var shortcut: PersistentShortcut?

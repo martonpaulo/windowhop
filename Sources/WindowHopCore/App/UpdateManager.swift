@@ -15,6 +15,11 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
 
     private var controller: SPUStandardUpdaterController?
 
+    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
+    /// harness) before first use. It moves to the initializer when this type
+    /// stops being a singleton (#107).
+    public var preferences: Preferences!
+
     /// The newest version the appcast offered, when newer than the running
     /// one; nil while up to date. Set from Sparkle's scheduled background
     /// checks and manual ones alike — check failures just leave it unchanged
@@ -39,7 +44,7 @@ public final class UpdateManager: NSObject, ObservableObject, SPUUpdaterDelegate
                                                   updaterDelegate: self,
                                                   userDriverDelegate: nil)
         controller?.updater.automaticallyChecksForUpdates =
-            Preferences.shared.automaticUpdateChecks
+            preferences.automaticUpdateChecks
     }
 
     public func checkForUpdates() {

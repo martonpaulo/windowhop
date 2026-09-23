@@ -15,7 +15,7 @@ let package = Package(
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
-        // pure rules: Foundation, CoreGraphics value types, Combine/Observation and
+        // pure rules: Foundation, CoreGraphics value types, Observation and
         // Synchronization only (AGENTS.md "Kit import contract"; scripts/validate.sh)
         .target(
             name: "WindowHopKit",

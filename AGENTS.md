@@ -167,7 +167,7 @@ Keep task logs in `artifacts/` (gitignored). Inspect a failed log before rerunni
   `Tests/WindowHopKitTests/`, which depends only on the Kit.
   - **Kit import contract** (`scripts/validate.sh` enforces it): `Foundation`;
     `CoreGraphics` for value types only (`CGEventFlags`, `CGRect`, `CGWindowID`);
-    `Combine` until #101 moves `Preferences` to `Observation`; and `Synchronization`
+    `Observation` (the `@Observable` `Preferences`, #101); and `Synchronization`
     (a standard-library module, used by `ShortcutFormatter`'s `Mutex`). No AppKit, AX,
     `NSWorkspace`, ScreenCaptureKit or Sparkle. This diverges from the shared
     "a Kit imports only Foundation" rule, because the issue's "no AppKit, AX or Sparkle

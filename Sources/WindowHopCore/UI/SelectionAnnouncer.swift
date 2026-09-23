@@ -12,12 +12,15 @@ final class SelectionAnnouncer {
     /// Receives the announced window's identity and the text to speak.
     typealias Post = @MainActor (_ id: AnyHashable, _ text: String) -> Void
 
+    private let preferences: Preferences
     private let post: Post
 
     /// The window identity spoken last, or nil when no session is presented.
     private(set) var lastAnnouncedID: AnyHashable?
 
-    init(post: @escaping Post = SelectionAnnouncer.postToApplication) {
+    init(preferences: Preferences,
+         post: @escaping Post = SelectionAnnouncer.postToApplication) {
+        self.preferences = preferences
         self.post = post
     }
 
@@ -26,7 +29,7 @@ final class SelectionAnnouncer {
     func announce(_ item: SwitcherItem) {
         lastAnnouncedID = item.id
         post(item.id, SwitcherTileView.accessibilityText(
-            for: item, showTabCounts: Preferences.shared.showTabCounts))
+            for: item, showTabCounts: preferences.showTabCounts))
     }
 
     /// Announces `item` only when it is a different window from the last one

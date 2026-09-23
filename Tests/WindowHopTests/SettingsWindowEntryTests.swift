@@ -9,12 +9,15 @@ import XCTest
 /// lifecycle via the notifications the store observes.
 @MainActor
 final class SettingsWindowEntryTests: XCTestCase {
+    private var isolated: IsolatedPreferences!
     private var store: WindowStore!
     private var window: NSWindow!
 
     override func setUp() async throws {
         try await super.setUp()
+        isolated = IsolatedPreferences()
         store = WindowStore()
+        store.preferences = isolated.preferences
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 400, height: 300),
                           styleMask: [.titled, .closable, .miniaturizable],
                           backing: .buffered, defer: true)
@@ -25,6 +28,8 @@ final class SettingsWindowEntryTests: XCTestCase {
     override func tearDown() async throws {
         window = nil
         store = nil
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 

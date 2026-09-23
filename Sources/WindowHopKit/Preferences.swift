@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import Observation
 
 /// The two switcher presentations. App Icons is the default and never needs
 /// Screen Recording permission; Window Previews shows live window snapshots.
@@ -97,10 +97,12 @@ public enum SwitcherRevealDelay: String, CaseIterable, Identifiable, Sendable {
 
 /// All WindowHop settings with their defaults. This observable model is the
 /// single runtime source of truth; UserDefaults is only its persistence layer.
-/// The store is injectable for deterministic migration and persistence tests.
+/// There is no shared instance: `AppDelegate` creates the one the app uses and
+/// passes it to every consumer, and tests and the debug harness create their
+/// own over a separate `UserDefaults` suite.
 @MainActor
-public final class Preferences: ObservableObject {
-    public static let shared = Preferences()
+@Observable
+public final class Preferences {
     /// In-process only, never persisted, so it needs no identifier prefix.
     public static let windowFiltersDidChange = Notification.Name(
         "Preferences.windowFiltersDidChange")
@@ -203,45 +205,45 @@ public final class Preferences: ObservableObject {
         Key.firstLaunchCompleted.rawValue: Defaults.firstLaunchCompleted,
     ]
 
-    private let defaults: UserDefaults
-    private var isRestoringDefaults = false
+    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private var isRestoringDefaults = false
 
-    @Published public var switcherEnabled: Bool {
+    public var switcherEnabled: Bool {
         didSet { defaults.set(switcherEnabled, forKey: Key.switcherEnabled.rawValue) }
     }
 
-    @Published public var launchAtLogin: Bool {
+    public var launchAtLogin: Bool {
         didSet { defaults.set(launchAtLogin, forKey: Key.launchAtLogin.rawValue) }
     }
 
-    @Published public var shortcut: ShortcutSpec {
+    public var shortcut: ShortcutSpec {
         didSet { defaults.set(shortcut.rawValue, forKey: Key.shortcut.rawValue) }
     }
 
     /// nil when the user explicitly leaves Open WindowHop unassigned.
-    @Published public var persistentShortcut: PersistentShortcut? {
+    public var persistentShortcut: PersistentShortcut? {
         didSet { defaults.set(persistentShortcut?.encoded ?? "", forKey: Key.persistentShortcut.rawValue) }
     }
 
-    @Published public var appearanceMode: AppearanceMode {
+    public var appearanceMode: AppearanceMode {
         didSet { defaults.set(appearanceMode.rawValue, forKey: Key.appearanceMode.rawValue) }
     }
 
-    @Published public var expandedPreviewDelay: ExpandedPreviewDelay {
+    public var expandedPreviewDelay: ExpandedPreviewDelay {
         didSet {
             defaults.set(expandedPreviewDelay.rawValue,
                          forKey: Key.expandedPreviewDelay.rawValue)
         }
     }
 
-    @Published public var switcherRevealDelay: SwitcherRevealDelay {
+    public var switcherRevealDelay: SwitcherRevealDelay {
         didSet {
             defaults.set(switcherRevealDelay.rawValue,
                          forKey: Key.switcherRevealDelay.rawValue)
         }
     }
 
-    @Published public var switcherDisplayPlacement: SwitcherDisplayPlacement {
+    public var switcherDisplayPlacement: SwitcherDisplayPlacement {
         didSet {
             defaults.set(switcherDisplayPlacement.rawValue,
                          forKey: Key.switcherDisplayPlacement.rawValue)
@@ -251,27 +253,27 @@ public final class Preferences: ObservableObject {
     /// nil when no specific display has been chosen. A chosen display that is
     /// currently disconnected keeps its id here, so unplugging a monitor never
     /// destroys the choice.
-    @Published public var switcherDisplayID: String? {
+    public var switcherDisplayID: String? {
         didSet {
             defaults.set(switcherDisplayID ?? "", forKey: Key.switcherDisplayID.rawValue)
         }
     }
 
-    @Published public var includeOtherSpaces: Bool {
+    public var includeOtherSpaces: Bool {
         didSet {
             defaults.set(includeOtherSpaces, forKey: Key.includeOtherSpaces.rawValue)
             notifyWindowFiltersChanged()
         }
     }
 
-    @Published public var includeOtherDisplays: Bool {
+    public var includeOtherDisplays: Bool {
         didSet {
             defaults.set(includeOtherDisplays, forKey: Key.includeOtherDisplays.rawValue)
             notifyWindowFiltersChanged()
         }
     }
 
-    @Published public var includeMinimizedWindows: Bool {
+    public var includeMinimizedWindows: Bool {
         didSet {
             defaults.set(includeMinimizedWindows,
                          forKey: Key.includeMinimizedWindows.rawValue)
@@ -279,7 +281,7 @@ public final class Preferences: ObservableObject {
         }
     }
 
-    @Published public var includeHiddenApplicationWindows: Bool {
+    public var includeHiddenApplicationWindows: Bool {
         didSet {
             defaults.set(includeHiddenApplicationWindows,
                          forKey: Key.includeHiddenApplicationWindows.rawValue)
@@ -287,7 +289,7 @@ public final class Preferences: ObservableObject {
         }
     }
 
-    @Published public var includePictureInPictureWindows: Bool {
+    public var includePictureInPictureWindows: Bool {
         didSet {
             defaults.set(includePictureInPictureWindows,
                          forKey: Key.includePictureInPictureWindows.rawValue)
@@ -295,26 +297,26 @@ public final class Preferences: ObservableObject {
         }
     }
 
-    @Published public var showTabCounts: Bool {
+    public var showTabCounts: Bool {
         didSet { defaults.set(showTabCounts, forKey: Key.showTabCounts.rawValue) }
     }
 
-    @Published public var showMenuBarItem: Bool {
+    public var showMenuBarItem: Bool {
         didSet { defaults.set(showMenuBarItem, forKey: Key.showMenuBarItem.rawValue) }
     }
 
-    @Published public var showDockIcon: Bool {
+    public var showDockIcon: Bool {
         didSet { defaults.set(showDockIcon, forKey: Key.showDockIcon.rawValue) }
     }
 
-    @Published public var automaticUpdateChecks: Bool {
+    public var automaticUpdateChecks: Bool {
         didSet {
             defaults.set(automaticUpdateChecks,
                          forKey: Key.automaticUpdateChecks.rawValue)
         }
     }
 
-    @Published public var firstLaunchCompleted: Bool {
+    public var firstLaunchCompleted: Bool {
         didSet { defaults.set(firstLaunchCompleted, forKey: Key.firstLaunchCompleted.rawValue) }
     }
 

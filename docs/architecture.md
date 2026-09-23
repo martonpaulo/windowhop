@@ -8,8 +8,8 @@ package dependencies. `WindowHopCore` (`Sources/WindowHopCore/`: `Engine/`, `Inp
 `App/`) depends on it and on Sparkle, and every file that uses a Kit type says
 `import WindowHopKit`. The compiler therefore enforces the direction of knowledge: a Kit file
 cannot name an Engine, Input, UI or App type. `scripts/validate.sh` enforces the Kit import
-allowlist recorded in `AGENTS.md` (Foundation, CoreGraphics value types, Combine or
-Observation, Synchronization) and rejects AX, `NSWorkspace` and ScreenCaptureKit references in
+allowlist recorded in `AGENTS.md` (Foundation, CoreGraphics value types, Observation,
+Synchronization) and rejects AX, `NSWorkspace` and ScreenCaptureKit references in
 the Kit. Tests follow the same split: `WindowHopKitTests` depends only on the Kit, and
 `WindowHopTests` covers the integration layers.
 
@@ -26,6 +26,21 @@ the Kit. Tests follow the same split: `WindowHopKitTests` depends only on the Ki
                                 ExpandedPreviewSession, SpaceMembership, ObserverLifecycle
                                 (pure, unit-tested)
 ```
+
+## Composition root
+
+`AppDelegate` creates each long-lived object once and passes it to its consumers through
+their initializers. `main.swift` only builds the `AppDelegate`. `Preferences` is an
+`@Observable`, `@MainActor` model with no shared instance: the Settings panes receive it by
+initializer and bind with `@Bindable`, never through an environment lookup of a global. The
+debug harness builds its own `Preferences` over a separate `UserDefaults` suite that it
+clears on each run, and tests build one over a throwaway suite (`IsolatedPreferences`), so
+neither reads the person's real settings. Runtime reactions to a settings change still come
+from `UserDefaults.didChangeNotification` and `Preferences.windowFiltersDidChange`.
+
+Until #107 and #108 remove them, `WindowStore`, `PreviewProvider`, `SwitcherController`,
+`UpdateManager` and `SettingsWindowController` are still singletons; `AppDelegate` gives each
+one its `Preferences` (or the Settings dependencies) before first use.
 
 ## Window model (event-driven, no polling)
 

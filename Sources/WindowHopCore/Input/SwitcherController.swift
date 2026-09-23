@@ -8,12 +8,17 @@ import WindowHopKit
 public final class SwitcherController {
     public static let shared = SwitcherController()
 
+    /// The app's one `Preferences`, set once by `AppDelegate` (or the debug
+    /// harness) before first use. It moves to the initializer when this type
+    /// stops being a singleton (#108).
+    public var preferences: Preferences!
+
     private var state = SwitcherState()
     /// The session list: seeded at session start and kept in that order while the
     /// switcher is open. Store changes remove or refresh entries in place and append
     /// windows that appeared, but never reorder (see SessionListReconciler).
     private var items: [SwitcherItem] = []
-    private let panels = SwitcherPanelGroup()
+    private lazy var panels = SwitcherPanelGroup(preferences: preferences)
     private var mouseMonitor: Any?
     private var heldModifierGuard: Timer?
     private var expandedPreview = ExpandedPreviewSession<AnyHashable>()
@@ -64,8 +69,8 @@ public final class SwitcherController {
     /// is both enabled and permitted, so a disabled WindowHop adds zero input latency
     /// and native Cmd-Tab behaves exactly as without WindowHop.
     public func applyConfiguration(enabled: Bool, granted: Bool) {
-        EventTap.shared.holdModifier = Preferences.shared.shortcut.holdModifier
-        EventTap.shared.persistentShortcut = Preferences.shared.persistentShortcut
+        EventTap.shared.holdModifier = preferences.shortcut.holdModifier
+        EventTap.shared.persistentShortcut = preferences.persistentShortcut
         configuredEnabled = enabled && granted
         if configuredEnabled {
             if EventTap.shared.start(), !state.isActive {
@@ -345,7 +350,8 @@ public final class SwitcherController {
                 """)
             PreviewProvider.shared.extendSession(
                 items: plan.appeared.compactMap { freshById[$0] },
-                targetSize: SwitcherPanel.previewContentSize,
+                targetSize: SwitcherPanel.previewContentSize(
+                    showTabCounts: preferences.showTabCounts),
                 scale: panels.captureScale)
         }
         expandedPreview.retainAvailable(Set(items.map(\.id)))
@@ -382,7 +388,7 @@ public final class SwitcherController {
             isOnCurrentSpace: true,
             isOnActiveDisplay: true)
         return WindowEligibility.shouldDisplay(
-            state, policy: Preferences.shared.windowInclusionPolicy)
+            state, policy: preferences.windowInclusionPolicy)
     }
 
     // MARK: - Session support
@@ -422,18 +428,18 @@ public final class SwitcherController {
     private func preparePanels(tileCount: Int) {
         let connected = DisplayRegistry.connectedDisplays()
         let targetIDs = Set(PanelDisplayResolver.targets(
-            placement: Preferences.shared.switcherDisplayPlacement,
-            chosenDisplayID: Preferences.shared.switcherDisplayID,
+            placement: preferences.switcherDisplayPlacement,
+            chosenDisplayID: preferences.switcherDisplayID,
             available: connected.map(\.descriptor),
             pointerDisplayID: DisplayRegistry.pointerDisplayID()).map(\.id))
         let targets = connected.filter { targetIDs.contains($0.descriptor.id) }
         let metrics = SwitcherTileView.Metrics.metrics(
-            for: Preferences.shared.appearanceMode,
-            showTabCounts: Preferences.shared.showTabCounts)
+            for: preferences.appearanceMode,
+            showTabCounts: preferences.showTabCounts)
         panels.prepare(for: targets, tileCount: tileCount, tileSize: metrics.tileSize)
         Log.panel.debug("""
             panels prepared: \(targets.count, privacy: .public) display(s), \
-            placement \(Preferences.shared.switcherDisplayPlacement.rawValue, privacy: .public)
+            placement \(self.preferences.switcherDisplayPlacement.rawValue, privacy: .public)
             """)
     }
 
@@ -447,7 +453,7 @@ public final class SwitcherController {
     /// session first invalidates the timer, so a quick tap activates its target
     /// without the panels ever being ordered front.
     private func scheduleReveal() {
-        guard let delay = Preferences.shared.switcherRevealDelay.delay(for: state.phase) else {
+        guard let delay = preferences.switcherRevealDelay.delay(for: state.phase) else {
             revealPanels()
             return
         }
@@ -481,7 +487,8 @@ public final class SwitcherController {
         // asynchronously, never gating panel presentation
         PreviewProvider.shared.beginSession(
             items: items,
-            targetSize: SwitcherPanel.previewContentSize,
+            targetSize: SwitcherPanel.previewContentSize(
+                showTabCounts: preferences.showTabCounts),
             scale: panels.captureScale,
             permissionStatus: permissionStatus)
     }
@@ -540,9 +547,9 @@ public final class SwitcherController {
     private func scheduleExpandedPreview(
         _ request: ExpandedPreviewSession<AnyHashable>.Request?
     ) {
-        guard Preferences.shared.appearanceMode.supportsExpandedPreview,
+        guard preferences.appearanceMode.supportsExpandedPreview,
               let request,
-              let delay = Preferences.shared.expandedPreviewDelay.duration else { return }
+              let delay = preferences.expandedPreviewDelay.duration else { return }
         pendingExpandedPreview = request
         let timer = Timer(timeInterval: delay,
                           repeats: false) { [weak self] _ in

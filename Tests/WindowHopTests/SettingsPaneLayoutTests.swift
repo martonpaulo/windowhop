@@ -8,6 +8,19 @@ import XCTest
 /// Every pane renders into the one shared canvas.
 @MainActor
 final class SettingsPaneLayoutTests: XCTestCase {
+    private var isolated: IsolatedPreferences!
+
+    override func setUp() async throws {
+        try await super.setUp()
+        isolated = IsolatedPreferences()
+    }
+
+    override func tearDown() async throws {
+        isolated.remove()
+        isolated = nil
+        try await super.tearDown()
+    }
+
     func testEveryPaneRendersIntoTheSameCanvas() {
         _ = NSApplication.shared
         let canvas = CGSize(width: DesignTokens.settingsPaneWidth,
@@ -16,7 +29,7 @@ final class SettingsPaneLayoutTests: XCTestCase {
         let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude,
                                height: CGFloat.greatestFiniteMagnitude)
         for pane in SettingsPane.allCases {
-            XCTAssertEqual(pane.makeViewController().sizeThatFits(in: unbounded), canvas,
+            XCTAssertEqual(pane.makeViewController(isolated.settingsDependencies).sizeThatFits(in: unbounded), canvas,
                            "the \(pane.rawValue) pane resizes the Settings window")
         }
     }
@@ -27,9 +40,7 @@ final class SettingsPaneLayoutTests: XCTestCase {
     /// picker's enabled state is checked in the running app instead.)
     func testAppearancePaneKeepsItsCanvasInEveryMode() {
         _ = NSApplication.shared
-        let preferences = Preferences.shared
-        let savedMode = preferences.appearanceMode
-        defer { preferences.appearanceMode = savedMode }
+        let preferences = isolated.preferences
         let canvas = CGSize(width: DesignTokens.settingsPaneWidth,
                             height: DesignTokens.settingsPaneHeight)
         let unbounded = CGSize(width: CGFloat.greatestFiniteMagnitude,
@@ -37,7 +48,8 @@ final class SettingsPaneLayoutTests: XCTestCase {
 
         for mode in AppearanceMode.allCases {
             preferences.appearanceMode = mode
-            XCTAssertEqual(SettingsPane.appearance.makeViewController().sizeThatFits(in: unbounded),
+            XCTAssertEqual(SettingsPane.appearance.makeViewController(isolated.settingsDependencies)
+                            .sizeThatFits(in: unbounded),
                            canvas, "the Appearance pane resizes in \(mode.rawValue)")
         }
     }

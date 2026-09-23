@@ -18,6 +18,25 @@ import WindowHopKit
 ///   system, so a published capture would depend on the operator's setting.
 @MainActor
 enum DebugHarness {
+    /// The harness's own settings domain, cleared on every run, so a render or a
+    /// dump starts from `Preferences.Defaults` and never reads or changes the
+    /// person's real preferences.
+    private static let preferencesSuiteName = "WindowHop.DebugHarness"
+
+    private static func makePreferences(suite: String = preferencesSuiteName) -> Preferences {
+        UserDefaults.standard.removePersistentDomain(forName: suite)
+        return Preferences(defaults: UserDefaults(suiteName: suite) ?? .standard)
+    }
+
+    /// The Settings content over the harness's own settings. Restore Defaults
+    /// has no updater to reach here.
+    private static func makeSettingsDependencies(_ preferences: Preferences) -> SettingsDependencies {
+        SettingsDependencies(
+            preferences: preferences,
+            restorer: SettingsDefaultsRestorer(preferences: preferences,
+                                               applyAutomaticUpdateChecks: { _ in }))
+    }
+
     static func runIfRequested(_ arguments: [String]) -> Bool {
         if arguments.contains("--demo-switcher") {
             runPanelDemo(dark: arguments.contains("--dark"))
@@ -90,22 +109,24 @@ enum DebugHarness {
             }
         }
 
-        let savedMode = Preferences.shared.appearanceMode
-        let savedShowTabCounts = Preferences.shared.showTabCounts
-        Preferences.shared.appearanceMode = .appIcons
-        Preferences.shared.showTabCounts = Preferences.Defaults.showTabCounts
+        // Each panel reads its own settings, so the preview renders and the
+        // permission-free App Icons renders never share an appearance mode.
+        let preferences = makePreferences()
+        let previewSuiteName = preferencesSuiteName + ".Previews"
+        let previewPreferences = makePreferences(suite: previewSuiteName)
+        previewPreferences.appearanceMode = .windowPreviews
         var pending = 0
         let finishOne = {
             pending -= 1
             if pending == 0 {
-                Preferences.shared.appearanceMode = savedMode
-                Preferences.shared.showTabCounts = savedShowTabCounts
+                UserDefaults.standard.removePersistentDomain(forName: preferencesSuiteName)
+                UserDefaults.standard.removePersistentDomain(forName: previewSuiteName)
                 exit(0)
             }
         }
 
         // overflow check: 120 synthetic windows in a wrapping, vertically scrolling grid
-        let overflowPanel = SwitcherPanel(rasterizableBackground: true)
+        let overflowPanel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
         overflowPanel.appearance = NSAppearance(named: .aqua)
         let overflowItems = manyDemoItems()
         let overflowStart = CFAbsoluteTimeGetCurrent()
@@ -128,9 +149,9 @@ enum DebugHarness {
 
         // preview appearance, populated with synthetic window images (real
         // captures need Screen Recording; the layout under test is identical)
-        Preferences.shared.appearanceMode = .windowPreviews
         for (suffix, appearanceName) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let previewPanel = SwitcherPanel(rasterizableBackground: true)
+            let previewPanel = SwitcherPanel(preferences: previewPreferences,
+                                             rasterizableBackground: true)
             previewPanel.appearance = NSAppearance(named: appearanceName)
             // Wrapping otherwise follows whatever display the developer has, so
             // the published preview image would be one long strip on an
@@ -175,10 +196,8 @@ enum DebugHarness {
         }
         // Standard switcher renders always exercise the permission-free default,
         // independent of the developer's persisted local preference.
-        Preferences.shared.appearanceMode = .appIcons
-
         for (suffix, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
-            let panel = SwitcherPanel(rasterizableBackground: true)
+            let panel = SwitcherPanel(preferences: preferences, rasterizableBackground: true)
             panel.appearance = NSAppearance(named: appearance)
             // one row, regardless of the developer's display width
             panel.sharedColumnLimit = demoItems().count
@@ -199,8 +218,10 @@ enum DebugHarness {
         }
         // The real multi-pane controller, so every render carries the window's
         // own title bar and pane toolbar rather than a bare content view.
-        let settingsContent = SettingsWindowController.makeContentViewController()
-        let paneNames = SettingsWindowController.makePaneViewControllers().map { $0.name }
+        let settingsDependencies = makeSettingsDependencies(preferences)
+        let settingsContent = SettingsWindowController.makeContentViewController(settingsDependencies)
+        let paneNames = SettingsWindowController.makePaneViewControllers(settingsDependencies)
+            .map { $0.name }
         if let tabs = settingsContent as? NSTabViewController {
             let settingsWindow = NSWindow(contentViewController: tabs)
             settingsWindow.styleMask.insert([.titled, .closable])
@@ -329,8 +350,9 @@ enum DebugHarness {
         app.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         let previews = arguments.contains("--previews")
         let expanded = arguments.contains("--expanded")
-        Preferences.shared.appearanceMode = previews ? .windowPreviews : .appIcons
-        let panel = SwitcherPanel()
+        let preferences = makePreferences()
+        preferences.appearanceMode = previews ? .windowPreviews : .appIcons
+        let panel = SwitcherPanel(preferences: preferences)
         panel.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         if let index = arguments.firstIndex(of: "--columns"), arguments.count > index + 1,
            let columns = Int(arguments[index + 1]) {
@@ -394,6 +416,7 @@ enum DebugHarness {
         app.setActivationPolicy(.prohibited)
         BackgroundWork.start()
         let started = Date()
+        WindowStore.shared.preferences = makePreferences()
         WindowStore.shared.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let snapshotStart = Date()
@@ -418,7 +441,8 @@ enum DebugHarness {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
         if let appearance { app.appearance = NSAppearance(named: appearance) }
-        let controller = SettingsWindowController.makeContentViewController()
+        let controller = SettingsWindowController.makeContentViewController(
+            makeSettingsDependencies(makePreferences()))
         if let pane, let tabs = controller as? NSTabViewController,
            let index = tabs.tabViewItems.firstIndex(where: { $0.identifier as? String == pane }) {
             tabs.selectedTabViewItemIndex = index
@@ -460,6 +484,9 @@ enum DebugHarness {
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)
         BackgroundWork.start()
+        let preferences = makePreferences()
+        WindowStore.shared.preferences = preferences
+        PreviewProvider.shared.preferences = preferences
         WindowStore.shared.start()
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             let items = WindowStore.shared.snapshot()

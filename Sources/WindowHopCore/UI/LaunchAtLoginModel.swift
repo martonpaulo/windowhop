@@ -20,7 +20,7 @@ final class LaunchAtLoginModel: ObservableObject {
     private let change: (Bool) -> LoginItemChange
     private let openLoginItemsSettingsAction: () -> Void
 
-    init(preferences: Preferences = .shared,
+    init(preferences: Preferences,
          readStatus: @escaping () -> LoginItemStatus = { LoginItem.status },
          change: @escaping (Bool) -> LoginItemChange = { LoginItem.set($0) },
          openLoginItemsSettings: @escaping () -> Void = LoginItem.openLoginItemsSettings) {

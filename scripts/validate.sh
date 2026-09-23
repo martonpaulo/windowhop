@@ -51,7 +51,7 @@ else
 fi
 # WindowHopKit holds the pure rules: value-type frameworks only (AGENTS.md, Kit import
 # contract), and no AX, workspace or capture reference even through a transitive import
-KIT_IMPORTS='^(Foundation|CoreGraphics|Combine|Observation|Synchronization)$'
+KIT_IMPORTS='^(Foundation|CoreGraphics|Observation|Synchronization)$'
 if grep -rhE "^[[:space:]]*(@[A-Za-z_]+[[:space:]]+)*import[[:space:]]" Sources/WindowHopKit/ 2>/dev/null \
     | sed -E 's/^.*import[[:space:]]+(class |struct |enum |protocol |func |var |let |typealias )?//; s/[.[:space:]].*$//' \
     | sort -u | grep -vE "$KIT_IMPORTS"; then

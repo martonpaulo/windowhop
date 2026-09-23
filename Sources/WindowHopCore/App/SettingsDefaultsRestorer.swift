@@ -9,13 +9,7 @@ public struct SettingsDefaultsRestorer {
     private let preferences: Preferences
     private let applyAutomaticUpdateChecks: (Bool) -> Void
 
-    public static let shared = SettingsDefaultsRestorer(
-        preferences: .shared,
-        applyAutomaticUpdateChecks: {
-            UpdateManager.shared.automaticallyChecksForUpdates = $0
-        })
-
-    init(preferences: Preferences,
+    public init(preferences: Preferences,
          applyAutomaticUpdateChecks: @escaping (Bool) -> Void) {
         self.preferences = preferences
         self.applyAutomaticUpdateChecks = applyAutomaticUpdateChecks

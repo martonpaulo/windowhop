@@ -9,13 +9,17 @@ import XCTest
 @MainActor
 final class SwitcherPanelGroupTests: XCTestCase {
     private var group: SwitcherPanelGroup!
+    private var isolated: IsolatedPreferences!
     /// Every selection announcement posted, as (window id, spoken text).
     private var announcements: [(id: AnyHashable, text: String)] = []
 
     override func setUp() async throws {
         try await super.setUp()
         announcements = []
-        group = SwitcherPanelGroup(announcer: SelectionAnnouncer { [unowned self] id, text in
+        isolated = IsolatedPreferences()
+        let preferences = isolated.preferences
+        group = SwitcherPanelGroup(preferences: preferences,
+                                   announcer: SelectionAnnouncer(preferences: preferences) { [unowned self] id, text in
             announcements.append((id, text))
         })
     }
@@ -23,6 +27,8 @@ final class SwitcherPanelGroupTests: XCTestCase {
     override func tearDown() async throws {
         group.hide()
         group = nil
+        isolated.remove()
+        isolated = nil
         try await super.tearDown()
     }
 
