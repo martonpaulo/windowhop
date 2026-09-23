@@ -68,6 +68,8 @@
   --button-primary-bg-hover: #0b5fbb;
   --focus-ring: color-mix(in srgb, var(--accent) 70%, white);
   --accent-tint: color-mix(in srgb, var(--accent) 12%, transparent);
+  /* the "browser" app colour of the demo's drawn icons, reused by illustrations */
+  --app-blue: #2f7df6;
 
   /* Elevation */
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.12);
@@ -113,12 +115,29 @@
      in-page link has to clear so its target does not park underneath it. */
   --header-height: 3.8125rem;
 
-  /* Motion */
+  /* Motion. Only something clickable moves under the pointer: it lifts by
+     --lift, and a key presses down by --press. */
   --duration-instant: 0.08s;
   --duration-fast: 0.15s;
   --duration-medium: 0.3s;
   --duration-slow: 0.7s;
+  --duration-entrance: 0.8s;
+  --stagger: 0.06s;
   --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --lift: -2px;
+  --press: 3px;
+  --transition-interactive:
+    transform var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease,
+    background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+
+  /* Glass: the blur behind the header, the demo's panel and its controls */
+  --blur-s: 16px;
+  --blur-m: 22px;
+  --blur-l: 28px;
+  --shadow-s: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -178,6 +197,14 @@ td a {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 0.18em;
+  transition: var(--transition-interactive);
+}
+
+/* Every text link darkens (or, in Dark Mode, brightens) the same way on hover. */
+:where(p, li, td) a:hover,
+.text-link:hover,
+.breadcrumb a:hover {
+  color: var(--accent-hover);
 }
 
 img {
@@ -198,10 +225,43 @@ h3 {
   text-wrap: balance;
 }
 
-:where(a, button, input, select, [tabindex]):focus-visible {
+:where(a, button, summary, input, select, [tabindex]):focus-visible {
   outline: 3px solid var(--focus-ring);
   outline-offset: var(--space-3xs);
   border-radius: var(--radius-s);
+}
+
+/* Interaction: what the pointer and selection do, in one place.
+   - Anything clickable shows the pointer; nothing else does.
+   - Controls and decorative drawings are not selectable, so a click or a drag
+     never highlights their labels; running text always is. */
+:where(a[href], button, summary, [role="option"], label[for]) {
+  cursor: pointer;
+}
+
+:where(button, .button, .site-header, .pill, .keycap, .glyph-tile, .card-link, .demo, summary) {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Every link that leaves the site ends with the same small arrow, drawn here
+   once instead of in the markup of every link. A link to another page of this
+   site never carries it. */
+a[href^="http"]::after {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.35em;
+  background: currentColor;
+  opacity: 0.8;
+  -webkit-mask: var(--external-arrow) center / contain no-repeat;
+  mask: var(--external-arrow) center / contain no-repeat;
+}
+
+:root {
+  --external-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6'/%3E%3C/svg%3E");
 }
 
 .skip-link {
@@ -230,17 +290,6 @@ h3 {
   clip: rect(0 0 0 0);
   white-space: nowrap;
   border: 0;
-}
-
-/* One icon for every link that leaves the site; a link to another page of this
-   site never carries it. */
-.external-icon {
-  flex: none;
-  width: 0.7em;
-  height: 0.7em;
-  margin-left: 0.35em;
-  vertical-align: baseline;
-  opacity: 0.8;
 }
 
 /* --- 3. Layout ---------------------------------------------------------------- */
@@ -368,14 +417,11 @@ main {
   font-size: 1rem;
   font-weight: var(--weight-strong);
   text-decoration: none;
-  transition:
-    transform var(--duration-fast) ease,
-    box-shadow var(--duration-fast) ease,
-    background-color var(--duration-fast) ease;
+  transition: var(--transition-interactive);
 }
 
 .button:hover {
-  transform: translateY(-1px);
+  transform: translateY(var(--lift));
 }
 
 .button:active {
@@ -458,13 +504,11 @@ main {
 .card-link {
   display: block;
   text-decoration: none;
-  transition:
-    transform var(--duration-fast) ease,
-    border-color var(--duration-fast) ease;
+  transition: var(--transition-interactive);
 }
 
 .card-link:hover {
-  transform: translateY(-2px);
+  transform: translateY(var(--lift));
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
@@ -514,11 +558,8 @@ kbd {
   box-shadow: 0 3px 0 var(--line), inset 0 0 0 1px var(--line);
   font-size: var(--text-md);
   font-weight: var(--weight-strong);
-  transition:
-    transform var(--duration-instant) ease,
-    box-shadow var(--duration-instant) ease,
-    color var(--duration-instant) ease,
-    background-color var(--duration-instant) ease;
+  transition: var(--transition-interactive);
+  transition-duration: var(--duration-instant);
 }
 
 .keycap.is-held,
@@ -528,7 +569,7 @@ kbd {
 }
 
 .keycap.is-down {
-  transform: translateY(3px);
+  transform: translateY(var(--press));
   box-shadow: 0 0 0 var(--line), inset 0 0 0 1px var(--accent);
 }
 
@@ -582,7 +623,8 @@ figcaption {
   z-index: 20;
   border-bottom: 1px solid var(--line);
   background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(22px) saturate(1.4);
+  backdrop-filter: blur(var(--blur-m)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--blur-m)) saturate(1.4);
 }
 
 .site-header-inner {
@@ -710,12 +752,18 @@ h1 {
   font-size: var(--text-sm);
 }
 
-.hero-stats svg:not(.external-icon) {
+.hero-stats svg {
   color: var(--accent);
 }
 
-.hero-stats a:hover {
+a.pill {
+  transition: var(--transition-interactive);
+}
+
+a.pill:hover {
   color: var(--accent);
+  transform: translateY(var(--lift));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, var(--line));
 }
 
 /* The "How it works" cards: keys first, then the step. */
@@ -740,9 +788,6 @@ h1 {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  transition:
-    transform var(--duration-medium) var(--ease-out),
-    border-color var(--duration-medium) ease;
 }
 
 .feature::before {
@@ -755,17 +800,6 @@ h1 {
     color-mix(in srgb, var(--feature-color) 18%, transparent),
     transparent 55%
   );
-  opacity: 0.7;
-  transition: opacity var(--duration-medium) ease;
-}
-
-.feature:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--feature-color) 40%, var(--line));
-}
-
-.feature:hover::before {
-  opacity: 1;
 }
 
 .feature .glyph-tile {
@@ -848,8 +882,8 @@ h1 {
   width: var(--space-l);
   height: var(--space-l);
   border-radius: 22%;
-  background: linear-gradient(180deg, color-mix(in srgb, #2f7df6 72%, white), #2f7df6);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--app-blue) 72%, white), var(--app-blue));
+  box-shadow: var(--shadow-s);
 }
 
 /* Screenshots of the real app, stacked. */
@@ -1046,7 +1080,6 @@ h1 {
 }
 
 .faq summary {
-  cursor: pointer;
   font-size: var(--text-md);
   font-weight: var(--weight-strong);
 }
@@ -1081,29 +1114,47 @@ h1 {
   overflow: hidden;
 }
 
-/* The caption above the screen names the style on show; the demo alternates
-   between the two, and the current one is highlighted. */
-.demo-caption {
+/* Above the screen: the one control, pause and play (WCAG 2.2.2), as a pill. */
+.demo-controls {
   display: flex;
   justify-content: center;
+  margin-bottom: var(--space-m);
+}
+
+.demo-play {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-2xs);
-  margin: 0 0 var(--space-m);
-}
-
-.demo-caption span {
-  padding: var(--space-3xs) var(--space-s);
+  min-height: var(--control-height-s);
+  padding: 0 var(--space-s);
+  border: 0;
   border-radius: var(--radius-pill);
-  color: var(--secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-strong);
-  transition:
-    background-color var(--duration-medium) ease,
-    color var(--duration-medium) ease;
-}
-
-.demo-caption .is-current {
   background: var(--button-primary-bg);
   color: var(--button-primary-fg);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  transition: var(--transition-interactive);
+}
+
+.demo-play:hover {
+  background: var(--button-primary-bg-hover);
+  transform: translateY(var(--lift));
+}
+
+.demo-play svg {
+  width: 0.875rem;
+  height: 0.875rem;
+  fill: currentColor;
+}
+
+.demo-play .icon-play,
+.demo-play.is-paused .icon-pause {
+  display: none;
+}
+
+.demo-play.is-paused .icon-play {
+  display: block;
 }
 
 .demo-screen {
@@ -1188,7 +1239,8 @@ h1 {
   height: var(--demo-menubar);
   padding: 0 2cqi;
   background: color-mix(in srgb, var(--window) 55%, transparent);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(var(--blur-s));
+  -webkit-backdrop-filter: blur(var(--blur-s));
 }
 
 .demo-menubar b {
@@ -1410,8 +1462,8 @@ h1 {
     opacity var(--duration-fast) ease,
     transform var(--duration-fast) ease,
     visibility 0s linear var(--duration-fast);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  backdrop-filter: blur(var(--blur-l)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--blur-l)) saturate(1.6);
 }
 
 .demo-screen.is-open .demo-panel {
@@ -1435,7 +1487,10 @@ h1 {
   width: var(--demo-tile);
   padding: 0.8cqi 0.6cqi;
   border-radius: var(--demo-tile-radius);
-  cursor: pointer;
+}
+
+.demo-tile:hover:not(.is-selected) {
+  background: color-mix(in srgb, var(--tile-selected) 50%, transparent);
 }
 
 .demo-tile.is-selected {
@@ -1501,49 +1556,23 @@ h1 {
   width: var(--demo-badge);
 }
 
-/* Pause and play: a round glass button in the screen's corner. The demo moves
-   on its own, so it needs a way to stop it (WCAG 2.2.2). */
-.demo-play {
+/* Inside the screen, top right: the name of the style on show, one at a time;
+   it fades in each time the demo changes style. */
+.demo-caption {
   position: absolute;
-  right: var(--space-s);
-  bottom: var(--space-s);
-  z-index: 60;
-  display: grid;
-  place-items: center;
-  width: var(--control-height-s);
-  height: var(--control-height-s);
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
+  top: calc(var(--demo-menubar) + 2cqi);
+  right: 2cqi;
+  z-index: 55;
+  margin: 0;
+  padding: var(--space-3xs) var(--space-s);
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--window) 62%, transparent);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  box-shadow: var(--shadow-s), inset 0 0 0 1px rgba(255, 255, 255, 0.25);
   color: var(--panel-ink);
-  cursor: pointer;
-  transition:
-    transform var(--duration-fast) ease,
-    background-color var(--duration-fast) ease;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
-
-.demo-play:hover {
-  background: color-mix(in srgb, var(--window) 82%, transparent);
-  transform: scale(1.06);
-}
-
-.demo-play svg {
-  width: 0.875rem;
-  height: 0.875rem;
-  fill: currentColor;
-}
-
-.demo-play .icon-play,
-.demo-play.is-paused .icon-pause {
-  display: none;
-}
-
-.demo-play.is-paused .icon-play {
-  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-strong);
+  backdrop-filter: blur(var(--blur-s));
+  -webkit-backdrop-filter: blur(var(--blur-s));
 }
 
 .demo-keys {
@@ -1585,7 +1614,7 @@ h1 {
 
 @keyframes keypress {
   50% {
-    transform: translateY(3px);
+    transform: translateY(var(--press));
     box-shadow: 0 0 0 var(--line), inset 0 0 0 1px var(--accent);
   }
 }
@@ -1606,39 +1635,45 @@ h1 {
 
   /* The hero's lines enter one after another, then the demo. */
   .hero-copy > * {
-    animation: rise 0.8s var(--ease-out) both;
+    animation: rise var(--duration-entrance) var(--ease-out) both;
+    animation-delay: calc(var(--stagger) * var(--i, 0));
   }
 
-  .hero-copy > :nth-child(2) { animation-delay: 0.06s; }
-  .hero-copy > :nth-child(3) { animation-delay: 0.12s; }
-  .hero-copy > :nth-child(4) { animation-delay: 0.18s; }
-  .hero-copy > :nth-child(n + 5) { animation-delay: 0.24s; }
+  .hero-copy > :nth-child(2) { --i: 1; }
+  .hero-copy > :nth-child(3) { --i: 2; }
+  .hero-copy > :nth-child(4) { --i: 3; }
+  .hero-copy > :nth-child(n + 5) { --i: 4; }
 
   .demo {
-    animation: rise 0.9s 0.3s var(--ease-out) both;
+    animation: rise var(--duration-entrance) calc(var(--stagger) * 5) var(--ease-out) both;
   }
 
   .demo-desktop .demo-window.is-landing {
-    animation: land 0.45s var(--ease-out);
+    animation: land var(--duration-slow) var(--ease-out);
+  }
+
+  .demo-caption.is-changing {
+    animation: rise var(--duration-slow) var(--ease-out);
   }
 
   /* bento cards enter one after another */
-  .bento > :nth-child(2) { transition-delay: 0.06s; }
-  .bento > :nth-child(3) { transition-delay: 0.12s; }
-  .bento > :nth-child(4) { transition-delay: 0.18s; }
-  .bento > :nth-child(5) { transition-delay: 0.24s; }
-  .bento > :nth-child(6) { transition-delay: 0.3s; }
+  .bento > * { transition-delay: calc(var(--stagger) * var(--i, 0)); }
+  .bento > :nth-child(2) { --i: 1; }
+  .bento > :nth-child(3) { --i: 2; }
+  .bento > :nth-child(4) { --i: 3; }
+  .bento > :nth-child(5) { --i: 4; }
+  .bento > :nth-child(6) { --i: 5; }
 
   /* the keyboard card types its keys once as it appears */
   .feature.is-visible .keycap {
-    animation: keypress 0.4s ease both;
+    animation: keypress var(--duration-slow) ease both;
+    animation-delay: calc(var(--duration-medium) * (var(--k, 0) + 1));
   }
 
-  .feature.is-visible .keycap:nth-child(2) { animation-delay: 0.5s; }
-  .feature.is-visible .keycap:nth-child(3) { animation-delay: 0.8s; }
-  .feature.is-visible .keycap:nth-child(4) { animation-delay: 1s; }
-  .feature.is-visible .keycap:nth-child(5) { animation-delay: 1.3s; }
-  .feature.is-visible .keycap:first-child { animation-delay: 0.3s; }
+  .feature .keycap:nth-child(2) { --k: 1; }
+  .feature .keycap:nth-child(3) { --k: 2; }
+  .feature .keycap:nth-child(4) { --k: 3; }
+  .feature .keycap:nth-child(5) { --k: 4; }
 
   /* the three windows fan out as the card appears */
   .mini-window {
@@ -1651,7 +1686,7 @@ h1 {
 
   /* each gesture card presses its keys twice as it appears */
   .gesture .is-visible .keycap {
-    animation: keypress 0.5s ease 0.4s 2;
+    animation: keypress var(--duration-slow) ease var(--duration-medium) 2;
   }
 }
 

@@ -315,7 +315,7 @@ windowhop_site_checks() (
     for marker in 'id="features"' 'id="download"' 'id="install"' 'id="help"' "href=\"$DOWNLOAD_URL\"" \
                   'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
                   'Developed by Marton Paulo' \
-                  'Download WindowHop <span data-site-version>' 'class="external-icon"' \
+                  'Download WindowHop <span data-site-version>' 'a[href^="http"]::after' \
                   'id="alttab-alternative"' 'id="demo"' '"@type": "FAQPage"'; do
       grep -R -Fq "$marker" "${indexed[@]}" site/styles/main.css || {
         echo "website is missing required marker: $marker" >&2
@@ -424,6 +424,16 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         }
     done
 
+    # Header and footer are copied into every page (the site has no build step), so
+    # the copies must stay identical: the footer byte for byte, the header by label.
+    footer_of() { sed -n '/<footer class="site-footer">/,/<\/footer>/p' "$1"; }
+    for page in "${pages[@]}"; do
+      [ "$(footer_of site/index.html)" = "$(footer_of "$page")" ] || {
+          echo "$page footer differs from site/index.html" >&2
+          exit 1
+      }
+    done
+
     # Every page shows the same header destinations, in the same order.
     nav_labels() { sed -n '/<nav aria-label="Page sections">/,/<\/nav>/p' "$1" | grep -oE '>[^<]+</a>'; }
     for page in "${pages[@]}"; do
@@ -433,14 +443,12 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
       }
     done
 
-    # Every link that leaves the site carries the external-link arrow and
-    # rel="noopener"; a link to another page of this site carries neither.
+    # Every link that leaves the site carries rel="noopener". Its arrow is drawn once,
+    # by the a[href^="http"]::after rule in main.css (a marker above), so the markup
+    # never repeats it.
     while IFS= read -r line; do
         case "$line" in *'rel="noopener"'*) ;; *)
             echo "external link without rel=\"noopener\": $line" >&2; exit 1 ;;
-        esac
-        case "$line" in *'class="external-icon"'*) ;; *)
-            echo "external link without the external-link icon: $line" >&2; exit 1 ;;
         esac
     done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' "${pages[@]}" || true)
 

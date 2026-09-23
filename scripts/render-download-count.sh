@@ -98,7 +98,7 @@ fi
 if [ -n "$star_count" ]; then
   grouped=$(group "$star_count")
   if [ "$star_count" -eq 1 ]; then noun="star"; else noun="stars"; fi
-  parts+=("<a class=\"pill\" href=\"https://github.com/$repo/stargazers\" rel=\"noopener\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z\" fill=\"currentColor\"/></svg>$grouped $noun on GitHub<svg class=\"external-icon\" viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M3.6 8.4 8.4 3.6M4.8 3.6h3.6v3.6\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></a>")
+  parts+=("<a class=\"pill\" href=\"https://github.com/$repo/stargazers\" rel=\"noopener\"><svg viewBox=\"0 0 16 16\" width=\"14\" height=\"14\" aria-hidden=\"true\" focusable=\"false\"><path d=\"m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z\" fill=\"currentColor\"/></svg>$grouped $noun on GitHub</a>")
   echo "star count: $grouped"
 fi
 if [ ${#parts[@]} -gt 0 ]; then

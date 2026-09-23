@@ -1,7 +1,7 @@
 // The live demo in the home page hero: a small desktop with five windows and
 // WindowHop's switcher over it. It plays the ⌘Tab gesture on its own and
 // alternates between the two styles, App Icons and Window Previews, naming the
-// current one in a caption above the screen. A click, a tap or the arrow keys
+// current one in a caption inside the screen. A click, a tap or the arrow keys
 // switch windows by hand; the demo then resumes on its own after a short pause.
 //
 // Everything here is drawn by the page: neutral windows and generic app icons,
@@ -73,15 +73,17 @@
       <symbol id="demo-glyph-lines" viewBox="0 0 24 24"><path d="M6 8h12M6 12h12M6 16h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></symbol>
       <symbol id="demo-glyph-envelope" viewBox="0 0 24 24"><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="6.5" width="16" height="11" rx="2"/><path d="m4.5 7.5 7.5 6 7.5-6"/></g></symbol>
     </svg>
-    <p class="demo-caption" aria-hidden="true">${Object.entries(MODES)
-      .map(([mode, name]) => `<span data-caption="${mode}">${name}</span>`).join("")}</p>
+    <div class="demo-controls">
+      <button type="button" class="demo-play">
+        <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>
+        <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.6-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
+        <span class="demo-play-label">Pause</span>
+      </button>
+    </div>
     <div class="demo-screen" data-mode="icons">
       <div class="demo-menubar" aria-hidden="true"><b></b><span></span><span></span><span></span><time>9:41</time></div>
       <div class="demo-desktop" aria-hidden="true">${WINDOWS.map(windowMarkup).join("")}</div>
-      <button type="button" class="demo-play" aria-label="Pause the demo">
-        <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>
-        <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.6-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
-      </button>
+      <p class="demo-caption" aria-hidden="true"></p>
       <div class="demo-panel" role="listbox" tabindex="0" aria-label="Open windows. Use the arrow keys to choose one and Return to switch to it."></div>
     </div>
     <div class="demo-keys keycap-row" aria-hidden="true"><kbd class="keycap key-cmd">⌘</kbd><kbd class="keycap key-tab">Tab</kbd></div>
@@ -142,10 +144,13 @@
 
   const showPanel = (on) => screen.classList.toggle("is-open", on);
 
+  const caption = mount.querySelector(".demo-caption");
   const setMode = (mode) => {
     screen.dataset.mode = mode;
-    mount.querySelectorAll("[data-caption]").forEach((caption) =>
-      caption.classList.toggle("is-current", caption.dataset.caption === mode));
+    caption.textContent = MODES[mode];
+    caption.classList.remove("is-changing");
+    void caption.offsetWidth; // restart the fade for the new name
+    caption.classList.add("is-changing");
     renderPanel();
   };
 
@@ -196,6 +201,7 @@
     playing = on;
     clearTimeout(timer);
     runId++;
+    playButton.querySelector(".demo-play-label").textContent = on ? "Pause" : "Play";
     playButton.setAttribute("aria-label", on ? "Pause the demo" : "Play the demo");
     playButton.classList.toggle("is-paused", !on);
     press(keyCmd, false);

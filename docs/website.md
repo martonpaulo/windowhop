@@ -22,15 +22,22 @@ styles and scripts from root paths (`/styles/main.css`), so any page works at an
 **The live demo.** `site/scripts/demo.js` draws an interactive switcher in the home page
 hero: a small desktop with five neutral windows in a cascade (no third-party brand) and
 WindowHop's panel over it. It plays the ⌘Tab gesture on its own and alternates between App
-Icons and Window Previews, naming the current style in a caption above the screen. A click, a
-tap, or the arrow keys and Return on the focused listbox switch by hand, and the demo resumes
-on its own six seconds later. The round button in the screen's corner pauses and plays it
-(WCAG 2.2.2); with Reduce Motion it starts paused, with the switcher open. Without JavaScript
+Icons and Window Previews, naming the current style in a caption inside the screen, top right.
+A click, a tap, or the arrow keys and Return on the focused listbox switch by hand, and the
+demo resumes on its own six seconds later. The Pause/Play pill above the screen is its one
+control (WCAG 2.2.2); with Reduce Motion it starts paused, with the switcher open. Without JavaScript
 the `<noscript>` screenshot stands in, and the loop stops while the demo is off screen.
 
 **Motion.** Sections with `.reveal` fade up once as they scroll into view
 (`site/scripts/main.js`). The hidden start exists only when the inline head script set
 `html.js` and motion is allowed, so nothing is hidden without JavaScript or with Reduce Motion.
+
+**Interaction rules** live in one place in `site/styles/main.css` (section 2): anything
+clickable shows the pointer and nothing else does; controls and drawings are not selectable,
+running text is; only clickable elements move on hover, lifting by `--lift` with one shared
+transition; every external link gets its arrow from one `a[href^="http"]::after` rule, never
+from markup. Header and footer are copied into each page (there is no build step), and
+`make validate` fails when a copy drifts.
 
 **Screenshots follow the appearance.** Every image in `site/screenshots/` exists as `-light`
 and `-dark` (validate.sh fails on a missing twin), and each page shows it through a
