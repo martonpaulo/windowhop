@@ -122,8 +122,9 @@ the Actions tab if the count stops moving.
 `/release-notes/X.Y.Z/` and all of them into `/release-notes/`: site pages with the site's
 header and footer (read from `site/404.html`, their one source) and `noindex`. Each version
 also gets `/release-notes/X.Y.Z/update/`, a chrome-free page with one line per change (its
-type and bold headline) and a link to the full notes: Sparkle's update window shows that
-one, and it fits the window without scrolling (#128). `sparkle:fullReleaseNotesLink` points
+type and bold headline); the appcast no longer links it. Sparkle's update window shows the
+ordinary `/release-notes/X.Y.Z/` page, which lays out at the window's width (about 525 px)
+without horizontal scrolling: the owner preferred it to the compact page (#128). `sparkle:fullReleaseNotesLink` points
 to `/release-notes/` (the Version History button). Like the download count, it runs on the deploy's staged copy, so no
 generated page is committed. `appcast.xml` links these pages: the canonical
 `make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new

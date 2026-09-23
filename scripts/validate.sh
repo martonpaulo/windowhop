@@ -543,10 +543,11 @@ rm -rf "$notes_dir"
 if grep -q "releaseNotesLink>https://github.com/" appcast.xml; then
     fail "appcast.xml links a GitHub release page; link https://windowhop.martonpaulo.com/release-notes/X.Y.Z/"
 else
-    if grep -o '<sparkle:releaseNotesLink>[^<]*' appcast.xml | grep -vq '/update/$'; then
-        fail "an appcast releaseNotesLink is not a compact /release-notes/X.Y.Z/update/ page"
+    if grep -o '<sparkle:releaseNotesLink>[^<]*' appcast.xml \
+        | grep -vqE 'windowhop\.martonpaulo\.com/release-notes/[0-9]+\.[0-9]+\.[0-9]+/$'; then
+        fail "an appcast releaseNotesLink is not a site page /release-notes/X.Y.Z/"
     else
-        pass "appcast release notes link the site's compact pages"
+        pass "appcast release notes link the site's version pages"
     fi
 fi
 grep -q "render-release-notes.py" .github/workflows/deploy.yml \
