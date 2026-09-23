@@ -11,9 +11,13 @@ import WindowHopKit
 /// known available version, observed through the updater delegate.
 @MainActor
 @Observable
-public final class UpdateManager: NSObject, SPUUpdaterDelegate {
+// Sparkle calls both delegates on the main thread (Sparkle 2 documentation).
+public final class UpdateManager: NSObject, SPUUpdaterDelegate,
+    @preconcurrency SPUStandardUserDriverDelegate
+{
     @ObservationIgnored private let preferences: Preferences
     private var controller: SPUStandardUpdaterController?
+    @ObservationIgnored private let alertSizer = UpdateAlertSizer()
 
     /// The newest version the appcast offered, when newer than the running
     /// one; nil while up to date. Set from Sparkle's scheduled background
@@ -44,7 +48,7 @@ public final class UpdateManager: NSObject, SPUUpdaterDelegate {
         controller = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: self,
-            userDriverDelegate: nil)
+            userDriverDelegate: self)
         controller?.updater.automaticallyChecksForUpdates =
             preferences.automaticUpdateChecks
     }
@@ -70,5 +74,15 @@ public final class UpdateManager: NSObject, SPUUpdaterDelegate {
 
     public func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
         availableVersion = nil
+    }
+
+    // MARK: - SPUStandardUserDriverDelegate
+
+    /// The update window then fits its release notes (UpdateAlertSizer, #128).
+    public func standardUserDriverWillHandleShowingUpdate(
+        _ handleShowingUpdate: Bool, forUpdate update: SUAppcastItem, state: SPUUserUpdateState
+    ) {
+        guard handleShowingUpdate else { return }
+        alertSizer.fitWhenShown()
     }
 }
