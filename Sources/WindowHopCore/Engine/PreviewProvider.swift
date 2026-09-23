@@ -45,6 +45,8 @@ public final class PreviewProvider {
     private var expandedSnapshot: (id: AnyHashable, image: NSImage)?
     private var activeSessionGeneration: Int?
     private var expandedGeneration = 0
+    /// Every capture, of every path and session, takes a slot here first.
+    private let captureBudget = CaptureBudget(limit: 4)
 
     struct CaptureRequest {
         let id: AnyHashable
@@ -107,6 +109,7 @@ public final class PreviewProvider {
         }
         let requests = items.compactMap(makeCaptureRequest)
         let sessionGeneration = ledger.beginSession(ids: requests.map { $0.id })
+        captureBudget.advance(to: sessionGeneration)
         activeSessionGeneration = sessionGeneration
         let pixelTarget = CGSize(width: targetSize.width * scale, height: targetSize.height * scale)
         Task { [weak self] in
@@ -141,6 +144,7 @@ public final class PreviewProvider {
         cancelExpandedPreview()
         expandedSnapshot = nil
         ledger.endSession()
+        captureBudget.advance(to: ledger.generation)
     }
 
     /// Requests a larger snapshot for the dwell presentation. It remains fully
@@ -193,7 +197,6 @@ public final class PreviewProvider {
         let assignments = PreviewMatcher.assign(
             requests: requests.map(Self.matchRequest),
             candidates: Self.matchCandidates(in: content.windows))
-        // parallel capture in small waves: fast without saturating WindowServer
         let assigned = requests.compactMap { request in
             assignments[request.id].map { (request, content.windows[$0]) }
         }
@@ -201,21 +204,22 @@ public final class PreviewProvider {
         for request in requests where !assignedIDs.contains(request.id) {
             markUnavailable(request.id, generation: sessionGeneration)
         }
-        for wave in stride(from: 0, to: assigned.count, by: 4).map({ Array(assigned[$0..<min($0 + 4, assigned.count)]) }) {
-            if ledger.generation != sessionGeneration { return }
-            // the tasks run on main between their awaits; the screenshots themselves
-            // proceed in parallel inside ScreenCaptureKit
-            let captures = wave.map { request, scWindow in
-                Task { [weak self] in
-                    await self?.captureOne(request, scWindow, generation: sessionGeneration,
-                                           pixelTarget: pixelTarget)
-                }
-            }
-            for capture in captures { await capture.value }
-            // once the session ended, finish the current wave into the cache but
-            // start no further capture work
-            if ledger.generation != sessionGeneration { return }
+        // parallel, in list order, within the provider-wide budget: fast without
+        // saturating WindowServer. The tasks run on main between their awaits;
+        // the screenshots themselves proceed in parallel inside ScreenCaptureKit.
+        // Once the session ends, captures already running finish into the
+        // cache, but no further capture work starts.
+        let budget = captureBudget
+        var captures: [Task<Void, Never>] = []
+        for (request, scWindow) in assigned {
+            guard await budget.acquire(generation: sessionGeneration) else { break }
+            captures.append(Task { [weak self] in
+                defer { budget.release() }
+                await self?.captureOne(request, scWindow, generation: sessionGeneration,
+                                       pixelTarget: pixelTarget)
+            })
         }
+        for capture in captures { await capture.value }
     }
 
     private func captureOne(_ request: CaptureRequest, _ scWindow: SCWindow,
@@ -254,7 +258,20 @@ public final class PreviewProvider {
                                               sessionGeneration: sessionGeneration,
                                               requestGeneration: requestGeneration)
             },
-            capture: { await self.captureImage($0, pixelTarget: pixelTarget) },
+            capture: { scWindow in
+                // waiting for a slot can outlast the request, so check again
+                // before spending the capture
+                guard await self.captureBudget.acquire(generation: sessionGeneration,
+                                                       jumpingQueue: true) else {
+                    return nil
+                }
+                defer { self.captureBudget.release() }
+                guard self.isExpandedRequestCurrent(id,
+                                                    sessionGeneration: sessionGeneration,
+                                                    requestGeneration: requestGeneration)
+                else { return nil }
+                return await self.captureImage(scWindow, pixelTarget: pixelTarget)
+            },
             deliver: { image in
                 self.deliverExpandedSnapshot(image, for: id)
             })

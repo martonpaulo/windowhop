@@ -270,7 +270,7 @@ Privacy & Security pane; cards never duplicate that action. App activation refre
 status after the user returns from System Settings. App Icons never needs this permission.
 The cache is memory-only and app-lifetime: opening
 the switcher shows the last known snapshot of every window instantly. The
-session recaptures in parallel waves of four and delivers every result live —
+session recaptures in parallel and delivers every result live —
 a tile that opened with a cached snapshot crossfades to the fresh capture the
 moment it lands (constant geometry, no layout shift; Reduce Motion disables
 the fade), and tiles that opened with none fill in. Captures are taken without
@@ -281,6 +281,13 @@ window disappears and when the user switches back to App Icons. Views hold an im
 while they present it: hidden pool slots and a collapsed expanded preview drop theirs at
 once, and every view releases its image when the session ends, so the provider cache is
 the only warm owner between sessions and an evicted snapshot is actually freed.
+
+Every capture takes a slot of one provider-wide `CaptureBudget` (in `Core/`, limit four),
+whether it serves the session's list, a window that joined the open session, or the dwell
+snapshot, which is served first. A slot passes to the next capture the moment one finishes,
+and captures still waiting when the session ends never start. Before, each batch limited
+only itself, and ten windows opening during a session put up to 10 captures in flight at
+once ([#86](https://github.com/martonpaulo/windowhop/issues/86)).
 
 Captures finish asynchronously and out of order, so the pure, unit-tested
 `PreviewLedger` decides what a late result may do: results for evicted windows
