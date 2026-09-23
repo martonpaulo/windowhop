@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Sharp previews of wide windows**: a snapshot is now captured large enough to fill its
+  card. Before, a wide window, such as a maximized one on an ultrawide display, was
+  captured too small and then enlarged, so its preview looked blurred.
+
 ## [2.3.0] - 2026-09-23
 
 ### Added

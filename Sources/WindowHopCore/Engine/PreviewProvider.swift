@@ -236,7 +236,8 @@ public final class PreviewProvider {
                 return assignments.mapValues { content.windows[$0] }
             },
             capture: { scWindow in
-                await self.captureImage(scWindow, targetSize: targetSize, scale: scale)
+                await self.captureImage(
+                    scWindow, targetSize: targetSize, scale: scale, sizing: .cover)
             },
             isCurrent: { self.isTileSessionCurrent(sessionGeneration) },
             claimRetries: { ids in
@@ -335,7 +336,7 @@ public final class PreviewProvider {
                         sessionGeneration: sessionGeneration,
                         requestGeneration: requestGeneration),
                     case .captured(let image) = await self.captureImage(
-                        scWindow, targetSize: targetSize, scale: scale)
+                        scWindow, targetSize: targetSize, scale: scale, sizing: .fit)
                 else { return nil }
                 return image
             },
@@ -356,16 +357,30 @@ public final class PreviewProvider {
             && ledger.shouldDeliver(id, capturedIn: sessionGeneration)
     }
 
+    /// How a capture relates to its target: a tile fills its card (and crops),
+    /// the expanded preview shows the whole window.
+    enum CaptureSizing {
+        case cover, fit
+    }
+
     private func captureImage(
         _ scWindow: SCWindow,
         targetSize: CGSize,
-        scale: CGFloat
+        scale: CGFloat,
+        sizing: CaptureSizing
     ) async -> TileCaptureResult<NSImage> {
         let windowSize = scWindow.frame.size
         guard windowSize.width > 1, windowSize.height > 1 else { return .failed(.invalidTarget) }
         let configuration = SCStreamConfiguration()
-        let pixels = PreviewCaptureSizing.pixelSize(
-            windowSize: windowSize, targetSize: targetSize, scale: scale)
+        let pixels =
+            switch sizing {
+            case .cover:
+                PreviewCaptureSizing.pixelSize(
+                    windowSize: windowSize, covering: targetSize, scale: scale)
+            case .fit:
+                PreviewCaptureSizing.pixelSize(
+                    windowSize: windowSize, targetSize: targetSize, scale: scale)
+            }
         configuration.width = Int(pixels.width)
         configuration.height = Int(pixels.height)
         configuration.showsCursor = false

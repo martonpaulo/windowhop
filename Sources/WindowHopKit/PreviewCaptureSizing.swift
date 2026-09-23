@@ -9,14 +9,40 @@ import CoreGraphics
 public enum PreviewCaptureSizing {
     /// Pixel dimensions that fit a window into `targetSize` points at `scale`,
     /// keeping the window's aspect ratio and never exceeding twice its own size.
+    /// For the expanded preview, which shows the whole window.
     public static func pixelSize(windowSize: CGSize, targetSize: CGSize, scale: CGFloat) -> CGSize {
         guard windowSize.width > 0, windowSize.height > 0 else { return CGSize(width: 1, height: 1) }
-        let fit = min(
-            targetSize.width * scale / windowSize.width,
-            targetSize.height * scale / windowSize.height, 2)
+        return scaled(
+            windowSize,
+            by: min(
+                targetSize.width * scale / windowSize.width,
+                targetSize.height * scale / windowSize.height),
+            rounding: .down)
+    }
+
+    /// Pixel dimensions that cover `targetSize` points at `scale`: the size a
+    /// tile draws after `filledRect`, so its snapshot is never scaled up. A fitted
+    /// capture of a 2.4:1 window was 77 px tall in a 118 px card and drew 1.5x
+    /// enlarged and blurred on a 1x ultrawide display (#127).
+    public static func pixelSize(windowSize: CGSize, covering targetSize: CGSize, scale: CGFloat) -> CGSize {
+        guard windowSize.width > 0, windowSize.height > 0 else { return CGSize(width: 1, height: 1) }
+        return scaled(
+            windowSize,
+            by: max(
+                targetSize.width * scale / windowSize.width,
+                targetSize.height * scale / windowSize.height),
+            rounding: .up)
+    }
+
+    /// A fit rounds down so it never spills its target; a cover rounds up so it
+    /// never falls a pixel short of its canvas.
+    private static func scaled(
+        _ windowSize: CGSize, by factor: CGFloat, rounding: FloatingPointRoundingRule
+    ) -> CGSize {
+        let factor = min(factor, 2)
         return CGSize(
-            width: max(1, (windowSize.width * fit).rounded(.down)),
-            height: max(1, (windowSize.height * fit).rounded(.down)))
+            width: max(1, (windowSize.width * factor).rounded(rounding)),
+            height: max(1, (windowSize.height * factor).rounded(rounding)))
     }
 
     /// The point size to present a capture of `pixelSize` taken for `scale`.
