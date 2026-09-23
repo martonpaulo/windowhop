@@ -74,7 +74,7 @@
       <symbol id="demo-glyph-envelope" viewBox="0 0 24 24"><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"><rect x="4" y="6.5" width="16" height="11" rx="2"/><path d="m4.5 7.5 7.5 6 7.5-6"/></g></symbol>
     </svg>
     <div class="demo-controls">
-      <button type="button" class="demo-play">
+      <button type="button" class="button secondary small demo-play">
         <svg class="icon-pause" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="4" y="3" width="3" height="10" rx="1"/><rect x="9" y="3" width="3" height="10" rx="1"/></svg>
         <svg class="icon-play" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M5 3.2v9.6a.8.8 0 0 0 1.2.7l7.6-4.8a.8.8 0 0 0 0-1.4L6.2 2.5A.8.8 0 0 0 5 3.2z"/></svg>
         <span class="demo-play-label">Pause</span>

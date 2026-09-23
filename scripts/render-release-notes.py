@@ -4,10 +4,13 @@
     scripts/render-release-notes.py <staged-site-dir>
 
 Every `## [X.Y.Z] - YYYY-MM-DD` entry of CHANGELOG.md becomes
-`<dir>/release-notes/X.Y.Z/index.html`, and all of them together become
-`<dir>/release-notes/index.html`. The appcast's `sparkle:releaseNotesLink` points
-at the version's page, so Sparkle's update window shows the notes on their own,
-in the site's look, instead of the whole GitHub release page (#128).
+`<dir>/release-notes/X.Y.Z/index.html` (a site page, with the site's header and
+footer), and all of them together become `<dir>/release-notes/index.html`. Each
+version also gets `<dir>/release-notes/X.Y.Z/update/index.html`: one line per
+change (its type and its bold headline) and a link to the full notes, short
+enough for Sparkle's update window without scrolling. The appcast's
+`sparkle:releaseNotesLink` points at that page and `sparkle:fullReleaseNotesLink`
+at the full list (#128).
 
 The deploy workflow runs this on its staged copy, like render-download-count.sh:
 nothing it writes is committed. The pages carry `noindex`; the changelog is not a
@@ -92,12 +95,47 @@ def body_html(lines, level):
     return "\n".join(out)
 
 
+def headlines(lines):
+    """(section, headline) per bullet: the bold lead-in, or the first sentence."""
+    section, out, items = "", [], []
+    for line in lines:
+        if line.startswith("### "):
+            section = line[4:].strip()
+        elif line.startswith("- "):
+            items.append([section, line[2:].strip()])
+        elif line.startswith("  ") and items and line.strip():
+            items[-1][1] += " " + line.strip()
+    for section, text in items:
+        bold = re.match(r"\*\*([^*]+)\*\*", text)
+        title = bold.group(1) if bold else re.split(r"(?<=\.)\s", text)[0]
+        out.append((section, title.rstrip(":.")))
+    return out
+
+
+def compact_html(version, lines):
+    rows = "\n".join(
+        f'      <li><span class="notes-tag">{html.escape(section)}</span>{inline(title)}</li>'
+        for section, title in headlines(lines))
+    return f"""    <ul class="notes-compact">
+{rows}
+    </ul>
+    <p class="notes-more"><a target="_blank" href="https://windowhop.martonpaulo.com/release-notes/{version}/" rel="noopener">Full release notes</a></p>"""
+
+
 def long_date(iso):
     day = datetime.date.fromisoformat(iso)
     return f"{day.day} {day:%B %Y}"
 
 
-def page(title, description, content):
+def chrome(site):
+    """The site's header and footer, taken from the 404 page so they have one source."""
+    text = (site / "404.html").read_text()
+    header = re.search(r'  <header class="site-header".*?</header>\n', text, re.S).group(0)
+    footer = re.search(r'  <footer class="site-footer">.*?</footer>\n', text, re.S).group(0)
+    return header, footer
+
+
+def page(title, description, content, header="", footer="", body_class="notes-page"):
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -109,12 +147,13 @@ def page(title, description, content):
   <meta name="description" content="{html.escape(description)}">
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="stylesheet" href="/styles/main.css">
+  <script src="/scripts/main.js" defer></script>
 </head>
-<body class="notes-page">
-  <main class="notes">
+<body class="{body_class}">
+{header}  <main class="notes">
 {content}
   </main>
-</body>
+{footer}</body>
 </html>
 """
 
@@ -150,20 +189,28 @@ def main():
     global ICON
     ICON = icon_url(root)
     released = list(entries((root / "CHANGELOG.md").read_text()))
+    header, footer = chrome(root / "site")
     if not released:
         sys.exit("render-release-notes: CHANGELOG.md has no released entry")
 
     for version, date, lines in released:
         target = site / "release-notes" / version
         target.mkdir(parents=True, exist_ok=True)
-        # no download button: in Sparkle's window, Install Update is the action
-        footer = """    <footer class="notes-footer">
+        links = """    <p class="notes-footer">
       <a class="text-link" href="/release-notes/">All release notes</a>
-    </footer>"""
+    </p>"""
         (target / "index.html").write_text(page(
             f"WindowHop {version} release notes",
             f"What changed in WindowHop {version}, released on {long_date(date)}.",
-            entry_html(version, date, lines) + "\n" + footer,
+            entry_html(version, date, lines) + "\n" + links,
+            header, footer,
+        ))
+        (target / "update").mkdir(exist_ok=True)
+        (target / "update" / "index.html").write_text(page(
+            f"What’s new in WindowHop {version}",
+            f"The changes in WindowHop {version}, in short.",
+            compact_html(version, lines),
+            body_class="notes-page is-compact",
         ))
 
     listing = "\n".join(entry_html(v, d, l, heading="h2", link=True) for v, d, l in released)
@@ -171,6 +218,7 @@ def main():
         "WindowHop release notes",
         "What changed in every WindowHop release.",
         f'    <h1 class="notes-title">Release notes</h1>\n{listing}',
+        header, footer,
     ))
     print(f"release notes: {len(released)} versions, newest {released[0][0]}")
 

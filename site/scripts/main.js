@@ -17,7 +17,7 @@ const MIN_WORDS = 6;
 const GLUED_WORDS = 3;
 const MAX_GLUED_CHARS = 18;
 document
-  .querySelectorAll("main p, main li, main td, main figcaption, main summary, footer p")
+  .querySelectorAll("main p:not(.command), main li, main td, main figcaption, main summary, footer p")
   .forEach((block) => {
     if (block.textContent.trim().split(/\s+/).length < MIN_WORDS) return;
     const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -37,19 +37,34 @@ document
     last.textContent = lead + [...words, glued].join(" ") + trail;
   });
 
-// Copy buttons: shown only here, since copying needs JavaScript. The label says
-// "Copied" for a moment, and a screen reader hears it through aria-live.
-document.querySelectorAll("[data-copy]").forEach((button) => {
-  button.hidden = false;
-  button.setAttribute("aria-live", "polite");
-  button.addEventListener("click", async () => {
+// A command marked data-copy copies itself on click (or Return/Space): its copy
+// icon turns into "Copied!" for a moment and the command stays in place. Without
+// JavaScript it is plain text to select.
+document.querySelectorAll("[data-copy]").forEach((command) => {
+  const text = command.querySelector("code").textContent;
+  const status = command.querySelector("[aria-live]");
+  command.setAttribute("role", "button");
+  command.setAttribute("tabindex", "0");
+  command.setAttribute("aria-label", `Copy the command ${text}`);
+  command.classList.add("is-copyable");
+  let timer;
+  const copy = async () => {
     try {
-      await navigator.clipboard.writeText(button.dataset.copy);
-      button.textContent = "Copied";
+      await navigator.clipboard.writeText(text);
+      command.classList.add("is-copied");
+      status.textContent = "Copied";
     } catch {
-      button.textContent = "Select and copy";
+      status.textContent = "Could not copy; select the command instead";
     }
-    setTimeout(() => { button.textContent = "Copy"; }, 1600);
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      command.classList.remove("is-copied");
+      status.textContent = "";
+    }, 1800);
+  };
+  command.addEventListener("click", copy);
+  command.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); copy(); }
   });
 });
 

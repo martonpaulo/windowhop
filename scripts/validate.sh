@@ -530,6 +530,7 @@ fi
 notes_dir=$(mktemp -d)
 if python3 scripts/render-release-notes.py "$notes_dir" >/dev/null \
     && [ -f "$notes_dir/release-notes/$CHANGELOG_VERSION/index.html" ] \
+    && [ -f "$notes_dir/release-notes/$CHANGELOG_VERSION/update/index.html" ] \
     && [ -f "$notes_dir/release-notes/index.html" ]; then
     pass "release notes render from CHANGELOG ($CHANGELOG_VERSION included)"
 else
@@ -539,7 +540,11 @@ rm -rf "$notes_dir"
 if grep -q "releaseNotesLink>https://github.com/" appcast.xml; then
     fail "appcast.xml links a GitHub release page; link https://windowhop.martonpaulo.com/release-notes/X.Y.Z/"
 else
-    pass "appcast release notes link the site's pages"
+    if grep -o '<sparkle:releaseNotesLink>[^<]*' appcast.xml | grep -vq '/update/$'; then
+        fail "an appcast releaseNotesLink is not a compact /release-notes/X.Y.Z/update/ page"
+    else
+        pass "appcast release notes link the site's compact pages"
+    fi
 fi
 grep -q "render-release-notes.py" .github/workflows/deploy.yml \
     || fail "deploy.yml does not render the release notes"
