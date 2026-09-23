@@ -1455,44 +1455,31 @@ h1 {
 }
 
 /* Release notes: pages written at deploy time by scripts/render-release-notes.py.
-   The web pages are ordinary site pages (page-hero, section, card, grid). The
-   compact page (.is-compact) is what Sparkle's small update window shows: no
-   chrome, one line per change, no scrolling. */
-.is-compact .notes {
+   The web pages are ordinary site pages (page-hero, section). The update page
+   (.is-update) is what Sparkle's update window shows: only the version section,
+   at the window's width, with no page padding for the window to scroll past. */
+/* The page is exactly as tall as its notes, so a fitted window has nothing to scroll. */
+body.is-update {
+  min-height: 0;
+}
+
+.is-update main {
   width: auto;
-  max-width: none;
-  padding: var(--space-xs) var(--space-m);
+  padding: var(--space-m);
 }
 
-.notes-compact {
-  display: grid;
-  gap: var(--space-2xs);
-  margin: 0;
+.is-update .section {
   padding: 0;
-  list-style: none;
+  border-top: 0;
 }
 
-.notes-compact li {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-xs);
-  color: var(--text);
-  font-weight: var(--weight-strong);
+.is-update .section h2 {
+  font-size: var(--text-xl);
 }
 
-.notes-tag {
-  flex: none;
-  min-width: 4.5rem;
-  color: var(--accent);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-display);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-}
-
-.notes-more {
-  margin: var(--space-xs) 0 0;
-  font-size: var(--text-sm);
+/* full lines: WebKit's pretty wrapping shortened them, and every line is window height */
+.is-update .notes-list li {
+  text-wrap: wrap;
 }
 
 /* On the web pages each change type is a heading and a plain list. */

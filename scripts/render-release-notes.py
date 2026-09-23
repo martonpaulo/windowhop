@@ -6,11 +6,11 @@
 Every `## [X.Y.Z] - YYYY-MM-DD` entry of CHANGELOG.md becomes
 `<dir>/release-notes/X.Y.Z/index.html` (a site page, with the site's header and
 footer), and all of them together become `<dir>/release-notes/index.html`. Each
-version also gets `<dir>/release-notes/X.Y.Z/update/index.html`: one line per
-change (its type and its bold headline) and a link to the full notes, short
-enough for Sparkle's update window without scrolling. The appcast's
-`sparkle:releaseNotesLink` points at that page and `sparkle:fullReleaseNotesLink`
-at the full list (#128).
+version also gets `<dir>/release-notes/X.Y.Z/update/index.html` for Sparkle's update
+window: the same version section (date, version, changes) in the site's style and
+nothing else, no header, footer or page title (#128). The appcast's
+`sparkle:releaseNotesLink` points at that page and `sparkle:fullReleaseNotesLink` at
+the full list; WindowHop grows the window to the page's height (UpdateAlertSizer).
 
 The deploy workflow runs this on its staged copy, like render-download-count.sh:
 nothing it writes is committed. The pages carry `noindex`; the changelog is not a
@@ -85,33 +85,6 @@ def groups_html(lines):
         for kind, items in groups(lines))
 
 
-def headlines(lines):
-    """(section, headline) per bullet: the bold lead-in, or the first sentence."""
-    section, out, items = "", [], []
-    for line in lines:
-        if line.startswith("### "):
-            section = line[4:].strip()
-        elif line.startswith("- "):
-            items.append([section, line[2:].strip()])
-        elif line.startswith("  ") and items and line.strip():
-            items[-1][1] += " " + line.strip()
-    for section, text in items:
-        bold = re.match(r"\*\*([^*]+)\*\*", text)
-        title = bold.group(1) if bold else re.split(r"(?<=\.)\s", text)[0]
-        out.append((section, title.rstrip(":.")))
-    return out
-
-
-def compact_html(version, lines):
-    rows = "\n".join(
-        f'      <li><span class="notes-tag">{html.escape(section)}</span>{inline(title)}</li>'
-        for section, title in headlines(lines))
-    return f"""    <ul class="notes-compact">
-{rows}
-    </ul>
-    <p class="notes-more"><a target="_blank" href="https://windowhop.martonpaulo.com/release-notes/{version}/" rel="noopener">Full release notes</a></p>"""
-
-
 def long_date(iso):
     day = datetime.date.fromisoformat(iso)
     return f"{day.day} {day:%B %Y}"
@@ -142,7 +115,7 @@ def page(title, description, content, header="", footer="", body_class="notes-pa
   <script src="/scripts/main.js" defer></script>
 </head>
 <body class="{body_class}">
-{'  <a class="skip-link" href="#main">Skip to content</a>' + chr(10) if header else ''}{header}  <main id="main"{' class="notes"' if "is-compact" in body_class else ""}>
+{'  <a class="skip-link" href="#main">Skip to content</a>' + chr(10) if header else ''}{header}  <main id="main">
 {content}
   </main>
 {footer}</body>
@@ -194,9 +167,9 @@ def main():
         (target / "update").mkdir(exist_ok=True)
         (target / "update" / "index.html").write_text(page(
             f"What’s new in WindowHop {version}",
-            f"The changes in WindowHop {version}, in short.",
-            compact_html(version, lines),
-            body_class="notes-page is-compact",
+            f"The changes in WindowHop {version}.",
+            version_section(version, date, lines, link=False),
+            body_class="notes-page is-update",
         ))
 
     listing = "\n".join(version_section(v, d, l, link=True) for v, d, l in released)
@@ -205,7 +178,7 @@ def main():
         "What changed in every WindowHop release.",
         page_hero(
             "Releases", "Release notes.",
-            "What changed in each version of WindowHop. The app shows the same notes, in short, when it updates.")
+            "What changed in each version of WindowHop. The app shows the same notes when it updates.")
         + "\n" + listing,
         header, footer,
     ))

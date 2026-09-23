@@ -121,10 +121,11 @@ the Actions tab if the count stops moving.
 `scripts/render-release-notes.py` turns every released `CHANGELOG.md` entry into
 `/release-notes/X.Y.Z/` and all of them into `/release-notes/`: site pages with the site's
 header and footer (read from `site/404.html`, their one source) and `noindex`. Each version
-also gets `/release-notes/X.Y.Z/update/`, a chrome-free page with one line per change (its
-type and bold headline); the appcast no longer links it. Sparkle's update window shows the
-ordinary `/release-notes/X.Y.Z/` page, which lays out at the window's width (about 525 px)
-without horizontal scrolling: the owner preferred it to the compact page (#128). `sparkle:fullReleaseNotesLink` points
+also gets `/release-notes/X.Y.Z/update/`, the page Sparkle's update window shows: the same
+version section (date, version, changes) in the site's style and nothing else, with no
+header, footer or page title. WindowHop grows the window to that page's height, capped at
+the screen (`App/UpdateAlertSizer.swift`). A one-line-per-change page and the full site
+page were tried first (#128). `sparkle:fullReleaseNotesLink` points
 to `/release-notes/` (the Version History button). Like the download count, it runs on the deploy's staged copy, so no
 generated page is committed. `appcast.xml` links these pages: the canonical
 `make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new

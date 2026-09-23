@@ -544,10 +544,10 @@ if grep -q "releaseNotesLink>https://github.com/" appcast.xml; then
     fail "appcast.xml links a GitHub release page; link https://windowhop.martonpaulo.com/release-notes/X.Y.Z/"
 else
     if grep -o '<sparkle:releaseNotesLink>[^<]*' appcast.xml \
-        | grep -vqE 'windowhop\.martonpaulo\.com/release-notes/[0-9]+\.[0-9]+\.[0-9]+/$'; then
-        fail "an appcast releaseNotesLink is not a site page /release-notes/X.Y.Z/"
+        | grep -vqE 'windowhop\.martonpaulo\.com/release-notes/[0-9]+\.[0-9]+\.[0-9]+/update/$'; then
+        fail "an appcast releaseNotesLink is not an update page /release-notes/X.Y.Z/update/"
     else
-        pass "appcast release notes link the site's version pages"
+        pass "appcast release notes link the site's update pages"
     fi
 fi
 grep -q "render-release-notes.py" .github/workflows/deploy.yml \
