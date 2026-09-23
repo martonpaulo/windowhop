@@ -267,11 +267,12 @@ Fixed-size tiles in one of two appearances (Settings → Switcher; changing it
 applies on the next session, no restart):
 
 - **App Icons** (default): a large application icon dominates a compact tile.
-- **Window Previews**: an aspect-fit window snapshot with the app icon as a
+- **Window Previews**: a window snapshot that covers its card, with the app icon as a
   bottom-right badge overlapping the fixed preview canvas by the same amount on both
   edges. Every canvas is the same fixed 16:10 shape
-  (`DesignTokens.previewCanvasAspect`), so the snapshot can center and aspect-fit
-  without cropping or distortion. The canvas deliberately ignores the monitor:
+  (`DesignTokens.previewCanvasAspect`); the snapshot is centred and scaled to cover it
+  (aspect-fill, no distortion), and the canvas's rounded clip trims what overflows
+  (#127). The canvas deliberately ignores the monitor:
   deriving it from the display made every card a shallow strip on an ultrawide
   screen. Unused space is an intentional semantic
   surface rather than transparent letterboxing. Loading, permission-required, failure,
@@ -386,8 +387,9 @@ window that was ambiguous a moment earlier; whatever stays ambiguous — same ap
 frame, same title — is left unassigned, so the tile keeps its placeholder instead of
 showing another window's content.
 
-Source images aspect-fit and center inside that fixed 16:10 canvas over the semantic
-preview surface. The app badge, Close control, selection plate, shadow, hit testing, and
+Source images cover and center in that fixed 16:10 canvas, clipped by its rounded shape
+(`PreviewCaptureSizing.filledRect`, #127); the semantic preview surface shows only while
+the snapshot is loading or unavailable. The app badge, Close control, selection plate, shadow, hit testing, and
 title position all anchor to that canvas rather than the fitted source-image bounds.
 
 While an authorized window has no snapshot, the tile shows a simplified macOS-window

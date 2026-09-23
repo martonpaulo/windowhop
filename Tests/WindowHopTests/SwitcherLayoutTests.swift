@@ -52,8 +52,9 @@ extension SharedAppState {
             #expect(abs(image.midY - canvas.midY) < 0.5)
         }
 
-        /// Source images of any shape stay inside that canvas without cropping.
-        @Test func everySourceAspectFitsInsideTheCanvas() {
+        /// Source images of any shape cover the canvas, and the canvas's rounded
+        /// clip, not the image, bounds what is drawn (#127).
+        @Test func everySourceCoversTheCanvasAndIsClippedByIt() {
             for size in [
                 NSSize(width: 3440, height: 1440), NSSize(width: 100, height: 900),
                 NSSize(width: 4, height: 4), NSSize(width: 1, height: 1),
@@ -64,10 +65,9 @@ extension SharedAppState {
 
                 // a whole-pixel tolerance: proportional scaling lands on fractions
                 #expect(
-                    canvas.insetBy(dx: -1, dy: -1).contains(image),
-                    "\(size) overflows the canvas")
-                #expect(image.width <= canvas.width + 1)
-                #expect(image.height <= canvas.height + 1)
+                    image.insetBy(dx: -1, dy: -1).contains(canvas),
+                    "\(size) leaves part of the canvas empty")
+                #expect(tile.previewClipFrameForTesting == canvas)
             }
         }
 

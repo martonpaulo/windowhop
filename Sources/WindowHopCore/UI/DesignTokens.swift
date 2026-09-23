@@ -138,9 +138,8 @@ enum DesignTokens {
     // MARK: Window Previews appearance
     static let previewsTileWidth: CGFloat = 204
     /// Every preview canvas is this fixed shape, so all cards have identical
-    /// dimensions and any window aspect-fits inside without cropping (unused
-    /// area uses the semantic preview surface instead of exposing content
-    /// behind the panel). It is deliberately independent of the monitor:
+    /// dimensions; a snapshot covers it and its rounded clip trims the rest
+    /// (#127). It is deliberately independent of the monitor:
     /// deriving it from the display made every card a shallow strip on an
     /// ultrawide screen, where previews are hardest to recognize.
     static let previewCanvasAspect: CGFloat = 16.0 / 10.0
@@ -149,7 +148,7 @@ enum DesignTokens {
     }
     static let previewCornerRadius = cardCornerRadius
     /// The badge is 60% of its previous rendered size and overlaps the fixed
-    /// canvas corner, independent of the source image's aspect-fit bounds.
+    /// canvas corner, independent of the source image's own bounds.
     static let previewBadgeSize: CGFloat = 48
     static let previewOverlayOverlap: CGFloat = 8
     /// The snapshot's own soft shadow (the capture itself is shadow-free); the

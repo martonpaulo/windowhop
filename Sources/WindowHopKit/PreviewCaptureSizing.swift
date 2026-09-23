@@ -25,17 +25,17 @@ public enum PreviewCaptureSizing {
         return CGSize(width: pixelSize.width / scale, height: pixelSize.height / scale)
     }
 
-    /// The frame that aspect-fits an image of `imageSize` inside `canvas`,
-    /// centered, scaled up or down: every snapshot fills its card's width or
-    /// height, and a window smaller than the card is enlarged rather than left
-    /// floating in the middle (#33). Never crops.
-    public static func fittedRect(imageSize: CGSize?, in canvas: CGRect) -> CGRect {
+    /// The frame that covers `canvas` with an image of `imageSize`, centred and
+    /// scaled up or down (aspect-fill). The canvas's rounded shape clips the
+    /// overflow, so a card is always full: the owner chose a few cropped pixels
+    /// over a snapshot floating inside its card (#127, superseding #33's fit).
+    public static func filledRect(imageSize: CGSize?, in canvas: CGRect) -> CGRect {
         guard let imageSize, imageSize.width > 0, imageSize.height > 0 else { return canvas }
-        let scale = min(canvas.width / imageSize.width, canvas.height / imageSize.height)
-        let fitted = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
+        let scale = max(canvas.width / imageSize.width, canvas.height / imageSize.height)
+        let filled = CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
         return CGRect(
-            x: canvas.midX - fitted.width / 2,
-            y: canvas.midY - fitted.height / 2,
-            width: fitted.width, height: fitted.height)
+            x: canvas.midX - filled.width / 2,
+            y: canvas.midY - filled.height / 2,
+            width: filled.width, height: filled.height)
     }
 }

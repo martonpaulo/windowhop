@@ -41,29 +41,24 @@ struct PreviewCaptureSizingTests {
         #expect(pixels == CGSize(width: 1, height: 1))
     }
 
-    /// A small snapshot is enlarged to the canvas, never left in its middle.
-    @Test func aSmallImageIsScaledUpToFitTheCanvas() {
+    /// Any snapshot covers the whole canvas, centred; the canvas clips the rest (#127).
+    @Test(arguments: [
+        CGSize(width: 94, height: 59), CGSize(width: 3440, height: 1440),
+        CGSize(width: 100, height: 900), CGSize(width: 4, height: 4),
+    ])
+    func aSnapshotCoversTheCanvas(imageSize: CGSize) {
         let box = CGRect(origin: CGPoint(x: 8, y: 30), size: canvas)
-        let fitted = PreviewCaptureSizing.fittedRect(
-            imageSize: CGSize(width: 94, height: 59), in: box)
+        let filled = PreviewCaptureSizing.filledRect(imageSize: imageSize, in: box)
 
-        #expect(abs(fitted.width - box.width) <= 1)
-        #expect(fitted.height <= box.height + 1)
-        #expect(abs(fitted.midX - box.midX) < 0.01)
-        #expect(abs(fitted.midY - box.midY) < 0.01)
-    }
-
-    @Test func aTallImageFitsTheCanvasHeightWithoutCropping() {
-        let box = CGRect(origin: .zero, size: canvas)
-        let fitted = PreviewCaptureSizing.fittedRect(
-            imageSize: CGSize(width: 100, height: 900), in: box)
-
-        #expect(abs(fitted.height - box.height) < 0.01)
-        #expect(fitted.width < box.width)
+        #expect(filled.insetBy(dx: -0.01, dy: -0.01).contains(box))
+        #expect(abs(filled.midX - box.midX) < 0.01)
+        #expect(abs(filled.midY - box.midY) < 0.01)
+        // one side matches the canvas exactly, so the crop is as small as it can be
+        #expect(abs(filled.width - box.width) < 0.01 || abs(filled.height - box.height) < 0.01)
     }
 
     @Test func noImageFillsTheCanvas() {
         let box = CGRect(origin: .zero, size: canvas)
-        #expect(PreviewCaptureSizing.fittedRect(imageSize: nil, in: box) == box)
+        #expect(PreviewCaptureSizing.filledRect(imageSize: nil, in: box) == box)
     }
 }

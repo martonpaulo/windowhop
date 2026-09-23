@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Previews fill the whole card**: a window snapshot now covers its card, and only
+  the card has rounded corners. When a window's shape differs from the card's, a thin
+  strip at its edges is trimmed instead of leaving empty bands.
+
 ## [2.2.0] - 2026-09-23
 
 ### Changed

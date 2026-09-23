@@ -161,7 +161,7 @@ private final class PreviewSkeletonView: NSView {
 
 /// One switcher entry in either appearance:
 /// - App Icons: a genuinely large application icon dominates the tile.
-/// - Window Previews: an aspect-fit window snapshot with the app icon as a
+/// - Window Previews: a window snapshot covering its canvas, with the app icon as a
 ///   corner badge; until (or unless) a preview arrives, a quiet fixed-size
 ///   skeleton remains behind that same corner-aligned badge.
 /// Titles and optional metadata use one shared native typography hierarchy.
@@ -183,7 +183,7 @@ final class SwitcherTileView: NSView {
         }
 
         /// Preview containers share one fixed canvas shape, so every card is
-        /// identical and any window aspect-fits without cropping.
+        /// identical; any window covers it (#127).
         static func windowPreviews(showTabCounts: Bool) -> Metrics {
             let contentHeight = DesignTokens.previewContentHeight(
                 width: DesignTokens.previewsTileWidth - DesignTokens.tileLabelInset * 2)
@@ -253,6 +253,9 @@ final class SwitcherTileView: NSView {
     private let selectionBackgroundView = NSView()
     private let iconView = NSImageView()
     private let previewView = NSImageView()
+    /// The canvas's rounded shape: it clips the snapshot, which covers it
+    /// (#127). The snapshot itself has square corners.
+    private let previewClipView = NSView()
     /// Carries the snapshot's soft shadow: the shadow path follows the
     /// preview's rounded shape, so no rectangular halo can appear (the clip on
     /// previewView would swallow a shadow set on it directly).
@@ -283,7 +286,11 @@ final class SwitcherTileView: NSView {
     /// previous window's image).
     var showsPreviewImage: Bool { hasPreview && !previewView.isHidden && previewView.image != nil }
     var previewCanvasFrameForTesting: NSRect { previewSurfaceView.frame }
-    var previewImageFrameForTesting: NSRect { previewView.frame }
+    /// The snapshot's frame in the tile, before the canvas clips it.
+    var previewImageFrameForTesting: NSRect {
+        previewView.frame.offsetBy(dx: previewClipView.frame.minX, dy: previewClipView.frame.minY)
+    }
+    var previewClipFrameForTesting: NSRect { previewClipView.frame }
     var badgeFrameForTesting: NSRect { badgeIconView.frame }
     var closeFrameForTesting: NSRect { closeButton.frame }
     var previewSurfaceColorForTesting: NSColor? {
@@ -339,12 +346,15 @@ final class SwitcherTileView: NSView {
         previewShadowView.layer?.shadowOffset = DesignTokens.previewShadowOffset
         addSubview(previewShadowView)
 
+        previewClipView.wantsLayer = true
+        previewClipView.layer?.cornerRadius = DesignTokens.previewCornerRadius
+        previewClipView.layer?.cornerCurve = .continuous
+        previewClipView.layer?.masksToBounds = true
+        addSubview(previewClipView)
+
         previewView.imageScaling = .scaleProportionallyUpOrDown
         previewView.wantsLayer = true
-        previewView.layer?.cornerRadius = DesignTokens.previewCornerRadius
-        previewView.layer?.cornerCurve = .continuous
-        previewView.layer?.masksToBounds = true
-        addSubview(previewView)
+        previewClipView.addSubview(previewView)
 
         addSubview(skeletonView)
 
@@ -533,12 +543,12 @@ final class SwitcherTileView: NSView {
             ? DesignTokens.iconSelectionCornerRadius
             : DesignTokens.previewCornerRadius + selectionPadding
         if hasPreview {
-            // Aspect-fit inside the fixed display-aspect container, scaled up
-            // or down: the whole window stays visible, fills the canvas width
-            // or height (#33), and the semantic surface owns letterboxing.
-            let fitted = PreviewCaptureSizing.fittedRect(
-                imageSize: previewView.image?.size, in: contentBox)
-            previewView.frame = fitted
+            // The snapshot covers the fixed canvas (aspect-fill) and the
+            // canvas's rounded clip trims the overflow (#127).
+            previewClipView.frame = contentBox
+            previewView.frame = PreviewCaptureSizing.filledRect(
+                imageSize: previewView.image?.size,
+                in: NSRect(origin: .zero, size: contentBox.size))
             previewShadowView.frame = contentBox
             previewShadowView.layer?.shadowPath = CGPath(
                 roundedRect: CGRect(origin: .zero, size: contentBox.size),

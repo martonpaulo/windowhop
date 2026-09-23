@@ -334,8 +334,8 @@ Screen Recording permission.
       Light and Dark Mode.
 - [ ] Preview surfaces remain legible over bright/dark content; selection uses one semantic
       plate with no stacked gray/blue frames and no layout shift.
-- [ ] Wide, tall, small-dialog, and display-ratio snapshots aspect-fit over the intentional
-      surface without distortion, cropping, or transparent holes.
+- [ ] Wide, tall, small-dialog, and display-ratio snapshots cover their card without
+      distortion or empty bands; only the canvas has rounded corners (#127).
 - [ ] Loading, permission-blocked, unavailable, and loaded cards retain identical canvas,
       badge, title, Close, selection, and hit-test geometry.
 - [ ] Close is fully drawn and centered on the loaded canvas origin; the Settings control
