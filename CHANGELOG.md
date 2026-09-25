@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Shortcut recorder prompt fits**: while you record the Open WindowHop shortcut, the whole
   prompt (⎋ cancels, ⌫ clears) is visible. Before, it was cut off.
+- **Quit apps leave the switcher**: the windows of an app you quit no longer stay in the
+  switcher as blank tiles until WindowHop restarts.
 
 ## [2.3.3] - 2026-09-23
 

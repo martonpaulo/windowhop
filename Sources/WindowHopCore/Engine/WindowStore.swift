@@ -71,8 +71,9 @@ public final class WindowStore {
         runningAppsObserver = NSWorkspace.shared.observe(\.runningApplications, options: [.old, .new]) {
             [weak self] _, change in
             DispatchQueue.main.async { [weak self] in
-                for app in change.newValue ?? [] { self?.addApp(app) }
-                for app in change.oldValue ?? [] { self?.removeApp(app) }
+                self?.runningApplicationsChanged(
+                    launched: change.newValue ?? [], departed: change.oldValue ?? [],
+                    stillListed: NSWorkspace.shared.runningApplications)
             }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -115,15 +116,23 @@ public final class WindowStore {
         apps[pid] = TrackedApp(runningApplication, router: router)
     }
 
-    private func removeApp(_ departedApplication: NSRunningApplication) {
-        // Its PID may already be -1 after the KVO hop; isEqual also guards against PID reuse.
-        let app =
-            apps[departedApplication.processIdentifier].flatMap {
-                $0.runningApplication.isEqual(departedApplication) ? $0 : nil
-            } ?? apps.values.first { $0.runningApplication.isEqual(departedApplication) }
-        // NSWorkspace's old KVO value is the removal signal; do not gate it on isTerminated.
-        guard let app else { return }
-        let pid = app.pid
+    /// One KVO change of `NSWorkspace.runningApplications`, after the hop to main.
+    /// Departures match tracked apps by identity (`AppDeparture`, #136): a departed
+    /// object's PID may already read -1, and nothing orders its `isTerminated` before
+    /// this change, so neither is a precondition for removal.
+    func runningApplicationsChanged(
+        launched: [NSRunningApplication], departed: [NSRunningApplication],
+        stillListed: [NSRunningApplication]
+    ) {
+        for app in launched { addApp(app) }
+        let keys = AppDeparture.keysToRemove(
+            tracked: apps.mapValues(\.runningApplication), departed: departed,
+            stillListed: stillListed, isSameProcess: { $0.isEqual($1) })
+        keys.forEach(removeApp)
+    }
+
+    private func removeApp(_ pid: pid_t) {
+        guard let app = apps[pid] else { return }
         app.stopObserving()
         apps[pid] = nil
         let removed = windows.filter { $0.app === app }
