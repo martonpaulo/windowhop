@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`` ` `` moves back in the switcher**: while the switcher is open, `` ` `` selects the previous
+  window, as in the macOS app switcher.
+
 ### Changed
 
 - **Simpler About header**: Settings › About no longer shows a separate "Made by Marton Paulo"

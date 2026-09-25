@@ -130,7 +130,7 @@ public struct SwitchingGuide: Equatable, Sendable {
                 keys: [key(KeyCode.tab), key(KeyCode.rightArrow)]),
             KeyRow(
                 action: String(localized: "Previous window"),
-                keys: [chord(.maskShift, KeyCode.tab), key(KeyCode.leftArrow)]),
+                keys: [chord(.maskShift, KeyCode.tab), key(KeyCode.grave), key(KeyCode.leftArrow)]),
             KeyRow(
                 action: String(localized: "Switch to the selected window"),
                 keys: [key(KeyCode.returnKey)]),

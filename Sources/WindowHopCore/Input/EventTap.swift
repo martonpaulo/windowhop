@@ -183,6 +183,9 @@ struct EventTapInterceptionState: Sendable {
             return .arrow(.right)
         case KeyCode.delete, KeyCode.forwardDelete:
             return .deleteKey
+        // native ⌘Tab steps back with ⌘` (#135)
+        case KeyCode.grave:
+            return .step(backward: true)
         default:
             return nil
         }

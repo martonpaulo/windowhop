@@ -45,6 +45,50 @@ struct EventTapInterceptionTests {
                 flags: .maskCommand) == .consume)
     }
 
+    /// Native ⌘Tab steps back with ⌘` (#135): the key macOS binds ⌘` to, key code 50.
+    @Test func graveStepsBackwardInAHeldCommandTabSession() {
+        var state = EventTapInterceptionState(
+            mode: .watching,
+            holdModifier: .maskCommand,
+            persistentShortcut: .optionTab)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand)
+        _ = state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand)
+        _ = state.decide(type: .keyUp, keyCode: KeyCode.tab, flags: .maskCommand)
+
+        #expect(
+            state.decide(type: .keyDown, keyCode: KeyCode.grave, flags: .maskCommand)
+                == EventTapDecision(disposition: .consume, input: .step(backward: true)))
+        #expect(state.decide(type: .keyUp, keyCode: KeyCode.grave, flags: .maskCommand) == .consume)
+    }
+
+    /// Outside a session ⌘` stays the system's (next window of the front app).
+    @Test func graveIsNeverConsumedOutsideASession() {
+        for mode in [TapMode.watching, .off, .passthrough] {
+            var state = EventTapInterceptionState(
+                mode: mode,
+                holdModifier: .maskCommand,
+                persistentShortcut: .optionTab)
+            for flags: CGEventFlags in [[], .maskCommand, [.maskCommand, .maskShift]] {
+                #expect(state.decide(type: .keyDown, keyCode: KeyCode.grave, flags: flags) == .pass)
+                #expect(state.decide(type: .keyUp, keyCode: KeyCode.grave, flags: flags) == .pass)
+            }
+            #expect(state.suppressedKeyUps.isEmpty)
+        }
+    }
+
+    @Test func graveWithAForeignModifierPasses() {
+        var state = EventTapInterceptionState(
+            mode: .watching,
+            holdModifier: .maskCommand,
+            persistentShortcut: .optionTab)
+        _ = state.decide(type: .keyDown, keyCode: KeyCode.tab, flags: .maskCommand)
+
+        for flags: CGEventFlags in [[.maskCommand, .maskAlternate], .maskControl] {
+            #expect(state.decide(type: .keyDown, keyCode: KeyCode.grave, flags: flags) == .pass)
+        }
+    }
+
     @Test func rapidSessionEndStillConsumesOwnedKeyUp() {
         var state = EventTapInterceptionState(
             mode: .watching,
@@ -230,6 +274,7 @@ struct EventTapInterceptionTests {
             ("Right", KeyCode.rightArrow, .arrow(.right)),
             ("Delete", KeyCode.delete, .deleteKey),
             ("Forward Delete", KeyCode.forwardDelete, .deleteKey),
+            ("Grave", KeyCode.grave, .step(backward: true)),
         ]
     }
 

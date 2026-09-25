@@ -65,7 +65,9 @@ struct SwitchingGuideTests {
                 "Next window", "Previous window", "Switch to the selected window",
                 "Close the selected window…", "Open Settings", "Cancel",
             ])
-        #expect(rows[1].keys.map(\.display) == ["⇧⇥", "←"])
+        #expect(
+            rows[1].keys.map(\.display)
+                == ["⇧⇥", ShortcutFormatter.keySymbol(for: KeyCode.grave), "←"])
         #expect(rows[5].spoken == "Cancel: Escape")
         #expect(rows[0].spoken == "Next window: Tab or Right Arrow")
     }

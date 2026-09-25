@@ -39,4 +39,8 @@ public enum KeyCode {
     public static let downArrow: Int64 = 125
     public static let upArrow: Int64 = 126
     public static let comma: Int64 = 43
+    /// The key macOS binds ⌘` to (kVK_ANSI_Grave) on every layout, labelled by the
+    /// current input source. Never kVK_ISO_Section (10): on Apple ISO keyboards that
+    /// is the key above Tab, but native ⌘` stays on code 50 there, left of Z (#135).
+    public static let grave: Int64 = 50
 }

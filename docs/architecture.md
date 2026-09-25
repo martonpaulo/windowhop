@@ -171,7 +171,8 @@ through plain AppKit.
    pass every key, so a chord already in use reaches the recorder. The recorder owns the
    flag through `onRecordingChanged` → `SwitcherController.setShortcutRecordingActive`;
    stopping the tap keeps it. A key-up owned before recording began is still consumed.
-   In a session, navigation keys (Tab, arrows, Return/Enter, Escape, Delete, sticky Space)
+   In a session, navigation keys (Tab, arrows, Return/Enter, Escape, Delete, sticky Space,
+   and `` ` ``, which steps back as in native ⌘Tab: key code 50, the key macOS binds ⌘` to, #135)
    match only with Shift plus the modifiers that own the session: the hold modifier when
    held, the Open WindowHop chord's modifiers when sticky. A chord with any other ⌘/⌥/⌃
    passes, so ⌃⌥ VoiceOver commands reach assistive technology whichever tap sees them
