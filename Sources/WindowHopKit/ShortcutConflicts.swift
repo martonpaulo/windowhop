@@ -24,8 +24,8 @@ public enum ShortcutConflicts {
         }
     }
 
-    /// The macOS standard app commands (Apple HIG, "Keyboard shortcuts":
-    /// https://developer.apple.com/design/human-interface-guidelines/keyboard).
+    /// The macOS standard app commands (Apple HIG, "Keyboards", standard keyboard shortcuts:
+    /// https://developer.apple.com/design/human-interface-guidelines/keyboards).
     public static let standardCommands: [StandardCommand] = [
         StandardCommand(String(localized: "Quit"), "q"),
         StandardCommand(String(localized: "Hide"), "h"),
