@@ -72,7 +72,7 @@ public final class WindowStore {
             [weak self] _, change in
             DispatchQueue.main.async { [weak self] in
                 for app in change.newValue ?? [] { self?.addApp(app) }
-                for app in change.oldValue ?? [] { self?.removeApp(app.processIdentifier) }
+                for app in change.oldValue ?? [] { self?.removeApp(app) }
             }
         }
         NSWorkspace.shared.notificationCenter.addObserver(
@@ -115,8 +115,15 @@ public final class WindowStore {
         apps[pid] = TrackedApp(runningApplication, router: router)
     }
 
-    private func removeApp(_ pid: pid_t) {
-        guard let app = apps[pid], app.runningApplication.isTerminated else { return }
+    private func removeApp(_ departedApplication: NSRunningApplication) {
+        // Its PID may already be -1 after the KVO hop; isEqual also guards against PID reuse.
+        let app =
+            apps[departedApplication.processIdentifier].flatMap {
+                $0.runningApplication.isEqual(departedApplication) ? $0 : nil
+            } ?? apps.values.first { $0.runningApplication.isEqual(departedApplication) }
+        // NSWorkspace's old KVO value is the removal signal; do not gate it on isTerminated.
+        guard let app else { return }
+        let pid = app.pid
         app.stopObserving()
         apps[pid] = nil
         let removed = windows.filter { $0.app === app }
