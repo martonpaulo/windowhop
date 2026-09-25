@@ -529,6 +529,10 @@ to publish an issue or change code. Do not ask again for a decision already reco
 
 - Product definition: `docs/product.md` — what WindowHop is for and what it will never do. A
   proposal that contradicts a non-goal there loses until that document changes.
+- References and inspirations: `docs/references.md`, the index of the upstream and reference
+  implementations (recorded in `UPSTREAM.md`), design inspirations and technical sources.
+  Consult it before diagnosing a hard bug, choosing a module boundary, or deciding a UX
+  pattern, and add a row when a new source is consulted.
 - Domain glossary: `CONTEXT.md` (optional; create only when a term is genuinely ambiguous
   across `WindowHopKit`, `Engine/`, `Input/`, and `UI/`)
 - Architecture decision records: `docs/adr/` (create only when a decision needs its rationale

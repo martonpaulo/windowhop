@@ -3,6 +3,9 @@
 WindowHop is derived from **AltTab** — <https://github.com/lwouis/alt-tab-macos> —
 by Louis Pontoise (lwouis) and contributors, licensed GPL-3.0.
 
+[docs/references.md](docs/references.md) indexes every source WindowHop consults, including the
+design inspirations and technical documentation this file does not cover.
+
 ## Base revision
 
 - Tag: `v10.12.0`
@@ -81,6 +84,12 @@ git remote add upstream https://github.com/lwouis/alt-tab-macos
   capturing only during an open session and gated on the Screen Recording permission. No
   upstream capture code was ported; upstream's public `SCScreenshotManager` path
   (`src/logic/events/WindowCaptureEvents.swift`) is a legitimate reference for preview fixes.
+  Its `LightImageLayer` (`src/ui/generic-components/LightImageLayer.swift`: a plain `CALayer`
+  with `.trilinear` magnification and minification filters and a zero minification bias) was
+  consulted for WindowHop issue #130 and not ported. WindowHop avoids the resampling that the
+  filter smooths: a tile capture is sized so its scale-setting side is exactly the canvas and
+  its origin lands on a whole point (`WindowHopKit/PreviewCaptureSizing.swift`), so no filter
+  runs (#148 records the consultation).
 - Search/typing filter, trackpad/scrollwheel gestures, drag-and-drop onto tiles,
   window tiling hooks, app launching, Dock/context-menu integrations.
 - AppCenter (crash telemetry), SwiftyBeaver (logging), LetsMove, ShortcutRecorder —
