@@ -19,8 +19,9 @@
 - License: `GPL-3.0-only`, with AltTab attribution recorded in `UPSTREAM.md`
 - Copyright: © 2026 Marton Paulo. GPL-3.0. Derived from AltTab, © lwouis and contributors
   (`NSHumanReadableCopyright` in `Support/Info.plist` is the canonical string). Settings ›
-  About credits the developer ("Made by Marton Paulo") and keeps the AltTab credit as
-  text, without a link to the AltTab repository (Decided on #123).
+  About credits the developer only through that copyright line, in its footer, with no
+  separate header credit (Decided on #132, superseding the header credit of #123), and keeps
+  the AltTab credit as text, without a link to the AltTab repository (Decided on #123).
 - Development language: English.
 - Product copy: English only, in `Support/Localizable.xcstrings`, read through
   `String(localized:)` (SwiftUI literals resolve through the same table). The compiled

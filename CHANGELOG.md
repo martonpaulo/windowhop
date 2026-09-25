@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Simpler About header**: Settings › About no longer shows a separate "Made by Marton Paulo"
+  line. The copyright line at the bottom of the pane still names the developer.
+
 ### Fixed
 
 - **Shortcut recorder prompt fits**: while you record the Open WindowHop shortcut, the whole

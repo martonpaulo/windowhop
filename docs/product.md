@@ -113,7 +113,7 @@ restate it.
 | How WindowHop knows the screen is locked | The `com.apple.screenIsLocked` / `com.apple.screenIsUnlocked` distributed notifications, an exception recorded beside the AX-attribute-string rule | [AGENTS.md](../AGENTS.md), "Public Apple APIs only" | [#38](https://github.com/martonpaulo/windowhop/issues/38) |
 | The bundle identifier | `com.martonpaulo.windowhop`, with a one-time copy of the previous identifier's settings; permissions are granted again | [feature-defaults.md](feature-defaults.md), "Bundle identifier move" | [#43](https://github.com/martonpaulo/windowhop/issues/43) |
 | Where UI text lives | One English-only String Catalog, `Support/Localizable.xcstrings`, compiled into a committed `Support/en.lproj`; no translations | [AGENTS.md](../AGENTS.md), "Product copy" | [#39](https://github.com/martonpaulo/windowhop/issues/39) |
-| Credit in Settings › About | "Made by Marton Paulo", and the © line with the AltTab credit as text, without a link to the AltTab repository | [AGENTS.md](../AGENTS.md), "Copyright" | [#123](https://github.com/martonpaulo/windowhop/issues/123) |
+| Credit in Settings › About | The © line only, with the AltTab credit as text and no link to the AltTab repository; no separate header credit | [AGENTS.md](../AGENTS.md), "Copyright" | [#123](https://github.com/martonpaulo/windowhop/issues/123), [#132](https://github.com/martonpaulo/windowhop/issues/132) |
 | How screenshots reach 2x without a Retina screen | A temporary virtual HiDPI display (`CGVirtualDisplay`, private) in local capture tooling only, never in the app | [testing.md](testing.md), screenshot requirements | [#116](https://github.com/martonpaulo/windowhop/issues/116) |
 
 ## Accepted evidence gaps
