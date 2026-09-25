@@ -795,8 +795,6 @@ struct AboutPane: View {
                         .font(.title2.weight(.semibold))
                     Text("Switch between windows, not just apps.")
                         .foregroundStyle(.secondary)
-                    Text("Made by Marton Paulo")
-                        .settingsNote()
                     Text(versionLine)
                         .settingsNote()
                         .textSelection(.enabled)

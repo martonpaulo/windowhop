@@ -1999,7 +1999,7 @@ body.is-update {
   margin-top: var(--space-m);
 }
 
-.demo:not(.is-ready) /* --- 8. Motion ---------------------------------------------------------------------
+/* --- 8. Motion ---------------------------------------------------------------------
    Sections fade up once as they scroll into view (scripts/main.js adds
    .is-visible). The hidden start exists only with JavaScript (html.js, set in each
    page's head) and with motion allowed, so nothing is ever hidden from a visitor

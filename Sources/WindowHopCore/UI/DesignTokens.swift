@@ -30,7 +30,9 @@ enum DesignTokens {
     static let settingsWindowChromeAllowance: CGFloat = 120
     static let settingsPaneMinimumHeight: CGFloat = 320
     static let settingsPaneFallbackDisplayHeight: CGFloat = 800
-    static let settingsRecorderWidth: CGFloat = 160
+    /// Holds the recording prompt, the widest title the recorder shows: about
+    /// 254 pt for a rounded button with the 13 pt system font (#131).
+    static let settingsRecorderWidth: CGFloat = 260
     static let settingsAboutIconSize: CGFloat = 64
     static let settingsAboutTitleSpacing: CGFloat = 3
     static let settingsAboutHeaderPadding: CGFloat = 4

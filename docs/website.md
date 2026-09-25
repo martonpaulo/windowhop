@@ -59,8 +59,9 @@ Static validation has two parts, both run by `make validate`. `scripts/validate-
 skill-deck's canonical copy, kept byte-identical: the `CNAME` host, the canonical URL,
 `og:url`, no `noindex`, `robots.txt` and `sitemap.xml`. The "GitHub Pages site" section of
 `scripts/validate.sh` holds WindowHop's own site rules, described below: required files,
-version and download sync with `Support/Info.plist`, markers, favicon sizes, 404 parity,
-external links and local references.
+version and download sync with `Support/Info.plist`, markers, no stylesheet rule whose
+selector runs into an at-rule (#133), favicon sizes, 404 parity, external links and local
+references.
 
 CI currently performs static site validation; it does not run either browser engine.
 Use existing browser tooling for interaction and computed-style checks, and record the

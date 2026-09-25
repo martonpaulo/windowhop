@@ -155,6 +155,22 @@ extension SharedAppState {
                 sourceLocation: sourceLocation)
         }
 
+        /// The recorder has a fixed width in Settings › Shortcuts, so every title it
+        /// shows must fit inside it: the recording prompt, the idle prompt and the
+        /// widest chord. The recording prompt used to be cut off (#131).
+        @Test func recorderWidthHoldsEveryTitle() throws {
+            let control = try recorder()
+            #expect(control.intrinsicContentSize.width <= DesignTokens.settingsRecorderWidth)
+
+            model.shortcut = PersistentShortcut(
+                keyCode: 111, modifiers: [.maskControl, .maskAlternate, .maskShift, .maskCommand])
+            flushUpdates()
+            #expect(control.intrinsicContentSize.width <= DesignTokens.settingsRecorderWidth)
+
+            _ = startRecording(control)
+            #expect(control.intrinsicContentSize.width <= DesignTokens.settingsRecorderWidth)
+        }
+
         /// Positive control: a key sent through AppKit's dispatch reaches the
         /// recorder's monitor in the test process.
         @Test func sentChordIsCapturedAndEndsRecording() throws {
