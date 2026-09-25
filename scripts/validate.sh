@@ -341,6 +341,29 @@ windowhop_site_checks() (
         exit 1
       }
     done
+    # A selector left without its block runs into the next at-rule once comments are
+    # dropped, and the browser discards both: `@keyframes rise` vanished that way (#133).
+    # Every rule prelude (the text before a `{`) that holds `@` after its first
+    # character is such a selector. Comments become their newlines so lines stay true.
+    python3 - $(find site -name '*.css' | sort) <<'PY' || exit 1
+import re, sys
+failed = False
+for path in sys.argv[1:]:
+    text = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), open(path).read(), flags=re.S)
+    start = 0
+    for index, char in enumerate(text):
+        if char in "};":
+            start = index + 1
+        elif char == "{":
+            prelude = text[start:index]
+            stripped = prelude.strip()
+            if "@" in stripped[1:]:
+                line = text.count("\n", 0, start + len(prelude) - len(prelude.lstrip())) + 1
+                print(f"{path}:{line}: a rule's selector runs into an at-rule: {' '.join(stripped.split())}", file=sys.stderr)
+                failed = True
+            start = index + 1
+sys.exit(1 if failed else 0)
+PY
     # About (#123) and the site keep the AltTab credit as text; a bare "AltTab on GitHub"
     # link read as WindowHop's own repository.
     if grep -Fq 'AltTab on GitHub' "${pages[@]}"; then
