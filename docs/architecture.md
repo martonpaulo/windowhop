@@ -69,8 +69,11 @@ their object without a global:
    generation; a retry, late result, or window subscription whose generation is no longer
    current does nothing, and `stop` is terminal, so pending work cannot revive a removed
    app. `WindowStore.discoverWindows` also drops requests for an app it no longer tracks.
-   Removal reads the departed app's `processIdentifier` after the main-queue hop and
-   requires `isTerminated`. Measured for #81 on macOS 26 (400 launch/exit cycles of a
+   Removal matches each departed app to a tracked one by identity (`isEqual`, through
+   `WindowHopKit/AppDeparture`), never by the departed object's `processIdentifier`,
+   and does not require `isTerminated`; an app that is still listed in
+   `runningApplications` is kept (#136, reported on macOS 27.0 as blank tiles that stayed
+   until WindowHop restarted). Measured earlier for #81 on macOS 26 (400 launch/exit cycles of a
    disposable app: SIGTERM, exit 50 ms after launch, Quit, early SIGKILL): every tracked
    app's departure arrived with its original pid and `isTerminated == true`, and none
    stayed tracked. The KVO change can land up to ~2 s after the app leaves
