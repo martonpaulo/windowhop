@@ -123,7 +123,7 @@ creating a release.
 ## Debug and visual harness
 
 ```sh
-.build/debug/WindowHop --dump-windows
+.build/debug/WindowHop --dump-windows [--wait <seconds>]
 .build/debug/WindowHop --dump-permissions
 .build/debug/WindowHop --dump-previews
 .build/debug/WindowHop --demo-switcher [--dark] [--many]
@@ -160,6 +160,79 @@ defaults before capturing and restore them afterwards.
 Development comparison captures should retain the previous design plus the selected
 borderless/near-borderless, separator, and focus-plate candidates under `artifacts/`.
 Only the selected coherent implementation belongs in runtime code and published images.
+
+### Diagnosing a missing window
+
+Use this procedure when a window is on screen but the switcher does not list it (#156).
+The commands print window titles only in your terminal, and the unified log marks titles
+private. Never paste titles, URLs, document names or screenshots of personal windows into
+a public issue: report app names, counts, phases and timings instead.
+
+1. Compare the running app with a fresh engine:
+
+   ```sh
+   .build/debug/WindowHop --dump-windows
+   ```
+
+   If the fresh dump lists the window and the running app does not, the running app lost
+   state: continue with step 2. If neither lists it, public AX does not report it as a
+   window. Check what the app reports, then `WindowEligibility`:
+
+   ```sh
+   osascript -e 'tell application "System Events" to tell process "<App>" to get {subrole, size} of every window'
+   ```
+
+2. Read the running app's counts while you press ⌘Tab (`pgrep -x WindowHop` gives its pid):
+
+   ```sh
+   log stream --level debug --style compact --predicate 'processID == <pid> AND subsystem == "com.martonpaulo.windowhop"'
+   ```
+
+   `snapshot: tracked N, eligible M, excluded [...]` names every display rule that hid a
+   window. A window that is not tracked, or that is tracked but not an actual window, is
+   not counted there.
+
+3. Name the entries of the open switcher without a screenshot. The tiles expose their
+   titles to accessibility; the script opens a session, reads them and closes it with
+   Escape:
+
+   ```sh
+   osascript \
+     -e 'tell application "System Events"' \
+     -e 'key down command' -e 'key code 48' -e 'delay 0.8' \
+     -e 'set found to {}' \
+     -e 'set parts to entire contents of first window of (first process whose unix id is <pid>)' \
+     -e 'repeat with e in parts' \
+     -e 'try' -e 'if class of e is static text and value of e is not "" then set end of found to value of e' -e 'end try' \
+     -e 'end repeat' \
+     -e 'key code 53' -e 'key up command' -e 'return found' -e 'end tell'
+   ```
+
+4. Check whether the app's observer gave up. With the stream from step 2 running, activate
+   the app or open a new window of it. A healthy observer logs `windows` lines for it. Each
+   lifecycle step is a line `observer pid=<app pid> <event> -> <phase>`: `-> idle` after a
+   series of `subscriptionFailed` means WindowHop stopped listening to that app, and the
+   next session or activation logs `revive -> subscribing`. Debug lines are not stored, so a
+   failure at login is visible only if the stream was already running; `log show` cannot
+   recover it later.
+
+5. Reproduce an app that does not answer Accessibility while WindowHop starts. Calculator
+   holds no data, so freezing it is safe:
+
+   ```sh
+   open -a Calculator; sleep 3; kill -STOP "$(pgrep -x Calculator)"
+   .build/debug/WindowHop --dump-windows --wait 66 &
+   sleep 50; kill -CONT "$(pgrep -x Calculator)"
+   sleep 3; osascript -e 'tell application "Calculator" to activate'
+   wait
+   ```
+
+   About 30 `subscriptionFailed` lines end in `-> idle` after about 45 s, because each
+   attempt waits for the 1 s AX messaging timeout. The activation then revives the
+   observer and the dump lists Calculator. Wait a few seconds after `SIGCONT` before the
+   activation: a frozen app cannot become active, and an activation that never happens
+   proves nothing. A real browser is a poor substitute: launched by hand, it usually
+   answers within a second, so freezing it after launch misses the window.
 
 ## Sparkle end-to-end
 

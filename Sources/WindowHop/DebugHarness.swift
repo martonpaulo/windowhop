@@ -5,8 +5,11 @@ import WindowHopKit
 /// Development/QA harness, reachable only through explicit flags on the binary.
 /// - `--demo-switcher [--dark]`: renders the switcher panel with sample rows,
 ///   without needing Accessibility permission. Used for screenshots and layout QA.
-/// - `--dump-windows`: starts the real engine, waits for discovery, prints the
-///   switcher list with timings, and exits. Requires Accessibility permission.
+/// - `--dump-windows [--wait <seconds>]`: starts the real engine, waits for discovery
+///   (3 s unless `--wait` says otherwise), prints the switcher list with timings, and
+///   exits. A longer wait outlives the launch retries of an app that does not answer
+///   Accessibility (docs/testing.md › Diagnosing a missing window). Requires
+///   Accessibility permission.
 /// - `--dump-permissions`: prints the app identity's effective Accessibility and
 ///   Screen Recording states without prompting.
 /// - `--dump-previews`: prints which window-server window each switcher entry is
@@ -68,7 +71,10 @@ enum DebugHarness {
             return true
         }
         if arguments.contains("--dump-windows") {
-            runWindowDump()
+            let wait = arguments.firstIndex(of: "--wait").flatMap { index in
+                arguments.count > index + 1 ? TimeInterval(arguments[index + 1]) : nil
+            }
+            runWindowDump(wait: wait ?? 3)
             return true
         }
         if arguments.contains("--dump-permissions") {
@@ -500,7 +506,7 @@ enum DebugHarness {
         writeLine("READY")
     }
 
-    private static func runWindowDump() {
+    private static func runWindowDump(wait: TimeInterval) {
         guard AccessibilityPermission.isGranted else {
             writeLine("dump-windows: Accessibility permission not granted for this process")
             exit(1)
@@ -514,7 +520,7 @@ enum DebugHarness {
             preferences: preferences,
             previews: PreviewProvider(preferences: preferences))
         store.start()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) {
             let snapshotStart = Date()
             let items = store.snapshot()
             let snapshotMs = Date().timeIntervalSince(snapshotStart) * 1000
