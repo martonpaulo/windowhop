@@ -53,6 +53,18 @@ git remote add upstream https://github.com/lwouis/alt-tab-macos
 
 ## Corrected (ported rule intentionally diverges from upstream)
 
+- App subscription give-up. In `317a485b`, `src/logic/AXCallScheduler.swift` stops retrying
+  an app subscription after 60 s. Recovery comes from the refresh that every switcher open
+  runs (`manuallyRefreshAllWindows`): a window it finds creates a `Window`, and `Window.init`
+  subscribes the app again. Upstream later added `3907038` (v11.3.1, "check for missing apps
+  on trigger"). WindowHop has no full refresh on open, so its port gave up for the whole
+  session: an app still unresponsive after 30 attempts, such as a browser that opens at
+  login, never appeared. `ObserverLifecycle` now takes `revive`, sent at each session
+  start and each `NSWorkspace` activation of the app. It makes one more attempt with no
+  retries (WindowHop issue #156). AeroSpace (re-registration on every refresh) and
+  Hammerspoon (`hs.window.filter` re-registers an app when it is activated) confirm the
+  event-driven approach.
+
 - Window focus. Before `3f5ea251` (2019-12-27) AltTab fronted a window with
   `app.activate(options: [.activateIgnoringOtherApps])` plus `kAXRaiseAction`; that commit
   moved to the private `_SLPSSetFrontProcessWithOptions`, which fronts a process *for one
@@ -204,10 +216,10 @@ Upstream commits after the base revision that the same pass mapped to WindowHop 
 
 | Repository | License (from file) | Reviewed revision | Private API | Areas | Verdict | Issues |
 | --- | --- | --- | --- | --- | --- | --- |
-| [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) | MIT | `5f08f9c0`, 2026-09-21 | Partial (`_AXUIElementGetWindow` only) | `WindowHopKit`, `Engine/` | Reference only for code (private API); its `axDumps/` corpus is imported as test data (see below); latest-wins cancellable focus job corroborates [#41](https://github.com/martonpaulo/windowhop/issues/41) | [#41](https://github.com/martonpaulo/windowhop/issues/41), [#90](https://github.com/martonpaulo/windowhop/issues/90), [#115](https://github.com/martonpaulo/windowhop/issues/115) |
+| [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) | MIT | `5f08f9c0`, 2026-09-21 | Partial (`_AXUIElementGetWindow` only) | `WindowHopKit`, `Engine/` | Reference only for code (private API); its `axDumps/` corpus is imported as test data (see below); latest-wins cancellable focus job corroborates [#41](https://github.com/martonpaulo/windowhop/issues/41) | [#41](https://github.com/martonpaulo/windowhop/issues/41), [#90](https://github.com/martonpaulo/windowhop/issues/90), [#115](https://github.com/martonpaulo/windowhop/issues/115), [#156](https://github.com/martonpaulo/windowhop/issues/156) |
 | [mrkai77/Loop](https://github.com/mrkai77/Loop) | GPL-3.0 | `df26d565`, 2026-09-06 | Yes (SkyLight, `@_silgen_name`) | `Input/` | Reference only; its event tap re-enables only after `tapDisabledByTimeout`, not `tapDisabledByUserInput`, and tears down after a restart cascade | [#84](https://github.com/martonpaulo/windowhop/issues/84) |
 | [rxhanson/Rectangle](https://github.com/rxhanson/Rectangle) | MIT (GitHub reports NOASSERTION because of the Spectacle notice) | `12a9bc79`, 2026-09-16 | Partial (`_AXUIElementGetWindow`) | `Engine/` | Reference only (window management is a non-goal; `AXEnhancedUserInterface` handling matters only when setting frames) | none |
-| [Hammerspoon/hammerspoon](https://github.com/Hammerspoon/hammerspoon) | MIT | `23e387e2`, 2026-07-08 | Partial (`_AXUIElementGetWindow`, `CGSSetDebugOptions`, Spaces) | `Engine/` | Reference only (`hs.window.filter` default app skip lists and allowed roles) | none |
+| [Hammerspoon/hammerspoon](https://github.com/Hammerspoon/hammerspoon) | MIT | `23e387e2`, 2026-07-08 | Partial (`_AXUIElementGetWindow`, `CGSSetDebugOptions`, Spaces) | `Engine/` | Reference only (`hs.window.filter` default app skip lists and allowed roles; re-registers an unobserved app when it is activated) | [#156](https://github.com/martonpaulo/windowhop/issues/156) |
 | [tmandry/Swindler](https://github.com/tmandry/Swindler) | MIT | `bf2c42f1`, 2022-09-05 (last push 2023-12-31) | No | `Engine/` | Reference only (unmaintained, PromiseKit-based; public-API Space identity via per-display tracker windows and fake-AX test doubles) | none |
 | [ianyh/Amethyst](https://github.com/ianyh/Amethyst) | MIT | `6508ee2c`, 2026-08-19 | Yes (`CGSCopySpaces*`, `_SLPSSetFrontProcessWithOptions`) | none | Excluded (tiling non-goal; private Spaces and focus) | none |
 | [asmvik/yabai](https://github.com/asmvik/yabai) | MIT | `dd845723`, 2026-06-14 | Yes (SkyLight; scripting addition needs SIP partially disabled) | none | Excluded (private API, SIP) | none |

@@ -62,6 +62,11 @@ their object without a global:
 1. `WindowStore.start()` KVO-observes `NSWorkspace.runningApplications`; each app gets a
    `TrackedApp` with one `AXObserver` (run-loop source on the dedicated AX events thread).
    Subscription retries handle apps that are still launching (ported from AltTab).
+   When they run out, or the app refuses the subscription, the observer goes back to
+   `idle` and the app sends WindowHop nothing, not even a new window. Each switcher
+   session start and each `NSWorkspace` activation of the app therefore send `revive`:
+   one more attempt with no retries, so an app that was slow at login is not hidden
+   for the whole session, and a hung app costs one attempt per trigger (#156).
    The AX reads queue is the single owner of each app's observer state, held by an
    `AppObserver` actor whose executor is that queue: main reads eligibility and queues
    `start`/`stop` on it in FIFO order, where the pure `ObserverLifecycle`

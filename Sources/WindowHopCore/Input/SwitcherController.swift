@@ -197,6 +197,8 @@ public final class SwitcherController {
             store.pruneIfDead(items.compactMap { $0.window?.ax })
             // a live window merge sends no notification; see the tab bars now
             store.rereadTabGroups(of: items)
+            // an app that ignored AX while it launched is otherwise never seen (#156)
+            store.reviveObservers()
             scheduleReveal()
         case .select(let index):
             guard isRevealed else { break }

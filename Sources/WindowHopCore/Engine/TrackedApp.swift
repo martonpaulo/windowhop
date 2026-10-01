@@ -74,6 +74,13 @@ public final class TrackedApp {
         observer.enqueue(.start)
     }
 
+    /// Gives an observer that ran out of launch retries, or was refused, one more
+    /// attempt; one that is subscribing or observed ignores it (#156).
+    func reviveIfEligible() {
+        guard runningApplication.activationPolicy != .prohibited else { return }
+        observer.enqueue(.revive)
+    }
+
     /// Stops observing for good: pending retries, late subscription results and
     /// window subscriptions of this app all find their generation stale afterwards.
     /// The queued stop holds the observer strongly, so it still runs (and detaches
@@ -139,6 +146,8 @@ actor AppObserver {
     /// Feeds one event to the lifecycle and runs its commands.
     private func handle(_ event: ObserverLifecycle.Event) {
         let commands = lifecycle.handle(event)
+        // every session start revives every app; trace only the observers it restarts
+        guard event != .revive || !commands.isEmpty else { return }
         Log.windows.debug(
             """
             observer pid=\(self.pid, privacy: .public) \(String(describing: event), privacy: .public) \

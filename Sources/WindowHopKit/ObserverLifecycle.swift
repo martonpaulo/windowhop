@@ -11,7 +11,8 @@ import Foundation
 ///
 /// Phases:
 /// - idle:        not subscribed; `start` begins a new generation (first launch, or a
-///                restart after retries ran out or the app refused the subscription)
+///                restart after retries ran out or the app refused the subscription),
+///                and `revive` begins one with a single attempt
 /// - subscribing: an attempt of the current generation is in flight or scheduled
 /// - ready:       the app accepted the first notification; later `start`s are no-ops
 /// - stopped:     the app is no longer tracked
@@ -26,6 +27,11 @@ public struct ObserverLifecycle: Equatable, Sendable {
     public enum Event: Equatable, Sendable {
         /// The app is eligible for observation (launched, activation policy allows it).
         case start
+        /// The user is about to need the app's windows (a switcher session started, or
+        /// the app was activated): an observer that gave up or was refused tries once
+        /// more. One attempt and no retries, so a hung app costs one attempt per trigger
+        /// (#156).
+        case revive
         /// The first app-level notification was accepted.
         case subscriptionSucceeded(generation: UInt64)
         /// The attempt failed; `retryable` when the app was merely unresponsive
@@ -84,7 +90,11 @@ public struct ObserverLifecycle: Equatable, Sendable {
             generation &+= 1
             phase = .subscribing(generation: generation, attemptsLeft: maxAttempts)
             return [.subscribe(generation: generation)]
-        case (.subscribing, .start), (.ready, .start):
+        case (.idle, .revive):
+            generation &+= 1
+            phase = .subscribing(generation: generation, attemptsLeft: 1)
+            return [.subscribe(generation: generation)]
+        case (.subscribing, .start), (.ready, .start), (.subscribing, .revive), (.ready, .revive):
             // an attempt is already running, or the app is already observed
             return []
         case (.subscribing(let current, _), .subscriptionSucceeded(let result)) where result == current:

@@ -77,6 +77,50 @@ struct ObserverLifecycleTests {
         #expect(lifecycle.handle(.start) == [.subscribe(generation: 2)])
     }
 
+    /// #156: an app that stayed unresponsive through every launch retry was never
+    /// observed again; a later session or activation must give it another chance.
+    @Test func reviveAfterExhaustedRetriesSubscribesAndDiscovers() {
+        var lifecycle = makeLifecycle(attempts: 1)
+        _ = lifecycle.handle(.start)
+        _ = lifecycle.handle(.subscriptionFailed(generation: 1, retryable: true))
+        #expect(lifecycle.phase == .idle)
+        #expect(lifecycle.handle(.revive) == [.subscribe(generation: 2)])
+        #expect(
+            lifecycle.handle(.subscriptionSucceeded(generation: 2)) == [
+                .subscribeRemainingNotifications(generation: 2), .discoverWindows(generation: 2),
+            ])
+        #expect(lifecycle.phase == .ready(generation: 2))
+    }
+
+    @Test func reviveMakesOneAttemptAndSchedulesNoRetry() {
+        var lifecycle = makeLifecycle(attempts: 3)
+        _ = lifecycle.handle(.start)
+        _ = lifecycle.handle(.subscriptionFailed(generation: 1, retryable: false))
+        #expect(lifecycle.handle(.revive) == [.subscribe(generation: 2)])
+        // a hung app answers .cannotComplete again: back to idle, no retry storm
+        #expect(lifecycle.handle(.subscriptionFailed(generation: 2, retryable: true)) == [])
+        #expect(lifecycle.phase == .idle)
+        #expect(lifecycle.handle(.revive) == [.subscribe(generation: 3)])
+    }
+
+    @Test func reviveLeavesARunningOrEstablishedSubscriptionAlone() {
+        var lifecycle = makeLifecycle()
+        _ = lifecycle.handle(.start)
+        #expect(lifecycle.handle(.revive) == [])
+        #expect(lifecycle.phase == .subscribing(generation: 1, attemptsLeft: 3))
+        _ = lifecycle.handle(.subscriptionSucceeded(generation: 1))
+        #expect(lifecycle.handle(.revive) == [])
+        #expect(lifecycle.phase == .ready(generation: 1))
+    }
+
+    @Test func reviveNeverRevivesAStoppedObserver() {
+        var lifecycle = makeLifecycle()
+        _ = lifecycle.handle(.start)
+        _ = lifecycle.handle(.stop)
+        #expect(lifecycle.handle(.revive) == [])
+        #expect(lifecycle.phase == .stopped)
+    }
+
     @Test func discoveryIsRequestedOnceForTheFirstSuccess() {
         var lifecycle = makeLifecycle()
         _ = lifecycle.handle(.start)

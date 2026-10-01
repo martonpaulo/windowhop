@@ -79,6 +79,9 @@ public final class WindowStore {
         NSWorkspace.shared.notificationCenter.addObserver(
             self, selector: #selector(activeSpaceChanged),
             name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+        NSWorkspace.shared.notificationCenter.addObserver(
+            self, selector: #selector(applicationActivated(_:)),
+            name: NSWorkspace.didActivateApplicationNotification, object: nil)
         // trace only: display changes are correlated with inventory changes (#38)
         NotificationCenter.default.addObserver(
             self, selector: #selector(screenParametersChanged),
@@ -147,6 +150,25 @@ public final class WindowStore {
     func appActivated(pid: pid_t) {
         // no list change by itself; the focused-window event that follows updates MRU
         _ = apps[pid]
+    }
+
+    /// An app that was still unresponsive when its launch retries ran out sends no AX
+    /// notification at all, so its windows stay unknown for the whole session. Each
+    /// switcher session gives such observers one more attempt (#156); a successful one
+    /// discovers the app's windows, and an open session adds them in place.
+    public func reviveObservers() {
+        guard started else { return }
+        for app in apps.values { app.reviveIfEligible() }
+    }
+
+    /// The `NSWorkspace` activation, unlike the AX one, reaches us even when the app's
+    /// observer gave up (#156).
+    @objc private func applicationActivated(_ notification: Notification) {
+        guard
+            let running = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                as? NSRunningApplication
+        else { return }
+        apps[running.processIdentifier]?.reviveIfEligible()
     }
 
     func appHiddenChanged(pid: pid_t, isHidden: Bool) {

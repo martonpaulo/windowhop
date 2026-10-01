@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Slow apps no longer vanish from the switcher**: an app that did not respond while it
+  launched, such as a browser that opens at login, stayed out of the switcher until you
+  restarted it or WindowHop. WindowHop now tries again when you open the switcher or switch
+  to that app.
+
 ## [2.4.0] - 2026-09-25
 
 ### Added
