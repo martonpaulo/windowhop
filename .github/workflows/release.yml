@@ -178,7 +178,7 @@ jobs:
       - name: Notarize, staple, and validate app
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          scripts/notarize.sh "artifacts/WindowHop-$VERSION.zip"
+          scripts/notarize.sh --artifact "artifacts/WindowHop-$VERSION.zip"
           xcrun stapler staple build/WindowHop.app
           xcrun stapler validate build/WindowHop.app
           codesign --verify --deep --strict --verbose=2 build/WindowHop.app
@@ -214,7 +214,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DMG="artifacts/WindowHop-$VERSION.dmg"
-          scripts/notarize.sh "$DMG"
+          scripts/notarize.sh --artifact "$DMG"
           codesign --verify --verbose=2 "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
           scripts/verify-dmg-branding.sh --dmg "$DMG"

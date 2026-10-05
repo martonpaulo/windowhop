@@ -10,14 +10,50 @@
 #   CI:    NOTARY_API_KEY_PATH, NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID
 #   Mac:   the Keychain profile NOTARY_PROFILE, default skd-notary
 #
-# Usage: scripts/notarize.sh <artifact.dmg|artifact.pkg|artifact.zip>
+# Usage: scripts/notarize.sh --artifact <artifact.dmg|artifact.pkg|artifact.zip>
+# The artifact is resolved against the caller's directory before the cd into the repository.
+# A bare path still works with a warning until every app passes --artifact (#370).
 set -euo pipefail
 
-if [[ $# -ne 1 || ! -f $1 ]]; then
-  echo "usage: $0 <artifact.dmg|artifact.pkg|artifact.zip>" >&2
-  exit 2
+usage() {
+  cat <<USAGE
+usage: scripts/notarize.sh --artifact <artifact.dmg|artifact.pkg|artifact.zip>
+  --artifact <path>   the disk image, installer package or ZIP to notarize
+  --help              show this help
+Credentials, chosen by environment and never printed:
+  CI:    NOTARY_API_KEY_PATH, NOTARY_API_KEY_ID, NOTARY_API_ISSUER_ID
+  Mac:   the Keychain profile NOTARY_PROFILE, default skd-notary
+USAGE
+}
+
+fail_usage() { echo "error: $1" >&2; usage >&2; exit 2; }
+need_value() { [[ $# -ge 2 && -n $2 && $2 != --* ]] || fail_usage "$1 needs a value"; }
+
+artifact=''
+positional=''
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --artifact)
+      need_value "$@"
+      [[ -z $artifact ]] || fail_usage 'give --artifact once'
+      artifact=$2
+      shift 2
+      ;;
+    --help) usage; exit 0 ;;
+    -*) fail_usage "unknown option $1" ;;
+    *) [[ -z $positional ]] || fail_usage 'give one artifact'; positional=$1; shift ;;
+  esac
+done
+if [[ -n $positional ]]; then
+  [[ -z $artifact ]] || fail_usage 'give the artifact once, with --artifact'
+  echo "warning: scripts/notarize.sh <path> is deprecated and will be removed; call scripts/notarize.sh --artifact $positional" >&2
+  artifact=$positional
 fi
-artifact=$1
+[[ -n $artifact ]] || fail_usage '--artifact is required'
+[[ -f $artifact ]] || fail_usage "artifact $artifact not found"
+# Resolved before the cd, so a relative path means what it meant to the caller.
+artifact=$(cd "$(dirname "$artifact")" && pwd)/$(basename "$artifact")
+cd "$(dirname "$0")/.."
 
 if [[ -n ${NOTARY_API_KEY_PATH:-} ]]; then
   : "${NOTARY_API_KEY_ID:?set NOTARY_API_KEY_ID with NOTARY_API_KEY_PATH}"
