@@ -9,8 +9,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "07:00"
-      timezone: Europe/Madrid
+      time: "06:17"
+      timezone: UTC
     cooldown:
       default-days: 3
       semver-major-days: 30
@@ -30,8 +30,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "07:15"
-      timezone: Europe/Madrid
+      time: "06:17"
+      timezone: UTC
     cooldown:
       default-days: 3
     open-pull-requests-limit: 5
