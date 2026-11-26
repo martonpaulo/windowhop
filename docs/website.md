@@ -33,6 +33,10 @@ the `<noscript>` screenshot stands in, and the loop stops while the demo is off 
 (`site/scripts/main.js`). The hidden start exists only when the inline head script set
 `html.js` and motion is allowed, so nothing is hidden without JavaScript or with Reduce Motion.
 
+**Text width.** Text fills its column, the page width: no rule gives a paragraph, a
+heading or a list a width cap of its own (no `max-width` on text, no `ch` length).
+`scripts/check-text-width.py`, run by `make validate`, fails on one (#171).
+
 **Interaction rules** live in one place in `site/styles/main.css` (section 2): anything
 clickable shows the pointer and nothing else does; controls and drawings are not selectable,
 running text is; only clickable elements move on hover, lifting by `--lift` with one shared
@@ -132,6 +136,9 @@ generated page is committed. `appcast.xml` links these pages: the canonical
 `make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new
 item, then dispatches Deploy once the release is published, so the page exists when clients
 see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
+Code spans follow CommonMark (a run of backticks closes only on a run of the same length),
+and a span that holds only a key or a key chord (`⌘⇧Tab`) renders as one keycap per key,
+as the other pages show keys; `tests/scripts/site-text-tests.py` covers both (#171).
 
 ## GitHub Pages
 

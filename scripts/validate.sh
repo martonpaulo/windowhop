@@ -549,6 +549,14 @@ else
     fail "GitHub Pages site failed the WindowHop checks"
 fi
 
+# --- text width (#171) -------------------------------------------------------------
+# Text fills its column: no stylesheet rule gives text a width cap of its own.
+if python3 -B scripts/check-text-width.py $(find site -name '*.css' | sort); then
+    pass "no text width cap on the site"
+else
+    fail "a site stylesheet caps text width; let the text fill its column (#171)"
+fi
+
 # --- release notes pages (#128) ------------------------------------------------
 # Sparkle's update window shows the site's notes page for each version, written at
 # deploy time from CHANGELOG.md. The script must render the current changelog, and
@@ -614,6 +622,7 @@ fi
 # These run the real scripts in isolation, publish-release.sh against a fake
 # `gh`: no network, no token, no signing material, no real release.
 for fixture in tests/scripts/publish-release-tests.sh tests/scripts/release-notes-tests.sh \
+    tests/scripts/site-text-tests.py \
     tests/scripts/stamp-app-metadata-tests.sh tests/scripts/verify-update-continuity-tests.sh; do
     if output=$("$fixture" 2>&1); then
         pass "$(printf '%s' "$output" | tail -1)"

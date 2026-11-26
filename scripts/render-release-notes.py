@@ -16,7 +16,10 @@ The deploy workflow runs this on its staged copy, like render-download-count.sh:
 nothing it writes is committed. The pages carry `noindex`; the changelog is not a
 search landing page. Only the Markdown the changelog uses is understood: `###`
 headings, `- ` bullets with indented continuation lines, paragraphs, **bold**,
-`code` and [links](url).
+`code` and [links](url). A code span follows CommonMark: it opens with a run of
+backticks and closes with a run of the same length, so ``` `` ` `` ``` is one span
+holding a backtick (#171). A span that holds only a key or a key chord (`⌘⇧Tab`,
+`` ` ``) becomes one keycap per key, as the site's pages show keys.
 """
 
 import datetime
@@ -28,21 +31,80 @@ import sys
 ENTRY = re.compile(r"^## \[(\d+\.\d+\.\d+)\] - (\d{4}-\d{2}-\d{2})\s*$")
 
 
-def inline(text):
-    """Escapes text, then turns the changelog's inline Markdown into HTML."""
-    text = html.escape(text, quote=False)
+MODIFIERS = "⌘⌥⇧⌃"
+NAMED_KEYS = ("Tab", "Return", "Space", "Esc", "Escape", "Delete", "Enter")
+CHORD = re.compile(rf"([{MODIFIERS}]*)({'|'.join(NAMED_KEYS)}|[←→↑↓]|\S)")
+
+
+def code_spans(text):
+    """Splits text into ("text", s) and ("code", s) parts, as CommonMark reads code spans:
+    a run of N backticks opens a span that only a run of exactly N backticks closes, and
+    one space is stripped from each end when both ends have one. A run with no closer
+    stays literal text."""
+    parts, plain, i = [], "", 0
+    while i < len(text):
+        if text[i] != "`":
+            plain += text[i]
+            i += 1
+            continue
+        run = len(text[i:]) - len(text[i:].lstrip("`"))
+        closer = re.compile(rf"(?<!`)`{{{run}}}(?!`)").search(text, i + run)
+        if not closer:
+            plain += text[i:i + run]
+            i += run
+            continue
+        content = text[i + run:closer.start()]
+        if len(content) > 1 and content[0] == content[-1] == " " and content.strip():
+            content = content[1:-1]
+        if plain:
+            parts.append(("text", plain))
+            plain = ""
+        parts.append(("code", content))
+        i = closer.end()
+    if plain:
+        parts.append(("text", plain))
+    return parts
+
+
+def keys(content):
+    """The keys of a code span that is a key chord, in order, or None for any other code."""
+    match = CHORD.fullmatch(content)
+    if not match:
+        return None
+    return list(match.group(1)) + [match.group(2)]
+
+
+def code_html(content):
+    chord = keys(content)
+    if chord:
+        return "".join(f"<kbd>{html.escape(key, quote=False)}</kbd>" for key in chord)
     # an option such as --cask is kept whole (styles: code .flag), not split at its hyphens
-    text = re.sub(
-        r"`([^`]+)`",
-        lambda m: "<code>" + re.sub(r"(?<![\w-])(--[a-z]+)", r'<span class="flag">\1</span>', m.group(1)) + "</code>",
-        text,
-    )
+    escaped = html.escape(content, quote=False)
+    return "<code>" + re.sub(r"(?<![\w-])(--[a-z]+)", r'<span class="flag">\1</span>', escaped) + "</code>"
+
+
+def text_html(text):
+    """Escapes text, then turns **bold** and [links](url) into HTML."""
+    text = html.escape(text, quote=False)
     text = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", text)
     return re.sub(
         r"\[([^\]]+)\]\((https?://[^)\s]+)\)",
         lambda m: f'<a target="_blank" href="{html.escape(m.group(2))}" rel="noopener">{m.group(1)}</a>',
         text,
     )
+
+
+def inline(text):
+    """The changelog's inline Markdown as HTML. Code spans are cut out first and stand in
+    as placeholders, so a `*` or `[` inside one is never read as bold or a link."""
+    spans, plain = [], ""
+    for kind, value in code_spans(text):
+        if kind == "code":
+            plain += f"\x00{len(spans)}\x00"
+            spans.append(code_html(value))
+        else:
+            plain += value.replace("\x00", "")
+    return re.sub("\x00(\\d+)\x00", lambda m: spans[int(m.group(1))], text_html(plain))
 
 
 def entries(changelog):

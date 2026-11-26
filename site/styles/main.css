@@ -1,9 +1,10 @@
 /* Fleet typography standard, 2026-09. This :root block is identical, in this
    order, in windowhop, mailbell, meantime, smart-desk and orbit: the five sites
    share a design but no package, so copying is the cost and identical ordering
-   is what keeps the drift greppable. The -apple-system stack is deliberate and
-   stays: these are landing pages for Mac apps, so the page wears the platform's
-   own face. */
+   is what keeps the drift greppable. The three --measure tokens are gone: no text
+   on these sites takes a width cap (#171). The -apple-system stack is deliberate
+   and stays: these are landing pages for Mac apps, so the page wears the
+   platform's own face. */
 :root {
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
   --text-xs: 0.75rem;
@@ -23,9 +24,6 @@
   --weight-body: 400;
   --weight-strong: 600;
   --weight-display: 700;
-  --measure: 68ch;
-  --measure-narrow: 44ch;
-  --measure-title: 16ch;
 }
 
 /* ==========================================================================
@@ -99,12 +97,7 @@
 
   /* Sizes */
   --page-width: min(73.75rem, 100% - 2.5rem);   /* 1180px, 20px gutters */
-  --width-hero-copy: 51.25rem;                  /* 820px */
   --width-demo: 65rem;                          /* 1040px */
-  /* Running text stops at 80 characters, the upper end of a comfortable line;
-     the full 1180px page would carry about 140. Headings have no cap: they are
-     short, and balanced wrapping already evens their lines. */
-  --measure-prose: 80ch;
   --control-height: 3rem;
   --control-height-s: 2.25rem;
   --keycap-height: 3rem;
@@ -367,7 +360,6 @@ main {
 .section > p:not(.eyebrow),
 .showcase-copy > p:not(.eyebrow),
 .lead {
-  max-width: var(--measure-prose);
   margin: var(--space-m) 0 0;
   color: var(--secondary);
   font-size: var(--text-md);
@@ -594,10 +586,9 @@ main {
   font-size: var(--text-sm);
 }
 
-/* The command is a <p>, so the section's paragraph rule (80ch, larger text)
-   would otherwise win and let it grow past a phone's width. */
+/* The command is a <p>, so the section's paragraph rule (larger, secondary
+   text) would otherwise win. */
 .section > p.command {
-  max-width: 100%;
   margin-top: var(--space-2xs);
   color: #e6e6e6;
   font-size: var(--text-sm);
@@ -854,14 +845,8 @@ figcaption {
   text-align: center;
 }
 
-.hero-copy {
-  max-width: var(--width-hero-copy);
-  margin: 0 auto;
-}
-
 h1 {
-  max-width: var(--measure-title);
-  margin: 0 auto;
+  margin: 0;
   font-size: var(--text-3xl);
   font-weight: var(--weight-display);
   line-height: var(--leading-tight);
@@ -876,7 +861,6 @@ h1 {
 }
 
 .hero-summary {
-  max-width: var(--measure-narrow);
   margin: var(--space-m) auto var(--space-l);
   color: var(--secondary);
   font-size: var(--text-lg);
@@ -1303,14 +1287,12 @@ h1 {
 }
 
 .page-hero h1 {
-  max-width: none;
   margin: 0;
   font-size: var(--text-2xl);
   text-align: left;
 }
 
 .page-hero .hero-summary {
-  max-width: var(--measure-prose);
   margin: var(--space-m) 0 0;
 }
 
@@ -1431,9 +1413,8 @@ h1 {
   color: var(--accent);
 }
 
-/* Small print under a full-width table follows the table's width. */
+/* Small print under a full-width table. */
 .section > p.sources {
-  max-width: none;
   font-size: var(--text-sm);
 }
 
@@ -1477,8 +1458,9 @@ body.is-update {
   font-size: var(--text-xl);
 }
 
-/* full lines: WebKit's pretty wrapping shortened them, and every line is window height */
-.is-update .notes-list li {
+/* Full lines on every notes page: a balanced item broke halfway across its column,
+   and WebKit's pretty wrapping shortened lines in the update window (#171). */
+.notes-list li {
   text-wrap: wrap;
 }
 
@@ -1494,8 +1476,8 @@ body.is-update {
   margin-top: var(--space-xs);
 }
 
-/* No 80-character cap here: the items are short and uneven, and the cap read as
-   a margin that is not there. */
+/* Like all text on the site, the notes fill their column: no text takes a width
+   cap (#171). */
 .notes-list {
   padding-left: 1.2em;
   color: var(--secondary);
