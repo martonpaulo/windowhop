@@ -550,11 +550,12 @@ else
 fi
 
 # --- text width (#171) -------------------------------------------------------------
-# Text fills its column: no stylesheet rule gives text a width cap of its own.
-if python3 -B scripts/check-text-width.py $(find site -name '*.css' | sort); then
-    pass "no text width cap on the site"
+# Text fills its column and the page reserves the scrollbar's space. scripts/text_width_check.py
+# is Workbench's canonical copy (martonpaulo/workbench#2124): never edit it here.
+if python3 -B scripts/text_width_check.py site; then
+    pass "no text width cap on the site, and the scrollbar's space is reserved"
 else
-    fail "a site stylesheet caps text width; let the text fill its column (#171)"
+    fail "a site page or stylesheet caps text width or lacks scrollbar-gutter: stable (#171)"
 fi
 
 # --- release notes pages (#128) ------------------------------------------------

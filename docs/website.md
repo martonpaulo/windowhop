@@ -34,8 +34,10 @@ the `<noscript>` screenshot stands in, and the loop stops while the demo is off 
 `html.js` and motion is allowed, so nothing is hidden without JavaScript or with Reduce Motion.
 
 **Text width.** Text fills its column, the page width: no rule gives a paragraph, a
-heading or a list a width cap of its own (no `max-width` on text, no `ch` length).
-`scripts/check-text-width.py`, run by `make validate`, fails on one (#171).
+heading or a list a width cap of its own (no `max-width` on text, no `ch` length), and `html`
+reserves the scrollbar's space (`scrollbar-gutter: stable`), so short and long pages share one
+left edge. `scripts/text_width_check.py`, Workbench's canonical copy run by `make validate`, fails
+on either (#171).
 
 **Interaction rules** live in one place in `site/styles/main.css` (section 2): anything
 clickable shows the pointer and nothing else does; controls and drawings are not selectable,

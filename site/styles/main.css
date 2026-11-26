@@ -165,9 +165,19 @@
   box-sizing: border-box;
 }
 
+/* The scrollbar's space is always reserved, so a short page and a long page
+   keep one content left edge and nothing shifts sideways between them
+   (martonpaulo/workbench#2124); a browser without scrollbar-gutter always shows the bar. */
 html {
   scroll-behavior: smooth;
   scroll-padding-top: var(--header-height);
+  scrollbar-gutter: stable;
+}
+
+@supports not (scrollbar-gutter: stable) {
+  html {
+    overflow-y: scroll;
+  }
 }
 
 /* The footer sits at the bottom of the viewport on a short page (the 404 above

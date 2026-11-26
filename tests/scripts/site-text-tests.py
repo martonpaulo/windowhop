@@ -21,7 +21,7 @@ def load(name):
 
 
 notes = load("render-release-notes")
-width = load("check-text-width")
+width = load("text_width_check")
 passed = failed = 0
 
 
@@ -61,11 +61,13 @@ check("no stray backtick in any rendered 2.4.0 line",
 good = (".container { width: var(--page-width); } img { max-width: 100%; } .x { max-width: none; }"
         ".mini-window { max-width: 10rem; } @media (max-width: 640px) { .a { width: 1rem; } }"
         "/* .old { max-width: 80ch; } */")
-check("column-keeping widths, drawings, media queries and comments pass", width.problems(good), [])
+check("column-keeping widths, drawings, media queries and comments pass", width.css_problems(good), [])
 for bad in (".section p { max-width: var(--measure-prose); }", ":root { --measure: 68ch; }",
             "h1 { max-width: 16ch; }", ".hero-copy { max-width: 51.25rem; }", ".lead { width: 60ch; }",
             ".notes { max-inline-size: 40rem; }"):
-    check(f"a text width cap fails: {bad}", len(width.problems(bad)), 1)
+    check(f"a text width cap fails: {bad}", len(width.css_problems(bad)), 1)
+check("the reserved scrollbar space passes", width.reserves_gutter("html { scrollbar-gutter: stable; }"), True)
+check("a page without it fails", width.reserves_gutter("body { margin: 0; }"), False)
 
 print(f"site text: {passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)
