@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Canonical Sparkle appcast script for the owner's macOS apps. Copy it unchanged to
-# scripts/make-appcast.sh in each app; project-setup alignment reports a drifted copy.
+# scripts/make-appcast.sh in each app; bench-setup alignment reports a drifted copy.
 #
 # Adds one release entry, newest first, to appcast.xml at the repository root, creating the feed
 # when it does not exist. The feed title and the GitHub repository come from CFBundleName and
@@ -9,10 +9,17 @@
 # An entry for this version that already exists is left alone. When it advertises the same build
 # number, download URL, signature and length, the run is a no-op; when any of them differs, the run
 # fails and prints that entry, because the feed then describes a different build and an operator
-# has to decide which one is true. Published entries are never rewritten.
+# has to decide which one is true. Published entries are never rewritten, and their release-notes
+# links are never compared.
+#
+# The update window's notes link defaults to the GitHub release page. An app that publishes its notes
+# on its own site passes --release-notes-url with a {version} placeholder, for example
+# https://<host>/release-notes/{version}/update/, and --full-release-notes-url for the page that
+# lists every version ("Version History"), so no workflow edits the feed afterwards.
 #
 # Writes only appcast.xml; progress goes to stderr and stdout stays empty.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/lib/cli.sh"
 cd "$(dirname "$0")/.."
 
 usage() {
@@ -22,23 +29,30 @@ usage: scripts/make-appcast.sh --version <X.Y.Z> --build-number <N> --archive <p
   --build-number <N>         build number of the release
   --archive <path.zip>       the archive; only its file name is used, in the download URL
   --signature <attributes>   sign-update.sh output: sparkle:edSignature="..." length="..."
+  --release-notes-url <template>
+                             https:// notes link, {version} replaced by the version
+                             (default: the GitHub release page)
+  --full-release-notes-url <url>
+                             https:// page listing every version's notes (default: none)
   --help                     show this help
 USAGE
 }
 
-fail_usage() { echo "error: $1" >&2; usage >&2; exit 2; }
-need_value() { [[ $# -ge 2 && -n $2 && $2 != --* ]] || fail_usage "$1 needs a value"; }
 
 version=''
 build_number=''
 archive=''
 signature=''
+notes_template=''
+full_notes_url=''
 while [[ $# -gt 0 ]]; do
   case $1 in
     --version) need_value "$@"; version=$2; shift 2 ;;
     --build-number) need_value "$@"; build_number=$2; shift 2 ;;
     --archive) need_value "$@"; archive=$2; shift 2 ;;
     --signature) need_value "$@"; signature=$2; shift 2 ;;
+    --release-notes-url) need_value "$@"; notes_template=$2; shift 2 ;;
+    --full-release-notes-url) need_value "$@"; full_notes_url=$2; shift 2 ;;
     --help) usage; exit 0 ;;
     *) fail_usage "unknown option $1" ;;
   esac
@@ -51,8 +65,14 @@ signature=${signature%"${signature##*[![:space:]]}"}
 signature_shape='^sparkle:edSignature="[A-Za-z0-9+/]+=*" length="[0-9]+"$'
 [[ $signature =~ $signature_shape ]] \
   || fail_usage "--signature must be sparkle:edSignature=\"...\" length=\"...\", as sign-update.sh prints it"
+if [[ -n $notes_template && ( $notes_template != https://* || $notes_template != *'{version}'* ) ]]; then
+  fail_usage '--release-notes-url must be an https:// URL containing {version}'
+fi
+if [[ -n $full_notes_url && $full_notes_url != https://* ]]; then
+  fail_usage '--full-release-notes-url must be an https:// URL'
+fi
 
-python3 - "$version" "$build_number" "$archive" "$signature" <<'PY'
+python3 - "$version" "$build_number" "$archive" "$signature" "$notes_template" "$full_notes_url" <<'PY'
 import os
 import plistlib
 import re
@@ -62,7 +82,7 @@ import time
 import xml.etree.ElementTree as ET
 from xml.sax.saxutils import escape
 
-version, build_number, archive, signature = sys.argv[1:5]
+version, build_number, archive, signature, notes_template, full_notes_url = sys.argv[1:7]
 SPARKLE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
 FEED = "appcast.xml"
 PLIST = "Support/Info.plist"
@@ -93,6 +113,11 @@ if not feed_url:
 name = info["CFBundleName"]
 repository = "https://github.com/%s/%s" % feed_url.groups()
 url = "%s/releases/download/v%s/%s" % (repository, version, os.path.basename(archive))
+notes_url = (notes_template or "%s/releases/tag/v{version}" % repository).replace("{version}", version)
+full_notes = (
+    "      <sparkle:fullReleaseNotesLink>%s</sparkle:fullReleaseNotesLink>\n" % escape(full_notes_url)
+    if full_notes_url else ""
+)
 ed_signature, length = re.fullmatch(r'sparkle:edSignature="([^"]+)" length="([0-9]+)"', signature).groups()
 
 if os.path.exists(FEED):
@@ -158,14 +183,15 @@ item = (
     "    <item>\n"
     "      <title>%s</title>\n"
     "      <pubDate>%s</pubDate>\n"
-    "      <sparkle:releaseNotesLink>%s/releases/tag/v%s</sparkle:releaseNotesLink>\n"
+    "      <sparkle:releaseNotesLink>%s</sparkle:releaseNotesLink>\n"
+    "%s"
     "      <sparkle:version>%s</sparkle:version>\n"
     "      <sparkle:shortVersionString>%s</sparkle:shortVersionString>\n"
     "      <sparkle:minimumSystemVersion>%s</sparkle:minimumSystemVersion>\n"
     "      <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>\n"
     '      <enclosure url=%s sparkle:edSignature=%s length=%s type="application/octet-stream"/>\n'
     "    </item>\n" % (
-        escape(version), published, escape(repository), escape(version), escape(build_number),
+        escape(version), published, escape(notes_url), full_notes, escape(build_number),
         escape(version), escape(info["LSMinimumSystemVersion"]),
         attribute(url), attribute(ed_signature), attribute(length),
     )

@@ -148,10 +148,11 @@ header, footer or page title. WindowHop grows the window to that page's height, 
 the screen (`App/UpdateAlertSizer.swift`). A one-line-per-change page and the full site
 page were tried first ([#128](https://github.com/martonpaulo/windowhop/issues/128)). `sparkle:fullReleaseNotesLink` points
 to `/release-notes/` (the Version History button). Like the download count, it runs on the deploy's staged copy, so no
-generated page is committed. `appcast.xml` links these pages: the canonical
-`make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new
-item, then dispatches Deploy once the release is published, so the page exists when clients
-see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
+generated page is committed. `appcast.xml` links these pages: `release.yml` passes the
+canonical `make-appcast.sh` `--release-notes-url` and `--full-release-notes-url`, with the
+host read from `site/CNAME`, so no step edits the feed after it is written
+([#134](https://github.com/martonpaulo/windowhop/issues/134)). It then dispatches Deploy once
+the release is published, so the page exists when clients see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
 Code spans follow CommonMark (a run of backticks closes only on a run of the same length),
 and a span that holds only a key or a key chord (`⌘⇧Tab`) renders as one keycap per key,
 as the other pages show keys; `tests/scripts/site-text-tests.py` covers both ([#171](https://github.com/martonpaulo/windowhop/issues/171)).
