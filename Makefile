@@ -44,6 +44,10 @@ format: ## Rewrite the sources with swift-format (the only target that edits sou
 
 validate: ## Repository invariants, the static site and the release-script fixtures
 	scripts/validate.sh
+	python3 scripts/text_check.py .
+	python3 scripts/issue_links.py . --repo martonpaulo/windowhop
+	python3 scripts/dry_check.py
+	python3 scripts/sleep_guard.py .
 
 strings: ## Regenerate Support/Localizable.xcstrings and Support/en.lproj from the sources
 	scripts/strings.sh

@@ -1,0 +1,113 @@
+{
+ "magicValues": {
+  "folders": [],
+  "exclude": [
+   "scripts/dry_check.py",
+   "scripts/issue_links.py",
+   "scripts/live_build_check.py",
+   "scripts/sleep_guard.py",
+   "scripts/text_check.py",
+   "scripts/text_width_check.py",
+   "scripts/skd/**"
+  ],
+  "counts": {
+   "scripts/capture-screenshots.sh": {
+    "duration": 1,
+    "number": 1
+   },
+   "scripts/check-test-defaults-leak.sh": {
+    "repeated": 1
+   },
+   "scripts/fail-on-warnings.sh": {
+    "repeated": 1
+   },
+   "scripts/lib/capture.sh": {
+    "duration": 1
+   },
+   "scripts/make-appcast.sh": {
+    "repeated": 2,
+    "url": 4
+   },
+   "scripts/make-dmg.sh": {
+    "repeated": 3
+   },
+   "scripts/make-keys.sh": {
+    "repeated": 1
+   },
+   "scripts/notarize.sh": {
+    "repeated": 2
+   },
+   "scripts/package-app.sh": {
+    "repeated": 3
+   },
+   "scripts/publish-release.sh": {
+    "repeated": 3
+   },
+   "scripts/render-download-count.sh": {
+    "url": 1
+   },
+   "scripts/render-release-notes.py": {
+    "number": 1
+   },
+   "scripts/sign-update.sh": {
+    "repeated": 1
+   },
+   "scripts/social-card.sh": {
+    "number": 1
+   },
+   "scripts/stamp-app-metadata.sh": {
+    "path": 5
+   },
+   "scripts/strings.sh": {
+    "repeated": 1
+   },
+   "scripts/validate.sh": {
+    "number": 1,
+    "path": 2,
+    "url": 6
+   },
+   "scripts/verify-dmg-branding.sh": {
+    "repeated": 2
+   },
+   "scripts/verify-release-identity.sh": {
+    "repeated": 3
+   },
+   "scripts/verify-update-continuity.sh": {
+    "path": 2,
+    "repeated": 4
+   },
+   "scripts/version-site-assets.py": {
+    "number": 1
+   },
+   "site/scripts/demo.js": {
+    "number": 8
+   },
+   "site/scripts/main.js": {
+    "number": 2
+   }
+  }
+ },
+ "duplicates": {
+  "depth": 1,
+  "exclude": [
+   "scripts/skd/**"
+  ],
+  "counts": {
+   "Sources": 6,
+   "Tests": 17,
+   "scripts": 2,
+   "tests": 5
+  }
+ },
+ "documents": {
+  "files": [
+   "*.md",
+   "docs/**/*.md"
+  ],
+  "exclude": [],
+  "repeated": {
+   "README.md": 1,
+   "docs/website.md": 1
+  }
+ }
+}

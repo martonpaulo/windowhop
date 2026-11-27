@@ -126,6 +126,9 @@ jobs:
           scripts/render-download-count.sh "$RUNNER_TEMP/site"
           python3 scripts/render-release-notes.py "$RUNNER_TEMP/site"
           python3 scripts/version-site-assets.py "$RUNNER_TEMP/site"
+      # The deployed commit, which the deploy job's last step reads back from the live site.
+      - name: Record the deployed commit
+        run: git rev-parse HEAD > "$RUNNER_TEMP/site/build.txt"
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: ${{ runner.temp }}/site
@@ -143,3 +146,15 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Check out the read-back check
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/live_build_check.py
+          sparse-checkout-cone-mode: false
+
+      # A green upload is not what the site serves: read the commit back, with a query no cache has seen.
+      - name: Read the live site back
+        run: python3 scripts/live_build_check.py https://windowhop.martonpaulo.com/build.txt "${{ needs.scope.outputs.sha }}" --timeout 300

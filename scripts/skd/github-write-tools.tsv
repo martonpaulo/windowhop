@@ -1,0 +1,47 @@
+# GitHub MCP tools that write what an agent wrote (#1211). raw_command_guard.py refuses each one,
+# on any MCP server whose name holds `github` (any case), and names the script instead;
+# settings_hooks.py builds the PreToolUse matcher from this list, and validate_repository.py fails
+# when the matcher, the committed `.claude/settings.json` or the guard leaves one out.
+#
+# tool<TAB>script<TAB>usage
+#
+# tool    the tool name after `mcp__<server>__`.
+# script  the owning script or rule, relative to the skills folder, or `-` for git or no owning script.
+#
+# scripts/bench/surfaces/github-mcp-tools.json pins the server's whole tool list; every write in it is a row
+# here, and validate_repository.py fails on a name neither here nor on its read lists (#1663).
+# usage   the usage line the refusal prints.
+
+issue_write	bench-github-publishing/scripts/publish.py	publish.py issue --repo OWNER/NAME --title TITLE < body.md, or issue_body.py / issue_ops.py apply for an edit
+create_issue	bench-github-publishing/scripts/publish.py	publish.py issue --repo OWNER/NAME --title TITLE < body.md
+update_issue	bench-github-publishing/scripts/issue_ops.py	issue_ops.py apply --repo OWNER/NAME ops.json, or close_issue.py to close
+add_issue_comment	bench-github-publishing/scripts/publish.py	publish.py comment --repo OWNER/NAME --number N < body.md
+sub_issue_write	bench-github-publishing/scripts/issue_ops.py	issue_ops.py apply --repo OWNER/NAME ops.json with addSubIssues or removeSubIssues
+create_pull_request	bench-github-publishing/scripts/publish.py	publish.py pr --repo OWNER/NAME --head BRANCH --base BRANCH --title TITLE [--issue N ...] < body.md
+update_pull_request	bench-github-publishing/scripts/publish.py	publish.py pr --repo OWNER/NAME --edit N --expected-updated-at TS [--title TITLE] < body.md
+merge_pull_request	bench-github-publishing/references/issue-closure.md	merge only as the merge rule allows, with SKD_ALLOW_RAW="<who approved it>" gh pr merge ...
+pull_request_review_write	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA [--comments FILE]
+create_and_submit_pull_request_review	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA [--comments FILE]
+create_pending_pull_request_review	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA [--comments FILE]
+submit_pending_pull_request_review	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA [--comments FILE]
+add_comment_to_pending_review	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA --comments FILE
+add_pull_request_review_comment_to_pending_review	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA --comments FILE
+add_reply_to_pull_request_comment	bench-github-publishing/scripts/publish.py	publish.py reply --repo OWNER/NAME --pr N --comment COMMENT_ID < body.md
+create_or_update_file	-	commit with git, which the pre-commit secret scan guards, and push with land.py finish
+push_files	-	commit with git, which the pre-commit secret scan guards, and push with land.py finish
+delete_file	-	commit with git, which the pre-commit secret scan guards, and push with land.py finish
+update_issue_comment	bench-github-publishing/scripts/publish.py	publish.py comment --repo OWNER/NAME --edit COMMENT_ID --expected-updated-at TS < body.md
+enable_pr_auto_merge	bench-github-publishing/references/issue-closure.md	merge only as the merge rule allows, with SKD_ALLOW_RAW="<who approved it>" gh pr merge ...
+disable_pr_auto_merge	bench-github-publishing/references/issue-closure.md	turn auto-merge off only as the merge rule allows, with SKD_ALLOW_RAW="<who approved it>" gh pr merge --disable-auto ...
+create_branch	-	create the branch with git and push it with land.py finish
+update_pull_request_branch	-	merge the base into the branch with git and push it with land.py finish
+resolve_review_thread	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+unresolve_review_thread	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+actions_run_trigger	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+fork_repository	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+create_repository	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+assign_copilot_to_issue	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+create_pull_request_with_copilot	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+request_copilot_review	-	ask the owner: no Workbench script does this, and an MCP write skips the scan
+subscribe_pr_activity	-	the session's own mcp__Claude_Code_Remote__subscribe_pr_activity
+unsubscribe_pr_activity	-	the session's own mcp__Claude_Code_Remote__unsubscribe_pr_activity

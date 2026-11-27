@@ -29,6 +29,24 @@ suites (docs/testing.md).
                                 (pure, unit-tested)
 ```
 
+## Contents
+
+- [Composition root](#composition-root)
+- [Window model (event-driven, no polling)](#window-model-event-driven-no-polling)
+- [Input](#input)
+- [Placement across displays](#placement-across-displays)
+- [Presentation](#presentation)
+- [Window previews](#window-previews)
+- [Shared window-inclusion policy](#shared-window-inclusion-policy)
+- [Stale-window pruning](#stale-window-pruning)
+- [Close, Quit, Force Quit](#close-quit-force-quit)
+- [Updates](#updates)
+- [Public-API replacements for AltTab's private calls](#public-api-replacements-for-alttabs-private-calls)
+- [Launch and reopen](#launch-and-reopen)
+- [Fail-safe properties](#fail-safe-properties)
+- [Concurrency](#concurrency)
+- [Performance principles (inherited from AltTab)](#performance-principles-inherited-from-alttab)
+
 ## Composition root
 
 `AppDelegate` creates each long-lived object once and passes it to its consumers through
@@ -66,7 +84,7 @@ their object without a global:
    `idle` and the app sends WindowHop nothing, not even a new window. Each switcher
    session start and each `NSWorkspace` activation of the app therefore send `revive`:
    one more attempt with no retries, so an app that was slow at login is not hidden
-   for the whole session, and a hung app costs one attempt per trigger (#156).
+   for the whole session, and a hung app costs one attempt per trigger ([#156](https://github.com/martonpaulo/windowhop/issues/156)).
    The AX reads queue is the single owner of each app's observer state, held by an
    `AppObserver` actor whose executor is that queue: main reads eligibility and queues
    `start`/`stop` on it in FIFO order, where the pure `ObserverLifecycle`
@@ -77,8 +95,8 @@ their object without a global:
    Removal matches each departed app to a tracked one by identity (`isEqual`, through
    `WindowHopKit/AppDeparture`), never by the departed object's `processIdentifier`,
    and does not require `isTerminated`; an app that is still listed in
-   `runningApplications` is kept (#136, reported on macOS 27.0 as blank tiles that stayed
-   until WindowHop restarted). Measured earlier for #81 on macOS 26 (400 launch/exit cycles of a
+   `runningApplications` is kept ([#136](https://github.com/martonpaulo/windowhop/issues/136), reported on macOS 27.0 as blank tiles that stayed
+   until WindowHop restarted). Measured earlier for [#81](https://github.com/martonpaulo/windowhop/issues/81) on macOS 26 (400 launch/exit cycles of a
    disposable app: SIGTERM, exit 50 ms after launch, Quit, early SIGKILL): every tracked
    app's departure arrived with its original pid and `isTerminated == true`, and none
    stayed tracked. The KVO change can land up to ~2 s after the app leaves
@@ -100,7 +118,7 @@ their object without a global:
    enumeration (timeout, `.cannotComplete`) keeps each window's last known Space flag,
    while an empty successful list still marks the app's windows off-Space.
 5. A locked screen makes every app publish zero windows over AX, so nothing learned in
-   a dark period may change the inventory (#38). `SessionMonitor` feeds the screen-lock
+   a dark period may change the inventory ([#38](https://github.com/martonpaulo/windowhop/issues/38)). `SessionMonitor` feeds the screen-lock
    distributed notifications and the `NSWorkspace` session-switch, system-sleep and
    display-sleep notifications to the pure `SessionAvailability`. While the screen is
    locked, the session is switched away or the system sleeps, `WindowStore` skips
@@ -128,7 +146,7 @@ Each read of a window's tab bar is a `TabObservation`: `.group` (every tab butto
 `.standalone` (children read, no tab bar of 2 or more tabs), or `.unknown` (some AX read
 failed). Only a complete read changes membership; `.unknown` keeps the last known group
 and tab count, and the next complete read recovers without a retry timer.
-A detached tab becomes an entry again on public facts only (#82). When a group's active
+A detached tab becomes an entry again on public facts only ([#82](https://github.com/martonpaulo/windowhop/issues/82)). When a group's active
 tab reports `.standalone`, every member recorded with it is released; a group that still
 exists re-forms on its new active tab's next tab bar. An inactive tab that reports
 `.standalone` with a focused- or main-window event and a frame different from its group's
@@ -139,7 +157,7 @@ used to stay hidden; in a three-tab group the new active tab's tab bar arrives f
 Discovery order is arbitrary, so a late-arriving sibling is matched against the active
 tab's last complete tab bar (`TabGroupResolver.resolveArrival`); only groups with an
 unmatched title equal to the newcomer's are resolved again.
-A live merge is invisible to the observed notifications. Measured for #113 on macOS 26
+A live merge is invisible to the observed notifications. Measured for [#113](https://github.com/martonpaulo/windowhop/issues/113) on macOS 26
 (TextEdit, Window ▸ Merge All Windows): none of the subscribed app or window
 notifications fire, the inactive tabs stay valid elements that keep their pre-merge
 frames, and only the active tab remains in `kAXWindows`. An app-level subscription would
@@ -177,7 +195,7 @@ through plain AppKit.
    flag through `onRecordingChanged` → `SwitcherController.setShortcutRecordingActive`;
    stopping the tap keeps it. A key-up owned before recording began is still consumed.
    In a session, navigation keys (Tab, arrows, Return/Enter, Escape, Delete, sticky Space,
-   and `` ` ``, which steps back as in native ⌘Tab: key code 50, the key macOS binds ⌘` to, #135)
+   and `` ` ``, which steps back as in native ⌘Tab: key code 50, the key macOS binds ⌘` to, [#135](https://github.com/martonpaulo/windowhop/issues/135))
    match only with Shift plus the modifiers that own the session: the hold modifier when
    held, the Open WindowHop chord's modifiers when sticky. A chord with any other ⌘/⌥/⌃
    passes, so ⌃⌥ VoiceOver commands reach assistive technology whichever tap sees them
@@ -283,7 +301,7 @@ applies on the next session, no restart):
   edges. Every canvas is the same fixed 16:10 shape
   (`DesignTokens.previewCanvasAspect`); the snapshot is centred and scaled to cover it
   (aspect-fill, no distortion), and the canvas's rounded clip trims what overflows
-  (#127). The canvas deliberately ignores the monitor:
+  ([#127](https://github.com/martonpaulo/windowhop/issues/127)). The canvas deliberately ignores the monitor:
   deriving it from the display made every card a shallow strip on an ultrawide
   screen. Unused space is an intentional semantic
   surface rather than transparent letterboxing. Loading, permission-required, failure,
@@ -399,7 +417,7 @@ frame, same title — is left unassigned, so the tile keeps its placeholder inst
 showing another window's content.
 
 Source images cover and center in that fixed 16:10 canvas, clipped by its rounded shape
-(`PreviewCaptureSizing.filledRect`, #127); the semantic preview surface shows only while
+(`PreviewCaptureSizing.filledRect`, [#127](https://github.com/martonpaulo/windowhop/issues/127)); the semantic preview surface shows only while
 the snapshot is loading or unavailable. The app badge, Close control, selection plate, shadow, hit testing, and
 title position all anchor to that canvas rather than the fitted source-image bounds.
 
@@ -407,7 +425,7 @@ While an authorized window has no snapshot, the tile shows a simplified macOS-wi
 skeleton with a quiet pulse; Reduce Motion makes it static. The pulse runs only while the
 skeleton is visible: a hidden skeleton (App Icons tiles, loaded previews, hidden pool slots)
 never carries one, because an animation on a hidden layer inside the visible panel still
-keeps WindowServer compositing (measured in #88). Missing or revoked permission
+keeps WindowServer compositing (measured in [#88](https://github.com/martonpaulo/windowhop/issues/88)). Missing or revoked permission
 uses the same geometry as a subdued, non-animating fallback while the single panel-level
 recovery action remains available. Acquisition, matching, or capture failure also uses a
 static skeleton, without exposing technical copy. A cached snapshot is never replaced by
@@ -460,14 +478,14 @@ window is PiP unless it covers (almost) a whole screen — Keynote presentations
 and fullscreen overlays stay eligible — or its AX close button is enabled, unless
 minimize is disabled while zoom stays enabled (Firefox PiP).
 Floating level alone is not PiP: any app can float an ordinary document, palette or
-dialog. Measured for #90 on macOS 26: Chromium PiP (Chrome and Brave, layer 3) keeps its
+dialog. Measured for [#90](https://github.com/martonpaulo/windowhop/issues/90) on macOS 26: Chromium PiP (Chrome and Brave, layer 3) keeps its
 close, minimize and zoom buttons but disables all three, while AppKit titled windows at
 `.floating` or `.modalPanel` keep an enabled close button. Firefox PiP (and Zen) is the
-closable exception: AeroSpace's corpus (#117) shows close and zoom (full screen) enabled
+closable exception: AeroSpace's corpus ([#117](https://github.com/martonpaulo/windowhop/issues/117)) shows close and zoom (full screen) enabled
 and only minimize disabled, a combination no ordinary floating window in it has;
 closable-only dialogs disable zoom too. App-modal alerts and open/save
 panels have no close button at all and float at the modal-panel layer (8, measured for
-#115 with `NSAlert` and `NSOpenPanel`), so that layer is never PiP. System PiP (PIPAgent, measured
+[#115](https://github.com/martonpaulo/windowhop/issues/115) with `NSAlert` and `NSOpenPanel`), so that layer is never PiP. System PiP (PIPAgent, measured
 through AVKit) is an `AXSystemFloatingWindow` at layer 19, which `isActualWindow`
 already rejects; borderless floating windows report `AXUnknown` and are rejected there
 too, and `NSPanel` utilities (`AXFloatingWindow`) never reach the rule. The close,
@@ -539,7 +557,7 @@ identity validation is explicitly inapplicable.
 | Concern | AltTab (private) | WindowHop (public) |
 |---|---|---|
 | Suppress native Cmd-Tab | `CGSSetSymbolicHotKeyEnabled` | consuming event tap; nothing to restore on quit/crash |
-| Focus a window | `_SLPSSetFrontProcessWithOptions` + `SLPSPostEventRecordTo` | `kAXMainAttribute` + `kAXRaiseAction`, then `NSRunningApplication.activate()`; the settable `kAXFrontmostAttribute` only as a fall-back when the app is not focused 150 ms later, because it fronts the app's windows on every display (#41) |
+| Focus a window | `_SLPSSetFrontProcessWithOptions` + `SLPSPostEventRecordTo` | `kAXMainAttribute` + `kAXRaiseAction`, then `NSRunningApplication.activate()`; the settable `kAXFrontmostAttribute` only as a fall-back when the app is not focused 150 ms later, because it fronts the app's windows on every display ([#41](https://github.com/martonpaulo/windowhop/issues/41)) |
 | Window identity | `_AXUIElementGetWindow` (CGWindowID) | the `AXUIElement` itself (CFEqual/CFHash) |
 | Other-Space windows | `_AXUIElementCreateWithRemoteToken` brute force + `CGSCopySpaces*` | persistent store + re-enumeration on Space change (see limitation in README) |
 | Tab-group siblings | CGWindowID matching | object-identity matching in pure `TabGroupResolver` |
@@ -580,12 +598,12 @@ no menu bar item to carry the pending state instead.
 - Missing permission stops the tap entirely — the shortcut is never partially intercepted.
 - `tapDisabledByTimeout/UserInput` events re-enable the tap in the callback; sleep/wake and
   session-switch notifications re-arm it from the app delegate. The same wake, unlock and
-  session events also run one inventory re-enumeration from `WindowStore` (#38), so a
+  session events also run one inventory re-enumeration from `WindowStore` ([#38](https://github.com/martonpaulo/windowhop/issues/38)), so a
   window list read while the screen was dark never outlives the dark period.
 - A key-up is consumed only when the latest key-down of that key was consumed: every
   key-down reassigns the key's ownership. A key-up missed while the tap was disabled
   therefore heals at the next press of that key, and a re-enable neither resets the ledger
-  (which would leak a held session's Tab release) nor needs a timer (#84).
+  (which would leak a held session's Tab release) nor needs a timer ([#84](https://github.com/martonpaulo/windowhop/issues/84)).
 - Modifier release is detected from event flags (covers left/right and both-held cases);
   the held-modifier guard covers missed events.
 

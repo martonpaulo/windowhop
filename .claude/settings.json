@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"${SKD_HOOKS:-}\" = off ]; then exit 0; fi; if [ -e \"${CLAUDE_PROJECT_DIR:-.}/.no-workbench\" ] && ! git -C \"${CLAUDE_PROJECT_DIR:-.}\" ls-files --error-unmatch .no-workbench >/dev/null 2>&1; then exit 0; fi; if [ ! -f \"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\" ]; then echo \"bench hook: \"\"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\"\" is missing\" >&2; exit 2; fi; exec python3 \"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\" check",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "^mcp__.*[Gg][Ii][Tt][Hh][Uu][Bb].*__(issue_write|create_issue|update_issue|add_issue_comment|sub_issue_write|create_pull_request|update_pull_request|merge_pull_request|pull_request_review_write|create_and_submit_pull_request_review|create_pending_pull_request_review|submit_pending_pull_request_review|add_comment_to_pending_review|add_pull_request_review_comment_to_pending_review|add_reply_to_pull_request_comment|create_or_update_file|push_files|delete_file|update_issue_comment|enable_pr_auto_merge|disable_pr_auto_merge|create_branch|update_pull_request_branch|resolve_review_thread|unresolve_review_thread|actions_run_trigger|fork_repository|create_repository|assign_copilot_to_issue|create_pull_request_with_copilot|request_copilot_review|subscribe_pr_activity|unsubscribe_pr_activity)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"${SKD_HOOKS:-}\" = off ]; then exit 0; fi; if [ -e \"${CLAUDE_PROJECT_DIR:-.}/.no-workbench\" ] && ! git -C \"${CLAUDE_PROJECT_DIR:-.}\" ls-files --error-unmatch .no-workbench >/dev/null 2>&1; then exit 0; fi; if [ ! -f \"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\" ]; then echo \"bench hook: \"\"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\"\" is missing\" >&2; exit 2; fi; exec python3 \"$CLAUDE_PROJECT_DIR/scripts/skd/raw_command_guard.py\" check",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "rate_limit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ \"${CLAUDE_CODE_REMOTE:-}\" != true ]; then exit 0; fi; if [ \"${SKD_HOOKS:-}\" = off ]; then exit 0; fi; if [ -e \"${CLAUDE_PROJECT_DIR:-.}/.no-workbench\" ] && ! git -C \"${CLAUDE_PROJECT_DIR:-.}\" ls-files --error-unmatch .no-workbench >/dev/null 2>&1; then exit 0; fi; if [ -f \"$CLAUDE_PROJECT_DIR/skills/bench-backlog/scripts/cloud_coordinator.py\" ]; then python3 \"$CLAUDE_PROJECT_DIR/skills/bench-backlog/scripts/cloud_coordinator.py\" end --reason \"claude usage limit\" >&2; fi; exit 0",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

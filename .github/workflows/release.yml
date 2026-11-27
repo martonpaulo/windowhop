@@ -8,9 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  # dispatches Deploy once the release is published, so its notes page exists
-  actions: write
+  contents: read
 
 # The same Xcode pin as validate.yml; change both together.
 env:
@@ -20,6 +18,10 @@ env:
 jobs:
   release:
     runs-on: macos-26
+    permissions:
+      contents: write
+      # dispatches Deploy once the release is published, so its notes page exists
+      actions: write
     # Optional: a fine-grained token with Contents read/write on martonpaulo/homebrew-tap.
     # A secret cannot appear in a step's `if:`, so it is exposed here and tested as env.
     env:

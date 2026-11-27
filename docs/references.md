@@ -28,7 +28,7 @@ written; the content was read when the linked issue was worked.
 - [UPSTREAM.md](../UPSTREAM.md) › *Other sources* › *Window managers, automation tools, and AX
   libraries*: AeroSpace, Loop, Rectangle, Hammerspoon and others, with the rule each informed.
 - [UPSTREAM.md](../UPSTREAM.md) › *Other sources* › *Imported test data*: the AeroSpace AX dumps
-  used as test fixtures (#115).
+  used as test fixtures ([#115](https://github.com/martonpaulo/windowhop/issues/115)).
 
 ## Product and visual design inspirations
 

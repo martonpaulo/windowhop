@@ -1,0 +1,44 @@
+# Raw commands that a Skill Deck script owns (#506). raw_command_guard.py refuses each one before
+# it runs and names the script instead.
+# Documentation: ../references/raw-command-guard.md
+#
+# command<TAB>flags<TAB>script<TAB>usage
+#
+# command  the words after `gh`, matched as a prefix of the command's own words.
+# flags    `-`, or comma-separated globs; the row matches only when a later word matches one.
+# script   the owning script, relative to the skills folder of the Skill Deck checkout.
+# usage    the usage line the refusal prints.
+#
+# `pr reply` is no gh command: it is the row a `gh api` reply to a review comment is refused with.
+# `issue edit --type` has no row: a type is a name from the repository's fixed list, no text an agent
+# wrote, and these repositories carry the type as a `type:` label (#1289).
+#
+# Anything not listed passes, read-only commands such as `gh issue view` and `gh api` reads
+# included. `git commit` is guarded by the commit-msg and pre-commit hooks instead; skipping them
+# (`--no-verify`, `-n`, `-c core.hooksPath=`) needs no row: the guard refuses it (#685). A recursive
+# `grep` needs no row: the guard refuses it and names `rg` (#686). A force push needs no row: the
+# guard refuses it and points to the one allowed (#773).
+
+label create	-	bench-capture/scripts/label_registry.py	label_registry.py plan --repo OWNER/NAME --apply --create-only (adds the missing labels, deletes none), or plan --repo OWNER/NAME --apply
+label edit	-	bench-capture/scripts/label_registry.py	label_registry.py rename OLD NEW --repo OWNER/NAME, recolor NAME RRGGBB --repo OWNER/NAME, or plan --repo OWNER/NAME --apply
+label delete	-	bench-capture/scripts/label_registry.py	label_registry.py plan --repo OWNER/NAME --apply
+issue close	-	bench-github-publishing/scripts/close_issue.py	close_issue.py --repo OWNER/NAME --issue N --commit SHA --verified FILE [--not-verified FILE] [--skill-deck none|OWNER/skill-deck#N, required outside Skill Deck], or --reason "not planned" --comment FILE, or --reason duplicate --duplicate-of M
+issue create	-	bench-github-publishing/scripts/publish.py	publish.py issue --repo OWNER/NAME --title TITLE [--label LABEL] < body.md
+issue comment	-	bench-github-publishing/scripts/publish.py	publish.py comment --repo OWNER/NAME --number N < body.md, or publish.py comment --repo OWNER/NAME --edit COMMENT_ID --expected-updated-at TS < body.md to edit one
+issue edit	--body*,-b*,-F*,--title*,-t*	bench-github-publishing/scripts/issue_body.py	issue_body.py set-section --repo OWNER/NAME --issue N --expected-updated-at TIME --section NAME < section.md, or issue_body.py tick ... [--section NAME] --task TEXT, or issue_body.py merge-sections ... --section NAME, or issue_body.py replace ... --old TEXT --new TEXT, or issue_ops.py apply --repo OWNER/NAME ops.json for several edits
+issue edit	--add-blocked-by*,--remove-blocked-by*,--add-blocking*,--remove-blocking*,--add-sub-issue*,--remove-sub-issue*,--parent*,--remove-parent*	bench-github-publishing/scripts/issue_ops.py	issue_ops.py apply --repo OWNER/NAME ops.json, with addBlockedBy, removeBlockedBy, addSubIssues or removeSubIssues in the entry; a parent or a blocking edge is written from the other issue's entry (#825, #1211)
+pr create	-	bench-github-publishing/scripts/publish.py	publish.py pr --repo OWNER/NAME --head BRANCH --base BRANCH --title TITLE [--draft] [--issue N ...] < body.md (#1211)
+pr edit	--body*,-b*,-F*,--title*,-t*,--attach*	bench-github-publishing/scripts/publish.py	publish.py pr --repo OWNER/NAME --edit N --expected-updated-at TS [--title TITLE] < body.md (#1211)
+pr comment	-	bench-github-publishing/scripts/publish.py	publish.py comment --repo OWNER/NAME --number N < body.md (#1211)
+pr close	--comment*,-c*	bench-github-publishing/scripts/publish.py	publish.py comment --repo OWNER/NAME --number N < body.md, then gh pr close N without --comment (#1211)
+pr reply	-	bench-github-publishing/scripts/publish.py	publish.py reply --repo OWNER/NAME --pr N --comment COMMENT_ID < body.md; a new line comment goes in a review, publish_verdict.py --comments FILE (#1211)
+run list	--commit*,-c	bench-github-publishing/scripts/ci_result.py	ci_result.py [--repo OWNER/NAME] [--timeout S] SHA, which resolves the full SHA (a short one matches no run) and waits with a bound
+workflow run	-	bench-github-publishing/scripts/gh_rest.py	gh_rest.py workflow run ARGS, which runs it on the owner's login: the bench-cloud-agent App token a Mac session exports holds only read access to Actions, so a raw `gh workflow run` answers HTTP 403 (#1980)
+run rerun	-	bench-github-publishing/scripts/gh_rest.py	gh_rest.py run rerun ARGS, which runs it on the owner's login: the bench-cloud-agent App token a Mac session exports holds only read access to Actions, so a raw `gh run rerun` answers HTTP 403 (#1980)
+run cancel	-	bench-github-publishing/scripts/gh_rest.py	gh_rest.py run cancel ARGS, which runs it on the owner's login: the bench-cloud-agent App token a Mac session exports holds only read access to Actions, so a raw `gh run cancel` answers HTTP 403 (#1980)
+pr review	-	bench-github-publishing/scripts/publish_verdict.py	publish_verdict.py --repo OWNER/NAME --pr N --verdict approve|request-changes --head SHA [--comments FILE]
+release create	--notes*,-n*,--notes-file*,-F*,--title*,-t*	bench-release/assets/publish-release.sh	publish-release.sh --tag vX.Y.Z --notes-file FILE --artifact PATH [--artifact PATH ...], the project's scripts/ copy, with notes taken from the committed changelog, which the pre-commit scan has read (#1289)
+release edit	--notes*,-n*,--notes-file*,-F*,--title*,-t*	bench-release/assets/publish-release.sh	publish-release.sh --tag vX.Y.Z --notes-file FILE --artifact PATH [--artifact PATH ...], the project's scripts/ copy; change the notes in the changelog and publish again (#1289)
+repo edit	--description*,-d*	bench-github-publishing/scripts/publish.py	publish.py description --repo OWNER/NAME < description.txt (#1289)
+gist create	-	bench-github-publishing/scripts/scan_payload.py	scan_payload.py < FILE on each file, then ask the owner: no workflow publishes a gist (#1289)
+gist edit	-	bench-github-publishing/scripts/scan_payload.py	scan_payload.py < FILE on each file, then ask the owner: no workflow edits a gist (#1289)

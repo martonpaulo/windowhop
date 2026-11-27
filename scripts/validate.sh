@@ -641,6 +641,15 @@ else
 fi
 
 echo ""
+# AGENTS.md stays within the 24,000-byte context budget; its long sections live in docs/patterns.md (#154).
+AGENTS_BYTE_BUDGET=24000
+agents_bytes=$(wc -c < AGENTS.md | tr -d ' ')
+if [ "$agents_bytes" -gt "$AGENTS_BYTE_BUDGET" ]; then
+    fail "AGENTS.md is $agents_bytes bytes, over $AGENTS_BYTE_BUDGET; move a section into docs/patterns.md"
+else
+    pass "AGENTS.md is $agents_bytes bytes"
+fi
+
 if [ "$failures" -gt 0 ]; then
     echo "validation FAILED with $failures problem(s)"
     exit 1

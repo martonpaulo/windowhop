@@ -1,5 +1,16 @@
 # Testing WindowHop
 
+## Contents
+
+- [Automated suite](#automated-suite)
+- [Release and identity validators](#release-and-identity-validators)
+- [Debug and visual harness](#debug-and-visual-harness)
+- [Sparkle end-to-end](#sparkle-end-to-end)
+- [Published screenshots](#published-screenshots)
+- [Release publication order](#release-publication-order)
+- [Manual release checklist](#manual-release-checklist)
+- [Historical integration evidence](#historical-integration-evidence)
+
 ## Automated suite
 
 ```sh
@@ -41,7 +52,7 @@ Swift Testing runs suites in parallel, where XCTest ran one test at a time:
   `$TMPDIR/windowhop-tests/`. A suite named without a path leaks
   `~/Library/Preferences/<name>.plist`, and no teardown can prevent it: cfprefsd writes
   the emptied domain back after the test process exits, even when the file was deleted
-  (#129). `scripts/validate.sh` rejects any other `UserDefaults(suiteName:)` in `Tests/`,
+  ([#129](https://github.com/martonpaulo/windowhop/issues/129)). `scripts/validate.sh` rejects any other `UserDefaults(suiteName:)` in `Tests/`,
   and `make test` (through `scripts/check-test-defaults-leak.sh`) fails when a run leaves
   new `windowhop-tests-*.plist` files in `~/Library/Preferences`.
 - A test that needs a display uses the `.needsDisplay` trait; Reduce Motion skips are
@@ -100,7 +111,7 @@ their effective designated requirements, identifiers, teams, and entitlements.
 `tests/scripts/verify-update-continuity-tests.sh` (run by `make validate`) covers it with a
 fake `codesign`.
 
-The first release after the identifier move (#43) is the one exception. Its previous
+The first release after the identifier move ([#43](https://github.com/martonpaulo/windowhop/issues/43)) is the one exception. Its previous
 release is signed with the old identifier, so the plain comparison fails by design. For
 that release only, run:
 
@@ -163,7 +174,7 @@ Only the selected coherent implementation belongs in runtime code and published 
 
 ### Diagnosing a missing window
 
-Use this procedure when a window is on screen but the switcher does not list it (#156).
+Use this procedure when a window is on screen but the switcher does not list it ([#156](https://github.com/martonpaulo/windowhop/issues/156)).
 The commands print window titles only in your terminal, and the unified log marks titles
 private. Never paste titles, URLs, document names or screenshots of personal windows into
 a public issue: report app names, counts, phases and timings instead.
@@ -279,7 +290,7 @@ Requirements and constraints:
   window to the display with the highest backing scale before they announce `SCALE`, so the
   window server composites them at 2x with their real material and shadow. The tool uses the
   private `CGVirtualDisplay` class, a recorded exception limited to capture tooling
-  (AGENTS.md › Public Apple APIs only, #116); it needs clang from the command line tools.
+  (AGENTS.md › Public Apple APIs only, [#116](https://github.com/martonpaulo/windowhop/issues/116)); it needs clang from the command line tools.
 - Screen Recording permission for the process running the script.
 - `-l<windowid>` captures exactly the demo's own window, so no personal window can appear;
   `-o` is deliberately not passed, because it would drop the shadow.
@@ -409,10 +420,10 @@ Screen Recording permission.
       menus, tooltips, system overlays, or WindowHop helper UI.
 - [ ] Identical-title windows stay distinct; Safari tab counts remain metadata, not entries.
 - [ ] Other-Space and other-display toggles rebuild the list correctly.
-- [ ] Two extended displays, two apps with one window on each display (#41): switching to
+- [ ] Two extended displays, two apps with one window on each display ([#41](https://github.com/martonpaulo/windowhop/issues/41)): switching to
       one app's window on display A leaves display B's front window where it was. Without a
       second monitor, `scripts/capture-display.m` adds one; the probe that measured this is
-      described in issue #41.
+      described in issue [#41](https://github.com/martonpaulo/windowhop/issues/41).
 
 ### Visuals and accessibility
 
@@ -421,7 +432,7 @@ Screen Recording permission.
 - [ ] Preview surfaces remain legible over bright/dark content; selection uses one semantic
       plate with no stacked gray/blue frames and no layout shift.
 - [ ] Wide, tall, small-dialog, and display-ratio snapshots cover their card without
-      distortion or empty bands; only the canvas has rounded corners (#127).
+      distortion or empty bands; only the canvas has rounded corners ([#127](https://github.com/martonpaulo/windowhop/issues/127)).
 - [ ] Loading, permission-blocked, unavailable, and loaded cards retain identical canvas,
       badge, title, Close, selection, and hit-test geometry.
 - [ ] Close is fully drawn and centered on the loaded canvas origin; the Settings control
@@ -475,7 +486,7 @@ Screen Recording permission.
 - [ ] The notarized app/DMG validate and staple successfully; Gatekeeper accepts both; the
       updater detects 1.3.1 and rejects a tampered signature.
 
-### Bundle identifier move (the first release after #43 only)
+### Bundle identifier move (the first release after [#43](https://github.com/martonpaulo/windowhop/issues/43) only)
 
 These replace the "grants remain" items above for that one release.
 

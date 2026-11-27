@@ -24,6 +24,7 @@ struct CaptureBudgetTests {
     ) async {
         for _ in 0..<2000 {
             if await condition() { return }
+            // timing-independent: a poll on the condition, with a 2 s deadline.
             try? await Task.sleep(nanoseconds: 1_000_000)
         }
         Issue.record("condition not reached", sourceLocation: sourceLocation)
@@ -55,6 +56,7 @@ struct CaptureBudgetTests {
         _ = startWorkers(7..<10, budget: budget, generation: 1, log: log)
 
         await eventually { await log.started.count == 4 }
+        // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
         try? await Task.sleep(nanoseconds: 20_000_000)
         let started = await log.started.count
         #expect(started == 4)
@@ -71,6 +73,7 @@ struct CaptureBudgetTests {
         for id in 1...3 {
             _ = startWorkers(id..<id + 1, budget: budget, generation: 1, log: log)
             // let each waiter park before the next one arrives
+            // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
             try? await Task.sleep(nanoseconds: 10_000_000)
         }
 
@@ -90,10 +93,12 @@ struct CaptureBudgetTests {
         _ = startWorkers(0..<1, budget: budget, generation: 1, log: log)
         await eventually { await log.started == [0] }
         _ = startWorkers(1..<3, budget: budget, generation: 1, log: log)
+        // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
         try? await Task.sleep(nanoseconds: 20_000_000)
         let dwell = Task {
             if await budget.acquire(generation: 1, jumpingQueue: true) { await log.start(99) }
         }
+        // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
         try? await Task.sleep(nanoseconds: 20_000_000)
 
         budget.release()
@@ -110,6 +115,7 @@ struct CaptureBudgetTests {
         budget.advance(to: 1)
         _ = startWorkers(0..<5, budget: budget, generation: 1, log: log)
         await eventually { await log.started.count == 2 }
+        // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
         try? await Task.sleep(nanoseconds: 20_000_000)
 
         budget.advance(to: 2)
@@ -143,6 +149,7 @@ struct CaptureBudgetTests {
         budget.advance(to: 2)
         let log = Log()
         _ = startWorkers(0..<1, budget: budget, generation: 2, log: log)
+        // timing-dependent (#172): a fixed wait proves an absence; #172 replaces it with a condition.
         try? await Task.sleep(nanoseconds: 20_000_000)
         let beforeRelease = await log.started
         #expect(beforeRelease == [], "the ceiling spans sessions")

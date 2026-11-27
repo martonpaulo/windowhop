@@ -4,15 +4,23 @@ The static product site lives directly in `site/` and is served at
 <https://windowhop.martonpaulo.com/>. It has no backend, package manager, generated
 bundle, analytics, or runtime dependency.
 
+## Contents
+
+- [Pages](#pages)
+- [Local preview](#local-preview)
+- [Download link and download count](#download-link-and-download-count)
+- [Release notes pages](#release-notes-pages)
+- [GitHub Pages](#github-pages)
+
 ## Pages
 
-Three indexed pages, each targeting its own searches, plus the 404 (#126):
+Three indexed pages, each targeting its own searches, plus the 404 ([#126](https://github.com/martonpaulo/windowhop/issues/126)):
 
 | Page | File | Holds |
 | --- | --- | --- |
 | `/` | `site/index.html` | The live demo, how it works, the real screenshots, features, Settings, download |
 | `/help/` | `site/help/index.html` | Install steps, keys, Window Previews, troubleshooting, uninstall, FAQ (`FAQPage` JSON-LD) |
-| `/alttab-alternative/` | `site/alttab-alternative/index.html` | The AltTab comparison (#94) |
+| `/alttab-alternative/` | `site/alttab-alternative/index.html` | The AltTab comparison ([#94](https://github.com/martonpaulo/windowhop/issues/94)) |
 
 Every page has its own `<title>`, meta description, canonical URL, `og:url`, Open Graph and
 Twitter tags, and a `sitemap.xml` entry. There is no visible breadcrumb: the header marks
@@ -37,7 +45,7 @@ the `<noscript>` screenshot stands in, and the loop stops while the demo is off 
 heading or a list a width cap of its own (no `max-width` on text, no `ch` length), and `html`
 reserves the scrollbar's space (`scrollbar-gutter: stable`), so short and long pages share one
 left edge. `scripts/text_width_check.py`, Workbench's canonical copy run by `make validate`, fails
-on either (#171).
+on either ([#171](https://github.com/martonpaulo/windowhop/issues/171)).
 
 **Interaction rules** live in one place in `site/styles/main.css` (section 2): anything
 clickable shows the pointer and nothing else does; controls and drawings are not selectable,
@@ -66,7 +74,7 @@ skill-deck's canonical copy, kept byte-identical: the `CNAME` host, the canonica
 `og:url`, no `noindex`, `robots.txt` and `sitemap.xml`. The "GitHub Pages site" section of
 `scripts/validate.sh` holds WindowHop's own site rules, described below: required files,
 version and download sync with `Support/Info.plist`, markers, no stylesheet rule whose
-selector runs into an at-rule (#133), favicon sizes, 404 parity, external links and local
+selector runs into an at-rule ([#133](https://github.com/martonpaulo/windowhop/issues/133)), favicon sizes, 404 parity, external links and local
 references.
 
 CI currently performs static site validation; it does not run either browser engine.
@@ -132,7 +140,7 @@ also gets `/release-notes/X.Y.Z/update/`, the page Sparkle's update window shows
 version section (date, version, changes) in the site's style and nothing else, with no
 header, footer or page title. WindowHop grows the window to that page's height, capped at
 the screen (`App/UpdateAlertSizer.swift`). A one-line-per-change page and the full site
-page were tried first (#128). `sparkle:fullReleaseNotesLink` points
+page were tried first ([#128](https://github.com/martonpaulo/windowhop/issues/128)). `sparkle:fullReleaseNotesLink` points
 to `/release-notes/` (the Version History button). Like the download count, it runs on the deploy's staged copy, so no
 generated page is committed. `appcast.xml` links these pages: the canonical
 `make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new
@@ -140,7 +148,7 @@ item, then dispatches Deploy once the release is published, so the page exists w
 see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
 Code spans follow CommonMark (a run of backticks closes only on a run of the same length),
 and a span that holds only a key or a key chord (`⌘⇧Tab`) renders as one keycap per key,
-as the other pages show keys; `tests/scripts/site-text-tests.py` covers both (#171).
+as the other pages show keys; `tests/scripts/site-text-tests.py` covers both ([#171](https://github.com/martonpaulo/windowhop/issues/171)).
 
 ## GitHub Pages
 

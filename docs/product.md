@@ -4,6 +4,19 @@ What this product is, who it serves, and what it will never become. Read this be
 a feature: if a proposal contradicts a non-goal below, the non-goal wins until this document
 changes.
 
+## Contents
+
+- [What it is](#what-it-is)
+- [Who it is for](#who-it-is-for)
+- [The job](#the-job)
+- [What it does](#what-it-does)
+- [What it will never do](#what-it-will-never-do)
+- [How you know it worked](#how-you-know-it-worked)
+- [Constraints](#constraints)
+- [Decision index](#decision-index)
+- [Accepted evidence gaps](#accepted-evidence-gaps)
+- [What this document is not](#what-this-document-is-not)
+
 ## What it is
 
 A native macOS window switcher that gives every top-level window its own tile and activates the
@@ -65,7 +78,7 @@ to reopen the non-goal — an inconvenient feature request is not.
 - **Use private APIs.** Public Apple APIs only. This costs real capability — windows on a Space
   the user has never visited stay undiscoverable — and the cost is accepted, because a switcher
   that breaks on a macOS update is worse than one that misses a window.
-- **Localize.** English only. The copy lives in one English String Catalog (#39), which holds no
+- **Localize.** English only. The copy lives in one English String Catalog ([#39](https://github.com/martonpaulo/windowhop/issues/39)), which holds no
   translation. A single maintainer cannot keep translations honest, and stale translations are
   worse than none.
 - **Disable the native switcher.** The Cmd-Tab symbolic hotkey is never taken away and
@@ -118,7 +131,7 @@ restate it.
 
 ## Accepted evidence gaps
 
-- Manual screen-reader passes: not run; accepted by the owner on 2026-09-13 (martonpaulo/skill-deck#266).
+- Manual screen-reader passes: not run; accepted by the owner on 2026-09-13 ([martonpaulo/skill-deck#266](https://github.com/martonpaulo/skill-deck/issues/266)).
 
 ## What this document is not
 

@@ -56,6 +56,7 @@ extension SharedAppState {
             for app in apps { app.stopObserving() }
             for app in apps { app.startObserving() }
             // outlive two retry delays: every pending retry must find its generation stale
+            // timing-dependent (#172): outlives the retry delays by wall clock; #172 injects a clock.
             try await Task.sleep(for: .seconds(1.2))
             #expect(await phases(of: apps) == Array(repeating: .stopped, count: apps.count))
         }
