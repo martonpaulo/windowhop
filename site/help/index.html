@@ -30,66 +30,12 @@
   <script>document.documentElement.classList.add("js");</script>
   <script src="/scripts/main.js" defer></script>
   <script type="application/ld+json">
-{
+  {
     "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "Is WindowHop free?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes. WindowHop is free and open source under GPL-3.0. There is no paid version, no account and no advertising."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Which Macs does WindowHop run on?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Macs with Apple silicon (M1 or later) running macOS 26 or later. It does not run on Intel Macs."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Why does WindowHop need Accessibility permission?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "macOS lets an app see and switch windows only with Accessibility permission. WindowHop uses it to list your windows and to bring the one you choose to the front."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does WindowHop record my screen?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Only if you choose Window Previews. Then it takes a small picture of each window while the switcher is open, keeps it in memory, and never saves or sends it. App Icons, the default, needs no Screen Recording permission."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does WindowHop replace Apple’s ⌘Tab?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It answers ⌘Tab while it runs, but it never turns off Apple’s switcher. If WindowHop quits, is turned off or cannot answer, ⌘Tab works as it always did."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "How does WindowHop update?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "It checks for new versions and asks before it installs one. The update check is the only network activity it has. You can turn automatic checks off in Settings › About."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Can I search windows by title?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "No. WindowHop keeps one simple gesture: hold ⌘ and press Tab. If you want to type to find a window, AltTab Pro or Raycast are better choices."
-        }
-      }
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "WindowHop", "item": "https://windowhop.martonpaulo.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Help", "item": "https://windowhop.martonpaulo.com/help/" }
     ]
   }
   </script>
@@ -114,7 +60,12 @@
 
   <main id="main">
     <section class="page-hero" aria-labelledby="help-title">
-      <p class="eyebrow">Help</p>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/">WindowHop</a></li>
+          <li aria-current="page">Help</li>
+        </ol>
+      </nav>
       <h1 id="help-title">Install WindowHop and make your first switch.</h1>
       <p class="hero-summary">No account and no Terminal. WindowHop needs one permission, Accessibility, to see your windows and switch to them. This takes about two minutes.</p>
     </section>

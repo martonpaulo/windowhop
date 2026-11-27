@@ -233,10 +233,14 @@ if [ "$failures" -eq 0 ]; then
 fi
 
 # --- GitHub Pages site -------------------------------------------------------
-# scripts/validate-site.sh is skill-deck's canonical copy (CNAME host pattern, canonical
-# URL, og:url, noindex, robots.txt, sitemap.xml) and stays byte-identical. WindowHop's own
-# site rules live here, in a subshell that stops at its first violation.
-if scripts/validate-site.sh; then
+# scripts/validate-site.sh is Workbench's canonical copy and stays byte-identical. It checks
+# every page under site/ as one set: the CNAME host, canonical URL, og:url, sitemap entry and
+# noindex per page, title and description parity, unique titles, header and footer links,
+# external links, local references, breadcrumbs, and the deploy's asset-version step
+# (scripts/version-site-assets.sh, #152). --generated names what only the deploy
+# writes. WindowHop's own site rules live here, in a subshell that stops at its first
+# violation (#134).
+if scripts/validate-site.sh --generated release-notes/; then
     pass "GitHub Pages site (canonical checks)"
 else
     fail "GitHub Pages site failed the canonical checks"
@@ -327,7 +331,7 @@ windowhop_site_checks() (
                   'prefers-color-scheme: dark' 'prefers-reduced-motion: reduce' \
                   'Developed by Marton Paulo' \
                   'Download WindowHop <span data-site-version>' 'a[href^="http"]::after' \
-                  'id="alttab-alternative"' 'id="demo"' '"@type": "FAQPage"'; do
+                  'id="alttab-alternative"' 'id="demo"'; do
       grep -R -Fq "$marker" "${indexed[@]}" site/styles/main.css || {
         echo "website is missing required marker: $marker" >&2
         exit 1
@@ -363,43 +367,7 @@ PY
       exit 1
     fi
 
-    # Each indexed page names its own URL in the canonical link and og:url, and the
-    # sitemap lists it. The URL follows the file: site/help/index.html is /help/.
-    host=$(tr -d '[:space:]' < site/CNAME)
-    for page in "${indexed[@]}"; do
-      path=${page#site/}; path=${path%index.html}
-      url="https://$host/$path"
-      grep -Fq "<link rel=\"canonical\" href=\"$url\">" "$page" || { echo "$page: canonical is not $url" >&2; exit 1; }
-      grep -Fq "<meta property=\"og:url\" content=\"$url\">" "$page" || { echo "$page: og:url is not $url" >&2; exit 1; }
-      grep -Fq "<loc>$url</loc>" site/sitemap.xml || { echo "site/sitemap.xml does not list $url" >&2; exit 1; }
-      ! grep -qi 'noindex' "$page" || { echo "$page must not contain noindex" >&2; exit 1; }
-    done
-
-    # Search and share previews read different tags; they must say the same thing, on
-    # every indexed page, and no two pages share a title.
-    titles=""
-    for page in "${indexed[@]}"; do
-      title=$(grep -oE '<title>[^<]*</title>' "$page" | sed -E 's/<\/?title>//g')
-      description=$(grep -oE '<meta name="description" content="[^"]*"' "$page" | sed -E 's/.*content="//; s/"$//')
-      test -n "$title" && test -n "$description" || {
-        echo "$page is missing its <title> or meta description" >&2
-        exit 1
-      }
-      for tag in 'property="og:title"' 'name="twitter:title"'; do
-        grep -Fq "<meta $tag content=\"$title\">" "$page" || {
-          echo "$page: $tag does not equal the <title>" >&2
-          exit 1
-        }
-      done
-      for tag in 'property="og:description"' 'name="twitter:description"'; do
-        grep -Fq "<meta $tag content=\"$description\">" "$page" || {
-          echo "$page: $tag does not equal the meta description" >&2
-          exit 1
-        }
-      done
-      titles+="$title"$'\n'
-    done
-    [ -z "$(printf '%s' "$titles" | sort | uniq -d)" ] || { echo "two website pages share a <title>" >&2; exit 1; }
+    # The home page's JSON-LD description says what its meta description says.
     description=$(grep -oE '<meta name="description" content="[^"]*"' site/index.html | sed -E 's/.*content="//; s/"$//')
     grep -Fq "\"description\": \"$description\"" site/index.html || {
       echo "site/index.html: the JSON-LD description does not equal the meta description" >&2
@@ -458,64 +426,14 @@ print(" ".join(sorted(sizes, key=lambda s: int(s.split("x")[0]))))' "$1" ;;
         }
     done
 
-    # Header and footer are copied into every page (the site has no build step), so
-    # the copies must stay identical: the footer byte for byte, the header by label.
+    # The footer is copied into every page (the site has no build step), so the copies
+    # stay identical byte for byte, stricter than the canonical check of its links.
     footer_of() { sed -n '/<footer class="site-footer">/,/<\/footer>/p' "$1"; }
     for page in "${pages[@]}"; do
       [ "$(footer_of site/index.html)" = "$(footer_of "$page")" ] || {
           echo "$page footer differs from site/index.html" >&2
           exit 1
       }
-    done
-
-    # Every page shows the same header destinations, in the same order.
-    nav_labels() { sed -n '/<nav aria-label="Page sections">/,/<\/nav>/p' "$1" | grep -oE '>[^<]+</a>'; }
-    for page in "${pages[@]}"; do
-      [ "$(nav_labels site/index.html)" = "$(nav_labels "$page")" ] || {
-          echo "$page header navigation differs from site/index.html" >&2
-          exit 1
-      }
-    done
-
-    # Every link that leaves the site opens in a new tab (target="_blank", the
-    # owner's rule) and carries rel="noopener". Its arrow is drawn once,
-    # by the a[href^="http"]::after rule in main.css (a marker above), so the markup
-    # never repeats it.
-    while IFS= read -r line; do
-        case "$line" in *'rel="noopener"'*) ;; *)
-            echo "external link without rel=\"noopener\": $line" >&2; exit 1 ;;
-        esac
-        case "$line" in *'target="_blank"'*) ;; *)
-            echo "external link that does not open in a new tab: $line" >&2; exit 1 ;;
-        esac
-    done < <(grep -hoE '<a [^>]*href="https?://[^"]+"[^>]*>.*</a>' "${pages[@]}" || true)
-
-    # Every local path a page names: src and href values, plus each candidate of a
-    # srcset or imagesrcset list with its width descriptor dropped. A path that starts
-    # with / is from the site root; any other is relative to the page; a directory
-    # path means its index.html; a #fragment is ignored.
-    local_references() {
-      grep -oE '(src|href)="[^"]+"' "$1" | sed -E 's/^(src|href)="//; s/"$//'
-      grep -oE '(srcset|imagesrcset)="[^"]+"' "$1" \
-        | sed -E 's/^(srcset|imagesrcset)="//; s/"$//' | tr ',' '\n' | awk '{print $1}'
-    }
-    for page in "${pages[@]}"; do
-      while IFS= read -r reference; do
-        reference=${reference%%#*}
-        reference=${reference%%\?*}
-        case "$reference" in
-          # rendered at deploy time from CHANGELOG.md (scripts/render-release-notes.py)
-          /release-notes/*) continue ;;
-          http:*|https:*|'') continue ;;
-          /*) file="site$reference" ;;
-          *) file="$(dirname "$page")/$reference" ;;
-        esac
-        case "$file" in */) file="${file}index.html" ;; esac
-        test -f "$file" || {
-          echo "$page references missing local file: $file" >&2
-          exit 1
-        }
-      done < <(local_references "$page")
     done
 
     # Every published screenshot is used, and each one exists in a light and a dark
@@ -581,17 +499,6 @@ else
 fi
 grep -q "render-release-notes.py" .github/workflows/deploy.yml \
     || fail "deploy.yml does not render the release notes"
-
-# --- asset versions --------------------------------------------------------------
-# The deploy appends ?v=<content md5> to every local stylesheet, script and image
-# address in its staged copy, so browsers never pair new HTML with a cached old file.
-# scripts/version-site-assets.sh is Workbench's canonical copy (#152).
-if scripts/version-site-assets.sh --check 2>/dev/null \
-    && grep -Eq '^[^#]*scripts/version-site-assets[.]sh --site' .github/workflows/deploy.yml; then
-    pass "the deploy versions every local asset address"
-else
-    fail "scripts/version-site-assets.sh --check failed, or deploy.yml does not run it with --site"
-fi
 
 # --- canonical release scripts ------------------------------------------------
 # These are byte-identical copies of skill-deck's project-release assets, whose
