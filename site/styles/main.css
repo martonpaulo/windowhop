@@ -98,6 +98,9 @@
   /* Sizes */
   --page-width: min(73.75rem, 100% - 2.5rem);   /* 1180px, 20px gutters */
   --width-demo: 65rem;                          /* 1040px */
+  /* Vertical padding every control keeps, so its text never touches its edge and
+     an inline control clears a 24px WCAG 2.2 target (docs/website.md). */
+  --control-padding-y: 0.375rem;  /*   6px */
   --control-height: 3rem;
   --control-height-s: 2.25rem;
   --keycap-height: 3rem;
@@ -450,7 +453,7 @@ main {
   align-items: center;
   justify-content: center;
   min-height: var(--control-height);
-  padding: 0 var(--space-m);
+  padding: var(--control-padding-y) var(--space-m);
   border-radius: var(--radius-pill);
   font-size: 1rem;
   font-weight: var(--weight-strong);
@@ -486,7 +489,7 @@ main {
 .button.small {
   gap: var(--space-2xs);
   min-height: var(--control-height-s);
-  padding: 0 var(--space-s);
+  padding: var(--control-padding-y) var(--space-s);
   font-size: var(--text-sm);
 }
 
@@ -499,6 +502,7 @@ main {
 .text-link {
   display: inline-flex;
   align-items: center;
+  padding-block: var(--control-padding-y);
   color: var(--accent);
   font-size: var(--text-sm);
   font-weight: var(--weight-strong);
@@ -814,6 +818,7 @@ figcaption {
 .site-footer a {
   display: inline-flex;
   align-items: center;
+  padding-block: var(--control-padding-y);
   color: var(--secondary);
   font-size: var(--text-sm);
   font-weight: var(--weight-strong);
@@ -1433,6 +1438,7 @@ h1 {
 }
 
 .faq summary {
+  padding-block: var(--control-padding-y);
   font-size: var(--text-md);
   font-weight: var(--weight-strong);
 }

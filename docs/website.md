@@ -84,6 +84,12 @@ verification. If an engine is unavailable, report that exact gap rather than tre
 Chromium pass as WebKit evidence. Adding an automated browser matrix or a browser dependency
 requires a separate scoped change; do not install tooling merely to record this policy.
 
+Controls (links styled as controls, buttons, FAQ summaries) take `--control-padding-y` (6px) of vertical
+padding in `site/styles/main.css`, so each is at least 24px high (WCAG 2.2 target size). The browser
+check is a computed-style pass over `a, button, summary` at 1280 and 390 px wide: none under 24px high
+or under 6px of vertical padding; the brand link is exempt, as its 36px icon is its height
+([#170](https://github.com/martonpaulo/windowhop/issues/170)).
+
 Project, release, download, license, issue, and attribution URLs and the displayed version
 live in the HTML of every page, so every link works without JavaScript; `site/scripts/main.js`
 keeps the copyright year current over a static fallback and runs the scroll-in motion. `make validate` fails on any `href="#"` and whenever the download URL,
