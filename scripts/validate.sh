@@ -189,23 +189,15 @@ else
     fail "CFBundleVersion ($BUILD) is not $DERIVED_BUILD, the build derived from version $VERSION"
 fi
 # The README no longer advertises a download (the GitHub About carries the site), so the
-# document that must track the shipped version is the changelog: its newest entry is the
-# release being described. The file follows Keep a Changelog: `## [X.Y.Z] - date`
-# headings, with one `## [Unreleased]` section above every version.
+# document that must track the shipped version is the changelog. The canonical
+# scripts/release-notes.sh --check owns its shape: one `## [Unreleased]` above every
+# `## [X.Y.Z] - YYYY-MM-DD` heading, and the newest version equal to $VERSION (#134).
+if scripts/release-notes.sh --check >/dev/null; then
+    pass "CHANGELOG passes release-notes.sh --check"
+else
+    fail "CHANGELOG fails scripts/release-notes.sh --check"
+fi
 CHANGELOG_VERSION=$(grep -oE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | tr -d '#[] ' || true)
-if [ "$CHANGELOG_VERSION" = "$VERSION" ]; then
-    pass "CHANGELOG's newest entry matches version $VERSION"
-else
-    fail "CHANGELOG's newest entry ($CHANGELOG_VERSION) does not match version $VERSION"
-fi
-UNRELEASED_COUNT=$(grep -c '^## \[Unreleased\]' CHANGELOG.md || true)
-UNRELEASED_LINE=$(grep -n '^## \[Unreleased\]' CHANGELOG.md | head -1 | cut -d: -f1 || true)
-FIRST_VERSION_LINE=$(grep -nE '^## \[[0-9]+\.[0-9]+\.[0-9]+\]' CHANGELOG.md | head -1 | cut -d: -f1 || true)
-if [ "$UNRELEASED_COUNT" = "1" ] && [ "${UNRELEASED_LINE:-0}" -lt "${FIRST_VERSION_LINE:-0}" ]; then
-    pass "CHANGELOG has one [Unreleased] section above every version"
-else
-    fail "CHANGELOG needs exactly one '## [Unreleased]' heading before every version heading"
-fi
 
 MARKDOWN_FILES=$(git ls-files '*.md')
 while IFS= read -r markdown; do
@@ -608,7 +600,7 @@ fi
 # broken copy is caught before a tag.
 script_failures=$failures
 for script in package-app.sh make-dmg.sh make-appcast.sh publish-release.sh notarize.sh \
-    verify-release-identity.sh verify-dmg-branding.sh sign-update.sh make-keys.sh; do
+    release-notes.sh verify-release-identity.sh verify-dmg-branding.sh sign-update.sh make-keys.sh; do
     if ! bash -n "scripts/$script"; then
         fail "scripts/$script does not parse"
     elif [ "$script" != notarize.sh ] && ! "scripts/$script" --help >/dev/null 2>&1; then
