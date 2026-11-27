@@ -461,10 +461,6 @@ main {
   transition: var(--transition-interactive);
 }
 
-.button:hover {
-  transform: translateY(var(--lift));
-}
-
 .button:active {
   transform: none;
 }
@@ -561,7 +557,6 @@ main {
 
 .command.is-copyable:hover {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  transform: translateY(var(--lift));
 }
 
 .command.is-copyable .command-action {
@@ -661,8 +656,21 @@ main {
 }
 
 .card-link:hover {
-  transform: translateY(var(--lift));
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+/* Hover lifts only where a pointer hovers: a tap on a touch screen would leave the
+   element raised (#152). */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover,
+  .card-link:hover,
+  .command.is-copyable:hover {
+    transform: translateY(var(--lift));
+  }
+
+  .button:active {
+    transform: none;
+  }
 }
 
 .card-link-label {
@@ -2121,7 +2129,8 @@ body.is-update {
   }
 
   .button:hover,
-  .card-link:hover {
+  .card-link:hover,
+  .command.is-copyable:hover {
     transform: none;
   }
 }
