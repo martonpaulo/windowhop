@@ -22,6 +22,7 @@ def load(name):
 
 notes = load("render-release-notes")
 width = load("text_width_check")
+html_check = load("release_notes_html_check")
 passed = failed = 0
 
 
@@ -56,6 +57,15 @@ check("markup inside code is not bold or a link", notes.inline("`**x** [y](https
 check("code is escaped", notes.inline("`WindowHop-<version>.dmg`"), "<code>WindowHop-&lt;version&gt;.dmg</code>")
 check("no stray backtick in any rendered 2.4.0 line",
       "`" in notes.inline("**`` ` `` moves back**").replace("<kbd>`</kbd>", ""), False)
+
+# --- rendered page check (#150) ----------------------------------------------------------------
+# The garbled markup the old renderer wrote for the 2.4.0 entry fails; the fixed output passes.
+check("the old renderer's 2.4.0 output fails the page check",
+      len(html_check.page_problems("<li><strong>`<code> </code> `<code> moves back</strong>: x </code>"
+                                   "<code> </code> `` selects</li>")) > 0, True)
+check("the fixed 2.4.0 output passes the page check",
+      html_check.page_problems("<li><strong><kbd>`</kbd> moves back</strong>: <kbd>`</kbd> selects</li>"), [])
+check("a stray backtick outside code fails", len(html_check.page_problems("<p>a ` b</p>")), 1)
 
 # --- text width ------------------------------------------------------------------------------
 good = (".container { width: var(--page-width); } img { max-width: 100%; } .x { max-width: none; }"

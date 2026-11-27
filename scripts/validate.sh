@@ -568,6 +568,11 @@ if python3 scripts/render-release-notes.py "$notes_dir" >/dev/null \
     && [ -f "$notes_dir/release-notes/$CHANGELOG_VERSION/update/index.html" ] \
     && [ -f "$notes_dir/release-notes/index.html" ]; then
     pass "release notes render from CHANGELOG ($CHANGELOG_VERSION included)"
+    if python3 scripts/release_notes_html_check.py "$notes_dir"; then
+        pass "rendered release notes have well-nested inline tags and no stray backtick"
+    else
+        fail "a rendered release-notes page has mis-nested inline tags or a stray backtick (scripts/release_notes_html_check.py)"
+    fi
 else
     fail "scripts/render-release-notes.py did not render the notes for $CHANGELOG_VERSION"
 fi
