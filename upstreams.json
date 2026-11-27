@@ -1,0 +1,14 @@
+{
+  "sources": [
+    {
+      "id": "alttab",
+      "repo": "https://github.com/lwouis/alt-tab-macos",
+      "ref": "refs/tags/v*",
+      "commit": "317a485bcb090bf2b29e3f78872218f0099e1d62",
+      "upstreamPaths": ["src", "Pods/ShortcutRecorder/Library"],
+      "localPaths": ["Sources/WindowHopKit", "Sources/WindowHopCore"],
+      "patches": "UPSTREAM.md",
+      "licence": "GPL-3.0-only"
+    }
+  ]
+}
