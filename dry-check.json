@@ -76,9 +76,6 @@
     "path": 2,
     "repeated": 4
    },
-   "scripts/version-site-assets.py": {
-    "number": 1
-   },
    "site/scripts/demo.js": {
     "number": 8
    },

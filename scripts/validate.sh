@@ -592,19 +592,14 @@ grep -q "render-release-notes.py" .github/workflows/deploy.yml \
 
 # --- asset versions --------------------------------------------------------------
 # The deploy appends ?v=<content md5> to every local stylesheet, script and image
-# address, so browsers never pair new HTML with a cached old file.
-versions_dir=$(mktemp -d)
-cp -R site "$versions_dir/site"
-if python3 scripts/version-site-assets.py "$versions_dir/site" >/dev/null \
-    && grep -q '/styles/main.css?v=[0-9a-f]\{8\}"' "$versions_dir/site/index.html" \
-    && grep -q '/scripts/main.js?v=[0-9a-f]\{8\}"' "$versions_dir/site/help/index.html" \
-    && grep -q '/assets/app-icon.png?v=[0-9a-f]\{8\}"' "$versions_dir/site/404.html" \
-    && grep -q "version-site-assets.py" .github/workflows/deploy.yml; then
+# address in its staged copy, so browsers never pair new HTML with a cached old file.
+# scripts/version-site-assets.sh is Workbench's canonical copy (#152).
+if scripts/version-site-assets.sh --check 2>/dev/null \
+    && grep -Eq '^[^#]*scripts/version-site-assets[.]sh --site' .github/workflows/deploy.yml; then
     pass "the deploy versions every local asset address"
 else
-    fail "scripts/version-site-assets.py did not version the staged pages, or deploy.yml does not run it"
+    fail "scripts/version-site-assets.sh --check failed, or deploy.yml does not run it with --site"
 fi
-rm -rf "$versions_dir"
 
 # --- canonical release scripts ------------------------------------------------
 # These are byte-identical copies of skill-deck's project-release assets, whose
