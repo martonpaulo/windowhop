@@ -14,6 +14,7 @@ import sys
 
 VOID = {"meta", "link", "br", "img", "hr", "input"}
 LITERAL = {"code", "kbd", "script", "style"}
+SNIPPET_LENGTH = 60
 
 
 class Checker(html.parser.HTMLParser):
@@ -40,7 +41,7 @@ class Checker(html.parser.HTMLParser):
 
     def handle_data(self, data):
         if "`" in data and not LITERAL & set(self.stack):
-            self.problems.append(f"stray backtick in: {data.strip()[:60]}")
+            self.problems.append(f"stray backtick in: {data.strip()[:SNIPPET_LENGTH]}")
 
 
 def page_problems(source):
