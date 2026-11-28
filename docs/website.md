@@ -19,12 +19,15 @@ Three indexed pages, each targeting its own searches, plus the 404 ([#126](https
 | Page | File | Holds |
 | --- | --- | --- |
 | `/` | `site/index.html` | The live demo, how it works, the real screenshots, features, Settings, download |
-| `/help/` | `site/help/index.html` | Install steps, keys, Window Previews, troubleshooting, uninstall, FAQ (`FAQPage` JSON-LD) |
+| `/help/` | `site/help/index.html` | Install steps, keys, Window Previews, troubleshooting, uninstall, FAQ |
 | `/alttab-alternative/` | `site/alttab-alternative/index.html` | The AltTab comparison ([#94](https://github.com/martonpaulo/windowhop/issues/94)) |
 
 Every page has its own `<title>`, meta description, canonical URL, `og:url`, Open Graph and
-Twitter tags, and a `sitemap.xml` entry. There is no visible breadcrumb: the header marks
-the current page (`aria-current`), so the inner pages carry no `BreadcrumbList` either. They
+Twitter tags, and a `sitemap.xml` entry. Each inner page carries a visible breadcrumb above
+its title ("WindowHop", then the page) and a matching `BreadcrumbList`; the home page and the
+404 carry neither ([#134](https://github.com/martonpaulo/windowhop/issues/134), superseding the
+[#126](https://github.com/martonpaulo/windowhop/issues/126) removal). The site carries no
+`FAQPage` markup: Google shows FAQ rich results only for government and health sites. They
 share one header whose labels are identical on every page (the 404 included), and they load
 styles and scripts from root paths (`/styles/main.css`), so any page works at any depth.
 
@@ -70,12 +73,15 @@ Open <http://127.0.0.1:8080/> in both acceptance engine families, **Chromium and
 and Dark Mode, and Reduce Motion in each.
 
 Static validation has two parts, both run by `make validate`. `scripts/validate-site.sh` is
-skill-deck's canonical copy, kept byte-identical: the `CNAME` host, the canonical URL,
-`og:url`, no `noindex`, `robots.txt` and `sitemap.xml`. The "GitHub Pages site" section of
-`scripts/validate.sh` holds WindowHop's own site rules, described below: required files,
-version and download sync with `Support/Info.plist`, markers, no stylesheet rule whose
-selector runs into an at-rule ([#133](https://github.com/martonpaulo/windowhop/issues/133)), favicon sizes, 404 parity, external links and local
-references.
+Workbench's canonical copy, kept byte-identical and run with `--generated release-notes/`. It
+checks every page as one set: the `CNAME` host, the canonical URL, `og:url`, `noindex`,
+`robots.txt` and `sitemap.xml`, title and description parity, unique titles, header and footer
+links, external links, local references, breadcrumbs, and the deploy's asset-version step. The
+"GitHub Pages site" section of `scripts/validate.sh` holds WindowHop's own site rules, described
+below: required files, version and download sync with `Support/Info.plist`, markers, the home
+page's JSON-LD description, no stylesheet rule whose selector runs into an at-rule
+([#133](https://github.com/martonpaulo/windowhop/issues/133)), favicon sizes, 404 parity, the
+footer byte for byte, and screenshot twins ([#134](https://github.com/martonpaulo/windowhop/issues/134)).
 
 CI currently performs static site validation; it does not run either browser engine.
 Use existing browser tooling for interaction and computed-style checks, and record the
@@ -83,6 +89,12 @@ browser/version and outcome for each engine. Visual appearance judgment remains 
 verification. If an engine is unavailable, report that exact gap rather than treating a
 Chromium pass as WebKit evidence. Adding an automated browser matrix or a browser dependency
 requires a separate scoped change; do not install tooling merely to record this policy.
+
+Controls (links styled as controls, buttons, FAQ summaries) take `--control-padding-y` (6px) of vertical
+padding in `site/styles/main.css`, so each is at least 24px high (WCAG 2.2 target size). The browser
+check is a computed-style pass over `a, button, summary` at 1280 and 390 px wide: none under 24px high
+or under 6px of vertical padding; the brand link is exempt, as its 36px icon is its height
+([#170](https://github.com/martonpaulo/windowhop/issues/170)).
 
 Project, release, download, license, issue, and attribution URLs and the displayed version
 live in the HTML of every page, so every link works without JavaScript; `site/scripts/main.js`
@@ -142,10 +154,11 @@ header, footer or page title. WindowHop grows the window to that page's height, 
 the screen (`App/UpdateAlertSizer.swift`). A one-line-per-change page and the full site
 page were tried first ([#128](https://github.com/martonpaulo/windowhop/issues/128)). `sparkle:fullReleaseNotesLink` points
 to `/release-notes/` (the Version History button). Like the download count, it runs on the deploy's staged copy, so no
-generated page is committed. `appcast.xml` links these pages: the canonical
-`make-appcast.sh` writes the GitHub release URL, and `release.yml` rewrites it for the new
-item, then dispatches Deploy once the release is published, so the page exists when clients
-see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
+generated page is committed. `appcast.xml` links these pages: `release.yml` passes the
+canonical `make-appcast.sh` `--release-notes-url` and `--full-release-notes-url`, with the
+host read from `site/CNAME`, so no step edits the feed after it is written
+([#134](https://github.com/martonpaulo/windowhop/issues/134)). It then dispatches Deploy once
+the release is published, so the page exists when clients see the item. `make validate` renders the notes and fails on an appcast link to GitHub.
 Code spans follow CommonMark (a run of backticks closes only on a run of the same length),
 and a span that holds only a key or a key chord (`⌘⇧Tab`) renders as one keycap per key,
 as the other pages show keys; `tests/scripts/site-text-tests.py` covers both ([#171](https://github.com/martonpaulo/windowhop/issues/171)).

@@ -29,6 +29,16 @@
   <link rel="stylesheet" href="/styles/main.css">
   <script>document.documentElement.classList.add("js");</script>
   <script src="/scripts/main.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "WindowHop", "item": "https://windowhop.martonpaulo.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Compare", "item": "https://windowhop.martonpaulo.com/alttab-alternative/" }
+    ]
+  }
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -50,7 +60,12 @@
 
   <main id="main">
     <section class="page-hero" aria-labelledby="compare-title">
-      <p class="eyebrow">Compare</p>
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <ol>
+          <li><a href="/">WindowHop</a></li>
+          <li aria-current="page">Compare</li>
+        </ol>
+      </nav>
       <h1 id="compare-title">WindowHop, AltTab or the Mac’s own ⌘Tab?</h1>
       <p class="hero-summary">The Mac’s ⌘Tab stops at the app. AltTab reaches every window, with search and some styles in a paid Pro version. WindowHop reaches every window with everything free, no Screen Recording for its default style, and no telemetry.</p>
     </section>

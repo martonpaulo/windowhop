@@ -1,0 +1,66 @@
+# Weekly upstream check (bench-project-standards references/upstream-check.md, #719).
+# Copy unchanged to .github/workflows/upstream-check.yml, beside scripts/upstream_check.py and the
+# root upstreams.json. It runs on the fleet's Hetzner runner, as a private repository's workflows do
+# (docs/schedules.md, #1008, #1141); a public repository copies the form
+# check_repository_conventions.py public_upstream_workflow makes: `runs-on: ubuntu-latest`, no
+# `ci-runner-health` step, nothing else changed (#1673). It only reads each upstream and reports: one issue per moved source, updated
+# and never duplicated, closed once the pin moves or `reviewed` covers the change. A scheduled run that
+# fails or is cut at its timeout opens one more issue, which the next green scheduled run closes.
+name: Upstream check
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: upstream-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # Only this job and the alert job open and update issues (#741).
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compare every pinned upstream and sync its issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          status=0
+          python3 scripts/upstream_check.py check --output "$RUNNER_TEMP/upstream-report.json" || status=$?
+          if [ "$status" -gt 1 ]; then exit "$status"; fi
+          python3 scripts/upstream_check.py sync --report "$RUNNER_TEMP/upstream-report.json" --repo "$GITHUB_REPOSITORY"
+
+  alert:
+    # A scheduled run that fails or is cut at a timeout opens or updates one issue, and a green one
+    # closes it (#1234). `always()` runs this job after a cancelled or failed job too.
+    needs: [check]
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Open, update or close the failed-run issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          printf '%s' "$NEEDS" | python3 scripts/upstream_check.py alert --repo "$GITHUB_REPOSITORY" \
+            --workflow "$GITHUB_WORKFLOW" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --results -

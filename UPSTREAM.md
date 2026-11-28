@@ -9,7 +9,7 @@ design inspirations and technical documentation this file does not cover.
 ## Base revision
 
 - Tag: `v10.12.0`
-- Commit: `317a485bcb090bf2b29e3f78872218f0099e1d62`
+- Commit: pinned in `upstreams.json`, the only file that holds it (short form `317a485b`)
 - Why this one: it is the last stable tag before the Pro/licensing/trial code introduced
   in `v11.0.0` (`9147a4a8`, "feat: introducing alt-tab pro!"), and the last release whose
   engine is Accessibility-based. v11.x reworked window tracking onto private SkyLight/CGS
@@ -39,7 +39,7 @@ git remote add upstream https://github.com/lwouis/alt-tab-macos
 | `src/logic/events/KeyboardEvents.swift` | `Input/EventTap.swift` | tap re-enable on `tapDisabledBy*`, dedicated input thread |
 | `src/ui/settings-window/tabs/controls/ControlsTab.swift` (`.commandKeyAboveTab` as `kVK_ANSI_Grave`), `src/logic/Preferences.swift` (`keyAboveTabDependingOnInputSource`) | `WindowHopKit/ShortcutSpec.swift` (`KeyCode.grave`) + `Input/EventTap.swift` | the key macOS binds ⌘` to is key code 50 on every layout, labelled by the current input source; AltTab steps back only with Shift, so `` ` `` stepping back in a session is WindowHop's rule (WindowHop issue [#135](https://github.com/martonpaulo/windowhop/issues/135)) |
 | `src/logic/BackgroundWork.swift` | `Engine/BackgroundWork.swift` | dedicated run-loop threads, AX off the main thread |
-| `src/logic/events/RunningApplicationsEvents.swift` + `src/logic/Applications.swift` (`removeRunningApplications`, `317a485bcb090bf2b29e3f78872218f0099e1d62`) | `Engine/WindowStore.swift` + `WindowHopKit/AppDeparture.swift` | KVO launch and termination tracking; removal matches the departed `NSRunningApplication` with `isEqual`, never by its PID, and without an `isTerminated` gate (WindowHop issue [#136](https://github.com/martonpaulo/windowhop/issues/136)). WindowHop adds one guard upstream lacks: an app still listed in `runningApplications` is kept |
+| `src/logic/events/RunningApplicationsEvents.swift` + `src/logic/Applications.swift` (`removeRunningApplications`, `317a485b`) | `Engine/WindowStore.swift` + `WindowHopKit/AppDeparture.swift` | KVO launch and termination tracking; removal matches the departed `NSRunningApplication` with `isEqual`, never by its PID, and without an `isTerminated` gate (WindowHop issue [#136](https://github.com/martonpaulo/windowhop/issues/136)). WindowHop adds one guard upstream lacks: an app still listed in `runningApplications` is kept |
 | `src/logic/SystemPermissions.swift` | `Engine/AccessibilityPermission.swift` | permission gating; polling reduced to onboarding-window-only |
 | Window/screen coordinate conversion (`Window.isOnScreen`) | `Engine/TrackedWindow.swift` | Quartz↔Cocoa frame conversion |
 | `src/ui/App.swift` (`showUiOrCycleSelection`), `src/logic/Preferences.swift` (`windowDisplayDelay`) | `WindowHopKit/Preferences.swift` (`SwitcherRevealDelay`) + `Input/SwitcherController.swift` (`scheduleReveal`) | reveal delay before drawing the switcher (upstream default 100 ms), with a quick release ending the session before anything is shown; exposed as presets and applied to held sessions only (WindowHop issue [#32](https://github.com/martonpaulo/windowhop/issues/32)) |

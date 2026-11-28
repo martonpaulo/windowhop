@@ -288,12 +288,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin main
           git checkout main
+          # Sparkle's window shows the site's version section alone; the full notes
+          # link opens every version (#128, #134).
+          host=$(tr -d '[:space:]' < site/CNAME)
           scripts/make-appcast.sh --version "$VERSION" \
             --build-number "${{ steps.version.outputs.build }}" \
-            --archive "artifacts/WindowHop-$VERSION.zip" --signature "$SPARKLE_SIG_ATTRS"
-          # make-appcast.sh (skill-deck's canonical copy) links the GitHub release
-          # page; Sparkle's window shows the site's version section alone instead (#128).
-          perl -pi -e "s#<sparkle:releaseNotesLink>https://github.com/martonpaulo/windowhop/releases/tag/v$VERSION</sparkle:releaseNotesLink>#<sparkle:releaseNotesLink>https://windowhop.martonpaulo.com/release-notes/$VERSION/update/</sparkle:releaseNotesLink>\n      <sparkle:fullReleaseNotesLink>https://windowhop.martonpaulo.com/release-notes/</sparkle:fullReleaseNotesLink>#" appcast.xml
+            --archive "artifacts/WindowHop-$VERSION.zip" --signature "$SPARKLE_SIG_ATTRS" \
+            --release-notes-url "https://$host/release-notes/{version}/update/" \
+            --full-release-notes-url "https://$host/release-notes/"
           if ! git diff --quiet appcast.xml; then
             git add appcast.xml
             git commit -m "chore(release): appcast entry for $VERSION"

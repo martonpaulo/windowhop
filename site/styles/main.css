@@ -98,6 +98,9 @@
   /* Sizes */
   --page-width: min(73.75rem, 100% - 2.5rem);   /* 1180px, 20px gutters */
   --width-demo: 65rem;                          /* 1040px */
+  /* Vertical padding every control keeps, so its text never touches its edge and
+     an inline control clears a 24px WCAG 2.2 target (docs/website.md). */
+  --control-padding-y: 0.375rem;  /*   6px */
   --control-height: 3rem;
   --control-height-s: 2.25rem;
   --keycap-height: 3rem;
@@ -450,16 +453,12 @@ main {
   align-items: center;
   justify-content: center;
   min-height: var(--control-height);
-  padding: 0 var(--space-m);
+  padding: var(--control-padding-y) var(--space-m);
   border-radius: var(--radius-pill);
   font-size: 1rem;
   font-weight: var(--weight-strong);
   text-decoration: none;
   transition: var(--transition-interactive);
-}
-
-.button:hover {
-  transform: translateY(var(--lift));
 }
 
 .button:active {
@@ -486,7 +485,7 @@ main {
 .button.small {
   gap: var(--space-2xs);
   min-height: var(--control-height-s);
-  padding: 0 var(--space-s);
+  padding: var(--control-padding-y) var(--space-s);
   font-size: var(--text-sm);
 }
 
@@ -499,6 +498,7 @@ main {
 .text-link {
   display: inline-flex;
   align-items: center;
+  padding-block: var(--control-padding-y);
   color: var(--accent);
   font-size: var(--text-sm);
   font-weight: var(--weight-strong);
@@ -557,7 +557,6 @@ main {
 
 .command.is-copyable:hover {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
-  transform: translateY(var(--lift));
 }
 
 .command.is-copyable .command-action {
@@ -657,8 +656,21 @@ main {
 }
 
 .card-link:hover {
-  transform: translateY(var(--lift));
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+}
+
+/* Hover lifts only where a pointer hovers: a tap on a touch screen would leave the
+   element raised (#152). */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover,
+  .card-link:hover,
+  .command.is-copyable:hover {
+    transform: translateY(var(--lift));
+  }
+
+  .button:active {
+    transform: none;
+  }
 }
 
 .card-link-label {
@@ -814,6 +826,7 @@ figcaption {
 .site-footer a {
   display: inline-flex;
   align-items: center;
+  padding-block: var(--control-padding-y);
   color: var(--secondary);
   font-size: var(--text-sm);
   font-weight: var(--weight-strong);
@@ -1306,6 +1319,59 @@ h1 {
   margin: var(--space-m) 0 0;
 }
 
+/* The breadcrumb above an inner page's title (#134): quiet text at eyebrow size, one
+   line, the accent only on a hovered link. The chevron is drawn, so a screen reader
+   reads only the crumbs. With two crumbs, the current page is the one that truncates. */
+.breadcrumb ol {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0 0 var(--space-xs);
+  padding: 0;
+  list-style: none;
+  color: var(--secondary);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.breadcrumb li {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumb li:first-child {
+  flex: none;
+}
+
+.breadcrumb li:last-child {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb li + li::before {
+  content: "";
+  display: inline-block;
+  flex: none;
+  width: 0.4em;
+  height: 0.4em;
+  margin-inline-end: var(--space-2xs);
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover {
+  color: var(--accent);
+}
+
 .keys-table {
   width: 100%;
   overflow: hidden;
@@ -1433,6 +1499,7 @@ h1 {
 }
 
 .faq summary {
+  padding-block: var(--control-padding-y);
   font-size: var(--text-md);
   font-weight: var(--weight-strong);
 }
@@ -2115,7 +2182,8 @@ body.is-update {
   }
 
   .button:hover,
-  .card-link:hover {
+  .card-link:hover,
+  .command.is-copyable:hover {
     transform: none;
   }
 }
