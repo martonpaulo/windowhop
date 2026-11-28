@@ -25,7 +25,7 @@
     "duration": 1
    },
    "scripts/make-appcast.sh": {
-    "repeated": 2,
+    "repeated": 1,
     "url": 4
    },
    "scripts/make-dmg.sh": {
@@ -64,7 +64,7 @@
    "scripts/validate.sh": {
     "number": 1,
     "path": 2,
-    "url": 6
+    "url": 5
    },
    "scripts/verify-dmg-branding.sh": {
     "repeated": 2
@@ -81,6 +81,42 @@
    },
    "site/scripts/main.js": {
     "number": 2
+   }
+  },
+  "accepted": {
+   "scripts/lib/cli.sh": {
+    "repeated": {
+     "count": 1,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    }
+   },
+   "scripts/make-appcast.sh": {
+    "url": {
+     "count": 2,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    }
+   },
+   "scripts/release-notes.sh": {
+    "repeated": {
+     "count": 1,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    }
+   },
+   "scripts/validate-site.sh": {
+    "repeated": {
+     "count": 4,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    },
+    "url": {
+     "count": 1,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    }
+   },
+   "scripts/version-site-assets.sh": {
+    "repeated": {
+     "count": 1,
+     "reason": "canonical copy from the owner's shared scripts, kept byte-identical (#134)"
+    }
    }
   }
  },
