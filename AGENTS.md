@@ -45,6 +45,7 @@
 - Push policy: automatic. Push to `origin/main` right after creating those commits. `main` A cloud session pushes `main` too, only for a `runs: cloud` issue whose gates all ran there, and never for a change under a `mac_paths` entry of `.github/cloud.json`, which needs the Mac's Swift and Xcode toolchain and is handed off (owner, 2026-11-27). Cloud setup command: `bash scripts/cloud-setup.sh`.
   drives CI and the Pages deploy, so never push a red or unvalidated tree, and never
   force-push.
+- Cloud hand-off: on (owner, 2026-11-28): a cloud session also delivers the `[cloud]` Tasks of a split issue, on `cloud/<issue>` when it cannot push `main`.
 - Product versioning: SemVer `MAJOR.MINOR.PATCH`. The canonical source is
   `CFBundleShortVersionString` in `Support/Info.plist`; `CFBundleVersion` is derived as
   `MAJOR*10000 + MINOR*100 + PATCH`. Version increments are **not** automatic: they happen
